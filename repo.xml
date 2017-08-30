@@ -9,6 +9,6 @@
     <type>application</type>
     <target>rusdracor</target>
     <prepare>pre-install.xql</prepare>
-    <finish/>
+    <finish>post-install.xql</finish>
 <deployed>2017-08-28T13:26:02.077+02:00</deployed>
 </meta>
