@@ -7,12 +7,12 @@ xquery version "3.1";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 
-(: 
- : The following modules provide functions which will be called by the 
+(:
+ : The following modules provide functions which will be called by the
  : templating.
  :)
-import module namespace config="http://exist-db.org/apps/rusdracor/config" at "config.xqm";
-import module namespace app="http://exist-db.org/apps/rusdracor/templates" at "app.xql";
+import module namespace config="http://dracor.org/ns/exist/config" at "config.xqm";
+import module namespace app="http://dracor.org/ns/exist/templates" at "app.xql";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 

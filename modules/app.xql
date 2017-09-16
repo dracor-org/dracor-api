@@ -1,9 +1,9 @@
 xquery version "3.1";
 
-module namespace app="http://exist-db.org/apps/rusdracor/templates";
+module namespace app="http://dracor.org/ns/exist/templates";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
-import module namespace config="http://exist-db.org/apps/rusdracor/config" at "config.xqm";
+import module namespace config="http://dracor.org/ns/exist/config" at "config.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
@@ -12,7 +12,7 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
  : @param $model a map containing arbitrary data - used to pass information between template calls
  :)
 declare function app:stats($node as node(), $model as map(*)) {
-  let $col := collection("/db/data/rusdracor")
+  let $col := collection("/db/data/dracor")
   let $format := "#,###.##"
   let $num-docs := count($col/tei:TEI)
   let $num-persons := count($col//tei:listPerson/tei:person)

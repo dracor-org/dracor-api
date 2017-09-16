@@ -42,7 +42,7 @@ declare function local:entry-filter(
 };
 
 let $target := "/db"
-let $path := "data/rusdracor"
+let $path := "data/dracor"
 let $collection := concat($target, "/", $path)
 let $url := "https://github.com/lehkost/RusDraCor/archive/master.zip"
 let $gitRepo := httpclient:get($url, false(), ())

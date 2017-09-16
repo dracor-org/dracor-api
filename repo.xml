@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <meta xmlns="http://exist-db.org/xquery/repo">
-    <description>RusDraCor</description>
+    <description>DraCor</description>
     <author/>
     <website/>
     <status>alpha</status>
     <license>GNU-LGPL</license>
     <copyright>true</copyright>
     <type>application</type>
-    <target>rusdracor</target>
+    <target>dracor</target>
     <prepare>pre-install.xql</prepare>
     <finish>post-install.xql</finish>
 <deployed>2017-08-28T13:26:02.077+02:00</deployed>

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project default="xar" name="rusdracor">
+<project default="xar" name="dracor">
     <xmlproperty file="expath-pkg.xml"/>
     <property name="project.version" value="${package(version)}"/>
-    <property name="project.app" value="rusdracor"/>
+    <property name="project.app" value="dracor"/>
     <property name="build.dir" value="build"/>
     <target name="xar">
         <mkdir dir="${build.dir}"/>

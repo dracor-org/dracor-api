@@ -4,17 +4,17 @@ xquery version "3.0";
  : A set of helper functions to access the application context from
  : within a module.
  :)
-module namespace config="http://exist-db.org/apps/rusdracor/config";
+module namespace config="http://dracor.org/ns/exist/config";
 
 declare namespace templates="http://exist-db.org/xquery/templates";
 
 declare namespace repo="http://exist-db.org/xquery/repo";
 declare namespace expath="http://expath.org/ns/pkg";
 
-(: 
+(:
     Determine the application root collection from the current module load path.
 :)
-declare variable $config:app-root := 
+declare variable $config:app-root :=
     let $rawPath := system:get-module-load-path()
     let $modulePath :=
         (: strip the xmldb: part :)
