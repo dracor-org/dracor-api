@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpora>
+  <corpus>
+    <name>rus</name>
+    <title>RusDraCor</title>
+    <archive>https://github.com/lehkost/RusDraCor/archive/master.zip</archive>
+  </corpus>
+  <corpus>
+    <name>ger</name>
+    <title>GerDraCor</title>
+    <archive>https://github.com/dracor-org/gerdracor/archive/master.zip</archive>
+  </corpus>
+</corpora>
