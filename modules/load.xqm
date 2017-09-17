@@ -25,11 +25,8 @@ declare function local:entry-data(
 declare function local:entry-filter(
   $path as xs:anyURI, $type as xs:string, $param as item()*
 ) as xs:boolean {
-  (: we filter the paths using only files in subdirectories "tei" (rusdracor) or
-  "data" (gerdracor). FIXME: either standardize the directory structure or
-  implement a filter regex to be passed to load:load-archive :)
-  if ($type eq "resource"
-      and (contains($path, "/tei/") or contains($path, "/data/")))
+  (: filter paths using only files in the "tei" subdirectory  :)
+  if ($type eq "resource" and contains($path, "/tei/"))
   then
     true()
   else
