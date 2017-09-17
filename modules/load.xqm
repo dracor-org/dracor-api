@@ -37,10 +37,10 @@ declare function local:entry-filter(
 };
 
 (:~
-  Load XML files from ZIP archive
-
-  @param $name The name of the sub collection to create
-  @param $archive-url The URL of a ZIP archive containing XML files
+ : Load XML files from ZIP archive
+ :
+ : @param $name The name of the sub collection to create
+ : @param $archive-url The URL of a ZIP archive containing XML files
 :)
 declare function load:load-archive($name as xs:string, $archive-url as xs:string) {
   let $base := "/db/data/dracor"
