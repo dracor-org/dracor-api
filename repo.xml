@@ -9,6 +9,5 @@
     <type>application</type>
     <target>dracor</target>
     <prepare>pre-install.xql</prepare>
-    <finish>post-install.xql</finish>
 <deployed>2017-08-28T13:26:02.077+02:00</deployed>
 </meta>
