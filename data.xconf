@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<collection xmlns="http://exist-db.org/collection-config/1.0">
+  <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <fulltext default="none" attributes="false"/>
+    <lucene>
+      <!--<analyzer class="org.apache.lucene.analysis.ru.RussianAnalyzer"/>-->
+      <text qname="tei:sp">
+        <ignore qname="tei:speaker"/>
+      </text>
+      <text qname="tei:stage"/>
+    </lucene>
+  </index>
+</collection>
