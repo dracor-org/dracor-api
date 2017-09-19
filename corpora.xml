@@ -2,12 +2,12 @@
 <corpora>
   <corpus>
     <name>rus</name>
-    <title>RusDraCor</title>
-    <archive>https://github.com/lehkost/RusDraCor/archive/master.zip</archive>
+    <title>Russian Drama Corpus</title>
+    <archive>https://github.com/dracor-org/rusdracor/archive/master.zip</archive>
   </corpus>
   <corpus>
     <name>ger</name>
-    <title>GerDraCor</title>
+    <title>German Drama Corpus</title>
     <archive>https://github.com/dracor-org/gerdracor/archive/master.zip</archive>
   </corpus>
 </corpora>
