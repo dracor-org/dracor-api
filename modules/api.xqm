@@ -11,6 +11,8 @@ declare namespace expath = "http://expath.org/ns/pkg";
 declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
+declare variable $api:base-collection := "/db/data/dracor";
+
 declare
   %rest:GET
   %rest:path("/dracor")
@@ -53,4 +55,43 @@ declare
   %rest:produces("application/xml", "text/xml")
 function api:resources() {
   rest:resource-functions()
+};
+
+declare function local:get-index-keys ($collection as xs:string, $elem as xs:string) {
+  <terms element="{$elem}" collection="{$collection}">
+    {
+      util:index-keys(
+        collection($collection)//tei:*[name() eq $elem], "",
+        function($key, $count) {
+          <term name="{$key}" count="{$count[1]}"docs="{$count[2]}" pos="{$count[3]}"/>
+        },
+        -1,
+        "lucene-index"
+      )
+    }
+  </terms>
+};
+
+declare
+  %rest:GET
+  %rest:path("/dracor/{$corpus}/word-frequencies/{$elem}")
+  %rest:produces("application/xml", "text/xml")
+function api:word-frequencies-xml($corpus, $elem) {
+  let $collection := concat($api:base-collection, "/", $corpus)
+  let $terms := local:get-index-keys($collection, $elem)
+  return $terms
+};
+
+declare
+  %rest:GET
+  %rest:path("/dracor/{$corpus}/word-frequencies/{$elem}")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:word-frequencies-csv($corpus, $elem) {
+  let $collection := concat($api:base-collection, "/", $corpus)
+  let $terms := local:get-index-keys($collection, $elem)
+  for $t in $terms/term
+  order by number($t/@count) descending
+  return concat($t/@name, ", ", $t/@count, ", ", $t/@docs, "&#10;")
 };
