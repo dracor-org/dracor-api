@@ -2,6 +2,7 @@ xquery version "3.1";
 
 module namespace api = "http://dracor.org/ns/exist/api";
 
+import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
@@ -76,6 +77,8 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:index($corpus) {
+  let $corpora := xdb:document("/db/apps/dracor/corpora.xml")
+  let $title := $corpora//corpus[name=$corpus]/title/text()
   let $collection := concat($api:base-collection, "/", $corpus)
   return
   <index>
@@ -97,6 +100,7 @@ function api:index($corpus) {
           </source>
         </dramas>
     }
+    <title>{$title}</title>
   </index>
 };
 
