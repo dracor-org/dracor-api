@@ -86,12 +86,14 @@ function api:index($corpus) {
       for $tei in collection($collection)//tei:TEI
       let $filename := tokenize(base-uri($tei), "/")[last()]
       let $id := tokenize($filename, "\.")[1]
+      let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
       return
         <dramas json:array="true">
           <id>{$id}</id>
           <title>
             {$tei//tei:titleStmt/tei:title[1]/normalize-space() }
           </title>
+          {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
           <author key="{$tei//tei:titleStmt/tei:author/@key}">
             <name>{$tei//tei:titleStmt/tei:author/string()}</name>
           </author>
