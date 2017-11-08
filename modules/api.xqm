@@ -25,10 +25,6 @@ function api:darcor() {
     let $repo := config:repo-descriptor()
     return
       <info>
-        <x>
-          <y>kfmsldk</y>
-          <y>ksld</y>
-        </x>
         <name>{$expath/expath:title/string()}</name>
         <version>{$expath/@version/string()}</version>
         <status>{$repo/repo:status/string()}</status>
