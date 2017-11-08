@@ -108,6 +108,56 @@ function api:index($corpus) {
 
 declare
   %rest:GET
+  %rest:path("/dracor/{$corpus}/{$drama}/info")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:drama-info($corpus, $drama) {
+  let $collection := concat($api:base-collection, "/", $corpus)
+  let $file := concat($api:base-collection, "/", $corpus, "/", $drama, ".xml")
+  let $doc := xdb:document($file)
+  let $tei := $doc//tei:TEI
+  let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+  return
+    <info>
+      <id>{$drama}</id>
+      <corpus>{$corpus}</corpus>
+      <file>{$file}</file>
+      <title>
+        {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
+      </title>
+      {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
+      <author key="{$tei//tei:titleStmt/tei:author/@key}">
+        <name>{$tei//tei:titleStmt/tei:author/string()}</name>
+      </author>
+      {
+        for $person in $tei//tei:particDesc/tei:listPerson/tei:person
+        return
+        <persons  json:array="true">
+          <id>{$person/@xml:id/string()}</id>
+          <name>{$person/tei:persName[1]/normalize-space()}</name>
+          <sex>{$person/@sex/string()}</sex>
+        </persons>
+      }
+      {
+        for $segment in $tei//tei:div[tei:sp]
+        return
+        <segments json:array="true">
+          <type>{$segment/@type/string()}</type>
+          {
+            for $sp in distinct-values($segment/tei:sp/@who)
+            return
+              <speakers json:array="true">
+                {substring($sp, 2)}
+              </speakers>
+          }
+        </segments>
+      }
+    </info>
+};
+
+declare
+  %rest:GET
   %rest:path("/dracor/{$corpus}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
 function api:word-frequencies-xml($corpus, $elem) {
