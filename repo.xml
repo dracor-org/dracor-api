@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <meta xmlns="http://exist-db.org/xquery/repo">
-    <description>DraCor</description>
-    <author/>
-    <website/>
-    <status>alpha</status>
-    <license>GNU-LGPL</license>
-    <copyright>true</copyright>
-    <type>application</type>
-    <target>dracor</target>
-    <prepare>pre-install.xql</prepare>
-<deployed>2017-08-28T13:26:02.077+02:00</deployed>
+  <description>Backend resources for dracor.org</description>
+  <author>Carsten Milling</author>
+  <website>https://github.com/dracor-org/dracor-exist</website>
+  <status>alpha</status>
+  <license>GNU-LGPL</license>
+  <copyright>true</copyright>
+  <type>application</type>
+  <target>dracor</target>
+  <prepare>pre-install.xql</prepare>
 </meta>
