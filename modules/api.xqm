@@ -4,6 +4,7 @@ module namespace api = "http://dracor.org/ns/exist/api";
 
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
@@ -118,6 +119,7 @@ function api:drama-info($corpus, $drama) {
   let $doc := xdb:document($file)
   let $tei := $doc//tei:TEI
   let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+  let $cast := dutil:distinct-speakers($doc//tei:body)
   return
     <info>
       <id>{$drama}</id>
@@ -131,25 +133,28 @@ function api:drama-info($corpus, $drama) {
         <name>{$tei//tei:titleStmt/tei:author/string()}</name>
       </author>
       {
-        for $person in $tei//tei:particDesc/tei:listPerson/tei:person
+        for $id in $cast
+        let $name := $doc//tei:particDesc//(
+          tei:person[@xml:id=$id]/tei:persName[1] |
+          tei:persName[@xml:id=$id]
+        )/text()
         return
         <persons  json:array="true">
-          <id>{$person/@xml:id/string()}</id>
-          <name>{$person/tei:persName[1]/normalize-space()}</name>
-          <sex>{$person/@sex/string()}</sex>
+          <id>{$id}</id>
+          {if($name) then <name>{$name}</name> else ()}
         </persons>
       }
       {
         for $segment in $tei//tei:div[tei:sp]
+        let $heads := $segment/(ancestor::tei:div/tei:head|tei:head)
         return
         <segments json:array="true">
           <type>{$segment/@type/string()}</type>
+          {if ($heads) then <title>{string-join($heads, ' | ')}</title> else ()}
           {
-            for $sp in distinct-values($segment/tei:sp/@who)
+            for $sp in dutil:distinct-speakers($segment)
             return
-              <speakers json:array="true">
-                {substring($sp, 2)}
-              </speakers>
+            <speakers json:array="true">{$sp}</speakers>
           }
         </segments>
       }
