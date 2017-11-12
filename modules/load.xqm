@@ -6,6 +6,7 @@ xquery version "3.0";
 module namespace load = "http://dracor.org/ns/exist/load";
 
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
+import module namespace config="http://dracor.org/ns/exist/config" at "config.xqm";
 declare namespace compression = "http://exist-db.org/xquery/compression";
 declare namespace util = "http://exist-db.org/xquery/util";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
@@ -40,8 +41,7 @@ declare function local:entry-filter(
  : @param $archive-url The URL of a ZIP archive containing XML files
 :)
 declare function load:load-archive($name as xs:string, $archive-url as xs:string) {
-  let $base := "/db/data/dracor"
-  let $collection := xdb:create-collection($base, $name)
+  let $collection := xdb:create-collection($config:data-root, $name)
   let $removals := for $res in xdb:get-child-resources($collection)
                    return xdb:remove($collection, $res)
   let $gitRepo := httpclient:get($archive-url, false(), ())

@@ -1,7 +1,10 @@
 xquery version "3.1";
 
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
-import module namespace dutil = "http://dracor.org/ns/exist/util" at "modules/util.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/util"
+  at "modules/util.xqm";
+import module namespace config="http://dracor.org/ns/exist/config"
+  at "modules/config.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare variable $corpus := request:get-parameter("corpus", "ger");
@@ -10,7 +13,7 @@ declare variable $filename := request:get-parameter(
   "goethe-faust-der-tragoedie-zweiter-teil"
 );
 
-let $file := concat("/db/data/dracor/", $corpus, "/", $filename, ".xml")
+let $file := concat($config:data-root, $corpus, "/", $filename, ".xml")
 let $doc := xdb:document($file)
 let $cast := dutil:distinct-speakers($doc//tei:body)
 let $segments := $doc//tei:body//tei:div[tei:sp]

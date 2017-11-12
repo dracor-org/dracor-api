@@ -12,7 +12,7 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
  : @param $model a map containing arbitrary data - used to pass information between template calls
  :)
 declare function app:stats($node as node(), $model as map(*)) {
-  let $col := collection("/db/data/dracor/rus")
+  let $col := collection(concat($config:data-root, "/rus"))
   let $format := "#,###.##"
   let $num-docs := count($col/tei:TEI)
   let $num-persons := count($col//tei:listPerson/tei:person)

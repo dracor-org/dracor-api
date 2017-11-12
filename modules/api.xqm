@@ -14,8 +14,6 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace jsn="http://www.json.org";
 
-declare variable $api:base-collection := "/db/data/dracor";
-
 declare
   %rest:GET
   %rest:path("/dracor")
@@ -80,7 +78,7 @@ declare
 function api:index($corpus) {
   let $corpora := xdb:document("/db/apps/dracor/corpora.xml")
   let $title := $corpora//corpus[name=$corpus]/title/text()
-  let $collection := concat($api:base-collection, "/", $corpus)
+  let $collection := concat($config:data-root, "/", $corpus)
   return
   <index>
     {
@@ -114,8 +112,8 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:drama-info($corpus, $drama) {
-  let $collection := concat($api:base-collection, "/", $corpus)
-  let $file := concat($api:base-collection, "/", $corpus, "/", $drama, ".xml")
+  let $collection := concat($config:data-root, "/", $corpus)
+  let $file := concat($config:data-root, "/", $corpus, "/", $drama, ".xml")
   let $doc := xdb:document($file)
   let $tei := $doc//tei:TEI
   let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
@@ -166,7 +164,7 @@ declare
   %rest:path("/dracor/{$corpus}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
 function api:word-frequencies-xml($corpus, $elem) {
-  let $collection := concat($api:base-collection, "/", $corpus)
+  let $collection := concat($config:data-root, "/", $corpus)
   let $terms := local:get-index-keys($collection, $elem)
   return $terms
 };
@@ -178,7 +176,7 @@ declare
   %output:media-type("text/csv")
   %output:method("text")
 function api:word-frequencies-csv($corpus, $elem) {
-  let $collection := concat($api:base-collection, "/", $corpus)
+  let $collection := concat($config:data-root, "/", $corpus)
   let $terms := local:get-index-keys($collection, $elem)
   for $t in $terms/term
   order by number($t/@count) descending

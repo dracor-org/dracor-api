@@ -1,6 +1,8 @@
 xquery version "1.0";
 
 import module namespace xdb="http://exist-db.org/xquery/xmldb";
+import module namespace config="http://dracor.org/ns/exist/config"
+  at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)
 
@@ -29,7 +31,11 @@ declare function local:mkcol($collection, $path) {
 
 (: store the collection configuration :)
 local:mkcol("/db/system/config", $target),
-xdb:store-files-from-pattern(concat("/db/system/config", $target), $dir, "collection.xconf"),
-local:mkcol("/db", "/data/dracor"),
-local:mkcol("/db/system/config", "/db/data/dracor"),
-xdb:store-files-from-pattern(concat("/db/system/config", "/db/data/dracor"), $dir, "data.xconf")
+xdb:store-files-from-pattern(
+  concat("/db/system/config", $target), $dir, "collection.xconf"
+),
+xdb:create-collection("/", $config:data-root),
+local:mkcol("/db/system/config", $config:data-root),
+xdb:store-files-from-pattern(
+  concat("/db/system/config", $config:data-root), $dir, "data.xconf"
+)
