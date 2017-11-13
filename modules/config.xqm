@@ -37,6 +37,9 @@ declare variable $config:repo-descriptor :=
 declare variable $config:expath-descriptor :=
   doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
+declare variable $config:corpora :=
+  doc(concat($config:app-root, "/corpora.xml"));
+
 (:~
  : Resolve the given path using the current application context.
  : If the app resides in the file system,

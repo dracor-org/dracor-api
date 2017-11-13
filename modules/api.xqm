@@ -69,6 +69,53 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
   </terms>
 };
 
+declare function local:get-corpus-metrics ($corpus as xs:string) {
+  let $collection-uri := concat($config:data-root, "/", $corpus)
+  let $col := collection($collection-uri)
+  let $num-plays := count($col/tei:TEI)
+  let $num-characters := count($col//tei:listPerson/tei:person)
+  let $num-male := count($col//tei:listPerson/tei:person[@sex="MALE"])
+  let $num-female := count($col//tei:listPerson/tei:person[@sex="FEMALE"])
+  let $num-text := count($col//tei:text)
+  let $num-stage := count($col//tei:stage)
+  let $num-sp := count($col//tei:sp)
+  return
+  <metrics collection="{$collection-uri}">
+    <plays>{$num-plays}</plays>
+    <characters>{$num-characters}</characters>
+    <male>{$num-male}</male>
+    <female>{$num-female}</female>
+    <text>{$num-text}</text>
+    <sp>{$num-sp}</sp>
+    <stage>{$num-stage}</stage>
+  </metrics>
+};
+
+declare
+  %rest:GET
+  %rest:path("/dracor/metrics")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:metrics() {
+    let $expath := config:expath-descriptor()
+    let $repo := config:repo-descriptor()
+    return
+      <json>
+        {
+          for $corpus in $config:corpora//corpus
+          return
+          <metrics>
+            <corpus>{$corpus/title, $corpus/name}</corpus>
+            {
+              for $m in local:get-corpus-metrics($corpus/name/text())/*
+              return $m
+            }
+          </metrics>
+        }
+      </json>
+};
+
 declare
   %rest:GET
   %rest:path("/dracor/{$corpus}/index")
@@ -86,6 +133,7 @@ function api:index($corpus) {
       let $filename := tokenize(base-uri($tei), "/")[last()]
       let $id := tokenize($filename, "\.")[1]
       let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+      let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
       return
         <dramas json:array="true">
           <id>{$id}</id>
@@ -99,6 +147,9 @@ function api:index($corpus) {
           <source>
             {$tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()}
           </source>
+          <printYear>{$dates[@type="print"]/@when/string()}</printYear>
+          <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
+          <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
         </dramas>
     }
     <title>{$title}</title>
