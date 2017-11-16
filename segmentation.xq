@@ -13,7 +13,7 @@ declare variable $filename := request:get-parameter(
   "goethe-faust-der-tragoedie-zweiter-teil"
 );
 
-let $file := concat($config:data-root, $corpus, "/", $filename, ".xml")
+let $file := concat($config:data-root, "/", $corpus, "/", $filename, ".xml")
 let $doc := xdb:document($file)
 let $cast := dutil:distinct-speakers($doc//tei:body)
 let $segments := $doc//tei:body//tei:div[tei:sp]
