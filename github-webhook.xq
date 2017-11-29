@@ -139,7 +139,9 @@ declare function local:handle-file (
   )
   let $action := $file/@action
   return
-    if($action = 'remove') then
+    if($prefix and not(starts-with($path, $prefix))) then
+      <action type="skip" path="{$path}" />
+    else if ($action = 'remove') then
       <action type="remove" resource="{$db-resource}">
         {local:remove($db-resource)}
       </action>
