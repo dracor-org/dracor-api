@@ -172,6 +172,10 @@ return
     <response status="fail">
       <message>Invalid user agent, expecting GitHub-Hookshot.</message>
     </response>
+  else if (request:get-header('X-GitHub-Event') = 'ping') then
+    <response status="ok">
+      <message>Pong ;-)</message>
+    </response>
   else if (not(request:get-header('X-GitHub-Event') = 'push')) then
     <response status="fail">
       <message>Invalid GitHub Event, expecting push.</message>
