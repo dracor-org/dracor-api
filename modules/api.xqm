@@ -237,7 +237,7 @@ function api:word-frequencies-csv($corpus, $elem) {
 
 declare
     %rest:GET
-    %rest:path("/api/corpus/{$corpusname}/play/{$playname}/networkdata/csv")
+    %rest:path("/corpus/{$corpusname}/play/{$playname}/networkdata/csv")
     %rest:produces("text/csv", "text/plain")
     %output:media-type("text/csv")
     %output:method("text")
