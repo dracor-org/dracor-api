@@ -244,7 +244,7 @@ declare
 function api:networkdata-csv($corpusname, $playname) {
 let $doc := doc( $config:data-root || "/" || $corpusname || "/" || $playname || ".xml" )
 return
-if ($doc = ()) then error(QNAME("https://dracor.org", "API01"), "invalid id") else
+if ($doc = ()) then error(QName("https://dracor.org", "API01"), "invalid id") else
 let $idRefs := $doc//tei:text//@who/tokenize(., " ")[. != ""]
                 => distinct-values()
 let $links := map:new(
