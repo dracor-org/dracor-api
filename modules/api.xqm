@@ -233,3 +233,50 @@ function api:word-frequencies-csv($corpusname, $elem) {
   order by number($t/@count) descending
   return concat($t/@name, ", ", $t/@count, ", ", $t/@docs, "&#10;")
 };
+
+declare
+  %rest:GET
+  %rest:path("/corpus/{$corpusname}/play/{$playname}/networkdata/csv")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:networkdata-csv($corpusname, $playname) {
+  let $doc := doc(
+    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
+  )
+  return
+    if ($doc = ()) then
+      error(QName("https://dracor.org", "API01"), "invalid id")
+    else
+    let $idRefs := $doc//tei:text//@who/tokenize(., " ")[. != ""]
+      => distinct-values()
+    let $links := map:new(
+      for $idRef in $idRefs
+      let $corresp :=
+        $doc//tei:div[tei:sp[matches(@who, $idRef||"$|"||$idRef||" ")]]
+          /tei:sp/tokenize(@who, " ")[.!=""]
+      return
+        map:entry(
+          $idRef,
+          distinct-values(
+            $corresp
+          )[. != $idRef]
+        )
+    )
+    let $list :=
+      for $key at $pos in map:keys($links)
+        for $mapping in $links($key)
+        where index-of(map:keys($links), $mapping)[1] gt $pos
+          let $weight :=
+            $doc//tei:div
+              [tei:sp/tokenize(@who, " ")[.!=""] = $key]
+              [tei:sp/tokenize(@who, " ")[.!=""] = $mapping]
+            => count()
+          return
+              string-join( ($key, $mapping, $weight), ",")
+      return
+        string-join( (
+          "Source,Target,Weight",
+          $list), "&#10;" )
+        => replace("#", "")
+};
