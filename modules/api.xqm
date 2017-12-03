@@ -118,14 +118,14 @@ function api:metrics() {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpus}")
+  %rest:path("/corpus/{$corpusname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:index($corpus) {
+function api:index($corpusname) {
   let $corpora := xdb:document("/db/apps/dracor/corpora.xml")
-  let $title := $corpora//corpus[name=$corpus]/title/text()
-  let $collection := concat($config:data-root, "/", $corpus)
+  let $title := $corpora//corpus[name=$corpusname]/title/text()
+  let $collection := concat($config:data-root, "/", $corpusname)
   return
   <index>
     {
@@ -158,21 +158,21 @@ function api:index($corpus) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpus}/play/{$drama}")
+  %rest:path("/corpus/{$corpusname}/play/{$playname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:drama-info($corpus, $drama) {
-  let $collection := concat($config:data-root, "/", $corpus)
-  let $file := concat($config:data-root, "/", $corpus, "/", $drama, ".xml")
+function api:play-info($corpusname, $playname) {
+  let $collection := concat($config:data-root, "/", $corpusname)
+  let $file := concat($config:data-root, "/", $corpusname, "/", $playname, ".xml")
   let $doc := xdb:document($file)
   let $tei := $doc//tei:TEI
   let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
   let $cast := dutil:distinct-speakers($doc//tei:body)
   return
     <info>
-      <id>{$drama}</id>
-      <corpus>{$corpus}</corpus>
+      <id>{$playname}</id>
+      <corpus>{$corpusname}</corpus>
       <file>{$file}</file>
       <title>
         {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
@@ -212,22 +212,22 @@ function api:drama-info($corpus, $drama) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpus}/word-frequencies/{$elem}")
+  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
-function api:word-frequencies-xml($corpus, $elem) {
-  let $collection := concat($config:data-root, "/", $corpus)
+function api:word-frequencies-xml($corpusname, $elem) {
+  let $collection := concat($config:data-root, "/", $corpusname)
   let $terms := local:get-index-keys($collection, $elem)
   return $terms
 };
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpus}/word-frequencies/{$elem}")
+  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
-function api:word-frequencies-csv($corpus, $elem) {
-  let $collection := concat($config:data-root, "/", $corpus)
+function api:word-frequencies-csv($corpusname, $elem) {
+  let $collection := concat($config:data-root, "/", $corpusname)
   let $terms := local:get-index-keys($collection, $elem)
   for $t in $terms/term
   order by number($t/@count) descending
