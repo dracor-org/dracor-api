@@ -93,7 +93,7 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
 
 declare
   %rest:GET
-  %rest:path("/dracor/metrics")
+  %rest:path("/metrics")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -118,7 +118,7 @@ function api:metrics() {
 
 declare
   %rest:GET
-  %rest:path("/dracor/{$corpus}/index")
+  %rest:path("/corpus/{$corpus}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -158,7 +158,7 @@ function api:index($corpus) {
 
 declare
   %rest:GET
-  %rest:path("/dracor/{$corpus}/{$drama}/info")
+  %rest:path("/corpus/{$corpus}/play/{$drama}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -212,7 +212,7 @@ function api:drama-info($corpus, $drama) {
 
 declare
   %rest:GET
-  %rest:path("/dracor/{$corpus}/word-frequencies/{$elem}")
+  %rest:path("/corpus/{$corpus}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
 function api:word-frequencies-xml($corpus, $elem) {
   let $collection := concat($config:data-root, "/", $corpus)
@@ -222,7 +222,7 @@ function api:word-frequencies-xml($corpus, $elem) {
 
 declare
   %rest:GET
-  %rest:path("/dracor/{$corpus}/word-frequencies/{$elem}")
+  %rest:path("/corpus/{$corpus}/word-frequencies/{$elem}")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
