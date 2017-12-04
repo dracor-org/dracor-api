@@ -134,6 +134,8 @@ function api:index($corpusname) {
       let $id := tokenize($filename, "\.")[1]
       let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
       let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+      let $play-uri :=
+        $config:api-base || "/corpus/" || $corpusname || "/play/" || $id
       return
         <dramas json:array="true">
           <id>{$id}</id>
@@ -150,6 +152,7 @@ function api:index($corpusname) {
           <printYear>{$dates[@type="print"]/@when/string()}</printYear>
           <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
           <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
+          <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
         </dramas>
     }
     <title>{$title}</title>
