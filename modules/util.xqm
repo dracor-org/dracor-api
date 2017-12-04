@@ -12,6 +12,8 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
  : referenced in @who attributes of those ekements.
  :)
 declare function dutil:distinct-speakers ($parent as element()*) as item()* {
-    let $whos := for $w in $parent//tei:sp/@who return tokenize($w, '\s+')
+    let $whos :=
+      for $w in $parent//tei:sp/@who
+      return tokenize(normalize-space($w), '\s+')
     for $ref in distinct-values($whos) return substring($ref, 2)
 };
