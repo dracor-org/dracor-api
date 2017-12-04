@@ -1,7 +1,7 @@
 xquery version "3.0";
 
 (:~
- : Module proving function to load files from zip archives.
+ : Module providing function to load files from zip archives.
  :)
 module namespace load = "http://dracor.org/ns/exist/load";
 
