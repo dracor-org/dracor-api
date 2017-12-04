@@ -148,6 +148,12 @@ function api:index($corpusname) {
           <source>
             {$tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()}
           </source>
+          <sourceUrl>
+            {
+              $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+                /tei:idno[@type="URL"]/string()
+            }
+          </sourceUrl>
           <printYear>{$dates[@type="print"]/@when/string()}</printYear>
           <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
           <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
