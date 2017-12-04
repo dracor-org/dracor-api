@@ -123,8 +123,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:index($corpusname) {
-  let $corpora := xdb:document("/db/apps/dracor/corpora.xml")
-  let $title := $corpora//corpus[name=$corpusname]/title/text()
+  let $title := $config:corpora//corpus[name=$corpusname]/title/text()
   let $collection := concat($config:data-root, "/", $corpusname)
   return
   <index>
