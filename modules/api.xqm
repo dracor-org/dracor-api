@@ -288,3 +288,46 @@ function api:networkdata-csv($corpusname, $playname) {
           $list), "&#10;" )
         => replace("#", "")
 };
+
+declare
+  %rest:GET
+  %rest:path("/corpus/{$corpusname}/play/{$playname}/segmentation")
+  %rest:produces("application/xml", "text/xml")
+  %output:media-type("text/xml")
+function api:segmentation($corpusname, $playname) {
+  let $file := concat($config:data-root, "/", $corpusname, "/", $playname, ".xml")
+  let $doc := xdb:document($file)
+  let $status := if(not($doc)) then response:set-status-code(404) else ()
+  let $cast := dutil:distinct-speakers($doc//tei:body)
+  let $segments := $doc//tei:body//tei:div[tei:sp]
+
+  return
+  <result file="{$file}">
+    {
+      if(not($doc)) then
+        <error>no such file</error>
+      else (
+        <cast>
+          {
+            for $id in $cast
+            let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
+            return <member id="{$id}">{$name}</member>
+          }
+        </cast>,
+        <segments count="{count($segments)}">
+          {
+            for $seg at $pos in $segments
+            let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
+            return
+            <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
+              {
+                for $id in dutil:distinct-speakers($seg)
+                return <spkr>{$id}</spkr>
+              }
+            </sgm>
+          }
+        </segments>
+      )
+    }
+  </result>
+};
