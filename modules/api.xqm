@@ -282,9 +282,9 @@ function api:networkdata-csv($corpusname, $playname) {
           for $cooc in $links($spkr)
           where index-of($cast, $cooc)[1] gt $pos
           let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
-          return string-join(($spkr, $cooc, $weight), ",")
+          return string-join(($spkr, 'Undirected',$cooc, $weight), ",")
 
-      return string-join(("Source,Target,Weight", $rows), "&#10;")
+      return string-join(("Source,Type,Target,Weight", $rows), "&#10;")
 };
 
 declare
