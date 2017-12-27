@@ -2,7 +2,6 @@ xquery version "3.1";
 
 module namespace api = "http://dracor.org/ns/exist/api";
 
-import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 
@@ -196,51 +195,56 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:play-info($corpusname, $playname) {
-  let $collection := concat($config:data-root, "/", $corpusname)
-  let $file := concat($config:data-root, "/", $corpusname, "/", $playname, ".xml")
-  let $doc := xdb:document($file)
-  let $tei := $doc//tei:TEI
-  let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
-  let $cast := dutil:distinct-speakers($doc//tei:body)
+  let $doc := doc(
+    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
+  )
   return
-    <info>
-      <id>{$playname}</id>
-      <corpus>{$corpusname}</corpus>
-      <file>{$file}</file>
-      <title>
-        {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
-      </title>
-      {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-      <author key="{$tei//tei:titleStmt/tei:author/@key}">
-        <name>{$tei//tei:titleStmt/tei:author/string()}</name>
-      </author>
-      {
-        for $id in $cast
-        let $name := $doc//tei:particDesc//(
-          tei:person[@xml:id=$id]/tei:persName[1] |
-          tei:persName[@xml:id=$id]
-        )/text()
-        return
-        <persons  json:array="true">
-          <id>{$id}</id>
-          {if($name) then <name>{$name}</name> else ()}
-        </persons>
-      }
-      {
-        for $segment in $tei//tei:div[tei:sp]
-        let $heads := $segment/(ancestor::tei:div/tei:head|tei:head)
-        return
-        <segments json:array="true">
-          <type>{$segment/@type/string()}</type>
-          {if ($heads) then <title>{string-join($heads, ' | ')}</title> else ()}
-          {
-            for $sp in dutil:distinct-speakers($segment)
-            return
-            <speakers json:array="true">{$sp}</speakers>
-          }
-        </segments>
-      }
-    </info>
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $tei := $doc//tei:TEI
+      let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+      let $cast := dutil:distinct-speakers($doc//tei:body)
+      return
+      <info>
+        <id>{$playname}</id>
+        <corpus>{$corpusname}</corpus>
+        <title>
+          {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
+        </title>
+        {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
+        <author key="{$tei//tei:titleStmt/tei:author/@key}">
+          <name>{$tei//tei:titleStmt/tei:author/string()}</name>
+        </author>
+        {
+          for $id in $cast
+          let $name := $doc//tei:particDesc//(
+            tei:person[@xml:id=$id]/tei:persName[1] |
+            tei:persName[@xml:id=$id]
+          )/text()
+          return
+          <persons  json:array="true">
+            <id>{$id}</id>
+            {if($name) then <name>{$name}</name> else ()}
+          </persons>
+        }
+        {
+          for $segment in $tei//tei:div[tei:sp]
+          let $heads := $segment/(ancestor::tei:div/tei:head|tei:head)
+          return
+          <segments json:array="true">
+            <type>{$segment/@type/string()}</type>
+            {if ($heads) then <title>{string-join($heads, ' | ')}</title> else ()}
+            {
+              for $sp in dutil:distinct-speakers($segment)
+              return
+              <speakers json:array="true">{$sp}</speakers>
+            }
+          </segments>
+        }
+      </info>
 };
 
 declare
@@ -296,39 +300,44 @@ declare
   %rest:produces("application/xml", "text/xml")
   %output:media-type("text/xml")
 function api:segmentation($corpusname, $playname) {
-  let $file := concat($config:data-root, "/", $corpusname, "/", $playname, ".xml")
-  let $doc := xdb:document($file)
-  let $status := if(not($doc)) then response:set-status-code(404) else ()
-  let $cast := dutil:distinct-speakers($doc//tei:body)
-  let $segments := $doc//tei:body//tei:div[tei:sp]
-
+  let $doc := doc(
+    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
+  )
   return
-  <result file="{$file}">
-    {
-      if(not($doc)) then
-        <error>no such file</error>
-      else (
-        <cast>
-          {
-            for $id in $cast
-            let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
-            return <member id="{$id}">{$name}</member>
-          }
-        </cast>,
-        <segments count="{count($segments)}">
-          {
-            for $seg at $pos in $segments
-            let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
-            return
-            <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $cast := dutil:distinct-speakers($doc//tei:body)
+      let $segments := $doc//tei:body//tei:div[tei:sp]
+      return
+      <result>
+        {
+          if(not($doc)) then
+            <error>no such file</error>
+          else (
+            <cast>
               {
-                for $id in dutil:distinct-speakers($seg)
-                return <spkr>{$id}</spkr>
+                for $id in $cast
+                let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
+                return <member id="{$id}">{$name}</member>
               }
-            </sgm>
-          }
-        </segments>
-      )
-    }
-  </result>
+            </cast>,
+            <segments count="{count($segments)}">
+              {
+                for $seg at $pos in $segments
+                let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
+                return
+                <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
+                  {
+                    for $id in dutil:distinct-speakers($seg)
+                    return <spkr>{$id}</spkr>
+                  }
+                </sgm>
+              }
+            </segments>
+          )
+        }
+      </result>
 };
