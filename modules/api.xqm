@@ -207,29 +207,9 @@ function api:play-info($corpusname, $playname) {
       let $tei := $doc//tei:TEI
       let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
       let $cast := dutil:distinct-speakers($doc//tei:body)
-      return
-      <info>
-        <id>{$playname}</id>
-        <corpus>{$corpusname}</corpus>
-        <title>
-          {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
-        </title>
-        {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-        <author key="{$tei//tei:titleStmt/tei:author/@key}">
-          <name>{$tei//tei:titleStmt/tei:author/string()}</name>
-        </author>
-        {
-          for $id in $cast
-          let $name := $doc//tei:particDesc//(
-            tei:person[@xml:id=$id]/tei:persName[1] |
-            tei:persName[@xml:id=$id]
-          )/text()
-          return
-          <persons  json:array="true">
-            <id>{$id}</id>
-            {if($name) then <name>{$name}</name> else ()}
-          </persons>
-        }
+      let $lastone := $cast[last()]
+      let $segments :=
+        <root>
         {
           for $segment in $tei//tei:div[tei:sp]
           let $heads := $segment/(ancestor::tei:div/tei:head|tei:head)
@@ -242,8 +222,41 @@ function api:play-info($corpusname, $playname) {
               return
               <speakers json:array="true">{$sp}</speakers>
             }
-          </segments>
+          </segments>}
+        </root>
+
+      (: number of segment where last character appears :)
+      let $all-in-segment := count(
+        $segments//segments[speakers=$lastone][1]/preceding-sibling::segments
+      ) + 1
+      let $all-in-index := $all-in-segment div count($segments//segments)
+
+      return
+      <info>
+        <id>{$playname}</id>
+        <corpus>{$corpusname}</corpus>
+        <title>
+          {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
+        </title>
+        {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
+        <author key="{$tei//tei:titleStmt/tei:author/@key}">
+          <name>{$tei//tei:titleStmt/tei:author/string()}</name>
+        </author>
+        <allInSegment>{$all-in-segment}</allInSegment>
+        <allInIndex>{$all-in-index}</allInIndex>
+        {
+          for $id in $cast
+          let $name := $doc//tei:particDesc//(
+            tei:person[@xml:id=$id]/tei:persName[1] |
+            tei:persName[@xml:id=$id]
+          )/text()
+          return
+          <persons  json:array="true">
+            <id>{$id}</id>
+            {if($name) then <name>{$name}</name> else ()}
+          </persons>
         }
+        {$segments//segments}
       </info>
 };
 
@@ -310,19 +323,12 @@ function api:segmentation($corpusname, $playname) {
       </rest:response>
     else
       let $cast := dutil:distinct-speakers($doc//tei:body)
-      let $segments := $doc//tei:body//tei:div[tei:sp]
-      return
-      <segmentation>
-        <cast>
+      let $lastone := $cast[last()]
+      let $divs := $doc//tei:body//tei:div[tei:sp]
+      let $segments :=
+        <segments count="{count($divs)}">
           {
-            for $id in $cast
-            let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
-            return <member id="{$id}">{$name}</member>
-          }
-        </cast>
-        <segments count="{count($segments)}">
-          {
-            for $seg at $pos in $segments
+            for $seg at $pos in $divs
             let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
             return
             <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
@@ -333,5 +339,22 @@ function api:segmentation($corpusname, $playname) {
             </sgm>
           }
         </segments>
+
+      let $all-in-segment :=
+        count($segments//sgm[spkr=$lastone][1]/preceding-sibling::sgm) + 1
+      let $all-in-index := $all-in-segment div count($divs)
+
+      return
+      <segmentation
+        all-in-index="{$all-in-index}"
+        all-in-segment="{$all-in-segment}">
+        <cast>
+          {
+            for $id in $cast
+            let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
+            return <member id="{$id}">{$name}</member>
+          }
+        </cast>
+        {$segments}
       </segmentation>
 };
