@@ -8,8 +8,8 @@ module namespace dutil = "http://dracor.org/ns/exist/util";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 (:~
- : Retrieve the speaker children of a given element return the distinct IDs
- : referenced in @who attributes of those ekements.
+ : Retrieve the speaker children of a given element and return the distinct IDs
+ : referenced in @who attributes of those elements.
  :)
 declare function dutil:distinct-speakers ($parent as element()*) as item()* {
     let $whos :=
