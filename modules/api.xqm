@@ -7,6 +7,7 @@ import module namespace config = "http://dracor.org/ns/exist/config" at "config.
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
+declare namespace http = "http://expath.org/ns/http-client";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace repo = "http://exist-db.org/xquery/repo";
 declare namespace expath = "http://expath.org/ns/pkg";
@@ -253,8 +254,10 @@ function api:networkdata-csv($corpusname, $playname) {
     $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
   )
   return
-    if ($doc = ()) then
-      error(QName("https://dracor.org", "API01"), "invalid id")
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
     else
       let $cast := dutil:distinct-speakers($doc//tei:body)
       let $segments :=
