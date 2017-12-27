@@ -166,6 +166,30 @@ function api:index($corpusname) {
 
 declare
   %rest:GET
+  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
+  %rest:produces("application/xml", "text/xml")
+function api:word-frequencies-xml($corpusname, $elem) {
+  let $collection := concat($config:data-root, "/", $corpusname)
+  let $terms := local:get-index-keys($collection, $elem)
+  return $terms
+};
+
+declare
+  %rest:GET
+  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:word-frequencies-csv($corpusname, $elem) {
+  let $collection := concat($config:data-root, "/", $corpusname)
+  let $terms := local:get-index-keys($collection, $elem)
+  for $t in $terms/term
+  order by number($t/@count) descending
+  return concat($t/@name, ", ", $t/@count, ", ", $t/@docs, "&#10;")
+};
+
+declare
+  %rest:GET
   %rest:path("/corpus/{$corpusname}/play/{$playname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -216,30 +240,6 @@ function api:play-info($corpusname, $playname) {
         </segments>
       }
     </info>
-};
-
-declare
-  %rest:GET
-  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
-  %rest:produces("application/xml", "text/xml")
-function api:word-frequencies-xml($corpusname, $elem) {
-  let $collection := concat($config:data-root, "/", $corpusname)
-  let $terms := local:get-index-keys($collection, $elem)
-  return $terms
-};
-
-declare
-  %rest:GET
-  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
-  %rest:produces("text/csv", "text/plain")
-  %output:media-type("text/csv")
-  %output:method("text")
-function api:word-frequencies-csv($corpusname, $elem) {
-  let $collection := concat($config:data-root, "/", $corpusname)
-  let $terms := local:get-index-keys($collection, $elem)
-  for $t in $terms/term
-  order by number($t/@count) descending
-  return concat($t/@name, ", ", $t/@count, ", ", $t/@docs, "&#10;")
 };
 
 declare
