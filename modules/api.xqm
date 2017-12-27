@@ -256,37 +256,35 @@ function api:networkdata-csv($corpusname, $playname) {
     if ($doc = ()) then
       error(QName("https://dracor.org", "API01"), "invalid id")
     else
-    let $idRefs := $doc//tei:text//@who/tokenize(., " ")[. != ""]
-      => distinct-values()
-    let $links := map:new(
-      for $idRef in $idRefs
-      let $corresp :=
-        $doc//tei:div[tei:sp[matches(@who, $idRef||"$|"||$idRef||" ")]]
-          /tei:sp/tokenize(@who, " ")[.!=""]
-      return
-        map:entry(
-          $idRef,
-          distinct-values(
-            $corresp
-          )[. != $idRef]
-        )
-    )
-    let $list :=
-      for $key at $pos in map:keys($links)
-        for $mapping in $links($key)
-        where index-of(map:keys($links), $mapping)[1] gt $pos
-          let $weight :=
-            $doc//tei:div
-              [tei:sp/tokenize(@who, " ")[.!=""] = $key]
-              [tei:sp/tokenize(@who, " ")[.!=""] = $mapping]
-            => count()
-          return
-              string-join( ($key, $mapping, $weight), ",")
-      return
-        string-join( (
-          "Source,Target,Weight",
-          $list), "&#10;" )
-        => replace("#", "")
+      let $cast := dutil:distinct-speakers($doc//tei:body)
+      let $segments :=
+        <segments>
+          {
+            for $seg in $doc//tei:body//tei:div[tei:sp]
+            return
+              <sgm>
+                {
+                  for $id in dutil:distinct-speakers($seg)
+                  return <spkr>{$id}</spkr>
+                }
+              </sgm>
+          }
+        </segments>
+
+      let $links := map:new(
+        for $spkr in $cast
+        let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
+        return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
+      )
+
+      let $rows :=
+        for $spkr at $pos in $cast
+          for $cooc in $links($spkr)
+          where index-of($cast, $cooc)[1] gt $pos
+          let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
+          return string-join(($spkr, $cooc, $weight), ",")
+
+      return string-join(("Source,Target,Weight", $rows), "&#10;")
 };
 
 declare
