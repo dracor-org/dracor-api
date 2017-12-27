@@ -312,32 +312,26 @@ function api:segmentation($corpusname, $playname) {
       let $cast := dutil:distinct-speakers($doc//tei:body)
       let $segments := $doc//tei:body//tei:div[tei:sp]
       return
-      <result>
-        {
-          if(not($doc)) then
-            <error>no such file</error>
-          else (
-            <cast>
+      <segmentation>
+        <cast>
+          {
+            for $id in $cast
+            let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
+            return <member id="{$id}">{$name}</member>
+          }
+        </cast>
+        <segments count="{count($segments)}">
+          {
+            for $seg at $pos in $segments
+            let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
+            return
+            <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
               {
-                for $id in $cast
-                let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
-                return <member id="{$id}">{$name}</member>
+                for $id in dutil:distinct-speakers($seg)
+                return <spkr>{$id}</spkr>
               }
-            </cast>,
-            <segments count="{count($segments)}">
-              {
-                for $seg at $pos in $segments
-                let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
-                return
-                <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
-                  {
-                    for $id in dutil:distinct-speakers($seg)
-                    return <spkr>{$id}</spkr>
-                  }
-                </sgm>
-              }
-            </segments>
-          )
-        }
-      </result>
+            </sgm>
+          }
+        </segments>
+      </segmentation>
 };
