@@ -211,7 +211,7 @@ function api:play-info($corpusname, $playname) {
       let $segments :=
         <root>
         {
-          for $segment in $tei//tei:div[tei:sp]
+          for $segment in $tei//tei:div[tei:sp or @type="scene"]
           let $heads := $segment/(ancestor::tei:div/tei:head|tei:head)
           return
           <segments json:array="true">
@@ -324,7 +324,7 @@ function api:segmentation($corpusname, $playname) {
     else
       let $cast := dutil:distinct-speakers($doc//tei:body)
       let $lastone := $cast[last()]
-      let $divs := $doc//tei:body//tei:div[tei:sp]
+      let $divs := $doc//tei:body//tei:div[tei:sp or @type="scene"]
       let $segments :=
         <segments count="{count($divs)}">
           {
