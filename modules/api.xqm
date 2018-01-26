@@ -251,10 +251,10 @@ function api:play-info($corpusname, $playname) {
             tei:persName[@xml:id=$id]
           )/text()
           return
-          <persons  json:array="true">
+          <cast json:array="true">
             <id>{$id}</id>
             {if($name) then <name>{$name}</name> else ()}
-          </persons>
+          </cast>
         }
         {$segments//segments}
       </info>
