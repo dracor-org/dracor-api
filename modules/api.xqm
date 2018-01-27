@@ -142,9 +142,17 @@ function api:index($corpusname) {
             {$tei//tei:titleStmt/tei:title[1]/normalize-space() }
           </title>
           {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
+          (: the single author property is deprecated :)
           <author key="{$tei//tei:titleStmt/tei:author/@key}">
             <name>{$tei//tei:titleStmt/tei:author/string()}</name>
           </author>
+          {
+            for $author in $tei//tei:titleStmt/tei:author
+            return
+              <authors key="{$author/@key}" json:array="true">
+                <name>{$author/string()}</name>
+              </authors>
+          }
           <source>
             {$tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()}
           </source>
@@ -239,9 +247,17 @@ function api:play-info($corpusname, $playname) {
           {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
         </title>
         {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
+        (: the single author property is deprecated :)
         <author key="{$tei//tei:titleStmt/tei:author/@key}">
           <name>{$tei//tei:titleStmt/tei:author/string()}</name>
         </author>
+        {
+          for $author in $tei//tei:titleStmt/tei:author
+          return
+            <authors key="{$author/@key}" json:array="true">
+              <name>{$author/string()}</name>
+            </authors>
+        }
         <allInSegment>{$all-in-segment}</allInSegment>
         <allInIndex>{$all-in-index}</allInIndex>
         {
