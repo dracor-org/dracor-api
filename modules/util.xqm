@@ -17,3 +17,14 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
       return tokenize(normalize-space($w), '\s+')
     for $ref in distinct-values($whos) return substring($ref, 2)
 };
+
+(:~
+ : Retrieve `div` elements considered a segment. These are usually `div`s
+ : containing `sp` elements. However, also included are 'empty' scenes with no
+ : speakers, e.g. those consisting only of stage directions.
+ :
+ : @param $tei The TEI root element of a play
+ :)
+declare function dutil:get-segments ($tei as element()*) as element()* {
+  $tei//tei:body//tei:div[tei:sp or (@type="scene" and not(.//tei:sp))]
+};
