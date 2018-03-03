@@ -278,6 +278,30 @@ function api:play-info($corpusname, $playname) {
 
 declare
   %rest:GET
+  %rest:path("/corpus/{$corpusname}/play/{$playname}/tei")
+  %rest:produces("application/xml", "text/xml")
+  %output:media-type("application/xml")
+function api:play-tei($corpusname, $playname) {
+  let $doc := doc(
+    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
+  )
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $tei := $doc//tei:TEI
+      let $target := 'xml-stylesheet'
+      let $content := 'type="text/css" href="https://dracor.org/tei.css"'
+      return document {
+        processing-instruction {$target} {$content},
+        $tei
+      }
+};
+
+declare
+  %rest:GET
   %rest:path("/corpus/{$corpusname}/play/{$playname}/networkdata/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
