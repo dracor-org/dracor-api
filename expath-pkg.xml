@@ -2,7 +2,7 @@
 <package xmlns="http://expath.org/ns/pkg"
   name="http://dracor.org/ns/exist"
   abbrev="dracor"
-  version="0.11.1"
+  version="0.12.0"
   spec="1.0">
   <title>DraCor</title>
   <dependency package="http://exist-db.org/apps/shared"/>
