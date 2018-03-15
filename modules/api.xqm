@@ -133,8 +133,10 @@ function api:index($corpusname) {
       let $id := tokenize($filename, "\.")[1]
       let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
       let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+      let $authors := $tei//tei:titleStmt/tei:author
       let $play-uri :=
         $config:api-base || "/corpus/" || $corpusname || "/play/" || $id
+      order by $authors[1]
       return
         <dramas json:array="true">
           <id>{$id}</id>
@@ -142,12 +144,11 @@ function api:index($corpusname) {
             {$tei//tei:titleStmt/tei:title[1]/normalize-space() }
           </title>
           {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-          (: the single author property is deprecated :)
           <author key="{$tei//tei:titleStmt/tei:author/@key}">
-            <name>{$tei//tei:titleStmt/tei:author/string()}</name>
+            <name>{$authors/string()}</name>
           </author>
           {
-            for $author in $tei//tei:titleStmt/tei:author
+            for $author in $authors
             return
               <authors key="{$author/@key}" json:array="true">
                 <name>{$author/string()}</name>
