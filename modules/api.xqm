@@ -248,10 +248,13 @@ function api:play-info($corpusname, $playname) {
           {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
         </title>
         {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-        (: the single author property is deprecated :)
         <author key="{$tei//tei:titleStmt/tei:author/@key}">
           <name>{$tei//tei:titleStmt/tei:author/string()}</name>
         </author>
+        <_deprecationWarning>{normalize-space(
+          "The single author property is deprecated. Use the array of 'authors'
+          instead!")}
+        </_deprecationWarning>
         {
           for $author in $tei//tei:titleStmt/tei:author
           return
