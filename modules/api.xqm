@@ -268,12 +268,16 @@ function api:play-info($corpusname, $playname) {
           for $id in $cast
           let $name := $doc//tei:particDesc//(
             tei:person[@xml:id=$id]/tei:persName[1] |
+            tei:personGrp[@xml:id=$id]/tei:name[1] |
             tei:persName[@xml:id=$id]
           )/text()
+          let $isGroup := if ($doc//tei:particDesc//tei:personGrp[@xml:id=$id])
+            then true() else false()
           return
           <cast json:array="true">
             <id>{$id}</id>
             {if($name) then <name>{$name}</name> else ()}
+            {if($isGroup) then <isGroup>true</isGroup> else ()}
           </cast>
         }
         {$segments//segments}
@@ -395,7 +399,11 @@ function api:segmentation($corpusname, $playname) {
         <cast>
           {
             for $id in $cast
-            let $name := $doc//tei:particDesc//(tei:person[@xml:id=$id]/tei:persName[1]|tei:persName[@xml:id=$id])/text()
+            let $name := $doc//tei:particDesc//(
+              tei:person[@xml:id=$id]/tei:persName[1] |
+              tei:personGrp[@xml:id=$id]/tei:name[1] |
+              tei:persName[@xml:id=$id]
+            )/text()
             return <member id="{$id}">{$name}</member>
           }
         </cast>
