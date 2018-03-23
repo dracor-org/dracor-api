@@ -35,6 +35,24 @@ declare function local:entry-filter(
 };
 
 (:~
+ : Load corpus from ZIP archive
+ :
+ : @param $name The name of the corpus
+:)
+declare function load:load-corpus($name as xs:string) {
+  let $corpus := $config:corpora//corpus[name = $name]
+  return if ($corpus) then
+    <loaded>
+    {
+      for $doc in load:load-archive($corpus/name, $corpus/archive)
+      return <doc>{$doc}</doc>
+    }
+    </loaded>
+  else
+    ()
+};
+
+(:~
  : Load XML files from ZIP archive
  :
  : @param $name The name of the sub collection to create

@@ -4,6 +4,7 @@ module namespace api = "http://dracor.org/ns/exist/api";
 
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
+import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -171,6 +172,28 @@ function api:index($corpusname) {
     }
     <title>{$title}</title>
   </index>
+};
+
+declare
+  %rest:GET
+  %rest:path("/corpus/{$corpusname}/load")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:load-corpus($corpusname) {
+  let $loaded := load:load-corpus($corpusname)
+  return
+    if (not($loaded)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      <object>
+        {
+          for $doc in $loaded/doc
+          return <loaded>{$doc/text()}</loaded>
+        }
+      </object>
 };
 
 declare
