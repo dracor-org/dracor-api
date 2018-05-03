@@ -15,6 +15,19 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace jsn="http://www.json.org";
 
+
+declare function local:get-info () {
+  let $expath := config:expath-descriptor()
+  let $repo := config:repo-descriptor()
+  return
+    <info>
+      <name>{$expath/expath:title/string()}</name>
+      <version>{$expath/@version/string()}</version>
+      <status>{$repo/repo:status/string()}</status>
+      <existdb>{system:get-version()}</existdb>
+    </info>
+};
+
 declare
   %rest:GET
   %rest:path("/dracor")
@@ -22,14 +35,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:darcor() {
-    let $expath := config:expath-descriptor()
-    let $repo := config:repo-descriptor()
-    return
-      <info>
-        <name>{$expath/expath:title/string()}</name>
-        <version>{$expath/@version/string()}</version>
-        <status>{$repo/repo:status/string()}</status>
-      </info>
+  local:get-info()
 };
 
 declare
@@ -37,14 +43,7 @@ declare
   %rest:path("/info.xml")
   %rest:produces("application/xml")
 function api:info-xml() {
-    let $expath := config:expath-descriptor()
-    let $repo := config:repo-descriptor()
-    return
-      <info>
-        <name>{$expath/expath:title/string()}</name>
-        <version>{$expath/@version/string()}</version>
-        <status>{$repo/repo:status/string()}</status>
-      </info>
+  local:get-info()
 };
 
 declare
