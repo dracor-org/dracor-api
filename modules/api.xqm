@@ -30,7 +30,7 @@ declare function local:get-info () {
 
 declare
   %rest:GET
-  %rest:path("/dracor")
+  %rest:path("/info")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
