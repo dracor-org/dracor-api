@@ -175,6 +175,19 @@ function api:index($corpusname) {
 
 declare
   %rest:GET
+  %rest:path("/corpus/{$corpusname}/metadata.csv")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:corpus-meta-data($corpusname) {
+  let $meta := dutil:corpus-meta-data($corpusname)
+  let $header := concat(string-join($meta[1]/*/name(), ','), "&#10;")
+  let $data := for $row in $meta return concat(string-join($row/*/string(), ','), "&#10;")
+  return ($header, $data)
+};
+
+declare
+  %rest:GET
   %rest:path("/corpus/{$corpusname}/load")
   %rest:produces("application/json")
   %output:media-type("application/json")
