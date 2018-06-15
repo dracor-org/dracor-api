@@ -39,6 +39,8 @@ declare variable $config:api-base := "https://dracor.org/api";
 
 declare variable $config:data-root := "/db/data/dracor";
 
+declare variable $config:stats-root := "/db/stats/dracor";
+
 declare variable $config:repo-descriptor :=
   doc(concat($config:app-root, "/repo.xml"))/repo:meta;
 
