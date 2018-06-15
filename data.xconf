@@ -10,4 +10,9 @@
       <text qname="tei:stage"/>
     </lucene>
   </index>
+  <triggers>
+    <trigger class="org.exist.collections.triggers.XQueryTrigger">
+      <parameter name="url" value="xmldb:exist:///db/apps/dracor/modules/stats.xqm"/>
+     </trigger>
+  </triggers>
 </collection>

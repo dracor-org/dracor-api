@@ -72,6 +72,8 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
 declare function local:get-corpus-metrics ($corpus as xs:string) {
   let $collection-uri := concat($config:data-root, "/", $corpus)
   let $col := collection($collection-uri)
+  let $stats-uri := concat($config:stats-root, "/", $corpus)
+  let $stats := collection($stats-uri)
   let $num-plays := count($col/tei:TEI)
   let $num-characters := count($col//tei:listPerson/tei:person)
   let $num-male := count($col//tei:listPerson/tei:person[@sex="MALE"])
@@ -88,6 +90,11 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
     <text>{$num-text}</text>
     <sp>{$num-sp}</sp>
     <stage>{$num-stage}</stage>
+    <wordcount>
+      <text>{sum($stats//text)}</text>
+      <sp>{sum($stats//sp)}</sp>
+      <stage>{sum($stats//stage)}</stage>
+    </wordcount>
   </metrics>
 };
 
