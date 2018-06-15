@@ -6,8 +6,10 @@ xquery version "3.0";
 module namespace stats = "http://dracor.org/ns/exist/stats";
 
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
+import module namespace util = "http://exist-db.org/xquery/util";
 import module namespace config="http://dracor.org/ns/exist/config" at "config.xqm";
 
+declare namespace trigger = "http://exist-db.org/xquery/trigger";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 (:~
@@ -40,6 +42,14 @@ declare function stats:update($url as xs:string) {
   let $collection := replace($stats-url, '/[^/]+$', '')
 
   let $c := xdb:create-collection('/', $collection)
+  let $log := util:log('info', ('Stats update: ', $stats-url))
 
   return xdb:store($collection, $filename, $stats)
+};
+
+declare function trigger:after-create-document($url as xs:anyURI) {
+  stats:update($url)
+};
+declare function trigger:after-update-document($url as xs:anyURI) {
+  stats:update($url)
 };
