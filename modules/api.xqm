@@ -95,6 +95,7 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
       <sp>{sum($stats//sp)}</sp>
       <stage>{sum($stats//stage)}</stage>
     </wordcount>
+    <updated>{max($stats//stats/xs:dateTime(@updated))}</updated>
   </metrics>
 };
 
