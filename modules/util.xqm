@@ -72,6 +72,13 @@ declare function dutil:get-normalized-year ($tei as element()*) as item()* {
  : @param $corpusname
  :)
 declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
+  let $stats-collection := concat($config:stats-root, "/", $corpusname)
+  let $stats := for $s in collection($stats-collection)//stats
+    let $uri := base-uri($s)
+    let $fname := tokenize($uri, "/")[last()]
+    let $name := tokenize($fname, "\.")[1]
+    return <stats name="{$name}">{$s/*}</stats>
+
   let $collection := concat($config:data-root, "/", $corpusname)
   for $tei in collection($collection)//tei:TEI
   let $filename := tokenize(base-uri($tei), "/")[last()]
@@ -80,6 +87,8 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
   let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
     /@subtype/string()
   let $num-speakers := count(dutil:distinct-speakers($tei))
+  let $stat := $stats[@name=$name]
+  let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
   order by $filename
   return
     <play>
@@ -92,6 +101,15 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
       <yearWritten>{$dates[@type="written"]/@when/string()}</yearWritten>
       <yearPremiered>{$dates[@type="premiere"]/@when/string()}</yearPremiered>
       <yearPrinted>{$dates[@type="print"]/@when/string()}</yearPrinted>
+      {$stat/network/*[not(name() = "maxDegreeIds")]}
+      <maxDegreeIds>
+        {
+          if(count($max-degree-ids) < 4) then
+            string-join($max-degree-ids, "|")
+          else
+            '"several characters"'
+        }
+      </maxDegreeIds>
     </play>
 };
 
