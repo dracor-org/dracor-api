@@ -1,4 +1,4 @@
-xquery version "3.0";
+xquery version "3.1";
 
 (:~
  : Module for calculating and updating corpus stats.
@@ -7,13 +7,53 @@ module namespace stats = "http://dracor.org/ns/exist/stats";
 
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace util = "http://exist-db.org/xquery/util";
-import module namespace config="http://dracor.org/ns/exist/config" at "config.xqm";
+import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 
 declare namespace trigger = "http://exist-db.org/xquery/trigger";
+declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 declare function local:get-stats-url($url as xs:string) as xs:string {
   replace($url, $config:data-root, $config:stats-root)
+};
+
+(:~
+ : Calculate network metrics for single play
+ :
+ : @param $url URL of the TEI document
+:)
+declare function stats:get-network-metrics($url as xs:string) {
+  let $parts := tokenize($url, '/')
+  let $playname := tokenize($parts[last()], '\.')[1]
+  let $corpusname := $parts[last() - 1]
+
+  let $info := dutil:play-info($corpusname, $playname)
+  let $payload := serialize(
+    $info,
+    <output:serialization-parameters>
+      <output:method>json</output:method>
+    </output:serialization-parameters>
+  )
+
+  let $response := httpclient:post(
+    $config:metrics-server,
+    $payload,
+    false(),
+    <headers>
+      <header name="Content-Type" value="application/json"/>
+    </headers>
+  )
+  let $json := util:base64-decode(
+    $response//httpclient:body[@type="binary"]
+    [@encoding="Base64Encoded"]/string(.)
+  )
+  let $metrics := parse-json($json)
+
+  return
+    <network>
+      {for $k in map:keys($metrics) return element {$k} {$metrics($k)}}
+    </network>
 };
 
 (:~
@@ -31,6 +71,7 @@ declare function stats:calculate($url as xs:string) {
     <text>{$text-count}</text>
     <stage>{$stage-count}</stage>
     <sp>{$sp-count}</sp>
+    {stats:get-network-metrics($url)}
   </stats>
 };
 

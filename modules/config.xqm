@@ -50,6 +50,9 @@ declare variable $config:expath-descriptor :=
 declare variable $config:corpora :=
   doc(concat($config:app-root, "/corpora.xml"));
 
+declare variable $config:metrics-server :=
+  xs:anyURI("http://localhost:8030/metrics/");
+
 (:~
  : Resolve the given path using the current application context.
  : If the app resides in the file system,
