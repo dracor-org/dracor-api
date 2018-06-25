@@ -247,84 +247,14 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:play-info($corpusname, $playname) {
-  let $doc := doc(
-    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
-  )
+  let $info := dutil:play-info($corpusname, $playname)
   return
-    if (not($doc)) then
+    if ($info) then
+      $info
+    else
       <rest:response>
         <http:response status="404"/>
       </rest:response>
-    else
-      let $tei := $doc//tei:TEI
-      let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
-      let $cast := dutil:distinct-speakers($doc//tei:body)
-      let $lastone := $cast[last()]
-      let $segments :=
-        <root>
-        {
-          for $segment in dutil:get-segments($tei)
-          let $heads := $segment/(ancestor::tei:div/tei:head|tei:head)
-          return
-          <segments json:array="true">
-            <type>{$segment/@type/string()}</type>
-            {if ($heads) then <title>{string-join($heads, ' | ')}</title> else ()}
-            {
-              for $sp in dutil:distinct-speakers($segment)
-              return
-              <speakers json:array="true">{$sp}</speakers>
-            }
-          </segments>}
-        </root>
-
-      (: number of segment where last character appears :)
-      let $all-in-segment := count(
-        $segments//segments[speakers=$lastone][1]/preceding-sibling::segments
-      ) + 1
-      let $all-in-index := $all-in-segment div count($segments//segments)
-
-      return
-      <info>
-        <id>{$playname}</id>
-        <corpus>{$corpusname}</corpus>
-        <title>
-          {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
-        </title>
-        {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-        <author key="{$tei//tei:titleStmt/tei:author/@key}">
-          <name>{$tei//tei:titleStmt/tei:author/string()}</name>
-        </author>
-        <_deprecationWarning>{normalize-space(
-          "The single author property is deprecated. Use the array of 'authors'
-          instead!")}
-        </_deprecationWarning>
-        {
-          for $author in $tei//tei:titleStmt/tei:author
-          return
-            <authors key="{$author/@key}" json:array="true">
-              <name>{$author/string()}</name>
-            </authors>
-        }
-        <allInSegment>{$all-in-segment}</allInSegment>
-        <allInIndex>{$all-in-index}</allInIndex>
-        {
-          for $id in $cast
-          let $name := $doc//tei:particDesc//(
-            tei:person[@xml:id=$id]/tei:persName[1] |
-            tei:personGrp[@xml:id=$id]/tei:name[1] |
-            tei:persName[@xml:id=$id]
-          )/text()
-          let $isGroup := if ($doc//tei:particDesc//tei:personGrp[@xml:id=$id])
-            then true() else false()
-          return
-          <cast json:array="true">
-            <id>{$id}</id>
-            {if($name) then <name>{$name}</name> else ()}
-            {if($isGroup) then <isGroup>true</isGroup> else ()}
-          </cast>
-        }
-        {$segments//segments}
-      </info>
 };
 
 declare
