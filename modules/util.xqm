@@ -20,7 +20,11 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
     let $whos :=
       for $w in $parent//tei:sp/@who
       return tokenize(normalize-space($w), '\s+')
-    for $ref in distinct-values($whos) return substring($ref, 2)
+    for $ref in distinct-values($whos)
+    (: catch invalid references :)
+    (: (see https://github.com/dracor-org/gerdracor/issues/6) :)
+    where string-length($ref) > 1
+    return substring($ref, 2)
 };
 
 (:~
