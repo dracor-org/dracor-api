@@ -14,4 +14,11 @@
     <prefix>tei/</prefix>
     <archive>https://github.com/dracor-org/gerdracor/archive/master.zip</archive>
   </corpus>
+  <corpus>
+    <name>shake</name>
+    <title>Shakespeare Drama Corpus</title>
+    <repository>https://github.com/dracor-org/shakedracor</repository>
+    <prefix>tei/</prefix>
+    <archive>https://github.com/dracor-org/shakedracor/archive/master.zip</archive>
+  </corpus>
 </corpora>
