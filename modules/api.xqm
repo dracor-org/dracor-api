@@ -141,7 +141,7 @@ function api:index($corpusname) {
       let $id := tokenize($filename, "\.")[1]
       let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
       let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
-      let $authors := $tei//tei:titleStmt/tei:author
+      let $authors := $tei//tei:fileDesc/tei:titleStmt/tei:author
       let $play-uri :=
         $config:api-base || "/corpus/" || $corpusname || "/play/" || $id
       order by $authors[1]
@@ -149,7 +149,7 @@ function api:index($corpusname) {
         <dramas json:array="true">
           <id>{$id}</id>
           <title>
-            {$tei//tei:titleStmt/tei:title[1]/normalize-space() }
+            {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space() }
           </title>
           {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
           <author key="{$tei//tei:titleStmt/tei:author/@key}">

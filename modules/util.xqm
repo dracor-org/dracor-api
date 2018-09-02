@@ -166,18 +166,18 @@ declare function dutil:play-info(
         <id>{$playname}</id>
         <corpus>{$corpusname}</corpus>
         <title>
-          {$tei//tei:titleStmt/tei:title[1]/normalize-space()}
+          {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space()}
         </title>
         {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-        <author key="{$tei//tei:titleStmt/tei:author/@key}">
-          <name>{$tei//tei:titleStmt/tei:author/string()}</name>
+        <author key="{$tei//tei:fileDesc/tei:titleStmt/tei:author/@key}">
+          <name>{$tei//tei:fileDesc/tei:titleStmt/tei:author/string()}</name>
         </author>
         <_deprecationWarning>{normalize-space(
           "The single author property is deprecated. Use the array of 'authors'
           instead!")}
         </_deprecationWarning>
         {
-          for $author in $tei//tei:titleStmt/tei:author
+          for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author
           return
             <authors key="{$author/@key}" json:array="true">
               <name>{$author/string()}</name>
