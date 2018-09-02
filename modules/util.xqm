@@ -138,12 +138,12 @@ declare function dutil:play-info(
         <root>
         {
           for $segment in dutil:get-segments($tei)
-          let $heads := $segment/(ancestor::tei:div/tei:head|tei:head)
+          let $heads := $segment/(ancestor::tei:div/tei:head,tei:head) ! normalize-space(.)
           return
           <segments json:array="true">
             <type>{$segment/@type/string()}</type>
             {
-              if ($heads) then
+              if (string-join($heads)) then
                 <title>{string-join($heads, ' | ')}</title>
               else ()
             }
