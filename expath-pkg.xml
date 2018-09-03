@@ -6,4 +6,5 @@
   spec="1.0">
   <title>DraCor</title>
   <dependency package="http://exist-db.org/apps/shared"/>
+  <dependency package="http://expath.org/ns/crypto" semver="0.3.5"/>
 </package>
