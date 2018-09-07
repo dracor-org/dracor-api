@@ -86,6 +86,7 @@ paths:
           content:
             application/json:
               schema:
+                type: object
                 required:
                   - title
                   - dramas
@@ -96,6 +97,8 @@ paths:
                   dramas:
                     type: array
                     description: array of plays
+                    items:
+                      type: object
         '404':
           description: Corpus not found
 
