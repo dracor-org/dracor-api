@@ -133,52 +133,58 @@ declare
 function api:index($corpusname) {
   let $title := $config:corpora//corpus[name=$corpusname]/title/text()
   let $collection := concat($config:data-root, "/", $corpusname)
+  let $col := collection($collection)
   return
-  <index>
-    {
-      for $tei in collection($collection)//tei:TEI
-      let $filename := tokenize(base-uri($tei), "/")[last()]
-      let $id := tokenize($filename, "\.")[1]
-      let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
-      let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
-      let $authors := $tei//tei:fileDesc/tei:titleStmt/tei:author
-      let $play-uri :=
-        $config:api-base || "/corpus/" || $corpusname || "/play/" || $id
-      order by $authors[1]
-      return
-        <dramas json:array="true">
-          <id>{$id}</id>
-          <title>
-            {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space() }
-          </title>
-          {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-          <author key="{$tei//tei:titleStmt/tei:author/@key}">
-            <name>{$authors/string()}</name>
-          </author>
-          {
-            for $author in $authors
-            return
-              <authors key="{$author/@key}" json:array="true">
-                <name>{$author/string()}</name>
-              </authors>
-          }
-          <source>
-            {$tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()}
-          </source>
-          <sourceUrl>
-            {
-              $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-                /tei:idno[@type="URL"]/string()
-            }
-          </sourceUrl>
-          <printYear>{$dates[@type="print"]/@when/string()}</printYear>
-          <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
-          <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
-          <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
-        </dramas>
-    }
-    <title>{$title}</title>
-  </index>
+    if (not($col)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      <index>
+        <title>{$title}</title>
+        {
+          for $tei in $col//tei:TEI
+          let $filename := tokenize(base-uri($tei), "/")[last()]
+          let $id := tokenize($filename, "\.")[1]
+          let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+          let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+          let $authors := $tei//tei:fileDesc/tei:titleStmt/tei:author
+          let $play-uri :=
+            $config:api-base || "/corpus/" || $corpusname || "/play/" || $id
+          order by $authors[1]
+          return
+            <dramas json:array="true">
+              <id>{$id}</id>
+              <title>
+                {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space() }
+              </title>
+              {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
+              <author key="{$tei//tei:titleStmt/tei:author/@key}">
+                <name>{$authors/string()}</name>
+              </author>
+              {
+                for $author in $authors
+                return
+                  <authors key="{$author/@key}" json:array="true">
+                    <name>{$author/string()}</name>
+                  </authors>
+              }
+              <source>
+                {$tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()}
+              </source>
+              <sourceUrl>
+                {
+                  $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+                    /tei:idno[@type="URL"]/string()
+                }
+              </sourceUrl>
+              <printYear>{$dates[@type="print"]/@when/string()}</printYear>
+              <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
+              <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
+              <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
+            </dramas>
+        }
+      </index>
 };
 
 declare

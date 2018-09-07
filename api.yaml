@@ -96,6 +96,8 @@ paths:
                   dramas:
                     type: array
                     description: array of plays
+        '404':
+          description: Corpus not found
 
   /corpus/{corpusname}/metadata.csv:
     get:
