@@ -1,0 +1,228 @@
+openapi: "3.0.0"
+info:
+  version: 0.1.0
+  title: Darcor API
+  contact:
+    email: "ffischer@hse.ru"
+  termsOfService: "https://dracor.org"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+servers:
+  - url: https://dracor.org/api
+paths:
+  /info:
+    get:
+      summary: API info
+      description: >-
+        Shows version numbers of the dracor-exist app and the underlying
+        eXist-db.
+      operationId: api-info
+      responses:
+        '200':
+          description: Returns JSON object
+          content:
+            application/json:
+              example:
+                {
+                    "existdb": "4.1.0",
+                    "name": "DraCor",
+                    "status": "alpha",
+                    "version": "0.20.1"
+                }
+
+  /metrics:
+    get:
+      summary: List available corpora and their basic metrics
+      operationId: list-metrics
+      responses:
+        '200':
+          description: Returns object representing available corpora and their metrics
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                {
+                  "metrics": [
+                    {
+                      "corpus": {
+                        "name": "rus",
+                        "title": "Russian Drama Corpus"
+                      },
+                      "characters": "1859",
+                      "female": "408",
+                      "male": "1376",
+                      "plays": "102",
+                      "sp": "53616",
+                      "stage": "24007",
+                      "text": "102",
+                      "updated": "2018-09-03T23:43:01.786+02:00",
+                      "wordcount": {
+                        "sp": "972008",
+                        "stage": "104111",
+                        "text": "1.031876E6"
+                      }
+                    }
+                  ]
+                }
+
+  /corpus/{corpusname}:
+    get:
+      summary: List corpus content
+      description: >-
+        Lists all plays available in the corpus including the id, title,
+        author(s) and other meta data.
+      operationId: list-corpus-content
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns object representing corpus contents
+          content:
+            application/json:
+              schema:
+                required:
+                  - title
+                  - dramas
+                properties:
+                  title:
+                    type: string
+                    description: corpus title
+                  dramas:
+                    type: array
+                    description: array of plays
+
+  /corpus/{corpusname}/metadata.csv:
+    get:
+      summary: List of metadata for all plays in a corpus
+      operationId: corpus-metadata
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns a comma separated list of metadata for all plays
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /corpus/{corpusname}/play/{playname}:
+    get:
+      summary: Get metadata and network metrics for a single play
+      operationId: play-info
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns an object with play meta data
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /corpus/{corpusname}/play/{playname}/tei:
+    get:
+      summary: Get TEI document of a single play
+      operationId: play-tei
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns TEI document
+          content:
+            application/xml:
+              schema:
+                type: string
+
+  /corpus/{corpusname}/play/{playname}/networkdata/csv:
+    get:
+      summary: Get network data of a play as CSV
+      operationId: network-csv
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /corpus/{corpusname}/play/{playname}/segmentation:
+    get:
+      summary: Get a list of segments and characters of a play
+      operationId: play-segments-xml
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns XML document
+          content:
+            application/xml:
+              schema:
+                type: string
+
+  /corpus/{corpusname}/load:
+    get:
+      summary: Load corpus data from its repository
+      description: >-
+        This requires authorization.
+      operationId: load-corpus
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns an object providing list of loaded documents
+          content:
+            application/json:
+              schema:
+                type: object
