@@ -150,7 +150,7 @@ declare function dutil:play-info(
             {
               for $sp in dutil:distinct-speakers($segment)
               return
-              <speakers json:array="true">{replace($sp, '\.', '-')}</speakers>
+              <speakers json:array="true">{$sp}</speakers>
             }
           </segments>}
         </root>
@@ -196,7 +196,7 @@ declare function dutil:play-info(
             then true() else false()
           return
           <cast json:array="true">
-            <id>{replace($id, '\.', '-')}</id>
+            <id>{$id}</id>
             {if($name) then <name>{$name}</name> else ()}
             {if($isGroup) then <isGroup>true</isGroup> else ()}
           </cast>
