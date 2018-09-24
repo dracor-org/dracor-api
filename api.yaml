@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   version: 0.1.0
-  title: Darcor API
+  title: Dracor API
   contact:
     email: "ffischer@hse.ru"
   termsOfService: "https://dracor.org"
