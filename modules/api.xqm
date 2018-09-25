@@ -182,6 +182,9 @@ function api:index($corpusname) {
               <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
               <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
               <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
+              <wikidataId>
+                {$tei//tei:publicationStmt/tei:idno[@type="wikidata"]/string()}
+              </wikidataId>
             </dramas>
         }
       </index>
