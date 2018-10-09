@@ -21,6 +21,8 @@ declare variable $config:app-root :=
         if (starts-with($rawPath, "xmldb:exist://")) then
             if (starts-with($rawPath, "xmldb:exist://embedded-eXist-server")) then
                 substring($rawPath, 36)
+            else if (starts-with($rawPath, "xmldb:exist://null")) then
+                substring($rawPath, 19)
             else
                 substring($rawPath, 15)
         else
