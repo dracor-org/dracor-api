@@ -126,6 +126,21 @@ function api:metrics() {
 
 declare
   %rest:GET
+  %rest:path("/corpus")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:corpora() {
+  for $corpus in $config:corpora//corpus
+  order by $corpus/name
+  return map {
+    "name" := $corpus/name/text(),
+    "title" := $corpus/title/text()
+  }
+};
+
+declare
+  %rest:GET
   %rest:path("/corpus/{$corpusname}")
   %rest:produces("application/json")
   %output:media-type("application/json")

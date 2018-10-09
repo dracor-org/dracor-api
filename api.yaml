@@ -67,6 +67,33 @@ paths:
                   ]
                 }
 
+  /corpus:
+    get:
+      summary: List available corpora
+      operationId: list-corpora
+      responses:
+        '200':
+          description: Returns representing available corpora
+          content:
+            application/json:
+              schema:
+                type: array
+              example:
+                [
+                  {
+                    "name": "ger",
+                    "title": "German Drama Corpus"
+                  },
+                  {
+                    "name": "rus",
+                    "title": "Russian Drama Corpus"
+                  },
+                  {
+                    "name": "shake",
+                    "title": "Shakespeare Drama Corpus"
+                  }
+                ]
+
   /corpus/{corpusname}:
     get:
       summary: List corpus content
