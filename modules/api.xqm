@@ -354,6 +354,75 @@ function api:networkdata-csv($corpusname, $playname) {
 
 declare
   %rest:GET
+  %rest:path("/corpus/{$corpusname}/play/{$playname}/networkdata/gexf")
+  %output:method("xml")
+function api:networkdata-gefx($corpusname, $playname) {
+  let $doc := doc(
+    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
+  )
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $cast := dutil:distinct-speakers($doc//tei:body)
+      let $segments :=
+        <segments>
+          {
+            for $seg in $doc//tei:body//tei:div[tei:sp]
+            return
+              <sgm>
+                {
+                  for $id in dutil:distinct-speakers($seg)
+                  return <spkr>{$id}</spkr>
+                }
+              </sgm>
+          }
+        </segments>
+
+      let $info := dutil:play-info($corpusname, $playname)
+      let $authors := $info/authors/name/text()
+      let $title := $info/title/text()
+
+      let $links := map:new(
+        for $spkr in $cast
+        let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
+        return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
+      )
+
+      let $nodes :=
+        for $n in $info/cast
+        let $id := $n/id/text()
+        let $label := $n/name/text()
+        return
+          <node xmlns="http://www.gexf.net/1.2draft"
+            id="{$id}" label="{$label}"/>
+
+      let $edges :=
+        for $spkr at $pos in $cast
+          for $cooc in $links($spkr)
+          where index-of($cast, $cooc)[1] gt $pos
+          let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
+          return
+            <edge xmlns="http://www.gexf.net/1.2draft"
+            id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}"/>
+
+      return
+        <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
+          <meta>
+            <creator>dracor.org</creator>
+            <description>{$authors}: {$title}</description>
+          </meta>
+          <graph mode="static" defaultedgetype="undirected">
+            <nodes>{$nodes}</nodes>
+            <edges>{$edges}</edges>
+          </graph>
+        </gexf>
+};
+
+declare
+  %rest:GET
   %rest:path("/corpus/{$corpusname}/play/{$playname}/segmentation")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("text/xml")

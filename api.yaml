@@ -216,6 +216,29 @@ paths:
               schema:
                 type: string
 
+  /corpus/{corpusname}/play/{playname}/networkdata/gexf:
+    get:
+      summary: Get network data of a play as GEXF
+      operationId: network-gexf
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns GEXF file
+          content:
+            application/xml:
+              schema:
+                type: string
+
   /corpus/{corpusname}/play/{playname}/segmentation:
     get:
       summary: Get a list of segments and characters of a play
