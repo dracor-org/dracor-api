@@ -9,6 +9,7 @@ import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace util = "http://exist-db.org/xquery/util";
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
+import module namespace wd = "http://dracor.org/ns/exist/wikidata" at "wikidata.xqm";
 
 declare namespace trigger = "http://exist-db.org/xquery/trigger";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
@@ -16,6 +17,39 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 declare function local:get-stats-url($url as xs:string) as xs:string {
   replace($url, $config:data-root, $config:stats-root)
+};
+
+(:~
+ : Collect sitelinks for each play in a given corpus from wikidata and store
+ : them to the sitelinks collection
+ :
+ : @param $corpus Corpus name
+:)
+declare function stats:collect-sitelinks($corpus as xs:string) {
+  let $log := util:log('info', 'collecting sitelinks for corpus ' || $corpus)
+  let $data-col := $config:data-root || '/' || $corpus
+  let $sitelinks-col := xmldb:create-collection(
+    "/", $config:sitelinks-root || '/' || $corpus
+  )
+  let $idnos := collection($data-col)/tei:TEI//tei:idno[@type="wikidata"]/text()
+  for $id in $idnos
+  let $resource := $id || '.xml'
+  let $log := util:log('info', 'querying sitelinks for ' || $resource)
+  let $sitelinks := <sitelinks id="{$id}">{
+    for $uri in wd:get-sitelinks($id)
+    return <uri>{$uri}</uri>
+  }</sitelinks>
+  return xmldb:store($sitelinks-col, $resource, $sitelinks)
+};
+
+(:~
+ : Collect sitelinks for all corpora from wikidata and store them to the
+ : sitelinks collection
+:)
+declare function stats:collect-sitelinks() {
+  for $corpus in $config:corpora//corpus
+  let $name := $corpus/name/text()
+  return stats:collect-sitelinks($name)
 };
 
 (:~
