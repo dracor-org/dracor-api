@@ -43,6 +43,8 @@ declare variable $config:data-root := "/db/data/dracor";
 
 declare variable $config:stats-root := "/db/stats/dracor";
 
+declare variable $config:sitelinks-root := "/db/stats/sitelinks";
+
 declare variable $config:repo-descriptor :=
   doc(concat($config:app-root, "/repo.xml"))/repo:meta;
 

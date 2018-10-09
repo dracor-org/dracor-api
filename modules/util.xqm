@@ -80,6 +80,7 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
     return <stats name="{$name}">{$s/*}</stats>
 
   let $collection := concat($config:data-root, "/", $corpusname)
+
   for $tei in collection($collection)//tei:TEI
   let $filename := tokenize(base-uri($tei), "/")[last()]
   let $name := tokenize($filename, "\.")[1]
@@ -89,6 +90,11 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
   let $num-speakers := count(dutil:distinct-speakers($tei))
   let $stat := $stats[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
+  let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
+  let $sitelinks-collection := concat($config:sitelinks-root, "/", $corpusname)
+  let $sitelink-count := count(
+    collection($sitelinks-collection)/sitelinks[@id=$wikidata-id]/uri
+  )
   order by $filename
   return
     <play>
@@ -110,6 +116,7 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
             '"several characters"'
         }
       </maxDegreeIds>
+      <wikipediaLinkCount>{$sitelink-count}</wikipediaLinkCount>
     </play>
 };
 

@@ -8,10 +8,14 @@ declare variable $target external;
 let $restxq-module := xs:anyURI('modules/api.xpm')
 
 (: elevate privileges for github webhook :)
-let $webhook := $target || '/github-webhook.xq'
+let $webhook := xs:anyURI($target || '/github-webhook.xq')
+let $sitelinks-job := xs:anyURI($target || '/jobs/sitelinks.xq')
 return (
-  exrest:register-module($restxq-module),
-  sm:chown(xs:anyURI($webhook), "admin"),
-  sm:chgrp(xs:anyURI($webhook), "dba"),
-  sm:chmod(xs:anyURI($webhook), 'rwsr-xr-x')
+  sm:chown($webhook, "admin"),
+  sm:chgrp($webhook, "dba"),
+  sm:chmod($webhook, 'rwsr-xr-x'),
+  sm:chown($sitelinks-job, "admin"),
+  sm:chgrp($sitelinks-job, "dba"),
+  sm:chmod($sitelinks-job, 'rwsr-xr-x'),
+  exrest:register-module($restxq-module)
 )
