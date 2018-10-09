@@ -406,7 +406,8 @@ function api:networkdata-gefx($corpusname, $playname) {
           let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
           return
             <edge xmlns="http://www.gexf.net/1.2draft"
-            id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}"/>
+            id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}"
+            weight="{$weight}"/>
 
       return
         <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
