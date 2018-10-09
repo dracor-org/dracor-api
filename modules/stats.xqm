@@ -35,7 +35,7 @@ declare function stats:collect-sitelinks($corpus as xs:string) {
   for $id in $idnos
   let $resource := $id || '.xml'
   let $log := util:log('info', 'querying sitelinks for ' || $resource)
-  let $sitelinks := <sitelinks id="{$id}">{
+  let $sitelinks := <sitelinks id="{$id}" updated="{current-dateTime()}">{
     for $uri in wd:get-sitelinks($id)
     return <uri>{$uri}</uri>
   }</sitelinks>
