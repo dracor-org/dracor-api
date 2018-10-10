@@ -1,6 +1,6 @@
 openapi: "3.0.0"
 info:
-  version: 0.1.0
+  version: 0.2.0
   title: Dracor API
   contact:
     email: "ffischer@hse.ru"
@@ -67,7 +67,7 @@ paths:
                   ]
                 }
 
-  /corpus:
+  /corpora:
     get:
       summary: List available corpora
       operationId: list-corpora
@@ -94,7 +94,7 @@ paths:
                   }
                 ]
 
-  /corpus/{corpusname}:
+  /corpora/{corpusname}:
     get:
       summary: List corpus content
       description: >-
@@ -129,7 +129,7 @@ paths:
         '404':
           description: Corpus not found
 
-  /corpus/{corpusname}/metadata.csv:
+  /corpora/{corpusname}/metadata.csv:
     get:
       summary: List of metadata for all plays in a corpus
       operationId: corpus-metadata
@@ -147,7 +147,7 @@ paths:
               schema:
                 type: string
 
-  /corpus/{corpusname}/play/{playname}:
+  /corpora/{corpusname}/play/{playname}:
     get:
       summary: Get metadata and network metrics for a single play
       operationId: play-info
@@ -170,7 +170,7 @@ paths:
               schema:
                 type: object
 
-  /corpus/{corpusname}/play/{playname}/tei:
+  /corpora/{corpusname}/play/{playname}/tei:
     get:
       summary: Get TEI document of a single play
       operationId: play-tei
@@ -193,7 +193,7 @@ paths:
               schema:
                 type: string
 
-  /corpus/{corpusname}/play/{playname}/networkdata/csv:
+  /corpora/{corpusname}/play/{playname}/networkdata/csv:
     get:
       summary: Get network data of a play as CSV
       operationId: network-csv
@@ -216,7 +216,7 @@ paths:
               schema:
                 type: string
 
-  /corpus/{corpusname}/play/{playname}/networkdata/gexf:
+  /corpora/{corpusname}/play/{playname}/networkdata/gexf:
     get:
       summary: Get network data of a play as GEXF
       operationId: network-gexf
@@ -239,7 +239,7 @@ paths:
               schema:
                 type: string
 
-  /corpus/{corpusname}/play/{playname}/segmentation:
+  /corpora/{corpusname}/play/{playname}/segmentation:
     get:
       summary: Get a list of segments and characters of a play
       operationId: play-segments-xml
@@ -262,7 +262,7 @@ paths:
               schema:
                 type: string
 
-  /corpus/{corpusname}/load:
+  /corpora/{corpusname}/load:
     get:
       summary: Load corpus data from its repository
       description: >-

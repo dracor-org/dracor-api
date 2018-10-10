@@ -126,7 +126,7 @@ function api:metrics() {
 
 declare
   %rest:GET
-  %rest:path("/corpus")
+  %rest:path("/corpora")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -137,13 +137,13 @@ function api:corpora() {
   return map {
     "name" := $name,
     "title" := $corpus/title/text(),
-    "uri" := $config:api-base || '/corpus/' || $name
+    "uri" := $config:api-base || '/corpora/' || $name
   }
 };
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}")
+  %rest:path("/corpora/{$corpusname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -167,7 +167,7 @@ function api:index($corpusname) {
           let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
           let $authors := $tei//tei:fileDesc/tei:titleStmt/tei:author
           let $play-uri :=
-            $config:api-base || "/corpus/" || $corpusname || "/play/" || $id
+            $config:api-base || "/corpora/" || $corpusname || "/play/" || $id
           order by $authors[1]
           return
             <dramas json:array="true">
@@ -209,7 +209,7 @@ function api:index($corpusname) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/metadata.csv")
+  %rest:path("/corpora/{$corpusname}/metadata.csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -222,7 +222,7 @@ function api:corpus-meta-data($corpusname) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/load")
+  %rest:path("/corpora/{$corpusname}/load")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -244,7 +244,7 @@ function api:load-corpus($corpusname) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
+  %rest:path("/corpora/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
 function api:word-frequencies-xml($corpusname, $elem) {
   let $collection := concat($config:data-root, "/", $corpusname)
@@ -254,7 +254,7 @@ function api:word-frequencies-xml($corpusname, $elem) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/word-frequencies/{$elem}")
+  %rest:path("/corpora/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -268,7 +268,7 @@ function api:word-frequencies-csv($corpusname, $elem) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/play/{$playname}")
+  %rest:path("/corpora/{$corpusname}/play/{$playname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -285,7 +285,7 @@ function api:play-info($corpusname, $playname) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/play/{$playname}/tei")
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("application/xml")
 function api:play-tei($corpusname, $playname) {
@@ -309,7 +309,7 @@ function api:play-tei($corpusname, $playname) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/play/{$playname}/networkdata/csv")
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -356,7 +356,7 @@ function api:networkdata-csv($corpusname, $playname) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/play/{$playname}/networkdata/gexf")
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/gexf")
   %output:method("xml")
 function api:networkdata-gefx($corpusname, $playname) {
   let $doc := doc(
@@ -435,7 +435,7 @@ function api:networkdata-gefx($corpusname, $playname) {
 
 declare
   %rest:GET
-  %rest:path("/corpus/{$corpusname}/play/{$playname}/segmentation")
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("text/xml")
 function api:segmentation($corpusname, $playname) {
