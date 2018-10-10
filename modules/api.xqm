@@ -132,10 +132,12 @@ declare
   %output:method("json")
 function api:corpora() {
   for $corpus in $config:corpora//corpus
-  order by $corpus/name
+  let $name := $corpus/name/text()
+  order by $name
   return map {
-    "name" := $corpus/name/text(),
-    "title" := $corpus/title/text()
+    "name" := $name,
+    "title" := $corpus/title/text(),
+    "uri" := $config:api-base || '/corpus/' || $name
   }
 };
 
