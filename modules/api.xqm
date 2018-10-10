@@ -395,9 +395,18 @@ function api:networkdata-gefx($corpusname, $playname) {
         for $n in $info/cast
         let $id := $n/id/text()
         let $label := $n/name/text()
+        let $sex := $n/sex/text()
         return
           <node xmlns="http://www.gexf.net/1.2draft"
-            id="{$id}" label="{$label}"/>
+            id="{$id}" label="{$label}">
+            {
+              if ($sex) then
+                <attvalues>
+                  <attvalue for="gender" value="{$sex}"></attvalue>
+                </attvalues>
+              else ()
+            }
+          </node>
 
       let $edges :=
         for $spkr at $pos in $cast

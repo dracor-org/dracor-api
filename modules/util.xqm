@@ -201,11 +201,13 @@ declare function dutil:play-info(
           )/text()
           let $isGroup := if ($doc//tei:particDesc//tei:personGrp[@xml:id=$id])
             then true() else false()
+          let $sex := $doc//tei:particDesc//tei:person[@xml:id=$id]/@sex/string()
           return
           <cast json:array="true">
             <id>{$id}</id>
             {if($name) then <name>{$name}</name> else ()}
             {if($isGroup) then <isGroup>true</isGroup> else ()}
+            {if($sex) then <sex>{$sex}</sex> else ()}
           </cast>
         }
         {$segments//segments}
