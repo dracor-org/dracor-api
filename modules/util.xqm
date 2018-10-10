@@ -5,6 +5,7 @@ xquery version "3.1";
  :)
 module namespace dutil = "http://dracor.org/ns/exist/util";
 
+import module namespace functx="http://www.functx.com";
 import module namespace config = "http://dracor.org/ns/exist/config"
   at "config.xqm";
 
@@ -41,6 +42,41 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
     (: (see https://github.com/dracor-org/gerdracor/issues/6) :)
     where string-length($ref) > 1
     return substring($ref, 2)
+};
+
+(:~
+ : Retrieve and filter spoken text
+ :
+ : This function selects the `tei:sp` elements in a given element $parent and
+ : strips them of all elements containing non spoken text like `speaker`,
+ : `stage`, and `pb`. Optionally the `sp` elements can be limited to those
+ : referencing the ID $speaker in their @who attribute.
+ :
+ : @param $parent Element to search in
+ : @param $speaker Speaker ID
+ :)
+declare function dutil:get-speach (
+  $parent as element(),
+  $speaker as xs:string?
+) as item()* {
+  let $sp := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
+  return functx:remove-elements-deep($sp, ('*:stage', '*:pb', '*:speaker'))
+};
+
+(:~
+ : Count words in spoken text, optionally limited to speaker identified by ID
+ : $speaker referenced in @who attributes of `sp` elements.
+ :
+ : @param $parent Element to search in
+ : @param $speaker Speaker ID
+ :)
+declare function dutil:num-of-spoken-words (
+  $parent as element(),
+  $speaker as xs:string?
+) as item()* {
+  let $sp := dutil:get-speach($parent, $speaker)
+  let $txt := string-join($sp/normalize-space(), ' ')
+  return count(tokenize($txt, '\W+')[not(.='')])
 };
 
 (:~
