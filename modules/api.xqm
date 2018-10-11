@@ -427,6 +427,9 @@ function api:networkdata-gefx($corpusname, $playname) {
             <description>{$authors}: {$title}</description>
           </meta>
           <graph mode="static" defaultedgetype="undirected">
+            <attributes class="node" mode="static">
+              <attribute id="gender" title="Gender" type="string"/>
+            </attributes>
             <nodes>{$nodes}</nodes>
             <edges>{$edges}</edges>
           </graph>
