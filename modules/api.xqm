@@ -358,6 +358,7 @@ declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/gexf")
   %output:method("xml")
+  %output:omit-xml-declaration("no")
 function api:networkdata-gefx($corpusname, $playname) {
   let $doc := doc(
     $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
