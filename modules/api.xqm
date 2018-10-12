@@ -399,16 +399,18 @@ function api:networkdata-gefx($corpusname, $playname) {
         let $id := $n/id/text()
         let $label := $n/name/text()
         let $sex := $n/sex/text()
+        let $group := if ($n/isGroup eq "true") then 1 else 0
         return
           <node xmlns="http://www.gexf.net/1.2draft"
             id="{$id}" label="{$label}">
+            <attvalues>
+              <attvalue for="person-group" value="{$group}" />
             {
               if ($sex) then
-                <attvalues>
-                  <attvalue for="gender" value="{$sex}"></attvalue>
-                </attvalues>
+                <attvalue for="gender" value="{$sex}"></attvalue>
               else ()
             }
+            </attvalues>
           </node>
 
       let $edges :=
@@ -430,6 +432,7 @@ function api:networkdata-gefx($corpusname, $playname) {
           <graph mode="static" defaultedgetype="undirected">
             <attributes class="node" mode="static">
               <attribute id="gender" title="Gender" type="string"/>
+              <attribute id="person-group" title="Person group" type="boolean"/>
             </attributes>
             <nodes>{$nodes}</nodes>
             <edges>{$edges}</edges>
