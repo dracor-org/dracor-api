@@ -194,14 +194,14 @@ declare function dutil:play-info(
         <allInIndex>{$all-in-index}</allInIndex>
         {
           for $id in $cast
-          let $name := $doc//tei:particDesc//(
-            tei:person[@xml:id=$id]/tei:persName[1] |
-            tei:personGrp[@xml:id=$id]/tei:name[1] |
-            tei:persName[@xml:id=$id]
-          )/text()
-          let $isGroup := if ($doc//tei:particDesc//tei:personGrp[@xml:id=$id])
+
+          let $node := $doc//tei:particDesc//(
+            tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
+          )
+          let $name := $node/(tei:persName[1] | tei:name[1])/text()
+          let $sex := $node/@sex/string()
+          let $isGroup := if ($node/name() eq 'personGrp')
             then true() else false()
-          let $sex := $doc//tei:particDesc//tei:person[@xml:id=$id]/@sex/string()
           return
           <cast json:array="true">
             <id>{$id}</id>
