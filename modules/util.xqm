@@ -198,7 +198,7 @@ declare function dutil:play-info(
           let $node := $doc//tei:particDesc//(
             tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
           )
-          let $name := $node/(tei:persName[1] | tei:name[1])/text()
+          let $name := $node/(tei:persName | tei:name)[1]/text()
           let $sex := $node/@sex/string()
           let $isGroup := if ($node/name() eq 'personGrp')
             then true() else false()
