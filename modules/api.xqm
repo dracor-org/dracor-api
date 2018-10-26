@@ -168,6 +168,9 @@ function api:index($corpusname) {
           let $authors := $tei//tei:fileDesc/tei:titleStmt/tei:author
           let $play-uri :=
             $config:api-base || "/corpora/" || $corpusname || "/play/" || $id
+          let $stats-url :=
+            $config:stats-root || "/" || $corpusname || "/" || $filename
+          let $network-size := doc($stats-url)//network/size/text()
           order by $authors[1]
           return
             <dramas json:array="true">
@@ -198,6 +201,7 @@ function api:index($corpusname) {
               <printYear>{$dates[@type="print"]/@when/string()}</printYear>
               <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
               <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
+              <networkSize>{$network-size}</networkSize>
               <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
               <wikidataId>
                 {$tei//tei:publicationStmt/tei:idno[@type="wikidata"]/string()}
