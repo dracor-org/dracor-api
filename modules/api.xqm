@@ -398,11 +398,13 @@ function api:networkdata-gefx($corpusname, $playname) {
         let $label := $n/name/text()
         let $sex := $n/sex/text()
         let $group := if ($n/isGroup eq "true") then 1 else 0
+        let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
         return
           <node xmlns="http://www.gexf.net/1.2draft"
             id="{$id}" label="{$label}">
             <attvalues>
               <attvalue for="person-group" value="{$group}" />
+              <attvalue for="number-of-words" value="{$wc}" />
             {
               if ($sex) then
                 <attvalue for="gender" value="{$sex}"></attvalue>
@@ -431,6 +433,7 @@ function api:networkdata-gefx($corpusname, $playname) {
             <attributes class="node" mode="static">
               <attribute id="gender" title="Gender" type="string"/>
               <attribute id="person-group" title="Person group" type="boolean"/>
+              <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
             </attributes>
             <nodes>{$nodes}</nodes>
             <edges>{$edges}</edges>
