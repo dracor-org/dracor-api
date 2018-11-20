@@ -293,9 +293,7 @@ declare
   %rest:produces("application/xml", "text/xml")
   %output:media-type("application/xml")
 function api:play-tei($corpusname, $playname) {
-  let $doc := doc(
-    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
-  )
+  let $doc := dutil:get-doc($corpusname, $playname)
   return
     if (not($doc)) then
       <rest:response>
@@ -318,9 +316,7 @@ declare
   %output:media-type("text/csv")
   %output:method("text")
 function api:networkdata-csv($corpusname, $playname) {
-  let $doc := doc(
-    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
-  )
+  let $doc := dutil:get-doc($corpusname, $playname)
   return
     if (not($doc)) then
       <rest:response>
@@ -364,9 +360,7 @@ declare
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:networkdata-gefx($corpusname, $playname) {
-  let $doc := doc(
-    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
-  )
+  let $doc := dutil:get-doc($corpusname, $playname)
   return
     if (not($doc)) then
       <rest:response>
@@ -450,9 +444,7 @@ declare
   %rest:produces("application/xml", "text/xml")
   %output:media-type("text/xml")
 function api:segmentation($corpusname, $playname) {
-  let $doc := doc(
-    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
-  )
+  let $doc := dutil:get-doc($corpusname, $playname)
   return
     if (not($doc)) then
       <rest:response>

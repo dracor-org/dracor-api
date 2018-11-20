@@ -13,6 +13,22 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
 
 
 (:~
+ : Return document for a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function dutil:get-doc(
+  $corpusname as xs:string,
+  $playname as xs:string
+) as node() {
+  let $doc := doc(
+    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
+  )
+  return $doc
+};
+
+(:~
  : Retrieve the speaker children of a given element and return the distinct IDs
  : referenced in @who attributes of those elements.
  :)
@@ -123,15 +139,14 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
 (:~
  : Calculate meta data for a play.
  :
- : @param $doc
+ : @param $corpusname
+ : @param $playname
  :)
 declare function dutil:play-info(
   $corpusname as xs:string,
   $playname as xs:string
 ) as item()* {
-  let $doc := doc(
-    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
-  )
+  let $doc := dutil:get-doc($corpusname, $playname)
   return
     if (not($doc)) then
       ()
