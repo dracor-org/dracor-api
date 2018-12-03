@@ -494,3 +494,41 @@ function api:segmentation($corpusname, $playname) {
         {$segments}
       </segmentation>
 };
+
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text")
+  %rest:produces("text/plain")
+  %output:media-type("text/plain")
+function api:spoken-text($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $sp := dutil:get-speach($doc//tei:body, ())
+      let $txt := string-join($sp/normalize-space(), '&#10;')
+      (: let $txt := "FOO" :)
+      return $txt
+};
+
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions")
+  %rest:produces("text/plain")
+  %output:media-type("text/plain")
+function api:stage-directions($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $stage := $doc//tei:body//tei:stage
+      let $txt := string-join($stage/normalize-space(), '&#10;')
+      (: let $txt := "FOO" :)
+      return $txt
+};

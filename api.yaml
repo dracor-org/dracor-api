@@ -262,6 +262,52 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/play/{playname}/spoken-text:
+    get:
+      summary: Get spoken text of a play (excluding stage directions)
+      operationId: play-spoken-text
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns plain text document
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /corpora/{corpusname}/play/{playname}/stage-directions:
+    get:
+      summary: Get all stage directions of a play
+      operationId: play-stage-directions
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns plain text document
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /corpora/{corpusname}/load:
     get:
       summary: Load corpus data from its repository
