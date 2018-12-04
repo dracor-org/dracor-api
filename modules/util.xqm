@@ -87,8 +87,13 @@ declare function dutil:get-speech-by-gender (
 };
 
 (:~
- : Count words in spoken text, optionally limited to speaker identified by ID
- : $speaker referenced in @who attributes of `sp` elements.
+ : Count words in spoken text, optionally limited to the speaker identified by
+ : ID $speaker referenced in @who attributes of `tei:sp` elements.
+ :
+ : If this function detects any `tei:w` descendants inside `tei:sp` elements,
+ : it will use those to determine the number of spoken words. Otherwise the word
+ : count will be based on tokenization by subsequent non-word characters
+ : (`\W+`).
  :
  : @param $parent Element to search in
  : @param $speaker Speaker ID
@@ -97,9 +102,14 @@ declare function dutil:num-of-spoken-words (
   $parent as element(),
   $speaker as xs:string?
 ) as item()* {
-  let $sp := dutil:get-speech($parent, $speaker)
-  let $txt := string-join($sp/normalize-space(), ' ')
-  return count(tokenize($txt, '\W+')[not(.='')])
+  if($parent//tei:sp//tei:w) then
+    let $words := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
+                  //(tei:l|tei:p)//tei:w[not(ancestor::tei:stage)]
+    return count($words)
+  else
+    let $sp := dutil:get-speech($parent, $speaker)
+    let $txt := string-join($sp/normalize-space(), ' ')
+    return count(tokenize($txt, '\W+')[not(.='')])
 };
 
 (:~
