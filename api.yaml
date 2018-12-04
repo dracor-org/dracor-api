@@ -277,6 +277,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: gender
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [FEMALE, MALE, UNKNOWN]
       responses:
         '200':
           description: Returns plain text document
