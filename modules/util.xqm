@@ -12,7 +12,6 @@ import module namespace config = "http://dracor.org/ns/exist/config"
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace json = "http://www.w3.org/2013/XSL/json";
 
-
 (:~
  : Return document for a play.
  :
@@ -60,6 +59,28 @@ declare function dutil:get-speach (
   $speaker as xs:string?
 ) as item()* {
   let $sp := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
+  return functx:remove-elements-deep($sp, ('*:stage', '*:pb', '*:speaker'))
+};
+
+(:~
+ : Retrieve and filter spoken text by gender
+ :
+ : This function selects those `tei:sp` elements in a given element $parent that
+ : reference a speaker with the given gender. It then strips these elements of
+ : all elements containing non spoken text like `speaker`, `stage`, and `pb`.
+ :
+ : @param $parent Element to search in
+ : @param $gender Gender of speaker
+ :)
+declare function dutil:get-speech-by-gender (
+  $parent as element(),
+  $gender as xs:string?
+) as item()* {
+  let $ids := $parent/ancestor::tei:TEI//tei:particDesc
+                /tei:listPerson/(tei:person|tei:personGrp)[@sex = $gender]
+                /@xml:id/string()
+  let $refs := for $id in $ids return '#'||$id
+  let $sp := $parent//tei:sp[@who = $refs]
   return functx:remove-elements-deep($sp, ('*:stage', '*:pb', '*:speaker'))
 };
 

@@ -498,19 +498,29 @@ function api:segmentation($corpusname, $playname) {
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text")
+  %rest:query-param("gender", "{$gender}")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
-function api:spoken-text($corpusname, $playname) {
+function api:spoken-text($corpusname, $playname, $gender) {
   let $doc := dutil:get-doc($corpusname, $playname)
   return
     if (not($doc)) then
       <rest:response>
         <http:response status="404"/>
       </rest:response>
+    else if ($gender and not($gender = ("FEMALE", "MALE", "UNKNOWN"))) then
+      (
+        <rest:response>
+          <http:response status="400"/>
+        </rest:response>,
+        "gender must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
+      )
     else
-      let $sp := dutil:get-speach($doc//tei:body, ())
+      let $sp := if($gender) then
+        dutil:get-speech-by-gender($doc//tei:body, $gender)
+      else
+        dutil:get-speach($doc//tei:body, ())
       let $txt := string-join($sp/normalize-space(), '&#10;')
-      (: let $txt := "FOO" :)
       return $txt
 };
 
