@@ -46,10 +46,10 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
 (:~
  : Retrieve and filter spoken text
  :
- : This function selects the `tei:sp` elements in a given element $parent and
- : strips them of all elements containing non spoken text like `speaker`,
- : `stage`, and `pb`. Optionally the `sp` elements can be limited to those
- : referencing the ID $speaker in their @who attribute.
+ : This function selects the `tei:p` and `tei:l` elements inside the `tei:sp`
+ : descendants of a given element $parent and strips them of possible stage
+ : directions (`tei:stage`). Optionally the `sp` elements can be limited to
+ : those referencing the ID $speaker in their @who attribute.
  :
  : @param $parent Element to search in
  : @param $speaker Speaker ID
@@ -58,16 +58,18 @@ declare function dutil:get-speech (
   $parent as element(),
   $speaker as xs:string?
 ) as item()* {
-  let $sp := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
-  return functx:remove-elements-deep($sp, ('*:stage', '*:pb', '*:speaker'))
+  let $lines := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
+                //(tei:p|tei:l)
+  return functx:remove-elements-deep($lines, ('*:stage'))
 };
 
 (:~
  : Retrieve and filter spoken text by gender
  :
- : This function selects those `tei:sp` elements in a given element $parent that
- : reference a speaker with the given gender. It then strips these elements of
- : all elements containing non spoken text like `speaker`, `stage`, and `pb`.
+ : This function selects the `tei:p` and `tei:l` elements inside those `tei:sp`
+ : descendants of a given element $parent that reference a speaker with the
+ : given gender. It then strips these elements possible stage directions
+ : (`tei:stage`).
  :
  : @param $parent Element to search in
  : @param $gender Gender of speaker
@@ -80,8 +82,8 @@ declare function dutil:get-speech-by-gender (
                 /tei:listPerson/(tei:person|tei:personGrp)[@sex = $gender]
                 /@xml:id/string()
   let $refs := for $id in $ids return '#'||$id
-  let $sp := $parent//tei:sp[@who = $refs]
-  return functx:remove-elements-deep($sp, ('*:stage', '*:pb', '*:speaker'))
+  let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
+  return functx:remove-elements-deep($sp, ('*:stage'))
 };
 
 (:~
