@@ -54,7 +54,7 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
  : @param $parent Element to search in
  : @param $speaker Speaker ID
  :)
-declare function dutil:get-speach (
+declare function dutil:get-speech (
   $parent as element(),
   $speaker as xs:string?
 ) as item()* {
@@ -95,7 +95,7 @@ declare function dutil:num-of-spoken-words (
   $parent as element(),
   $speaker as xs:string?
 ) as item()* {
-  let $sp := dutil:get-speach($parent, $speaker)
+  let $sp := dutil:get-speech($parent, $speaker)
   let $txt := string-join($sp/normalize-space(), ' ')
   return count(tokenize($txt, '\W+')[not(.='')])
 };
