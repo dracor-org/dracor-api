@@ -15,7 +15,7 @@ paths:
     get:
       summary: API info
       description: >-
-        Shows version numbers of the dracor-exist app and the underlying
+        Shows version numbers of the dracor-api app and the underlying
         eXist-db.
       operationId: api-info
       responses:

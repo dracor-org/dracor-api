@@ -1,6 +1,6 @@
-# dracor-exist
+# dracor-api
 
-The [eXistdb](http://exist-db.org/) application providing the backend for
+The [eXistdb](http://exist-db.org/) application providing the API for
 https://dracor.org.
 
 ## Build XAR package
