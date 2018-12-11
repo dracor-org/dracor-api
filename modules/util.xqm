@@ -297,3 +297,13 @@ declare function dutil:play-info(
         {$segments//segments}
       </info>
 };
+
+(:~
+ : Escape string for use in CSV
+ :
+ : @param $string
+ :)
+declare function dutil:csv-escape($string as xs:string) as xs:string {
+  replace($string, '"', '""')
+  (: replace($string, '\(', '((') :)
+};

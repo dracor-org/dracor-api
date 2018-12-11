@@ -291,6 +291,45 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/play/{playname}/spoken-text-by-character:
+    get:
+      summary: Get spoken text for each character of a play
+      operationId: play-spoken-text-by-character
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns texts per character
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    label:
+                      type: string
+                    isGroup:
+                      type: boolean
+                    text:
+                      type: array
+                      items:
+                        type: string
+            text/csv:
+              schema:
+                type: string
+
   /corpora/{corpusname}/play/{playname}/stage-directions:
     get:
       summary: Get all stage directions of a play

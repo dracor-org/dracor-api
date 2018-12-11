@@ -528,6 +528,69 @@ function api:spoken-text($corpusname, $playname, $gender) {
       return $txt
 };
 
+declare function local:get-text-by-character ($doc) {
+  let $characters := dutil:distinct-speakers($doc//tei:body)
+  return array {
+    for $id in $characters
+    let $label := $doc//tei:particDesc//(
+      tei:person[@xml:id=$id]/tei:persName[1] |
+      tei:personGrp[@xml:id=$id]/tei:name[1] |
+      tei:persName[@xml:id=$id]
+    )
+    let $isGroup := if ($label/parent::tei:personGrp)
+    then true() else false()
+    let $sp := dutil:get-speech($doc//tei:body, $id)
+    return map {
+      "id": $id,
+      "label": $label/text(),
+      "isGroup": $isGroup,
+      "text": array {for $l in $sp return $l/normalize-space()}
+    }
+  }
+};
+
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:spoken-text-by-character($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      local:get-text-by-character($doc)
+};
+
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:spoken-text-by-character-csv($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $texts := local:get-text-by-character($doc)
+      return (
+        "ID,Label,Type,Text&#10;",
+        for $t in $texts?*
+        let $type := if ($t?isGroup) then "personGrp" else "person"
+        let $text := string-join($t?text?*, '&#10;')
+        return $t?id || ',"' || dutil:csv-escape($t?label) || '","' ||
+          $type  || '","' || dutil:csv-escape($text) || '"&#10;'
+      )
+};
+
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions")
