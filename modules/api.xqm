@@ -503,12 +503,16 @@ declare
   %output:media-type("text/plain")
 function api:spoken-text($corpusname, $playname, $gender) {
   let $doc := dutil:get-doc($corpusname, $playname)
+  let $genders := tokenize($gender, ',')
   return
     if (not($doc)) then
       <rest:response>
         <http:response status="404"/>
       </rest:response>
-    else if ($gender and not($gender = ("FEMALE", "MALE", "UNKNOWN"))) then
+    else if (
+      $gender and
+      $genders[.!="MALE" and .!="FEMALE" and .!="UNKNOWN"]
+    ) then
       (
         <rest:response>
           <http:response status="400"/>
@@ -516,8 +520,8 @@ function api:spoken-text($corpusname, $playname, $gender) {
         "gender must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
       )
     else
-      let $sp := if($gender) then
-        dutil:get-speech-by-gender($doc//tei:body, $gender)
+      let $sp := if ($gender) then
+        dutil:get-speech-by-gender($doc//tei:body, $genders)
       else
         dutil:get-speech($doc//tei:body, ())
       let $txt := string-join($sp/normalize-space(), '&#10;')

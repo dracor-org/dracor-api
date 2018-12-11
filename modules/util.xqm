@@ -76,11 +76,11 @@ declare function dutil:get-speech (
  :)
 declare function dutil:get-speech-by-gender (
   $parent as element(),
-  $gender as xs:string?
+  $gender as xs:string+
 ) as item()* {
   let $ids := $parent/ancestor::tei:TEI//tei:particDesc
-                /tei:listPerson/(tei:person|tei:personGrp)[@sex = $gender]
-                /@xml:id/string()
+              /tei:listPerson/(tei:person|tei:personGrp)[@sex = $gender]
+              /@xml:id/string()
   let $refs := for $id in $ids return '#'||$id
   let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
   return functx:remove-elements-deep($sp, ('*:stage'))
