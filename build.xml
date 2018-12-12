@@ -58,8 +58,10 @@
 
     <target name="test4metrics" unless="${test4metrics}">
         <echo  level="warning" message="metrics service is not available." />
-        <echo  level="warning" message="trying to start it from ../dracor-metrics dir." />
-        <exec spawn="true" failifexecutionfails="false" failonerror="false" dir="../dracor-metrics" executable="npm">
+        <echo  level="warning" message="loading the service from github…" />
+        <get src="https://github.com/dracor-org/dracor-metrics/archive/master.zip" dest="${build.dir}/metrics.zip"/>
+        <unzip src="${build.dir}/metrics.zip" dest="${devel.dir}"/>
+        <exec spawn="true" failifexecutionfails="false" failonerror="false" dir="${devel.dir}" executable="npm">
             <arg value="start"/>
         </exec>
         <echo  level="warning" message="metrics should be up and running." />
