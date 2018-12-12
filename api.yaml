@@ -18,6 +18,7 @@ paths:
         Shows version numbers of the dracor-api app and the underlying
         eXist-db.
       operationId: api-info
+      tags: [public]
       responses:
         '200':
           description: Returns JSON object
@@ -35,6 +36,7 @@ paths:
     get:
       summary: List available corpora and their basic metrics
       operationId: list-metrics
+      tags: [public]
       responses:
         '200':
           description: Returns object representing available corpora and their metrics
@@ -71,6 +73,7 @@ paths:
     get:
       summary: List available corpora
       operationId: list-corpora
+      tags: [public]
       responses:
         '200':
           description: Returns representing available corpora
@@ -101,6 +104,7 @@ paths:
         Lists all plays available in the corpus including the id, title,
         author(s) and other meta data.
       operationId: list-corpus-content
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -133,6 +137,7 @@ paths:
     get:
       summary: List of metadata for all plays in a corpus
       operationId: corpus-metadata
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -151,6 +156,7 @@ paths:
     get:
       summary: Get metadata and network metrics for a single play
       operationId: play-info
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -174,6 +180,7 @@ paths:
     get:
       summary: Get TEI document of a single play
       operationId: play-tei
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -197,6 +204,7 @@ paths:
     get:
       summary: Get network data of a play as CSV
       operationId: network-csv
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -220,6 +228,7 @@ paths:
     get:
       summary: Get network data of a play as GEXF
       operationId: network-gexf
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -243,6 +252,7 @@ paths:
     get:
       summary: Get a list of segments and characters of a play
       operationId: play-segments-xml
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -266,6 +276,7 @@ paths:
     get:
       summary: Get spoken text of a play (excluding stage directions)
       operationId: play-spoken-text
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -295,6 +306,7 @@ paths:
     get:
       summary: Get spoken text for each character of a play
       operationId: play-spoken-text-by-character
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -337,6 +349,7 @@ paths:
     get:
       summary: Get all stage directions of a play
       operationId: play-stage-directions
+      tags: [public]
       parameters:
         - name: corpusname
           in: path
@@ -362,6 +375,7 @@ paths:
       description: >-
         This requires authorization.
       operationId: load-corpus
+      tags: [admin]
       parameters:
         - name: corpusname
           in: path
