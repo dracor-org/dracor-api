@@ -537,6 +537,7 @@ declare function local:get-text-by-character ($doc) {
       tei:personGrp[@xml:id=$id]/tei:name[1] |
       tei:persName[@xml:id=$id]
     )
+    let $gender := $label/parent::*/@sex/string()
     let $isGroup := if ($label/parent::tei:personGrp)
     then true() else false()
     let $sp := dutil:get-speech($doc//tei:body, $id)
@@ -544,6 +545,7 @@ declare function local:get-text-by-character ($doc) {
       "id": $id,
       "label": $label/text(),
       "isGroup": $isGroup,
+      "gender": $gender,
       "text": array {for $l in $sp return $l/normalize-space()}
     }
   }
@@ -582,12 +584,13 @@ function api:spoken-text-by-character-csv($corpusname, $playname) {
     else
       let $texts := local:get-text-by-character($doc)
       return (
-        "ID,Label,Type,Text&#10;",
+        "ID,Label,Type,Gender,Text&#10;",
         for $t in $texts?*
         let $type := if ($t?isGroup) then "personGrp" else "person"
         let $text := string-join($t?text?*, '&#10;')
         return $t?id || ',"' || dutil:csv-escape($t?label) || '","' ||
-          $type  || '","' || dutil:csv-escape($text) || '"&#10;'
+          $type  || '","' || $t?gender || '","' ||
+          dutil:csv-escape($text) || '"&#10;'
       )
 };
 
@@ -606,6 +609,5 @@ function api:stage-directions($corpusname, $playname) {
     else
       let $stage := $doc//tei:body//tei:stage
       let $txt := string-join($stage/normalize-space(), '&#10;')
-      (: let $txt := "FOO" :)
       return $txt
 };
