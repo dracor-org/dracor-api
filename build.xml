@@ -10,7 +10,7 @@
         <format property="timestamp" pattern="hhmmss" />
     </tstamp>
 
-<!-- eXist settings for using eXist with ant -->
+  <!-- eXist settings for using eXist with ant -->
 
   <property name="BaseUri" value="xmldb:exist://localhost:${jetty.http.port}/exist/xmlrpc/db/"/>
   <property name="Username" value="admin"/>
@@ -58,7 +58,7 @@
 
     <target name="test4metrics" unless="${test4metrics}">
         <echo  level="warning" message="metrics service is not available." />
-        <echo  level="warning" message="trying to start is from ../dracor-metrics dir." />
+        <echo  level="warning" message="trying to start it from ../dracor-metrics dir." />
         <exec spawn="true" failifexecutionfails="false" failonerror="false" dir="../dracor-metrics" executable="npm">
             <arg value="start"/>
         </exec>
