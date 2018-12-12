@@ -552,53 +552,54 @@ function api:stage-directions($corpusname, $playname) {
       return $txt
 };
 
-declare 
-    %rest:POST
-    %rest:path("/rdf")
-    %rest:produces("application/rdf+xml")
-    %output:media-type("application/rdf+xml")
+declare
+  %rest:POST
+  %rest:path("/rdf")
+  %rest:produces("application/rdf+xml")
+  %output:media-type("application/rdf+xml")
 function api:generateRDF() {
-    (:~ Generates an RDF-Dump of the data; stores file in $rdf-collection
+  (:~ Generates an RDF-Dump of the data; stores file in $rdf-collection
     @author Ingo Börner
-    @returns 
-    :)
-    let $rdf-collection := "/db/data/dracor/rdf"
-    let $rdf-filename := "dracor-data.xml"
-    
-    let $collection := ""
-    let $filename := ""
-    
-    let $plays := collection($config:data-root)//tei:TEI
-
-    let $inner :=
-        for $play in $plays 
-        let $collection-id := (replace($play/base-uri(),$config:data-root,'') => tokenize("/"))[2]
-        let $play-uri := 'https://dracor.org/' || $collection-id || "/" || ($play/base-uri() => tokenize("/"))[last()] => substring-before('.xml')
-        let $wikidata := "http://www.wikidata.org/entity/" || $play//tei:publicationStmt//tei:idno[@type='wikidata']/text()
-        let $label := ($play//tei:fileDesc/tei:titleStmt//tei:author/text() => string-join(' ')) || ": " || ($play//tei:fileDesc/tei:titleStmt//tei:title/text() => string-join(' '))
-        let $dracor-collection := "https://dracor.org/" || $collection-id 
-        
+    @returns
+  :)
+  let $rdf-collection := "/db/data/dracor/rdf"
+  let $rdf-filename := "dracor-data.xml"
+  let $collection := ""
+  let $filename := ""
+  let $plays := collection($config:data-root)//tei:TEI
+  let $inner :=
+    for $play in $plays
+    let $collection-id := (
+      replace($play/base-uri(),$config:data-root,'') => tokenize("/")
+    )[2]
+    let $play-uri := 'https://dracor.org/' || $collection-id || "/" ||
+      ($play/base-uri() => tokenize("/"))[last()] => substring-before('.xml')
+    let $wikidata := "http://www.wikidata.org/entity/" ||
+      $play//tei:publicationStmt//tei:idno[@type='wikidata']/text()
+    let $label := (
+      $play//tei:fileDesc/tei:titleStmt//tei:author/text() => string-join(' ')
+    ) || ": " || (
+      $play//tei:fileDesc/tei:titleStmt//tei:title/text() => string-join(' ')
+    )
+    let $dracor-collection := "https://dracor.org/" || $collection-id
     return
-        
-        <rdf:Description rdf:about="{$play-uri}">
-            <owl:sameAs rdf:resource="{$wikidata}"/>
-            <rdfs:label>{$label}</rdfs:label>
-            <dracon:collection rdf:resource="{$dracor-collection}"/>
-        </rdf:Description>
+    <rdf:Description rdf:about="{$play-uri}">
+        <owl:sameAs rdf:resource="{$wikidata}"/>
+        <rdfs:label>{$label}</rdfs:label>
+        <dracon:collection rdf:resource="{$dracor-collection}"/>
+    </rdf:Description>
 
-    let $rdf-data :=  <rdf:RDF 
-    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
-    xmlns:owl="http://www.w3.org/2002/07/owl#" 
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-    xmlns:dracon="http://dracor.org/ontology#"
+    let $rdf-data :=  <rdf:RDF
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:owl="http://www.w3.org/2002/07/owl#"
+      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+      xmlns:dracon="http://dracor.org/ontology#"
     >
-         {$inner}
-             
-         </rdf:RDF>
-    return
-        ($rdf-data,
-        xmldb:store($rdf-collection, $rdf-filename, $rdf-data)
-        )
-    
-    
+      {$inner}
+    </rdf:RDF>
+
+    return (
+      $rdf-data,
+      xmldb:store($rdf-collection, $rdf-filename, $rdf-data)
+    )
 };
