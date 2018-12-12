@@ -322,6 +322,9 @@ paths:
                       type: string
                     isGroup:
                       type: boolean
+                    gender:
+                      type: string
+                      enum: [FEMALE, MALE, UNKNOWN]
                     text:
                       type: array
                       items:
