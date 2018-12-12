@@ -1,5 +1,7 @@
 build/
+develop/
 test/
 .existdb.json
-local.build.properties
 expath-pkg.xml
+local.build.properties
+corpora.xml

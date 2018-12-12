@@ -552,16 +552,16 @@ function api:stage-directions($corpusname, $playname) {
       return $txt
 };
 
+(:~ Generates an RDF-Dump of the data; stores file in $rdf-collection
+  @author Ingo Börner
+  @returns
+:)
 declare
-  %rest:POST
+  %rest:GET
   %rest:path("/rdf")
   %rest:produces("application/rdf+xml")
   %output:media-type("application/rdf+xml")
 function api:generateRDF() {
-  (:~ Generates an RDF-Dump of the data; stores file in $rdf-collection
-    @author Ingo Börner
-    @returns
-  :)
   let $rdf-collection := "/db/data/dracor/rdf"
   let $rdf-filename := "dracor-data.xml"
   let $collection := ""

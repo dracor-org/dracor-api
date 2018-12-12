@@ -1,11 +1,12 @@
 xquery version "3.1";
+import module namespace api = "http://dracor.org/ns/exist/api" at "modules/api.xqm";
+import module namespace config = "http://dracor.org/ns/exist/config" at "modules/config.xqm";
 import module namespace load = "http://dracor.org/ns/exist/load" at "modules/load.xqm";
 
 (: The following external variables are set by the repo:deploy function :)
-
 (: the target collection into which the app is deployed :)
+
 declare variable $target external;
-declare variable $data-collection := "/db/data/dracor/";
 
 (:~
  : prepared the RDF index accorgind the exist-sparql module description.
@@ -15,9 +16,9 @@ declare variable $data-collection := "/db/data/dracor/";
 declare function local:prepare-rdf-index()
 as xs:boolean {
   (: prepare for RDF index :)
-  let $rdf-collection := xmldb:create-collection($data-collection, "rdf")
-  let $rdf-collection := xmldb:create-collection($data-collection, "rdf")
-  let $rdf-conf-coll := xmldb:create-collection("/db/system/config" || $data-collection, "rdf")
+  let $rdf-collection := xmldb:create-collection($config:data-root, "rdf")
+  let $rdf-collection := xmldb:create-collection($config:data-root, "rdf")
+  let $rdf-conf-coll := xmldb:create-collection("/db/system/config" || $config:data-root, "rdf")
   let $xconf :=
       <collection xmlns="http://exist-db.org/collection-config/1.0">
          <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -37,18 +38,18 @@ as xs:boolean {
 declare function local:import-data()
 as xs:boolean+ {
   doc("corpora.xml")//name/string(.) ! (
-    if(xmldb:collection-available($data-collection || .))
+    if(xmldb:collection-available($config:data-root || .))
     then true()
     else
       let $do :=
         (util:log-system-out("[" || . || "] starting import…"),
         load:load-corpus(.),
+        api:generateRDF(),
         util:log-system-out("[" || . || "] done."))
       return
         true()
   )
 };
-
 
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || '/github-webhook.xq')

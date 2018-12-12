@@ -3,7 +3,16 @@
 The [eXistdb](http://exist-db.org/) application providing the API for
 https://dracor.org.
 
-## Build XAR package
+API Documentation is available at [/documentation/api/](https://dracor.org/documentation/api/).
+
+## Build
+
+There are several ant-targets defined:
+- xar [default]
+- cleanup
+- test
+- jetty-port
+- exist-conf
 
 ```bash
 ant

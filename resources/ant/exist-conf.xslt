@@ -17,7 +17,7 @@
             <xsl:apply-templates/>
             <xsl:element name="module">
               <xsl:attribute name="id">rdf-index</xsl:attribute>
-              <xsl:attribute name="class">org.exist.indexing.rdf.TDBRDFInde</xsl:attribute>
+              <xsl:attribute name="class">org.exist.indexing.rdf.TDBRDFIndex</xsl:attribute>
             </xsl:element>
         </xsl:element>
     </xsl:template>
