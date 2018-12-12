@@ -10,6 +10,12 @@
         <format property="timestamp" pattern="hhmmss" />
     </tstamp>
 
+<!-- eXist settings for using eXist with ant -->
+
+  <property name="BaseUri" value="xmldb:exist://localhost:${jetty.http.port}/exist/xmlrpc/db/"/>
+  <property name="Username" value="admin"/>
+  <property name="Password" value=""/>
+
     <target name="xar" depends="corpora">
         <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
             <filterset>
@@ -34,6 +40,9 @@
 
     <target name="cleanup">
         <delete dir="${test.dir}"/>
+        <delete dir="${devel.dir}"/>
+        <delete dir="${build.dir}"/>
+        <delete file="corpora.xml"/>
     </target>
 
     <target name="test" depends="cleanup, xar">
@@ -62,6 +71,31 @@
       </condition>
       <fail if="devel.available">Build aborted. You have to delete «${devel.dir}» at first.</fail>
       <prepare-exist dir="${devel.dir}"/>
+      <get src="http://localhost:8030/" quiet="true" ignoreerrors="true" dest="anttmp-${timestamp}" skipexisting="false"/>
+      <condition property="test4metrics">
+          <available file="anttmp-${timestamp}" type="file" />
+      </condition>
+      <delete file="anttmp-${timestamp}"/>
+      <antcall target="test4metrics"/>
+      <antcall target="init"/>
+    </target>
+
+    <target name="init">
+      <property name="install.dir" value="${devel.dir}/eXist-db-${project.processorversion}"/>
+      <exec executable="bash">
+        <arg value="resources/ant/init.sh"/>
+        <arg value="${jetty.http.port}"/>
+        <arg value="${basedir}/${install.dir}"/>
+      </exec>
+      <xslt
+          in="${install.dir}/conf.xml"
+          out="${install.dir}/conf.xml.tmp"
+          style="resources/ant/exist-conf.xslt">
+      </xslt>
+      <move
+          file="${install.dir}/conf.xml.tmp"
+          tofile="${install.dir}/conf.xml"/>
+      <copy file="${destfile}" todir="${install.dir}/autodeploy" />
     </target>
 
     <macrodef name="prepare-exist">
@@ -76,7 +110,6 @@
             <!-- get dependencies -->
             <get src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=expath-crypto-exist-lib&amp;semver=0.3.5" dest="${install.dir}/autodeploy/crypto-0.3.5.xar" ignoreerrors="true"/>
             <get src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=exist-sparql&amp;processor=${project.processorversion}" dest="${install.dir}/autodeploy/sparql-latest.xar" ignoreerrors="true"/>
-            <copy file="${destfile}" todir="${install.dir}/autodeploy" />
 
             <xslt
                 in="${install.dir}/conf.xml"
