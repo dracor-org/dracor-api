@@ -10,6 +10,16 @@ declare namespace compression = "http://exist-db.org/xquery/compression";
 declare namespace util = "http://exist-db.org/xquery/util";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
+(: Namespaces for Linked Open Data :)
+declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#" ;
+declare namespace owl="http://www.w3.org/2002/07/owl#";
+declare namespace dracon="http://dracor.org/ontology#";
+(: /Namespaces for Linked Open Data :)
+
+
+
+
 declare function local:entry-data(
   $path as xs:anyURI, $type as xs:string, $data as item()?, $param as item()*
 ) as item()? {
@@ -78,4 +88,51 @@ declare function load:load-archive($name as xs:string, $archive-url as xs:string
       ($collection)
     )
   )
+};
+
+(:~ Generates an RDF-Dump of the data; stores file in $rdf-collection
+  @author Ingo Börner
+  @returns
+:)
+declare function load:generateRDF() {
+  let $rdf-collection := $config:data-root || "/rdf"
+  let $rdf-filename := "dracor-data.xml"
+  let $collection := ""
+  let $filename := ""
+  let $plays := collection($config:data-root)//tei:TEI
+  let $inner :=
+    for $play in $plays
+    let $collection-id := (
+      replace($play/base-uri(),$config:data-root,'') => tokenize("/")
+    )[2]
+    let $play-uri := 'https://dracor.org/' || $collection-id || "/" ||
+      ($play/base-uri() => tokenize("/"))[last()] => substring-before('.xml')
+    let $wikidata := "http://www.wikidata.org/entity/" ||
+      $play//tei:publicationStmt//tei:idno[@type='wikidata']/text()
+    let $label := (
+      $play//tei:fileDesc/tei:titleStmt//tei:author/text() => string-join(' ')
+    ) || ": " || (
+      $play//tei:fileDesc/tei:titleStmt//tei:title/text() => string-join(' ')
+    )
+    let $dracor-collection := "https://dracor.org/" || $collection-id
+    return
+    <rdf:Description rdf:about="{$play-uri}">
+        <owl:sameAs rdf:resource="{$wikidata}"/>
+        <rdfs:label>{$label}</rdfs:label>
+        <dracon:collection rdf:resource="{$dracor-collection}"/>
+    </rdf:Description>
+
+    let $rdf-data :=  <rdf:RDF
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:owl="http://www.w3.org/2002/07/owl#"
+      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+      xmlns:dracon="http://dracor.org/ontology#"
+    >
+      {$inner}
+    </rdf:RDF>
+
+    return (
+      $rdf-data,
+      xmldb:store($rdf-collection, $rdf-filename, $rdf-data)
+    )
 };
