@@ -50,7 +50,12 @@
     </target>
 
     <target name="test4metrics" unless="${test4metrics}">
-      <echo  level="warning" message="metrics service is not available. proceed at your own risk." />
+      <echo  level="warning" message="metrics service is not available." />
+      <echo  level="warning" message="trying to start is from ../dracor-metrics dir." />
+      <exec spawn="true" dir="../dracor-metrics" executable="npm">
+        <arg value="start"/>
+      </exec>
+      <echo  level="warning" message="metrics should be up and running." />
     </target>
 
     <!-- Port configuration -->
