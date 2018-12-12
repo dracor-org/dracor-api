@@ -1,11 +1,104 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project default="xar" name="dracor">
-    <xmlproperty file="expath-pkg.xml"/>
-    <property name="project.version" value="${package(version)}"/>
-    <property name="project.app" value="dracor"/>
-    <property name="build.dir" value="build"/>
+<project default="xar" name="dracor" xmlns:xdb="http://exist-db.org/ant">
+
+  <property environment="env"/>
+  <property name="build.dir" value="build"/>
+  <property file="local.build.properties"/>
+  <property file="build.properties"/>
+  <xmlproperty file="expath-pkg.xml.tmpl"/>
+  <tstamp>
+      <format property="timestamp" pattern="hhmmss" />
+  </tstamp>
+
     <target name="xar">
+        <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
+            <filterset>
+                <filter token="project.version" value="${project.version}"/>
+                <filter token="project.title" value="${project.title}"/>
+                <filter token="project.abbrev" value="${project.abbrev}"/>
+                <filter token="project.name" value="${project.name}"/>
+                <filter token="project.processorversion" value="${project.processorversion}"/>
+            </filterset>
+        </copy>
         <mkdir dir="${build.dir}"/>
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/* .existdb.json"/>
+        <zip basedir="." destfile="${destfile}"
+            excludes="${build.dir}/ ${test.dir}/ existdb.json"/>
+    </target>
+
+    <target name="cleanup">
+      <delete dir="${test.dir}"/>
+    </target>
+
+    <target name="test" depends="cleanup, xar">
+      <!-- get eXist -->
+      <get src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2" dest="${build.dir}/eXist-db-${project.processorversion}.tar.bz2" skipexisting="true" />
+      <untar src="${build.dir}/eXist-db-${project.processorversion}.tar.bz2" dest="${test.dir}" compression="bzip2" />
+
+      <!-- get dependencies -->
+      <get src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=expath-crypto-exist-lib&amp;semver=0.3.5" dest="${test.dir}/eXist-db-${project.processorversion}/autodeploy/crypto-0.3.5.xar" ignoreerrors="true"/>
+      <get src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=exist-sparql&amp;processor=${project.processorversion}" dest="${test.dir}/eXist-db-${project.processorversion}/autodeploy/sparql-latest.xar" ignoreerrors="true"/>
+
+      <copy file="${destfile}" todir="${test.dir}/eXist-db-${project.processorversion}/autodeploy" />
+
+      <get src="http://localhost:8030/" quiet="true" ignoreerrors="true" dest="anttmp-${timestamp}" skipexisting="false"/>
+      <condition property="test4metrics">
+        <available file="anttmp-${timestamp}" type="file" />
+      </condition>
+      <delete file="anttmp-${timestamp}"/>
+      <antcall target="test4metrics"/>
+
+    </target>
+
+    <target name="test4metrics" unless="${test4metrics}">
+      <echo  level="warning" message="metrics service is not available. proceed at your own risk." />
+    </target>
+
+    <!-- Port configuration -->
+    <target name="jetty-port" depends="test">
+      <!-- HTTP port -->
+      <xslt
+        in="${test.exist.dir}/tools/jetty/etc/jetty-http.xml"
+        out="${test.exist.dir}/tools/jetty/etc/jetty-http-tmp.xml"
+        style="resources/ant/jetty-port-update.xsl">
+        <param name="customPort" expression="${jetty.http.port}"/>
+      </xslt>
+      <move
+        file="${test.exist.dir}/tools/jetty/etc/jetty-http-tmp.xml"
+        tofile="${test.exist.dir}/tools/jetty/etc/jetty-http.xml"/>
+
+      <!-- HTTPS port -->
+      <xslt
+        in="${test.exist.dir}/tools/jetty/etc/jetty-ssl.xml"
+        out="${test.exist.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
+        style="jetty-port-update.xsl">
+        <param name="customPort" expression="${jetty.https.port}"/>
+      </xslt>
+      <move
+        file="${test.exist.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
+        tofile="${test.exist.dir}/tools/jetty/etc/jetty-ssl.xml"/>
+
+      <xslt
+        in="${build.dir}/sade/tools/jetty/etc/jetty.xml"
+        out="${build.dir}/sade/tools/jetty/etc/jetty-tmp.xml"
+        style="jetty-port-update.xsl">
+        <param name="customPort" expression="${jetty.https.port}"/>
+      </xslt>
+      <move
+        file="${build.dir}/sade/tools/jetty/etc/jetty-tmp.xml"
+        tofile="${build.dir}/sade/tools/jetty/etc/jetty.xml"/>
+
+      <echo>Jetty HTTP port is set to ${jetty.http.port}.</echo>
+      <echo>Jetty HTTPS port is set to ${jetty.https.port}.</echo>
+    </target>
+
+    <target name="exist-conf">
+      <xslt
+        in="${test.exist.dir}/conf.xml"
+        out="${test.exist.dir}/conf.xml.tmp"
+        style="resources/ant/exist-conf.xslt">
+      </xslt>
+      <move
+        file="${test.exist.dir}/conf.xml.tmp"
+        tofile="${test.exist.dir}/conf.xml"/>
     </target>
 </project>
