@@ -1,5 +1,4 @@
 xquery version "3.1";
-import module namespace api = "http://dracor.org/ns/exist/api" at "modules/api.xqm";
 import module namespace config = "http://dracor.org/ns/exist/config" at "modules/config.xqm";
 import module namespace load = "http://dracor.org/ns/exist/load" at "modules/load.xqm";
 
@@ -44,7 +43,7 @@ as xs:boolean+ {
       let $do :=
         (util:log-system-out("[" || . || "] starting import…"),
         load:load-corpus(.),
-        api:generateRDF(),
+        load:generateRDF(),
         util:log-system-out("[" || . || "] done."))
       return
         true()
