@@ -15,9 +15,9 @@ declare variable $data-collection := "/db/data/dracor/";
 declare function local:prepare-rdf-index()
 as xs:boolean {
   (: prepare for RDF index :)
-  let $rdf-collection := xmldb:create-collection($dracor-collection, "rdf")
-  let $rdf-collection := xmldb:create-collection($dracor-collection, "rdf")
-  let $rdf-conf-coll := xmldb:create-collection("/db/system/config" || $dracor-collection, "rdf")
+  let $rdf-collection := xmldb:create-collection($data-collection, "rdf")
+  let $rdf-collection := xmldb:create-collection($data-collection, "rdf")
+  let $rdf-conf-coll := xmldb:create-collection("/db/system/config" || $data-collection, "rdf")
   let $xconf :=
       <collection xmlns="http://exist-db.org/collection-config/1.0">
          <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -35,9 +35,9 @@ as xs:boolean {
  : @see https://github.com/ljo/exist-sparql
 :)
 declare function local:import-data()
-as xs:boolean {
+as xs:boolean+ {
   doc("corpora.xml")//name/string(.) ! (
-    if(xmldb:collection-available($dracor-collection || .))
+    if(xmldb:collection-available($data-collection || .))
     then true()
     else
       let $do :=
