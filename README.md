@@ -28,6 +28,9 @@ the following ones are considered to be useful:
 - devel
 - cleanup
 
+Please be careful when directories or paths to files are mentioned here. They
+can be changed with parameters declared at [build.properties](build.properties).
+
 ### xar
 Prepares an [EXPath-Package](http://expath.org/spec/pkg) in the `build` directory.
 It is aware of a so far not specified parameter `testdracor`. Instead of the
@@ -51,6 +54,11 @@ This target will do the following in this order:
 - look for a running instance of the [metrics service](https://github.com/dracor-org/dracor-metrics) on `localhost:8030`
   - if it is not available, it will be installed to the `develop` directory
   and started
+
+Afterwards you can start the database with
+```bash
+bash develop/eXist-db-4.5.0/bin/startup.sh
+```
 
 ### cleanup
 Removes all loaded and prepared packages and files. It is like a `git reset` but
