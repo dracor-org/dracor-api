@@ -54,6 +54,7 @@ This target will do the following in this order:
 - look for a running instance of the [metrics service](https://github.com/dracor-org/dracor-metrics) on `localhost:8030`
   - if it is not available, it will be installed to the `develop` directory
   and started
+  - the process will be [spawned](https://ant.apache.org/manual/Tasks/exec.html)
 
 Afterwards you can start the database with
 ```bash
