@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project default="xar" name="dracor" xmlns:xdb="http://exist-db.org/ant">
+<project default="xar" name="dracor">
 
     <property environment="env"/>
     <property name="build.dir" value="build"/>
@@ -9,12 +9,6 @@
     <tstamp>
         <format property="timestamp" pattern="hhmmss" />
     </tstamp>
-
-  <!-- eXist settings for using eXist with ant -->
-
-  <property name="BaseUri" value="xmldb:exist://localhost:${jetty.http.port}/exist/xmlrpc/db/"/>
-  <property name="Username" value="admin"/>
-  <property name="Password" value=""/>
 
     <target name="xar" depends="corpora">
         <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
@@ -49,7 +43,10 @@
         <echo  level="warning" message="loading the service from github…" />
         <get src="https://github.com/dracor-org/dracor-metrics/archive/master.zip" dest="${build.dir}/metrics.zip"/>
         <unzip src="${build.dir}/metrics.zip" dest="${devel.dir}"/>
-        <exec spawn="true" failifexecutionfails="false" failonerror="false" dir="${devel.dir}" executable="npm">
+        <exec failifexecutionfails="false" failonerror="false" dir="${devel.dir}/dracor-metrics-master" executable="npm">
+            <arg value="install"/>
+        </exec>
+        <exec spawn="true" failifexecutionfails="false" failonerror="false" dir="${devel.dir}/dracor-metrics-master" executable="npm">
             <arg value="start"/>
         </exec>
         <echo  level="warning" message="metrics should be up and running." />
@@ -61,13 +58,14 @@
       </condition>
       <fail if="devel.available">Build aborted. You have to delete «${devel.dir}» at first.</fail>
       <prepare-exist dir="${devel.dir}"/>
+      <antcall target="init"/>
+      <!-- now eXist is set up, we can start importing DraCors. -->
       <get src="http://localhost:8030/" quiet="true" ignoreerrors="true" dest="anttmp-${timestamp}" skipexisting="false"/>
       <condition property="test4metrics">
           <available file="anttmp-${timestamp}" type="file" />
       </condition>
       <delete file="anttmp-${timestamp}"/>
       <antcall target="test4metrics"/>
-      <antcall target="init"/>
     </target>
 
     <target name="init">
