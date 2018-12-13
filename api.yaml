@@ -146,7 +146,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Returns a comma separated list of metadata for all plays
+          description: Returns a list of metadata for all plays
           content:
             application/json:
               schema:
@@ -162,7 +162,7 @@ paths:
       description: >-
         This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata`
         with an appropriate `Accept` header instead.
-      operationId: corpus-metadata
+      operationId: corpus-metadata-csv
       tags: [public]
       deprecated: true
       parameters:
