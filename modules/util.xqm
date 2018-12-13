@@ -154,6 +154,7 @@ declare function dutil:get-normalized-year ($tei as element()*) as item()* {
 (:~
  : Calculate meta data for corpus.
  :
+ : @deprecated Use dutil:get-corpus-meta-data() instead.
  : @param $corpusname
  :)
 declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
@@ -203,6 +204,63 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
       </maxDegreeIds>
       <wikipediaLinkCount>{$sitelink-count}</wikipediaLinkCount>
     </play>
+};
+
+(:~
+ : Calculate meta data for corpus.
+ :
+ : @param $corpusname
+ : @return sequence of maps
+ :)
+declare function dutil:get-corpus-meta-data(
+  $corpusname as xs:string
+) as map(*)* {
+  let $stats-collection := concat($config:stats-root, "/", $corpusname)
+  let $stats := for $s in collection($stats-collection)//stats
+    let $uri := base-uri($s)
+    let $fname := tokenize($uri, "/")[last()]
+    let $name := tokenize($fname, "\.")[1]
+    return <stats name="{$name}">{$s/*}</stats>
+  (: return $stats :)
+  let $collection := concat($config:data-root, "/", $corpusname)
+
+  for $tei in collection($collection)//tei:TEI
+  let $filename := tokenize(base-uri($tei), "/")[last()]
+  let $name := tokenize($filename, "\.")[1]
+  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+  let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
+    /@subtype/string()
+  let $num-speakers := count(dutil:distinct-speakers($tei))
+  let $stat := $stats[@name=$name]
+  let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
+  let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
+  let $sitelinks-collection := concat($config:sitelinks-root, "/", $corpusname)
+  let $sitelink-count := count(
+    collection($sitelinks-collection)/sitelinks[@id=$wikidata-id]/uri
+  )
+  let $networkstats := map:new(
+    for $s in $stat/network/*[not(name() = "maxDegreeIds")]
+    return map:entry($s/name(), $s/text())
+  )
+  let $meta := map {
+    "name": $name,
+    "playName": $name,
+    "genre": $genre,
+    "year": dutil:get-normalized-year($tei),
+    "numOfSegments": count(dutil:get-segments($tei)),
+    "numOfActs": count($tei//tei:div[@type="act"]),
+    "numOfSpeakers": $num-speakers,
+    "yearWritten": $dates[@type="written"]/@when/string(),
+    "yearPremiered": $dates[@type="premiere"]/@when/string(),
+    "yearPrinted": $dates[@type="print"]/@when/string(),
+    "maxDegreeIds": if(count($max-degree-ids) < 4) then
+      string-join($max-degree-ids, "|")
+    else
+      '"several characters"',
+    "wikipediaLinkCount": $sitelink-count
+  }
+  order by $filename
+  return map:new(($meta, $networkstats))
 };
 
 (:~

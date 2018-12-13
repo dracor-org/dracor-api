@@ -133,11 +133,38 @@ paths:
         '404':
           description: Corpus not found
 
-  /corpora/{corpusname}/metadata.csv:
+  /corpora/{corpusname}/metadata:
     get:
       summary: List of metadata for all plays in a corpus
       operationId: corpus-metadata
       tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns a comma separated list of metadata for all plays
+          content:
+            application/json:
+              schema:
+                type: array
+                items: object
+            text/csv:
+              schema:
+                type: string
+
+  /corpora/{corpusname}/metadata.csv:
+    get:
+      summary: List of metadata for all plays in a corpus
+      description: >-
+        This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata`
+        with an appropriate `Accept` header instead.
+      operationId: corpus-metadata
+      tags: [public]
+      deprecated: true
       parameters:
         - name: corpusname
           in: path

@@ -213,14 +213,48 @@ function api:index($corpusname) {
 
 declare
   %rest:GET
+  %rest:path("/corpora/{$corpusname}/metadata")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:corpus-meta-data($corpusname) {
+  let $meta := dutil:get-corpus-meta-data($corpusname)
+  return $meta
+};
+
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/metadata")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:corpus-meta-data-csv($corpusname) {
+  let $meta := dutil:get-corpus-meta-data($corpusname)
+  (: make sure 'year' and 'name' are first :)
+  let $columns := (
+    "name", "year",
+    map:keys($meta[1])[.!="name" and .!="year" and .!="playName"]
+  )
+  let $header := concat(string-join($columns, ","), "&#10;")
+  let $rows :=
+    for $m in $meta return concat(
+      string-join((
+        for $c in $columns return $m($c)
+      ), ','), "&#10;")
+  return ($header, $rows)
+};
+
+declare
+  %rest:GET
   %rest:path("/corpora/{$corpusname}/metadata.csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
-function api:corpus-meta-data($corpusname) {
+function api:corpus-meta-data-dotcsv($corpusname) {
   let $meta := dutil:corpus-meta-data($corpusname)
   let $header := concat(string-join($meta[1]/*/name(), ','), "&#10;")
-  let $data := for $row in $meta return concat(string-join($row/*/string(), ','), "&#10;")
+  let $data := for $row in $meta
+    return concat(string-join($row/*/string(), ','), "&#10;")
   return ($header, $data)
 };
 
