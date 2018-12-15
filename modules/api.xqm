@@ -171,6 +171,7 @@ function api:index($corpusname) {
           let $stats-url :=
             $config:stats-root || "/" || $corpusname || "/" || $filename
           let $network-size := doc($stats-url)//network/size/text()
+          let $yearNormalized := dutil:get-normalized-year($tei)
           order by $authors[1]
           return
             <dramas json:array="true">
@@ -189,6 +190,7 @@ function api:index($corpusname) {
                     <name>{$author/string()}</name>
                   </authors>
               }
+              <yearNormalized>{$yearNormalized}</yearNormalized>
               <source>
                 {$tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()}
               </source>
