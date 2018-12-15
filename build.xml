@@ -54,10 +54,10 @@
     </target>
 
     <target name="test-corpora" if="${testdracor}">
-      <copy file="test-corpora.xml" tofile="corpora.xml" overwrite="true"/>
+      <copy file="corpora.test.xml" tofile="corpora.xml" overwrite="true"/>
     </target>
     <target name="corpora" depends="test-corpora">
-      <copy file="all-corpora.xml" tofile="corpora.xml" overwrite="false"/>
+      <copy file="corpora.production.xml" tofile="corpora.xml" overwrite="false"/>
     </target>
 
     <target name="cleanup" description="remove builds, cache and prepared instances">
