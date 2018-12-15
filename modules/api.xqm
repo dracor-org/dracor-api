@@ -239,7 +239,7 @@ function api:corpus-meta-data-csv($corpusname) {
   let $rows :=
     for $m in $meta return concat(
       string-join((
-        for $c in $columns return $m($c)
+        for $c in $columns return if (count($m($c)) = 0) then '' else $m($c)
       ), ','), "&#10;")
   return ($header, $rows)
 };
