@@ -6,43 +6,52 @@ https://dracor.org.
 API Documentation is available at [/documentation/api/](https://dracor.org/documentation/api/).
 
 ## tl;dr
-Use `ant` to prepare an xar package or `ant devel` to prepare an development
+
+Use `ant` to build a xar package or `ant devel` to set up a development
 environment. Both commands can be used together with `-Dtestdracor=true` to
 initialize a small set of data for testing purposes.
 
 ## Requirements
+
 - ant
 - bash
+- (node)
 
-For initialization an external service ([dracor-metrics](https://github.com/dracor-org/dracor-metrics))
-is used. If not available, it will be installed during `ant devel`. As it is a
-NodeJS tool, it requires `npm`.
-
-The build tool uses Unix specific commands, that are available in most Linux
-distributions and MacOS.
+For the calculation of network statistics *dracor-api* depends on the external
+[dracor-metrics](https://github.com/dracor-org/dracor-metrics) service. To
+(install and) run this service with `ant devel` [Node.js](https://nodejs.org)
+(and `npm`) needs to be available.
 
 ## Build
-This software uses `ant` to build its artifacts. While several targets are exposed,
-the following ones are considered to be useful:
+
+This software uses `ant` to build its artifacts. While several targets are
+exposed, the following ones are considered to be useful:
+
 - xar [default]
 - devel
 - cleanup
 
-Please be careful when directories or paths to files are mentioned here. They
-can be changed with parameters declared at [build.properties](build.properties).
+**Note:** Path and file names mentioned here refer to the default settings in
+[build.properties](build.properties). Those can be overwritten in a private
+`local.build.properties` file.
 
 ### xar
-Prepares an [EXPath-Package](http://expath.org/spec/pkg) in the `build` directory.
-It is aware of a so far not specified parameter `testdracor`. Instead of the
-very complete import of all corpora, this parameter triggers the loading of
-TestDraCor corpus. This is made for functional tests, but can be useful for
-development when a complete data set is not necessary.
+
+Creates an [EXPath](http://expath.org/spec/pkg) package in the `build`
+directory.
+
+When run with the `testdracor` parameter (`ant xar -Dtestdracor=true`) the
+package is built with a modified `corpora.xml` file that includes only the
+[TestDraCor](https://github.com/dracor-org/testdracor) corpus. This is useful
+for testing purposes.
 
 ### devel
-Prepares a development environment inside the `develop` directory. If this directory
-is present, the process will fail. Please remove it yourself.
+
+Sets up a development environment inside the `develop` directory. If this
+directory is present, the process will fail. Please remove it yourself.
 
 This target will do the following in this order:
+
 - xar, see above
 - download and extract a specified version of eXist-db
 - download all dependencies and place them in the `autodeploy` directory
@@ -62,10 +71,12 @@ bash develop/eXist-db-4.5.0/bin/startup.sh
 ```
 
 ### cleanup
-Removes all loaded and prepared packages and files. It is like a `git reset` but
-without restoring the source code.
-It will remove the `develop/` and the `build/` directory.
+
+Removes the `develop/` and the `build/` directory.
 
 ## Installation
-You can install the package in an eXist database. For development purposes
-`ant devel` is recommended.
+
+You can install the XAR package built with `ant xar` via the dashboard of any
+eXist DB instance.
+
+For development purposes use `ant devel`.
