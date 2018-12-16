@@ -53,7 +53,7 @@
       </filterset>
     </copy>
     <zip basedir="." destfile="${destfile}"
-      excludes="${build.dir}/ ${test.dir}/ ${devel.dir}/ existdb.json"/>
+      excludes="${build.dir}/ ${test.dir}/ ${devel.dir}/ .existdb.json"/>
   </target>
 
   <target name="test-corpora" if="${testdracor}">
