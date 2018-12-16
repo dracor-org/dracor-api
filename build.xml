@@ -1,174 +1,195 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project default="xar" name="dracor">
-    <property environment="env"/>
-    <property name="build.dir" value="build"/>
-    <property file="local.build.properties"/>
-    <property file="build.properties"/>
-    <xmlproperty file="expath-pkg.xml.tmpl"/>
-    <tstamp>
-        <format property="timestamp" pattern="hhmmss" />
-    </tstamp>
+  <property environment="env"/>
+  <property name="build.dir" value="build"/>
+  <property file="local.build.properties"/>
+  <property file="build.properties"/>
+  <xmlproperty file="expath-pkg.xml.tmpl"/>
+  <tstamp>
+    <format property="timestamp" pattern="hhmmss" />
+  </tstamp>
 
-    <target name="create-dirs">
-      <mkdir dir="${build.dir}"/>
-      <mkdir dir="${dependencies.dir}"/>
-    </target>
+  <target name="create-dirs">
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${dependencies.dir}"/>
+  </target>
 
-    <target name="dependencies" depends="create-dirs">
-      <!-- get exist -->
-      <get
-        src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
-        dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
-        skipexisting="true" />
-      <untar
-        src="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
-        dest="${devel.dir}"
-        compression="bzip2" />
+  <target name="dependencies" depends="create-dirs">
+    <!-- get exist -->
+    <get
+      src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
+      dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
+      skipexisting="true" />
+    <untar
+      src="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
+      dest="${devel.dir}"
+      compression="bzip2" />
+    <!-- get dependencies -->
+    <get
+      src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=expath-crypto-exist-lib&amp;semver=0.3.5"
+      dest="${dependencies.dir}/crypto-0.3.5.xar"
+      skipexisting="true"
+      ignoreerrors="true"/>
+    <get
+      src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=exist-sparql&amp;processor=${project.processorversion}"
+      dest="${dependencies.dir}/sparql-latest.xar"
+      skipexisting="true"
+      ignoreerrors="true"/>
+  </target>
 
-      <!-- get dependencies -->
-      <get
-        src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=expath-crypto-exist-lib&amp;semver=0.3.5"
-        dest="${dependencies.dir}/crypto-0.3.5.xar"
-        skipexisting="true"
-        ignoreerrors="true"/>
-      <get
-        src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=exist-sparql&amp;processor=${project.processorversion}"
-        dest="${dependencies.dir}/sparql-latest.xar"
-        skipexisting="true"
-        ignoreerrors="true"/>
-    </target>
+  <target
+    name="xar"
+    depends="corpora, create-dirs"
+    description="build an expath package">
+    <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
+      <filterset>
+        <filter token="project.version" value="${project.version}"/>
+        <filter token="project.title" value="${project.title}"/>
+        <filter token="project.abbrev" value="${project.abbrev}"/>
+        <filter token="project.name" value="${project.name}"/>
+        <filter
+          token="project.processorversion"
+          value="${project.processorversion}"/>
+      </filterset>
+    </copy>
+    <zip basedir="." destfile="${destfile}"
+      excludes="${build.dir}/ ${test.dir}/ ${devel.dir}/ existdb.json"/>
+    <delete file="corpora.xml"/>
+  </target>
 
-    <target name="xar" depends="corpora, create-dirs" description="build an expath package">
-        <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
-            <filterset>
-                <filter token="project.version" value="${project.version}"/>
-                <filter token="project.title" value="${project.title}"/>
-                <filter token="project.abbrev" value="${project.abbrev}"/>
-                <filter token="project.name" value="${project.name}"/>
-                <filter token="project.processorversion" value="${project.processorversion}"/>
-            </filterset>
-        </copy>
-        <zip basedir="." destfile="${destfile}"
-            excludes="${build.dir}/ ${test.dir}/ ${devel.dir}/ existdb.json"/>
-        <delete file="corpora.xml"/>
-    </target>
+  <target name="test-corpora" if="${testdracor}">
+    <copy file="corpora.test.xml" tofile="corpora.xml" overwrite="true"/>
+  </target>
 
-    <target name="test-corpora" if="${testdracor}">
-      <copy file="corpora.test.xml" tofile="corpora.xml" overwrite="true"/>
-    </target>
-    <target name="corpora" depends="test-corpora">
-      <copy file="corpora.production.xml" tofile="corpora.xml" overwrite="false"/>
-    </target>
+  <target name="corpora" depends="test-corpora">
+    <copy file="corpora.production.xml" tofile="corpora.xml" overwrite="false"/>
+  </target>
 
-    <target name="cleanup" description="remove builds, cache and prepared instances">
-        <delete dir="${devel.dir}"/>
-        <delete dir="${build.dir}"/>
-    </target>
+  <target name="cleanup" description="remove builds, cache and prepared instances">
+    <delete dir="${devel.dir}"/>
+    <delete dir="${build.dir}"/>
+  </target>
 
-    <target name="test4metrics" unless="${test4metrics}">
-        <echo  level="warning" message="metrics service is not available." />
-        <echo  level="warning" message="loading the service from github…" />
-        <get src="https://github.com/dracor-org/dracor-metrics/archive/master.zip" dest="${build.dir}/metrics.zip"/>
-        <unzip src="${build.dir}/metrics.zip" dest="${devel.dir}"/>
-        <exec failifexecutionfails="false" failonerror="false" dir="${devel.dir}/dracor-metrics-master" executable="npm">
-            <arg value="install"/>
-        </exec>
-        <exec spawn="true" failifexecutionfails="false" failonerror="false" dir="${devel.dir}/dracor-metrics-master" executable="npm">
-            <arg value="start"/>
-        </exec>
-        <echo  level="warning" message="metrics should be up and running." />
-    </target>
+  <target name="test4metrics" unless="${test4metrics}">
+    <echo  level="warning" message="metrics service is not available." />
+    <echo  level="warning" message="loading the service from github…" />
+    <get
+      src="https://github.com/dracor-org/dracor-metrics/archive/master.zip"
+      dest="${build.dir}/metrics.zip"/>
+    <unzip src="${build.dir}/metrics.zip" dest="${devel.dir}"/>
+    <exec
+      failifexecutionfails="false"
+      failonerror="false"
+      dir="${devel.dir}/dracor-metrics-master"
+      executable="npm">
+      <arg value="install"/>
+    </exec>
+    <exec spawn="true"
+      failifexecutionfails="false"
+      failonerror="false"
+      dir="${devel.dir}/dracor-metrics-master"
+      executable="npm">
+      <arg value="start"/>
+    </exec>
+    <echo  level="warning" message="metrics should be up and running." />
+  </target>
 
-    <target name="devel" depends="test-develop, xar, dependencies, prepare-exist, init"
-        description="create a complete development environment with all dependencies included.">
-      <!-- now eXist is set up, we can start importing DraCors. -->
-      <get src="http://localhost:8030/" quiet="true" ignoreerrors="true" dest="anttmp-${timestamp}" skipexisting="false"/>
-      <condition property="test4metrics">
-          <available file="anttmp-${timestamp}" type="file" />
-      </condition>
-      <delete file="anttmp-${timestamp}"/>
-      <antcall target="test4metrics"/>
-      <echo message="start the import process with `bash develop/eXist-db-4.5.0/bin/startup.sh`"/>
-    </target>
+  <target
+    name="devel"
+    depends="test-develop, xar, dependencies, prepare-exist, init"
+    description="create a development environment with dependencies included">
+    <!-- now eXist is set up, we can start importing DraCors. -->
+    <get
+      src="http://localhost:8030/"
+      quiet="true" ignoreerrors="true"
+      dest="anttmp-${timestamp}"
+      skipexisting="false"/>
+    <condition property="test4metrics">
+      <available file="anttmp-${timestamp}" type="file" />
+    </condition>
+    <delete file="anttmp-${timestamp}"/>
+    <antcall target="test4metrics"/>
+    <echo message="start the import process with `bash develop/eXist-db-4.5.0/bin/startup.sh`"/>
+  </target>
 
-    <target name="init">
-      <exec executable="bash">
-        <arg value="resources/ant/init.sh"/>
-        <arg value="${jetty.http.port}"/>
-        <arg value="${basedir}/${install.dir}"/>
-      </exec>
-      <xslt
-          in="${install.dir}/conf.xml"
-          out="${install.dir}/conf.xml.tmp"
-          style="resources/ant/exist-conf.xslt">
-      </xslt>
-      <move
-          file="${install.dir}/conf.xml.tmp"
-          tofile="${install.dir}/conf.xml"/>
-      <copy file="${destfile}" todir="${install.dir}/autodeploy" />
-    </target>
+  <target name="init">
+    <exec executable="bash">
+      <arg value="resources/ant/init.sh"/>
+      <arg value="${jetty.http.port}"/>
+      <arg value="${basedir}/${install.dir}"/>
+    </exec>
+    <xslt
+      in="${install.dir}/conf.xml"
+      out="${install.dir}/conf.xml.tmp"
+      style="resources/ant/exist-conf.xslt">
+    </xslt>
+    <move
+      file="${install.dir}/conf.xml.tmp"
+      tofile="${install.dir}/conf.xml"/>
+    <copy file="${destfile}" todir="${install.dir}/autodeploy" />
+  </target>
 
-    <target name="set-ports">
-      <!-- HTTP port -->
-      <property name="xsl" value="resources/ant/jetty-port-update.xslt"/>
-      <xslt
-          in="${install.dir}/tools/jetty/etc/jetty-http.xml"
-          out="${install.dir}/tools/jetty/etc/jetty-http-tmp.xml"
-          style="${xsl}">
-          <param name="customPort" expression="${jetty.http.port}"/>
-      </xslt>
-      <move
-          file="${install.dir}/tools/jetty/etc/jetty-http-tmp.xml"
-          tofile="${install.dir}/tools/jetty/etc/jetty-http.xml"/>
+  <target name="set-ports">
+    <!-- HTTP port -->
+    <property name="xsl" value="resources/ant/jetty-port-update.xslt"/>
+    <xslt
+      in="${install.dir}/tools/jetty/etc/jetty-http.xml"
+      out="${install.dir}/tools/jetty/etc/jetty-http-tmp.xml"
+      style="${xsl}">
+      <param name="customPort" expression="${jetty.http.port}"/>
+    </xslt>
+    <move
+      file="${install.dir}/tools/jetty/etc/jetty-http-tmp.xml"
+      tofile="${install.dir}/tools/jetty/etc/jetty-http.xml"/>
+    <!-- HTTPS port -->
+    <xslt
+      in="${install.dir}/tools/jetty/etc/jetty-ssl.xml"
+      out="${install.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
+      style="${xsl}">
+      <param name="customPort" expression="${jetty.https.port}"/>
+    </xslt>
+    <move
+      file="${install.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
+      tofile="${install.dir}/tools/jetty/etc/jetty-ssl.xml"/>
 
-      <!-- HTTPS port -->
-      <xslt
-          in="${install.dir}/tools/jetty/etc/jetty-ssl.xml"
-          out="${install.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
-          style="${xsl}">
-          <param name="customPort" expression="${jetty.https.port}"/>
-      </xslt>
-      <move
-          file="${install.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
-          tofile="${install.dir}/tools/jetty/etc/jetty-ssl.xml"/>
+    <xslt
+      in="${install.dir}/tools/jetty/etc/jetty.xml"
+      out="${install.dir}/tools/jetty/etc/jetty-tmp.xml"
+      style="${xsl}">
+      <param name="customPort" expression="${jetty.https.port}"/>
+    </xslt>
+    <move
+      file="${install.dir}/tools/jetty/etc/jetty-tmp.xml"
+      tofile="${install.dir}/tools/jetty/etc/jetty.xml"/>
+  </target>
 
-      <xslt
-          in="${install.dir}/tools/jetty/etc/jetty.xml"
-          out="${install.dir}/tools/jetty/etc/jetty-tmp.xml"
-          style="${xsl}">
-          <param name="customPort" expression="${jetty.https.port}"/>
-      </xslt>
-      <move
-          file="${install.dir}/tools/jetty/etc/jetty-tmp.xml"
-          tofile="${install.dir}/tools/jetty/etc/jetty.xml"/>
-    </target>
+  <target name="prepare-exist">
+    <echo message="install eXist to ${install.dir}"/>
+    <!-- get eXist -->
+    <get
+      src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
+      dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
+      skipexisting="true" />
+    <!-- extract eXist -->
+    <untar
+      src="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
+      dest="${devel.dir}"
+      compression="bzip2" />
+    <!-- move xar dependencies to autodeploy -->
+    <copy todir="${install.dir}/autodeploy">
+      <fileset dir="${dependencies.dir}">
+        <include name="*.xar"/>
+      </fileset>
+    </copy>
+    <antcall target="set-ports"/>
+  </target>
 
-    <target name="prepare-exist">
-      <echo message="install eXist to ${install.dir}"/>
-      <!-- get eXist -->
-      <get
-        src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
-        dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
-        skipexisting="true" />
-      <!-- extract eXist -->
-      <untar
-        src="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
-        dest="${devel.dir}"
-        compression="bzip2" />
-
-        <!-- move xar dependencies to autodeploy -->
-        <copy todir="${install.dir}/autodeploy">
-          <fileset dir="${dependencies.dir}">
-            <include name="*.xar"/>
-          </fileset>
-        </copy>
-        <antcall target="set-ports"/>
-    </target>
-
-    <target name="test-develop">
-      <condition property="devel.available">
-        <available file="${devel.dir}" type="dir" />
-      </condition>
-      <fail if="devel.available">Build aborted. You have to delete «${devel.dir}» at first.</fail>
-    </target>
+  <target name="test-develop">
+    <condition property="devel.available">
+      <available file="${devel.dir}" type="dir" />
+    </condition>
+    <fail if="devel.available">
+      Build aborted. You have to delete «${devel.dir}» at first.
+    </fail>
+  </target>
 </project>
