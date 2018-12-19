@@ -47,7 +47,7 @@ for testing purposes.
 
 ### devel
 
-Sets up a development environment inside the `develop` directory. If this
+Sets up a development environment inside the `devel` directory. If this
 directory is present, the process will fail. Please remove it yourself.
 
 This target will do the following in this order:
@@ -61,18 +61,18 @@ This target will do the following in this order:
   in the configuration file of eXist to be made after the installation
   - the database will shut down immediately
 - look for a running instance of the [metrics service](https://github.com/dracor-org/dracor-metrics) on `localhost:8030`
-  - if it is not available, it will be installed to the `develop` directory
+  - if it is not available, it will be installed to the `devel` directory
   and started
   - the process will be [spawned](https://ant.apache.org/manual/Tasks/exec.html)
 
 Afterwards you can start the database with
 ```bash
-bash develop/eXist-db-4.5.0/bin/startup.sh
+bash devel/eXist-db-4.5.0/bin/startup.sh
 ```
 
 ### cleanup
 
-Removes the `develop/` and the `build/` directory.
+Removes the `devel/` and the `build/` directory.
 
 ## Installation
 

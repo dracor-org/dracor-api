@@ -95,7 +95,7 @@
 
   <target
     name="devel"
-    depends="test-develop, xar, dependencies, prepare-exist, init"
+    depends="test-devel, xar, dependencies, prepare-exist, init"
     description="create a development environment with dependencies included">
     <!-- now eXist is set up, we can start importing DraCors. -->
     <get
@@ -108,7 +108,7 @@
     </condition>
     <delete file="anttmp-${timestamp}"/>
     <antcall target="test4metrics"/>
-    <echo message="start the import process with `bash develop/eXist-db-4.5.0/bin/startup.sh`"/>
+    <echo message="start the import process with `bash devel/eXist-db-4.5.0/bin/startup.sh`"/>
   </target>
 
   <target name="init">
@@ -183,7 +183,7 @@
     <antcall target="set-ports"/>
   </target>
 
-  <target name="test-develop">
+  <target name="test-devel">
     <condition property="devel.available">
       <available file="${devel.dir}" type="dir" />
     </condition>

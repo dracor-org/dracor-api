@@ -1,5 +1,5 @@
 build/
-develop/
+devel/
 test/
 .existdb.json
 expath-pkg.xml
