@@ -69,7 +69,7 @@
     <delete dir="${build.dir}"/>
   </target>
 
-  <target name="test4metrics" unless="${test4metrics}">
+  <target name="check-metrics" unless="${check-metrics}">
     <echo  level="warning" message="metrics service is not available." />
     <echo  level="warning" message="loading the service from github…" />
     <get
@@ -95,7 +95,7 @@
 
   <target
     name="devel"
-    depends="test-devel, xar, dependencies, prepare-exist, init"
+    depends="check-devel, xar, dependencies, prepare-exist, init"
     description="create a development environment with dependencies included">
     <!-- now eXist is set up, we can start importing DraCors. -->
     <get
@@ -103,11 +103,11 @@
       quiet="true" ignoreerrors="true"
       dest="anttmp-${timestamp}"
       skipexisting="false"/>
-    <condition property="test4metrics">
+    <condition property="check-metrics">
       <available file="anttmp-${timestamp}" type="file" />
     </condition>
     <delete file="anttmp-${timestamp}"/>
-    <antcall target="test4metrics"/>
+    <antcall target="check-metrics"/>
     <echo message="start the import process with `bash devel/eXist-db-4.5.0/bin/startup.sh`"/>
   </target>
 
@@ -183,7 +183,7 @@
     <antcall target="set-ports"/>
   </target>
 
-  <target name="test-devel">
+  <target name="check-devel">
     <condition property="devel.available">
       <available file="${devel.dir}" type="dir" />
     </condition>
