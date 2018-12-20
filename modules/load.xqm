@@ -90,13 +90,12 @@ declare function load:load-archive($name as xs:string, $archive-url as xs:string
   )
 };
 
-(:~ Generates an RDF-Dump of the data; stores file in $rdf-collection
+(:~ Generates an RDF-Dump of the data; stores file in $config:rdf-root
   @author Ingo Börner
   @returns
 :)
 declare function load:generateRDF() {
-  let $rdf-collection := $config:data-root || "/rdf"
-  let $rdf-filename := "dracor-data.xml"
+  let $rdf-filename := "dracor.rdf.xml"
   let $collection := ""
   let $filename := ""
   let $plays := collection($config:data-root)//tei:TEI
@@ -133,6 +132,6 @@ declare function load:generateRDF() {
 
     return (
       $rdf-data,
-      xmldb:store($rdf-collection, $rdf-filename, $rdf-data)
+      xmldb:store($config:rdf-root, $rdf-filename, $rdf-data)
     )
 };
