@@ -1,4 +1,4 @@
-xquery version "3.0";
+xquery version "3.1";
 
 declare variable $exist:path external;
 declare variable $exist:resource external;

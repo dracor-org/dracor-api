@@ -1,3 +1,7 @@
-.existdb.json
 build/
-*.xar
+devel/
+test/
+.existdb.json
+expath-pkg.xml
+local.build.properties
+corpora.xml

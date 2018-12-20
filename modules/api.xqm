@@ -5,6 +5,7 @@ module namespace api = "http://dracor.org/ns/exist/api";
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
+import module namespace sparql="http://exist-db.org/xquery/sparql" at "java:org.exist.xquery.modules.rdf.SparqlModule";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -14,7 +15,6 @@ declare namespace expath = "http://expath.org/ns/pkg";
 declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace jsn="http://www.json.org";
-
 
 declare function local:get-info () {
   let $expath := config:expath-descriptor()
@@ -646,4 +646,18 @@ function api:stage-directions($corpusname, $playname) {
       let $stage := $doc//tei:body//tei:stage
       let $txt := string-join($stage/normalize-space(), '&#10;')
       return $txt
+};
+
+(:~
+ : Provides API to SPARQL interface
+ : TODO: refine serialization to fit 
+ :)
+declare
+  %rest:POST("{$query}")
+  %rest:path("/sparql")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:sparql($query as xs:string) {
+  sparql:query($query)
 };
