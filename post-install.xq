@@ -8,16 +8,15 @@ import module namespace load = "http://dracor.org/ns/exist/load" at "modules/loa
 declare variable $target external;
 
 (:~
- : prepared the RDF index accorgind the exist-sparql module description.
+ : Prepare RDF index according to the exist-sparql module description.
  : @author Mathias Göbel
  : @see https://github.com/ljo/exist-sparql
 :)
 declare function local:prepare-rdf-index()
 as xs:boolean {
   (: prepare for RDF index :)
-  let $rdf-collection := xmldb:create-collection($config:data-root, "rdf")
-  let $rdf-collection := xmldb:create-collection($config:data-root, "rdf")
-  let $rdf-conf-coll := xmldb:create-collection("/db/system/config" || $config:data-root, "rdf")
+  let $rdf-collection := xmldb:create-collection("/", $config:rdf-root)
+  let $rdf-conf-coll := xmldb:create-collection("/", "/db/system/config" || $config:rdf-root)
   let $xconf :=
       <collection xmlns="http://exist-db.org/collection-config/1.0">
          <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
