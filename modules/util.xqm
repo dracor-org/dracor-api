@@ -158,12 +158,12 @@ declare function dutil:get-normalized-year ($tei as element()*) as item()* {
  : @param $corpusname
  :)
 declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
-  let $stats-collection := concat($config:stats-root, "/", $corpusname)
-  let $stats := for $s in collection($stats-collection)//stats
+  let $metrics-collection := concat($config:metrics-root, "/", $corpusname)
+  let $metrics := for $s in collection($metrics-collection)//metrics
     let $uri := base-uri($s)
     let $fname := tokenize($uri, "/")[last()]
     let $name := tokenize($fname, "\.")[1]
-    return <stats name="{$name}">{$s/*}</stats>
+    return <metrics name="{$name}">{$s/*}</metrics>
 
   let $collection := concat($config:data-root, "/", $corpusname)
 
@@ -174,7 +174,7 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
   let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
     /@subtype/string()
   let $num-speakers := count(dutil:distinct-speakers($tei))
-  let $stat := $stats[@name=$name]
+  let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
   let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
   let $sitelinks-collection := concat($config:sitelinks-root, "/", $corpusname)
@@ -215,13 +215,13 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
 declare function dutil:get-corpus-meta-data(
   $corpusname as xs:string
 ) as map(*)* {
-  let $stats-collection := concat($config:stats-root, "/", $corpusname)
-  let $stats := for $s in collection($stats-collection)//stats
+  let $metrics-collection := concat($config:metrics-root, "/", $corpusname)
+  let $metrics := for $s in collection($metrics-collection)//metrics
     let $uri := base-uri($s)
     let $fname := tokenize($uri, "/")[last()]
     let $name := tokenize($fname, "\.")[1]
-    return <stats name="{$name}">{$s/*}</stats>
-  (: return $stats :)
+    return <metrics name="{$name}">{$s/*}</metrics>
+  (: return $metrics :)
   let $collection := concat($config:data-root, "/", $corpusname)
 
   for $tei in collection($collection)//tei:TEI
@@ -231,14 +231,14 @@ declare function dutil:get-corpus-meta-data(
   let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
     /@subtype/string()
   let $num-speakers := count(dutil:distinct-speakers($tei))
-  let $stat := $stats[@name=$name]
+  let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
   let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
   let $sitelinks-collection := concat($config:sitelinks-root, "/", $corpusname)
   let $sitelink-count := count(
     collection($sitelinks-collection)/sitelinks[@id=$wikidata-id]/uri
   )
-  let $networkstats := map:new(
+  let $networkmetrics := map:new(
     for $s in $stat/network/*[not(name() = "maxDegreeIds")]
     return map:entry($s/name(), $s/text())
   )
@@ -260,7 +260,7 @@ declare function dutil:get-corpus-meta-data(
     "wikipediaLinkCount": $sitelink-count
   }
   order by $filename
-  return map:new(($meta, $networkstats))
+  return map:new(($meta, $networkmetrics))
 };
 
 (:~

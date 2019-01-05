@@ -43,7 +43,7 @@ declare variable $config:data-root := "/db/data/dracor/tei";
 
 declare variable $config:rdf-root := "/db/data/dracor/rdf";
 
-declare variable $config:stats-root := "/db/data/dracor/stats";
+declare variable $config:metrics-root := "/db/data/dracor/metrics";
 
 declare variable $config:sitelinks-root := "/db/data/dracor/sitelinks";
 

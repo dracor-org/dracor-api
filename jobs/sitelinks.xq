@@ -1,6 +1,6 @@
 xquery version "3.1";
 
-import module namespace stats = "http://dracor.org/ns/exist/stats"
-  at "../modules/stats.xqm";
+import module namespace metrics = "http://dracor.org/ns/exist/metrics"
+  at "../modules/metrics.xqm";
 
-stats:collect-sitelinks()
+metrics:collect-sitelinks()

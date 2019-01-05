@@ -40,5 +40,5 @@ xdb:store-files-from-pattern(
   concat("/db/system/config", $config:data-root), $dir, "data.xconf"
 ),
 xdb:create-collection("/", $config:rdf-root),
-xdb:create-collection("/", $config:stats-root),
+xdb:create-collection("/", $config:metrics-root),
 xdb:create-collection("/", $config:sitelinks-root)
