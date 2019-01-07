@@ -5,7 +5,8 @@ module namespace api = "http://dracor.org/ns/exist/api";
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
-import module namespace sparql="http://exist-db.org/xquery/sparql" at "java:org.exist.xquery.modules.rdf.SparqlModule";
+import module namespace sparql = "http://exist-db.org/xquery/sparql"
+  at "java:org.exist.xquery.modules.rdf.SparqlModule";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
