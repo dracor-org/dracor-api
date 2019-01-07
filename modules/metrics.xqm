@@ -70,8 +70,10 @@ declare function metrics:get-network-metrics($url as xs:string) {
     </output:serialization-parameters>
   )
 
+  let $url := $config:metrics-server || '?' || $corpusname || '/' || $playname
+
   let $response := httpclient:post(
-    $config:metrics-server,
+    $url,
     $payload,
     false(),
     <headers>
