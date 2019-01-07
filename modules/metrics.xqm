@@ -1,9 +1,9 @@
 xquery version "3.1";
 
 (:~
- : Module for calculating and updating corpus stats.
+ : Module for calculating and updating corpus metrics.
  :)
-module namespace stats = "http://dracor.org/ns/exist/stats";
+module namespace metrics = "http://dracor.org/ns/exist/metrics";
 
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace util = "http://exist-db.org/xquery/util";
@@ -15,8 +15,8 @@ declare namespace trigger = "http://exist-db.org/xquery/trigger";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
-declare function local:get-stats-url($url as xs:string) as xs:string {
-  replace($url, $config:data-root, $config:stats-root)
+declare function local:get-metrics-url($url as xs:string) as xs:string {
+  replace($url, $config:data-root, $config:metrics-root)
 };
 
 (:~
@@ -25,7 +25,7 @@ declare function local:get-stats-url($url as xs:string) as xs:string {
  :
  : @param $corpus Corpus name
 :)
-declare function stats:collect-sitelinks($corpus as xs:string) {
+declare function metrics:collect-sitelinks($corpus as xs:string) {
   let $log := util:log('info', 'collecting sitelinks for corpus ' || $corpus)
   let $data-col := $config:data-root || '/' || $corpus
   let $sitelinks-col := xmldb:create-collection(
@@ -46,10 +46,10 @@ declare function stats:collect-sitelinks($corpus as xs:string) {
  : Collect sitelinks for all corpora from wikidata and store them to the
  : sitelinks collection
 :)
-declare function stats:collect-sitelinks() {
+declare function metrics:collect-sitelinks() {
   for $corpus in $config:corpora//corpus
   let $name := $corpus/name/text()
-  return stats:collect-sitelinks($name)
+  return metrics:collect-sitelinks($name)
 };
 
 (:~
@@ -57,7 +57,7 @@ declare function stats:collect-sitelinks() {
  :
  : @param $url URL of the TEI document
 :)
-declare function stats:get-network-metrics($url as xs:string) {
+declare function metrics:get-network-metrics($url as xs:string) {
   let $parts := tokenize($url, '/')
   let $playname := tokenize($parts[last()], '\.')[1]
   let $corpusname := $parts[last() - 1]
@@ -91,52 +91,52 @@ declare function stats:get-network-metrics($url as xs:string) {
 };
 
 (:~
- : Calculate stats for single play
+ : Calculate metrics for single play
  :
  : @param $url URL of the TEI document
 :)
-declare function stats:calculate($url as xs:string) {
+declare function metrics:calculate($url as xs:string) {
   let $separator := '\W+'
   let $doc := doc($url)
   let $text-count := count(tokenize($doc//tei:text, $separator))
   let $stage-count := count(tokenize(string-join($doc//tei:stage, ' '), $separator))
   let $sp-count := count(tokenize(string-join($doc//tei:sp, ' '), $separator))
-  return <stats updated="{current-dateTime()}">
+  return <metrics updated="{current-dateTime()}">
     <text>{$text-count}</text>
     <stage>{$stage-count}</stage>
     <sp>{$sp-count}</sp>
-    {stats:get-network-metrics($url)}
-  </stats>
+    {metrics:get-network-metrics($url)}
+  </metrics>
 };
 
 (:~
- : Update stats for single play
+ : Update metrics for single play
  :
  : @param $url URL of the TEI document
 :)
-declare function stats:update($url as xs:string) {
-  let $stats := stats:calculate($url)
-  let $stats-url := local:get-stats-url($url)
-  let $resource := tokenize($stats-url, '/')[last()]
-  let $collection := replace($stats-url, '/[^/]+$', '')
+declare function metrics:update($url as xs:string) {
+  let $metrics := metrics:calculate($url)
+  let $metrics-url := local:get-metrics-url($url)
+  let $resource := tokenize($metrics-url, '/')[last()]
+  let $collection := replace($metrics-url, '/[^/]+$', '')
 
   let $c := xdb:create-collection('/', $collection)
-  let $log := util:log('info', ('Stats update: ', $stats-url))
+  let $log := util:log('info', ('Metrics update: ', $metrics-url))
 
-  return xdb:store($collection, $resource, $stats)
+  return xdb:store($collection, $resource, $metrics)
 };
 
 declare function trigger:after-create-document($url as xs:anyURI) {
-  stats:update($url)
+  metrics:update($url)
 };
 
 declare function trigger:after-update-document($url as xs:anyURI) {
-  stats:update($url)
+  metrics:update($url)
 };
 
 declare function trigger:after-delete-document($url as xs:anyURI) {
-  let $stats-url := local:get-stats-url($url)
-  let $resource := tokenize($stats-url, '/')[last()]
-  let $collection := replace($stats-url, '/[^/]+$', '')
+  let $metrics-url := local:get-metrics-url($url)
+  let $resource := tokenize($metrics-url, '/')[last()]
+  let $collection := replace($metrics-url, '/[^/]+$', '')
   return xmldb:remove($collection, $resource)
 };

@@ -72,8 +72,8 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
 declare function local:get-corpus-metrics ($corpus as xs:string) {
   let $collection-uri := concat($config:data-root, "/", $corpus)
   let $col := collection($collection-uri)
-  let $stats-uri := concat($config:stats-root, "/", $corpus)
-  let $stats := collection($stats-uri)
+  let $metrics-uri := concat($config:metrics-root, "/", $corpus)
+  let $metrics := collection($metrics-uri)
   let $num-plays := count($col/tei:TEI)
   let $num-characters := count($col//tei:listPerson/tei:person)
   let $num-male := count($col//tei:listPerson/tei:person[@sex="MALE"])
@@ -91,11 +91,11 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
     <sp>{$num-sp}</sp>
     <stage>{$num-stage}</stage>
     <wordcount>
-      <text>{sum($stats//text)}</text>
-      <sp>{sum($stats//sp)}</sp>
-      <stage>{sum($stats//stage)}</stage>
+      <text>{sum($metrics//text)}</text>
+      <sp>{sum($metrics//sp)}</sp>
+      <stage>{sum($metrics//stage)}</stage>
     </wordcount>
-    <updated>{max($stats//stats/xs:dateTime(@updated))}</updated>
+    <updated>{max($metrics//metrics/xs:dateTime(@updated))}</updated>
   </metrics>
 };
 
@@ -168,9 +168,9 @@ function api:index($corpusname) {
           let $authors := $tei//tei:fileDesc/tei:titleStmt/tei:author
           let $play-uri :=
             $config:api-base || "/corpora/" || $corpusname || "/play/" || $id
-          let $stats-url :=
-            $config:stats-root || "/" || $corpusname || "/" || $filename
-          let $network-size := doc($stats-url)//network/size/text()
+          let $metrics-url :=
+            $config:metrics-root || "/" || $corpusname || "/" || $filename
+          let $network-size := doc($metrics-url)//network/size/text()
           let $yearNormalized := dutil:get-normalized-year($tei)
           order by $authors[1]
           return
@@ -650,7 +650,7 @@ function api:stage-directions($corpusname, $playname) {
 
 (:~
  : Provides API to SPARQL interface
- : TODO: refine serialization to fit 
+ : TODO: refine serialization to fit
  :)
 declare
   %rest:POST("{$query}")
