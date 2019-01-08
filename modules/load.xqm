@@ -163,8 +163,6 @@ declare function load:generateRDF() {
     (: handle multiple key-values, decide if gnd or wikidata :)
     let $author-idnos := array {
       (: if there would be multiple values in key, tokenize them :)
-      (: for $key in tokenize($play//tei:titleStmt//tei:author/@key/string()," ")
-      return :)
       for $author in $play//tei:titleStmt//tei:author[@key]
       let $key := $author/@key/string()
       return
@@ -213,14 +211,6 @@ declare function load:generateRDF() {
 
     let $wikidata-play-uri := "http://www.wikidata.org/entity/" ||
       $play//tei:publicationStmt//tei:idno[@type="wikidata"]/text()
-
-    (:
-    let $label := (
-      $play//tei:fileDesc/tei:titleStmt//tei:author/text() => string-join(' ')
-    ) || ": " || (
-      $play//tei:fileDesc/tei:titleStmt//tei:title/text() => string-join(' ')
-    )
-    :)
 
     let $collection-uri := "https://dracor.org/" || $collection-id
 
