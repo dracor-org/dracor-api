@@ -7,6 +7,7 @@ module namespace drdf = "http://dracor.org/ns/exist/rdf";
 
 import module namespace config = "http://dracor.org/ns/exist/config"
   at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
@@ -28,14 +29,9 @@ declare function drdf:play-to-rdf ($play as element(tei:TEI))
 as element(rdf:RDF) {
   (: store data for triples in variables :)
   (: http://dracor.org/ontology#in_corpus :)
-  let $corpusname := (
-    replace($play/base-uri(), $config:data-root, "") => tokenize("/")
-  )[2]
-
-  (: used for URI of play at the moment; could be used for rdfs:seeAlso
-  web-presentation :)
-  let $play-name :=
-    ($play/base-uri() => tokenize("/"))[last()] => substring-before(".xml")
+  let $paths := dutil:filepaths($play/base-uri())
+  let $corpusname := $paths?corpusname
+  let $playname := $paths?playname
 
   (: should get the id of the play <idno type='dracor' :)
   let $play-id := $play//tei:publicationStmt//tei:idno[@type="dracor"]/text()
@@ -44,15 +40,14 @@ as element(rdf:RDF) {
   let $play-uri :=
     if ($play-id != "")
     then "https://dracor.org/id/" || $play-id
-    else "https://dracor.org/" || $corpusname || "/" || $play-name
+    else "https://dracor.org/" || $corpusname || "/" || $playname
 
   (:
    : get metadata of play to generate rdfs:label, dc:creator, dc:title ,...
    :)
 
-  (: handle multilungual titles "main"/"sub"... :)
+  (: handle multilingual titles "main"/"sub"... :)
   (: maybe this part could be or is handled by a seperate function? :)
-
   let $titles := array {
     for $lang in distinct-values(
       $play//tei:titleStmt//tei:title/@xml:lang/string()
