@@ -122,18 +122,3 @@ declare function metrics:update($url as xs:string) {
     xdb:store($collection, $resource, $metrics)
   )
 };
-
-declare function trigger:after-create-document($url as xs:anyURI) {
-  metrics:update($url)
-};
-
-declare function trigger:after-update-document($url as xs:anyURI) {
-  metrics:update($url)
-};
-
-declare function trigger:after-delete-document($url as xs:anyURI) {
-  let $paths := dutil:filepaths($url)
-  let $collection := $paths?collections?metrics
-  let $resource := $paths?filename
-  return xmldb:remove($collection, $resource)
-};
