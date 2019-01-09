@@ -666,14 +666,14 @@ function api:stage-directions($corpusname, $playname) {
  : SPARQL endpoint
  :)
 declare
-  %rest:POST("{$data}")
+  %rest:POST("{$query}")
   %rest:path("/sparql")
+  %rest:consumes("application/sparql-query")
   %rest:produces("application/sparql-results+xml", "application/xml")
   %output:media-type("application/sparql-results+xml")
   %output:method("xml")
-function api:sparql($data as xs:string) {
-  let $query := util:base64-decode($data)
-  return try {
+function api:sparql($query as xs:string) {
+  try {
     sparql:query($query)
   } catch * {
     <rest:response>
