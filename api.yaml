@@ -420,6 +420,27 @@ paths:
               schema:
                 type: string
 
+  /sparql:
+    post:
+      summary: SPARQL endpoint
+      description: >-
+        Post SPARQL queries
+      operationId: post-sparql
+      requestBody:
+        description: SPARQL query
+        content:
+          application/sparql-query:
+            schema:
+              type: string
+      tags: [public]
+      responses:
+        '200':
+          description: Returns SPARQL results document
+          content:
+            application/sparql-results+xml:
+              schema:
+                type: array
+
   /corpora/{corpusname}/load:
     get:
       summary: Load corpus data from its repository

@@ -663,15 +663,26 @@ function api:stage-directions($corpusname, $playname) {
 };
 
 (:~
- : Provides API to SPARQL interface
- : TODO: refine serialization to fit
+ : SPARQL endpoint
  :)
 declare
-  %rest:POST("{$query}")
+  %rest:POST("{$data}")
   %rest:path("/sparql")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
-  %output:method("json")
-function api:sparql($query as xs:string) {
-  sparql:query($query)
+  %rest:produces("application/sparql-results+xml", "application/xml")
+  %output:media-type("application/sparql-results+xml")
+  %output:method("xml")
+function api:sparql($data as xs:string) {
+  let $query := util:base64-decode($data)
+  return try {
+    sparql:query($query)
+  } catch * {
+    <rest:response>
+      <http:response status="400"/>
+    </rest:response>,
+    <error>
+      <message>SPARQL execution failed</message>
+      <code>{$err:code}</code>
+      <query>{$query}</query>
+    </error>
+  }
 };
