@@ -268,19 +268,15 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:load-corpus($corpusname) {
-  let $loaded := load:load-corpus($corpusname)
+  let $corpus := $config:corpora//corpus[name = $corpusname]
   return
-    if (not($loaded)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+    if ($corpus) then
+      array {load:load-corpus($corpus)}
     else
-      <object>
-        {
-          for $doc in $loaded/doc
-          return <loaded>{$doc/text()}</loaded>
-        }
-      </object>
+      (
+        <rest:response><http:response status="404"/></rest:response>,
+        map {"message": "no such corpus"}
+      )
 };
 
 declare
@@ -344,6 +340,23 @@ function api:play-tei($corpusname, $playname) {
         processing-instruction {$target} {$content},
         $tei
       }
+};
+
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/rdf")
+  %rest:produces("application/xml", "text/xml")
+  %output:media-type("application/xml")
+function api:play-rdf($corpusname, $playname) {
+  let $url := $config:rdf-root || "/" || $corpusname || "/" || $playname
+    || ".rdf.xml"
+  let $doc := doc($url)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else $doc
 };
 
 declare
@@ -650,15 +663,26 @@ function api:stage-directions($corpusname, $playname) {
 };
 
 (:~
- : Provides API to SPARQL interface
- : TODO: refine serialization to fit
+ : SPARQL endpoint
  :)
 declare
-  %rest:POST("{$query}")
+  %rest:POST("{$data}")
   %rest:path("/sparql")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
-  %output:method("json")
-function api:sparql($query as xs:string) {
-  sparql:query($query)
+  %rest:produces("application/sparql-results+xml", "application/xml")
+  %output:media-type("application/sparql-results+xml")
+  %output:method("xml")
+function api:sparql($data as xs:string) {
+  let $query := util:base64-decode($data)
+  return try {
+    sparql:query($query)
+  } catch * {
+    <rest:response>
+      <http:response status="400"/>
+    </rest:response>,
+    <error>
+      <message>SPARQL execution failed</message>
+      <code>{$err:code}</code>
+      <query>{$query}</query>
+    </error>
+  }
 };

@@ -227,6 +227,30 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/play/{playname}/rdf:
+    get:
+      summary: Get RDF document for a single play
+      operationId: play-rdf
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns RDF document
+          content:
+            application/xml:
+              schema:
+                type: string
+
   /corpora/{corpusname}/play/{playname}/networkdata/csv:
     get:
       summary: Get network data of a play as CSV
@@ -396,6 +420,27 @@ paths:
               schema:
                 type: string
 
+  /sparql:
+    post:
+      summary: SPARQL endpoint
+      description: >-
+        Post SPARQL queries
+      operationId: post-sparql
+      requestBody:
+        description: SPARQL query
+        content:
+          application/sparql-query:
+            schema:
+              type: string
+      tags: [public]
+      responses:
+        '200':
+          description: Returns SPARQL results document
+          content:
+            application/sparql-results+xml:
+              schema:
+                type: array
+
   /corpora/{corpusname}/load:
     get:
       summary: Load corpus data from its repository
@@ -411,8 +456,8 @@ paths:
             type: string
       responses:
         '200':
-          description: Returns an object providing list of loaded documents
+          description: Returns a list of created collections and documents
           content:
             application/json:
               schema:
-                type: object
+                type: array

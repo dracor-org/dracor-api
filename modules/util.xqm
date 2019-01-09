@@ -13,6 +13,30 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace json = "http://www.w3.org/2013/XSL/json";
 
 (:~
+ : Provide map of files and paths related to a play.
+ :
+ : @param $url DB URL to play TEI document
+ : @return map()
+ :)
+declare function dutil:filepaths($url as xs:string) as map() {
+  let $segments := tokenize($url, "/")
+  let $corpusname := $segments[last() - 1]
+  let $filename := $segments[last()]
+  let $playname := substring-before($filename, ".xml")
+  return map {
+    "filename": $filename,
+    "playname": $playname,
+    "corpusname": $corpusname,
+    "collections": map {
+      "tei": $config:data-root || "/" || $corpusname,
+      "metrics": $config:metrics-root || "/" || $corpusname,
+      "rdf": $config:rdf-root || "/" || $corpusname
+    },
+    "url": $url
+  }
+};
+
+(:~
  : Return document for a play.
  :
  : @param $corpusname
@@ -21,7 +45,7 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare function dutil:get-doc(
   $corpusname as xs:string,
   $playname as xs:string
-) as node() {
+) as node()* {
   let $doc := doc(
     $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
   )

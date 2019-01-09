@@ -15,10 +15,6 @@ declare namespace trigger = "http://exist-db.org/xquery/trigger";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
-declare function local:get-metrics-url($url as xs:string) as xs:string {
-  replace($url, $config:data-root, $config:metrics-root)
-};
-
 (:~
  : Collect sitelinks for each play in a given corpus from wikidata and store
  : them to the sitelinks collection
@@ -118,27 +114,11 @@ declare function metrics:calculate($url as xs:string) {
 :)
 declare function metrics:update($url as xs:string) {
   let $metrics := metrics:calculate($url)
-  let $metrics-url := local:get-metrics-url($url)
-  let $resource := tokenize($metrics-url, '/')[last()]
-  let $collection := replace($metrics-url, '/[^/]+$', '')
-
-  let $c := xdb:create-collection('/', $collection)
-  let $log := util:log('info', ('Metrics update: ', $metrics-url))
-
-  return xdb:store($collection, $resource, $metrics)
-};
-
-declare function trigger:after-create-document($url as xs:anyURI) {
-  metrics:update($url)
-};
-
-declare function trigger:after-update-document($url as xs:anyURI) {
-  metrics:update($url)
-};
-
-declare function trigger:after-delete-document($url as xs:anyURI) {
-  let $metrics-url := local:get-metrics-url($url)
-  let $resource := tokenize($metrics-url, '/')[last()]
-  let $collection := replace($metrics-url, '/[^/]+$', '')
-  return xmldb:remove($collection, $resource)
+  let $paths := dutil:filepaths($url)
+  let $collection := $paths?collections?metrics
+  let $resource := $paths?filename
+  return (
+    util:log('info', ('Metrics update: ', $collection, "/", $resource)),
+    xdb:store($collection, $resource, $metrics)
+  )
 };

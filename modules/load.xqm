@@ -5,27 +5,19 @@ xquery version "3.1";
  :)
 module namespace load = "http://dracor.org/ns/exist/load";
 
-import module namespace config="http://dracor.org/ns/exist/config" at "config.xqm";
+import module namespace config = "http://dracor.org/ns/exist/config"
+  at "config.xqm";
+import module namespace drdf = "http://dracor.org/ns/exist/rdf" at "rdf.xqm";
 declare namespace compression = "http://exist-db.org/xquery/compression";
 declare namespace util = "http://exist-db.org/xquery/util";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
-
-(: Namespaces for Linked Open Data :)
-declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#" ;
-declare namespace owl="http://www.w3.org/2002/07/owl#";
-declare namespace dracon="http://dracor.org/ontology#";
-(: /Namespaces for Linked Open Data :)
-
-
-
 
 declare function local:entry-data(
   $path as xs:anyURI, $type as xs:string, $data as item()?, $param as item()*
 ) as item()? {
   if($data) then
     let $collection := $param[1]
-    let $name := tokenize($path, '/')[last()]
+    let $name := tokenize($path, "/")[last()]
     let $res := xmldb:store($collection, $name, $data)
     return $res
   else
@@ -46,92 +38,51 @@ declare function local:entry-filter(
 (:~
  : Load corpus from ZIP archive
  :
- : @param $name The name of the corpus
+ : @param $corpus The <corpus> element providing corpus name and archive URL
+ : @return List of created collections and files
 :)
-declare function load:load-corpus($name as xs:string) {
-  let $corpus := $config:corpora//corpus[name = $name]
-  return if ($corpus) then
-    <loaded>
-    {
-      for $doc in load:load-archive($corpus/name, $corpus/archive)
-      return <doc>{$doc}</doc>
-    }
-    </loaded>
-  else
-    ()
-};
+declare function load:load-corpus($corpus as element(corpus))
+as xs:string* {
+  let $name := $corpus/name/string()
+  let $archive := $corpus/archive/string()
 
-(:~
- : Load XML files from ZIP archive
- :
- : @param $name The name of the sub collection to create
- : @param $archive-url The URL of a ZIP archive containing XML files
-:)
-declare function load:load-archive($name as xs:string, $archive-url as xs:string) {
-  let $collection := xmldb:create-collection($config:data-root, $name)
-  (: returns empty sequence when collection already available. so we set again: :)
-  let $collection := $config:data-root || "/" || $name
-  let $removals := for $res in xmldb:get-child-resources($collection)
-                   return xmldb:remove($collection, $res)
-  let $gitRepo := httpclient:get($archive-url, false(), ())
-  let $zip := xs:base64Binary(
-    $gitRepo//httpclient:body[@mimetype="application/zip"][@type="binary"]
-    [@encoding="Base64Encoded"]/string(.)
-  )
+  let $data-collection := $config:data-root || "/" || $name
+  let $metrics-collection := $config:metrics-root || "/" || $name
+  let $rdf-collection := $config:rdf-root || "/" || $name
 
-  return (
-    compression:unzip(
-      $zip,
-      util:function(xs:QName("local:entry-filter"), 3),
-      (),
-      util:function(xs:QName("local:entry-data"), 4),
-      ($collection)
-    )
-  )
-};
+  let $response := httpclient:get($archive, false(), ())
 
-(:~ Generates an RDF-Dump of the data; stores file in $config:rdf-root
-  @author Ingo Börner
-  @returns
-:)
-declare function load:generateRDF() {
-  let $rdf-filename := "dracor.rdf.xml"
-  let $collection := ""
-  let $filename := ""
-  let $plays := collection($config:data-root)//tei:TEI
-  let $inner :=
-    for $play in $plays
-    let $collection-id := (
-      replace($play/base-uri(),$config:data-root,'') => tokenize("/")
-    )[2]
-    let $play-uri := 'https://dracor.org/' || $collection-id || "/" ||
-      ($play/base-uri() => tokenize("/"))[last()] => substring-before('.xml')
-    let $wikidata := "http://www.wikidata.org/entity/" ||
-      $play//tei:publicationStmt//tei:idno[@type='wikidata']/text()
-    let $label := (
-      $play//tei:fileDesc/tei:titleStmt//tei:author/text() => string-join(' ')
-    ) || ": " || (
-      $play//tei:fileDesc/tei:titleStmt//tei:title/text() => string-join(' ')
-    )
-    let $dracor-collection := "https://dracor.org/" || $collection-id
-    return
-    <rdf:Description rdf:about="{$play-uri}">
-        <owl:sameAs rdf:resource="{$wikidata}"/>
-        <rdfs:label>{$label}</rdfs:label>
-        <dracon:collection rdf:resource="{$dracor-collection}"/>
-    </rdf:Description>
-
-    let $rdf-data :=  <rdf:RDF
-      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-      xmlns:owl="http://www.w3.org/2002/07/owl#"
-      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-      xmlns:dracon="http://dracor.org/ontology#"
-    >
-      {$inner}
-    </rdf:RDF>
-
-    return (
-      $rdf-data,
-      xmldb:store($config:rdf-root, $rdf-filename, $rdf-data)
+  return
+    if ($response/@statusCode = 200) then
+      let $body := $response//httpclient:body[@mimetype="application/zip"]
+        [@type="binary"][@encoding="Base64Encoded"]/string(.)
+      let $zip := xs:base64Binary($body)
+      return (
+        (: remove collections :)
+        if (xmldb:collection-available($data-collection))
+        then xmldb:remove($data-collection)
+        else (),
+        if (xmldb:collection-available($metrics-collection))
+        then xmldb:remove($metrics-collection)
+        else (),
+        if (xmldb:collection-available($rdf-collection))
+        then xmldb:remove($rdf-collection)
+        else (),
+        (: (re)create collections :)
+        xmldb:create-collection($config:data-root, $name),
+        xmldb:create-collection($config:metrics-root, $name),
+        xmldb:create-collection($config:rdf-root, $name),
+        (: load files from ZIP archive :)
+        compression:unzip(
+          $zip,
+          util:function(xs:QName("local:entry-filter"), 3),
+          (),
+          util:function(xs:QName("local:entry-data"), 4),
+          ($data-collection)
+        )
+      )
+    else (
+      util:log("warn", ("cannot load archive ", $archive)),
+      util:log("info", $response)
     )
 };
