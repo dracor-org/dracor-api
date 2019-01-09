@@ -42,7 +42,6 @@ as xs:boolean+ {
       let $do :=
         (util:log-system-out("[" || . || "] starting import…"),
         load:load-corpus(.),
-        load:generateRDF(),
         util:log-system-out("[" || . || "] done."))
       return
         true()

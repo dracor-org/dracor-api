@@ -226,3 +226,19 @@ as element(rdf:RDF) {
       {$inner}
     </rdf:RDF>
 };
+
+(:~
+ : Update RDF for single play
+ :
+ : @param $url URL of the TEI document
+:)
+declare function drdf:update($url as xs:string) {
+  let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
+  let $paths := dutil:filepaths($url)
+  let $collection := $paths?collections?rdf
+  let $resource := $paths?playname || ".rdf.xml"
+  return (
+    util:log('info', ('RDF update: ', $collection, "/", $resource)),
+    xmldb:store($collection, $resource, $rdf)
+  )
+};

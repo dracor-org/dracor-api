@@ -86,15 +86,3 @@ as xs:string* {
       util:log("info", $response)
     )
 };
-
-(:~ Generates an RDF-Dump of the data; stores file in $config:rdf-root
-  @author Ingo Börner
-:)
-declare function load:generateRDF() {
-  let $rdf-collection := $config:data-root || "/rdf"
-
-  let $plays := collection($config:data-root)//tei:TEI
-
-  for $play in $plays return drdf:play-to-rdf($play)
-    (: xmldb:store($rdf-collection, $rdf-filename, $rdf-data) :)
-};
