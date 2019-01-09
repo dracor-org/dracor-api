@@ -344,6 +344,23 @@ function api:play-tei($corpusname, $playname) {
 
 declare
   %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/rdf")
+  %rest:produces("application/xml", "text/xml")
+  %output:media-type("application/xml")
+function api:play-rdf($corpusname, $playname) {
+  let $url := $config:rdf-root || "/" || $corpusname || "/" || $playname
+    || ".rdf.xml"
+  let $doc := doc($url)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else $doc
+};
+
+declare
+  %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")

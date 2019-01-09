@@ -227,6 +227,30 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/play/{playname}/rdf:
+    get:
+      summary: Get RDF document for a single play
+      operationId: play-rdf
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns RDF document
+          content:
+            application/xml:
+              schema:
+                type: string
+
   /corpora/{corpusname}/play/{playname}/networkdata/csv:
     get:
       summary: Get network data of a play as CSV
