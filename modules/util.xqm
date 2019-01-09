@@ -45,7 +45,7 @@ declare function dutil:filepaths($url as xs:string) as map() {
 declare function dutil:get-doc(
   $corpusname as xs:string,
   $playname as xs:string
-) as node() {
+) as node()* {
   let $doc := doc(
     $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
   )
