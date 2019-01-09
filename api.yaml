@@ -411,8 +411,8 @@ paths:
             type: string
       responses:
         '200':
-          description: Returns an object providing list of loaded documents
+          description: Returns a list of created collections and documents
           content:
             application/json:
               schema:
-                type: object
+                type: array

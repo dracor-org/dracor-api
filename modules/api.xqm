@@ -268,19 +268,15 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:load-corpus($corpusname) {
-  let $loaded := load:load-corpus($corpusname)
+  let $corpus := $config:corpora//corpus[name = $corpusname]
   return
-    if (not($loaded)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+    if ($corpus) then
+      array {load:load-corpus($corpus)}
     else
-      <object>
-        {
-          for $doc in $loaded/doc
-          return <loaded>{$doc/text()}</loaded>
-        }
-      </object>
+      (
+        <rest:response><http:response status="404"/></rest:response>,
+        map {"message": "no such corpus"}
+      )
 };
 
 declare

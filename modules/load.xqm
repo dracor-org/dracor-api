@@ -38,48 +38,53 @@ declare function local:entry-filter(
 (:~
  : Load corpus from ZIP archive
  :
- : @param $name The name of the corpus
+ : @param $corpus The <corpus> element providing corpus name and archive URL
+ : @return List of created collections and files
 :)
-declare function load:load-corpus($name as xs:string) {
-  let $corpus := $config:corpora//corpus[name = $name]
-  return if ($corpus) then
-    <loaded>
-    {
-      for $doc in load:load-archive($corpus/name, $corpus/archive)
-      return <doc>{$doc}</doc>
-    }
-    </loaded>
-  else
-    ()
-};
+declare function load:load-corpus($corpus as element(corpus))
+as xs:string* {
+  let $name := $corpus/name/string()
+  let $archive := $corpus/archive/string()
 
-(:~
- : Load XML files from ZIP archive
- :
- : @param $name The name of the sub collection to create
- : @param $archive-url The URL of a ZIP archive containing XML files
-:)
-declare function load:load-archive($name as xs:string, $archive-url as xs:string) {
-  let $collection := xmldb:create-collection($config:data-root, $name)
-  (: returns empty sequence when collection already available. so we set again: :)
-  let $collection := $config:data-root || "/" || $name
-  let $removals := for $res in xmldb:get-child-resources($collection)
-                   return xmldb:remove($collection, $res)
-  let $gitRepo := httpclient:get($archive-url, false(), ())
-  let $zip := xs:base64Binary(
-    $gitRepo//httpclient:body[@mimetype="application/zip"][@type="binary"]
-    [@encoding="Base64Encoded"]/string(.)
-  )
+  let $data-collection := $config:data-root || "/" || $name
+  let $metrics-collection := $config:metrics-root || "/" || $name
+  let $rdf-collection := $config:rdf-root || "/" || $name
 
-  return (
-    compression:unzip(
-      $zip,
-      util:function(xs:QName("local:entry-filter"), 3),
-      (),
-      util:function(xs:QName("local:entry-data"), 4),
-      ($collection)
+  let $response := httpclient:get($archive, false(), ())
+
+  return
+    if ($response/@statusCode = 200) then
+      let $body := $response//httpclient:body[@mimetype="application/zip"]
+        [@type="binary"][@encoding="Base64Encoded"]/string(.)
+      let $zip := xs:base64Binary($body)
+      return (
+        (: remove collections :)
+        if (xmldb:collection-available($data-collection))
+        then xmldb:remove($data-collection)
+        else (),
+        if (xmldb:collection-available($metrics-collection))
+        then xmldb:remove($metrics-collection)
+        else (),
+        if (xmldb:collection-available($rdf-collection))
+        then xmldb:remove($rdf-collection)
+        else (),
+        (: (re)create collections :)
+        xmldb:create-collection($config:data-root, $name),
+        xmldb:create-collection($config:metrics-root, $name),
+        xmldb:create-collection($config:rdf-root, $name),
+        (: load files from ZIP archive :)
+        compression:unzip(
+          $zip,
+          util:function(xs:QName("local:entry-filter"), 3),
+          (),
+          util:function(xs:QName("local:entry-data"), 4),
+          ($data-collection)
+        )
+      )
+    else (
+      util:log("warn", ("cannot load archive ", $archive)),
+      util:log("info", $response)
     )
-  )
 };
 
 (:~ Generates an RDF-Dump of the data; stores file in $config:rdf-root

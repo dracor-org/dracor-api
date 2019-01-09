@@ -117,9 +117,6 @@ declare function metrics:update($url as xs:string) {
   let $paths := dutil:filepaths($url)
   let $collection := $paths?collections?metrics
   let $resource := $paths?filename
-
-  let $c := xdb:create-collection('/', $collection)
-
   return (
     util:log('info', ('Metrics update: ', $collection, "/", $resource)),
     xdb:store($collection, $resource, $metrics)
