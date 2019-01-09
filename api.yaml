@@ -432,6 +432,15 @@ paths:
           application/sparql-query:
             schema:
               type: string
+            example: |
+              PREFIX owl: <http://www.w3.org/2002/07/owl#>
+              PREFIX dracon: <http://dracor.org/ontology#>
+              SELECT ?play
+              WHERE {
+                ?author owl:sameAs <http://www.wikidata.org/entity/Q310866> .
+                ?play dracon:has_author ?author .
+              }
+              LIMIT 50
       tags: [public]
       responses:
         '200':
