@@ -54,13 +54,14 @@ let $sitelinks-job := xs:anyURI($target || '/jobs/sitelinks.xq')
 
 (: register the RESTXQ module :)
 let $restxq-module := xs:anyURI('modules/api.xpm')
+
 return (
   (: FIXME: loading the data on install just takes too long and frequently gets
    : in the way when developing. Software deployment and data maintenance should
    : be decoupled which is why I'm disabling the automatic data import for now.
    :)
-  (: local:prepare-rdf-index(),
-  local:import-data(), :)
+  (: local:import-data(), :)
+  local:prepare-rdf-index(),
   sm:chown($webhook, "admin"),
   sm:chgrp($webhook, "dba"),
   sm:chmod($webhook, 'rwsr-xr-x'),
