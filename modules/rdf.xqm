@@ -206,7 +206,6 @@ as element(rdf:RDF) {
 
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
-      <owl:sameAs rdf:resource="{$wikidata-play-uri}"/>
       {$rdfs-labels}
       {$dc-creator}
       {$dc-titles}
