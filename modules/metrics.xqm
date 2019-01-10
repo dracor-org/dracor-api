@@ -122,3 +122,13 @@ declare function metrics:update($url as xs:string) {
     xdb:store($collection, $resource, $metrics)
   )
 };
+
+(:~
+ : Update metrics for all plays in the database
+:)
+declare function metrics:update() as xs:string* {
+  let $l := util:log-system-out("Updating metrics files")
+  for $tei in collection($config:data-root)//tei:TEI
+  let $url := $tei/base-uri()
+  return metrics:update($url)
+};

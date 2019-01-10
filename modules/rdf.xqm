@@ -241,3 +241,13 @@ declare function drdf:update($url as xs:string) {
     xmldb:store($collection, $resource, $rdf)
   )
 };
+
+(:~
+ : Update RDF for all plays in the database
+:)
+declare function drdf:update() as xs:string* {
+  let $l := util:log-system-out("Updating RDF files")
+  for $tei in collection($config:data-root)//tei:TEI
+  let $url := $tei/base-uri()
+  return drdf:update($url)
+};

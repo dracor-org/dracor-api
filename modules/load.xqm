@@ -7,6 +7,8 @@ module namespace load = "http://dracor.org/ns/exist/load";
 
 import module namespace config = "http://dracor.org/ns/exist/config"
   at "config.xqm";
+import module namespace metrics = "http://dracor.org/ns/exist/metrics"
+  at "metrics.xqm";
 import module namespace drdf = "http://dracor.org/ns/exist/rdf" at "rdf.xqm";
 declare namespace compression = "http://exist-db.org/xquery/compression";
 declare namespace util = "http://exist-db.org/xquery/util";
@@ -85,4 +87,11 @@ as xs:string* {
       util:log("warn", ("cannot load archive ", $archive)),
       util:log("info", $response)
     )
+};
+
+(:~
+ : Update generated files for all plays in the database
+:)
+declare function load:update() as xs:string* {
+  metrics:update(), drdf:update()
 };
