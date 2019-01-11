@@ -674,7 +674,16 @@ declare
   %output:method("xml")
 function api:sparql-get($query as xs:string*) {
   try {
-    sparql:query($query)
+    if ($query) then
+      sparql:query($query)
+    else (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      <error>
+        <message>missing 'query' parameter</message>
+      </error>
+    )
   } catch * {
     <rest:response>
       <http:response status="400"/>
@@ -694,9 +703,18 @@ declare
   %rest:produces("application/sparql-results+xml", "application/xml")
   %output:media-type("application/sparql-results+xml")
   %output:method("xml")
-function api:sparql-post($query as xs:string) {
+function api:sparql-post($query as xs:string?) {
   try {
-    sparql:query($query)
+    if ($query) then
+      sparql:query($query)
+    else (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      <error>
+        <message>missing query</message>
+      </error>
+    )
   } catch * {
     <rest:response>
       <http:response status="400"/>
