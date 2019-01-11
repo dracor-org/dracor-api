@@ -76,7 +76,7 @@ paths:
       tags: [public]
       responses:
         '200':
-          description: Returns representing available corpora
+          description: Returns list of available corpora
           content:
             application/json:
               schema:
@@ -102,6 +102,54 @@ paths:
                     "uri": "https://dracor.org/api/corpora/shake"
                   }
                 ]
+    put:
+      summary: Add new corpus
+      operationId: put-corpora
+      tags: [admin]
+      requestBody:
+        description: Corpus meta data
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - title
+              properties:
+                name:
+                  type: string
+                  description: corpus name
+                title:
+                  type: string
+                  description: corpus title
+                repository:
+                  type: string
+                  description: repository URL
+                archive:
+                  type: string
+                  summary: >-
+                    URL of ZIP archive containing TEI files of the corpus
+                  description: >
+                    The TEI file are expected to be placed in a `tei`
+                    subdirectory. Other files will be ignored when loading the
+                    archive.
+            example: |
+              {
+                "name": "rus",
+                "title": "Russian Drama Corpus",
+                "repository": "https://github.com/dracor-org/rusdracor"
+              }
+      responses:
+        '200':
+          description: Returns corpus metadata
+          content:
+            application/json:
+              schema:
+                type: object
+        '409':
+          description: Corpus already exists
+        '400':
+          description: Posted data lacks required properties or is malformed
 
   /corpora/{corpusname}:
     get:
