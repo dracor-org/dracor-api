@@ -434,7 +434,7 @@ paths:
           required: true
           schema:
             type: string
-          example: SELECT%20*%20WHERE%20%7B%3Fs%20%3Fp%20%3Fo%7D%20LIMIT%2010
+          example: SELECT * WHERE {?s ?p ?o} LIMIT 10
       responses:
         '200':
           description: Returns SPARQL results document
