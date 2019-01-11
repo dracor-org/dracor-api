@@ -132,17 +132,19 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora() {
-  for $corpus in collection($config:data-root)/corpus
-  let $name := $corpus/name/text()
-  order by $name
-  return map:new ((
-    map:entry("name", $name),
-    map:entry("title", $corpus/title/text()),
-    map:entry("uri", $config:api-base || '/corpora/' || $name),
-    if ($corpus/repository) then (
-      map:entry("repository", $corpus/repository/text())
-    ) else ()
-  ))
+  array {
+    for $corpus in collection($config:data-root)/corpus
+    let $name := $corpus/name/text()
+    order by $name
+    return map:new ((
+      map:entry("name", $name),
+      map:entry("title", $corpus/title/text()),
+      map:entry("uri", $config:api-base || '/corpora/' || $name),
+      if ($corpus/repository) then (
+        map:entry("repository", $corpus/repository/text())
+      ) else ()
+    ))
+  }
 };
 
 declare
