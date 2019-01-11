@@ -283,6 +283,54 @@ function api:index($corpusname) {
 };
 
 declare
+  %rest:DELETE
+  %rest:path("/corpora/{$corpusname}")
+  %rest:header-param("Authorization", "{$auth}")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:index($corpusname, $auth) {
+  if (not($auth)) then
+    (
+      <rest:response>
+        <http:response status="401"/>
+      </rest:response>,
+      map {
+        "message": "authorization required"
+      }
+    )
+  else
+
+  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+
+  return
+    if (not($corpus)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $url := $config:data-root || "/" || $corpusname || ".xml"
+      return
+        if ($url = $corpus/base-uri()) then
+        (
+          xmldb:remove($config:data-root, $corpusname || ".xml"),
+          xmldb:remove($config:data-root || "/" || $corpusname),
+          xmldb:remove($config:metrics-root || "/" || $corpusname),
+          xmldb:remove($config:rdf-root || "/" || $corpusname),
+          map {
+            "message": "corpus deleted",
+            "uri": $url
+          }
+        )
+        else
+        (
+          <rest:response>
+            <http:response status="404"/>
+          </rest:response>
+        )
+};
+
+declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/metadata")
   %rest:produces("application/json")

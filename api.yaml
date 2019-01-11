@@ -186,6 +186,22 @@ paths:
                       type: object
         '404':
           description: Corpus not found
+    delete:
+      summary: Remove corpus from database
+      operationId: delete-corpus
+      tags: [admin]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Corpus deleted
+        '404':
+          description: Corpus not found
+
 
   /corpora/{corpusname}/metadata:
     get:
