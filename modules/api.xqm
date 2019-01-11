@@ -143,6 +143,68 @@ function api:corpora() {
 };
 
 declare
+  %rest:PUT("{$data}")
+  %rest:path("/corpora")
+  %rest:consumes("application/json")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:corpora-put($data) {
+  let $json := parse-json(util:base64-decode($data))
+  let $name := $json?name
+
+  return if (collection($config:data-root)/corpus[name = $name]) then
+    (
+      <rest:response>
+        <http:response status="409"/>
+      </rest:response>,
+      map {
+        "error": "corpus already exists"
+      }
+    )
+  else if (not($name) or not($json?title)) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "missing name or title"
+      }
+    )
+  else if (not(matches($name, '^[-a-z0-1]+$'))) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "invalid name",
+        "message": "Only lower case ASCII letters and digits are accepted."
+      }
+    )
+  else
+    let $corpus :=
+      <corpus>
+        <name>{$name}</name>
+        <title>{$json?title}</title>
+        {
+          if ($json?repository)
+          then <repository>{$json?repository}</repository>
+          else ()
+        }
+        {if ($json?archive) then <archive>{$json?archive}</archive> else ()}
+      </corpus>
+    return (
+      util:log-system-out("creating corpus"),
+      util:log-system-out($corpus),
+      xmldb:create-collection($config:data-root, $name),
+      xmldb:create-collection($config:metrics-root, $name),
+      xmldb:create-collection($config:rdf-root, $name),
+      xmldb:store($config:data-root, $name || ".xml", $corpus),
+      $json
+    )
+};
+
+declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}")
   %rest:produces("application/json")
