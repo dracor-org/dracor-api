@@ -8,8 +8,7 @@ API Documentation is available at [/documentation/api/](https://dracor.org/docum
 ## tl;dr
 
 Use `ant` to build a xar package or `ant devel` to set up a development
-environment. Both commands can be used together with `-Dtestdracor=true` to
-initialize a small set of data for testing purposes.
+environment.
 
 ## Requirements
 
@@ -40,11 +39,6 @@ exposed, the following ones are considered to be useful:
 Creates an [EXPath](http://expath.org/spec/pkg) package in the `build`
 directory.
 
-When run with the `testdracor` parameter (`ant xar -Dtestdracor=true`) the
-package is built with a modified `corpora.xml` file that includes only the
-[TestDraCor](https://github.com/dracor-org/testdracor) corpus. This is useful
-for testing purposes.
-
 ### devel
 
 Sets up a development environment inside the `devel` directory. If this
@@ -66,13 +60,14 @@ This target will do the following in this order:
   - the process will be [spawned](https://ant.apache.org/manual/Tasks/exec.html)
 
 Afterwards you can start the database with
+
 ```bash
 bash devel/eXist-db-4.5.0/bin/startup.sh
 ```
 
 ### cleanup
 
-Removes the `devel/` and the `build/` directory.
+Removes the `devel/` and the `build/` directories.
 
 ## Installation
 
