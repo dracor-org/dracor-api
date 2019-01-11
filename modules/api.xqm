@@ -699,11 +699,12 @@ function api:sparql-get($query as xs:string*) {
 declare
   %rest:POST("{$query}")
   %rest:path("/sparql")
+  %rest:header-param("Content-Type", "{$type}")
   %rest:consumes("application/sparql-query")
   %rest:produces("application/sparql-results+xml", "application/xml")
   %output:media-type("application/sparql-results+xml")
   %output:method("xml")
-function api:sparql-post($query as xs:string?) {
+function api:sparql-post($query as xs:string*, $type) {
   try {
     if ($query) then
       sparql:query($query)
@@ -713,6 +714,45 @@ function api:sparql-post($query as xs:string?) {
       </rest:response>,
       <error>
         <message>missing query</message>
+      </error>
+    )
+  } catch * {
+    <rest:response>
+      <http:response status="400"/>
+    </rest:response>,
+    <error>
+      <message>SPARQL execution failed</message>
+      <code>{$err:code}</code>
+      <query>{$query}</query>
+    </error>
+  }
+};
+
+(:
+ : CAVEAT: this only seems to work if the Content-Type is exactly
+ : "application/x-www-form-urlencoded". If the header specifies a charset like
+ : "application/x-www-form-urlencoded; charset=UTF-8" $query will not get
+ : populated.
+ :)
+declare
+  %rest:POST
+  %rest:path("/sparql")
+  %rest:form-param("query","{$query}")
+  %rest:header-param("Content-Type", "{$type}")
+  %rest:consumes("application/x-www-form-urlencoded")
+  %rest:produces("application/sparql-results+xml", "application/xml")
+  %output:media-type("application/sparql-results+xml")
+  %output:method("xml")
+function api:sparql-post-form($query as xs:string*, $type) {
+  try {
+    if ($query) then
+      sparql:query($query)
+    else (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      <error>
+        <message>missing 'query' parameter</message>
       </error>
     )
   } catch * {
