@@ -86,14 +86,20 @@ paths:
                   {
                     "name": "ger",
                     "title": "German Drama Corpus"
+                    "repository": "https://github.com/dracor-org/gerdracor",
+                    "uri": "https://dracor.org/api/corpora/ger"
                   },
                   {
                     "name": "rus",
                     "title": "Russian Drama Corpus"
+                    "repository": "https://github.com/dracor-org/rusdracor",
+                    "uri": "https://dracor.org/api/corpora/rus"
                   },
                   {
                     "name": "shake",
                     "title": "Shakespeare Drama Corpus"
+                    "repository": "https://github.com/dracor-org/shakedracor",
+                    "uri": "https://dracor.org/api/corpora/shake"
                   }
                 ]
 
