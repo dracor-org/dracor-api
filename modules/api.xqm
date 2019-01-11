@@ -112,7 +112,7 @@ function api:metrics() {
     return
       <json>
         {
-          for $corpus in $config:corpora//corpus
+          for $corpus in collection($config:data-root)/corpus
           return
           <metrics>
             <corpus>{$corpus/title, $corpus/name}</corpus>
@@ -132,7 +132,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora() {
-  for $corpus in $config:corpora//corpus
+  for $corpus in collection($config:data-root)/corpus
   let $name := $corpus/name/text()
   order by $name
   return map {
@@ -211,16 +211,18 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:index($corpusname) {
-  let $title := $config:corpora//corpus[name=$corpusname]/title/text()
+  let $corpus := collection($config:data-root)/corpus[name=$corpusname]
+  let $title := $corpus/title/text()
   let $collection := concat($config:data-root, "/", $corpusname)
   let $col := collection($collection)
   return
-    if (not($col)) then
+    if (not(xmldb:collection-available($collection))) then
       <rest:response>
         <http:response status="404"/>
       </rest:response>
     else
       <index>
+        <name>{$corpusname}</name>
         <title>{$title}</title>
         {
           for $tei in $col//tei:TEI
@@ -330,7 +332,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:load-corpus($corpusname) {
-  let $corpus := $config:corpora//corpus[name = $corpusname]
+  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
   return
     if ($corpus) then
       array {load:load-corpus($corpus)}
