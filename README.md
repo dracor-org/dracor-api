@@ -71,7 +71,7 @@ Starts the database. You can stop the database with `Ctrl-C`.
 ### load-corpus
 
 Creates a test corpus and loads its data files into the database. You can use
-this target to load other corpora as well buy overriding the corpus property
+this target to load other corpora as well by overriding the corpus property
 like this:
 
 ```bash
