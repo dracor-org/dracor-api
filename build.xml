@@ -100,7 +100,8 @@
     </condition>
     <delete file="anttmp-${timestamp}"/>
     <antcall target="check-metrics"/>
-    <echo message="start the import process with `bash devel/eXist-db-4.5.0/bin/startup.sh`"/>
+    <echo message="Start the database with `ant run`."/>
+    <echo message="Use `ant load-corpus` to populate the database."/>
   </target>
 
   <target name="init">
@@ -182,5 +183,36 @@
     <fail if="devel.available">
       Build aborted. You have to delete «${devel.dir}» at first.
     </fail>
+  </target>
+
+  <target name="run">
+    <condition property="devel.available">
+      <available file="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh" />
+    </condition>
+    <fail if="!devel.available">
+      Startup script not available. Run `ant devel` first.
+    </fail>
+    <exec executable="bash">
+      <arg value="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
+    </exec>
+  </target>
+
+  <target name="load-corpus">
+    <echo  level="info" message="Adding corpus '${corpus}' to database..." />
+    <exec executable="curl">
+      <arg value="-s"/>
+      <arg value="-XPUT"/>
+      <arg value="-uadmin:"/>
+      <arg value="http://localhost:${jetty.http.port}/exist/restxq/corpora"/>
+      <arg value="-H"/>
+      <arg value="Content-Type: application/json"/>
+      <arg value="-d@corpora/${corpus}.json"/>
+    </exec>
+    <echo  level="info" message="Loading data for corpus '${corpus}'..." />
+    <exec executable="curl">
+      <arg value="-s"/>
+      <arg value="-uadmin:"/>
+      <arg value="http://localhost:${jetty.http.port}/exist/restxq/corpora/${corpus}/load"/>
+    </exec>
   </target>
 </project>
