@@ -70,7 +70,7 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
   </terms>
 };
 
-declare function local:get-corpus-metrics ($corpus as xs:string) {
+declare function local:get-corpus-metrics-xml ($corpus as xs:string) {
   let $collection-uri := concat($config:data-root, "/", $corpus)
   let $col := collection($collection-uri)
   let $metrics-uri := concat($config:metrics-root, "/", $corpus)
@@ -117,7 +117,7 @@ function api:metrics() {
           <metrics>
             <corpus>{$corpus/title, $corpus/name}</corpus>
             {
-              for $m in local:get-corpus-metrics($corpus/name/text())/*
+              for $m in local:get-corpus-metrics-xml($corpus/name/text())/*
               return $m
             }
           </metrics>
@@ -125,13 +125,43 @@ function api:metrics() {
       </json>
 };
 
+declare function local:get-corpus-metrics ($corpus as xs:string) {
+  let $collection-uri := concat($config:data-root, "/", $corpus)
+  let $col := collection($collection-uri)
+  let $metrics-uri := concat($config:metrics-root, "/", $corpus)
+  let $metrics := collection($metrics-uri)
+  let $num-plays := count($col/tei:TEI)
+  let $num-characters := count($col//tei:listPerson/tei:person)
+  let $num-male := count($col//tei:listPerson/tei:person[@sex="MALE"])
+  let $num-female := count($col//tei:listPerson/tei:person[@sex="FEMALE"])
+  let $num-text := count($col//tei:text)
+  let $num-stage := count($col//tei:stage)
+  let $num-sp := count($col//tei:sp)
+  return map {
+    "plays": $num-plays,
+    "characters": $num-characters,
+    "male": $num-male,
+    "female": $num-female,
+    "text": $num-text,
+    "sp": $num-sp,
+    "stage": $num-stage,
+    "wordcount": map {
+      "text": sum($metrics//text),
+      "sp": sum($metrics//sp),
+      "stage": sum($metrics//stage)
+    },
+    "updated": max($metrics//metrics/xs:dateTime(@updated))
+  }
+};
+
 declare
   %rest:GET
   %rest:path("/corpora")
+  %rest:query-param("include", "{$include}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:corpora() {
+function api:corpora($include) {
   array {
     for $corpus in collection($config:data-root)/corpus
     let $name := $corpus/name/text()
@@ -142,7 +172,11 @@ function api:corpora() {
       map:entry("uri", $config:api-base || '/corpora/' || $name),
       if ($corpus/repository) then (
         map:entry("repository", $corpus/repository/text())
+      ) else (),
+      if ($include = "metrics") then (
+        map:entry("metrics", local:get-corpus-metrics($name))
       ) else ()
+
     ))
   }
 };

@@ -35,7 +35,11 @@ paths:
   /metrics:
     get:
       summary: List available corpora and their basic metrics
+      description: >-
+        This endpoint is deprecated. Please use `/corpora`
+        with an appropriate `include` query parameter instead.
       operationId: list-metrics
+      deprecated: true
       tags: [public]
       responses:
         '200':
@@ -74,6 +78,14 @@ paths:
       summary: List available corpora
       operationId: list-corpora
       tags: [public]
+      parameters:
+        - name: include
+          in: query
+          description: Include metrics for each corpus
+          required: false
+          schema:
+            type: string
+            enum: [metrics]
       responses:
         '200':
           description: Returns list of available corpora
@@ -87,19 +99,64 @@ paths:
                     "name": "ger",
                     "title": "German Drama Corpus"
                     "repository": "https://github.com/dracor-org/gerdracor",
-                    "uri": "https://dracor.org/api/corpora/ger"
+                    "uri": "https://dracor.org/api/corpora/ger",
+                    "metrics": {
+                      "characters": 10001,
+                      "female": 1308,
+                      "male": 3953,
+                      "plays": 471,
+                      "sp": 327696,
+                      "stage": 139169,
+                      "text": 471,
+                      "updated": "2019-01-12T00:55:59.145+01:00",
+                      "wordcount": {
+                        "sp": 7909927.0,
+                        "stage": 880356,
+                        "text": 8275863.0
+                      }
+                    },
                   },
                   {
                     "name": "rus",
                     "title": "Russian Drama Corpus"
                     "repository": "https://github.com/dracor-org/rusdracor",
-                    "uri": "https://dracor.org/api/corpora/rus"
+                    "uri": "https://dracor.org/api/corpora/rus",
+                    "metrics": {
+                      "characters": 2440,
+                      "female": 564,
+                      "male": 1789,
+                      "plays": 141,
+                      "sp": 73485,
+                      "stage": 31949,
+                      "text": 141,
+                      "updated": "2019-01-11T22:48:53.865+01:00",
+                      "wordcount": {
+                        "sp": 1388515.0,
+                        "stage": 140415,
+                        "text": 1468669.0
+                      }
+                    }
                   },
                   {
                     "name": "shake",
                     "title": "Shakespeare Drama Corpus"
                     "repository": "https://github.com/dracor-org/shakedracor",
-                    "uri": "https://dracor.org/api/corpora/shake"
+                    "uri": "https://dracor.org/api/corpora/shake",
+                    "metrics": {
+                      "characters": 1433,
+                      "female": 0,
+                      "male": 0,
+                      "plays": 37,
+                      "sp": 31066,
+                      "stage": 10450,
+                      "text": 37,
+                      "updated": "2019-01-11T22:53:29.419+01:00",
+                      "wordcount": {
+                        "sp": 876744,
+                        "stage": 41230,
+                        "text": 908286
+                      }
+                    }
                   }
                 ]
     put:
