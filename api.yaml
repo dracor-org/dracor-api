@@ -76,7 +76,7 @@ paths:
       tags: [public]
       responses:
         '200':
-          description: Returns representing available corpora
+          description: Returns list of available corpora
           content:
             application/json:
               schema:
@@ -86,16 +86,70 @@ paths:
                   {
                     "name": "ger",
                     "title": "German Drama Corpus"
+                    "repository": "https://github.com/dracor-org/gerdracor",
+                    "uri": "https://dracor.org/api/corpora/ger"
                   },
                   {
                     "name": "rus",
                     "title": "Russian Drama Corpus"
+                    "repository": "https://github.com/dracor-org/rusdracor",
+                    "uri": "https://dracor.org/api/corpora/rus"
                   },
                   {
                     "name": "shake",
                     "title": "Shakespeare Drama Corpus"
+                    "repository": "https://github.com/dracor-org/shakedracor",
+                    "uri": "https://dracor.org/api/corpora/shake"
                   }
                 ]
+    put:
+      summary: Add new corpus
+      operationId: put-corpora
+      tags: [admin]
+      requestBody:
+        description: Corpus meta data
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - title
+              properties:
+                name:
+                  type: string
+                  description: corpus name
+                title:
+                  type: string
+                  description: corpus title
+                repository:
+                  type: string
+                  description: repository URL
+                archive:
+                  type: string
+                  summary: >-
+                    URL of ZIP archive containing TEI files of the corpus
+                  description: >
+                    The TEI file are expected to be placed in a `tei`
+                    subdirectory. Other files will be ignored when loading the
+                    archive.
+            example: |
+              {
+                "name": "rus",
+                "title": "Russian Drama Corpus",
+                "repository": "https://github.com/dracor-org/rusdracor"
+              }
+      responses:
+        '200':
+          description: Returns corpus metadata
+          content:
+            application/json:
+              schema:
+                type: object
+        '409':
+          description: Corpus already exists
+        '400':
+          description: Posted data lacks required properties or is malformed
 
   /corpora/{corpusname}:
     get:
@@ -132,6 +186,22 @@ paths:
                       type: object
         '404':
           description: Corpus not found
+    delete:
+      summary: Remove corpus from database
+      operationId: delete-corpus
+      tags: [admin]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Corpus deleted
+        '404':
+          description: Corpus not found
+
 
   /corpora/{corpusname}/metadata:
     get:

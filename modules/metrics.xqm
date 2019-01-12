@@ -43,7 +43,7 @@ declare function metrics:collect-sitelinks($corpus as xs:string) {
  : sitelinks collection
 :)
 declare function metrics:collect-sitelinks() {
-  for $corpus in $config:corpora//corpus
+  for $corpus in collection($config:data-root)/corpus
   let $name := $corpus/name/text()
   return metrics:collect-sitelinks($name)
 };
