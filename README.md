@@ -26,9 +26,11 @@ For the calculation of network statistics *dracor-api* depends on the external
 This software uses `ant` to build its artifacts. While several targets are
 exposed, the following ones are considered to be useful:
 
-- xar [default]
-- devel
-- cleanup
+- `xar` (default)
+- `devel`
+- `run`
+- `load-corpus`
+- `cleanup`
 
 **Note:** Path and file names mentioned here refer to the default settings in
 [build.properties](build.properties). Those can be overwritten in a private
