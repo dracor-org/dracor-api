@@ -47,6 +47,9 @@ declare variable $config:metrics-root := "/db/data/dracor/metrics";
 
 declare variable $config:sitelinks-root := "/db/data/dracor/sitelinks";
 
+(: the directory path in corpus repos where the TEI files reside :)
+declare variable $config:corpus-repo-prefix := 'tei';
+
 declare variable $config:repo-descriptor :=
   doc(concat($config:app-root, "/repo.xml"))/repo:meta;
 

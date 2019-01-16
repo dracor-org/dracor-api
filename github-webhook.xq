@@ -127,19 +127,13 @@ declare function local:handle-file (
 ) as item() {
   let $corpus := local:get-corpus($repo?html_url)
   let $path := $file/@path
-  let $prefix := if ($corpus/prefix) then $corpus/prefix/text() else ''
 
   let $repo-source := replace($repo?contents_url, '\{\+path\}', $path)
-  let $db-resource := concat(
-    $config:data-root,
-    '/',
-    normalize-space($corpus/name),
-    '/',
-    if ($prefix) then replace($path, concat('^', $prefix), '') else $path
-  )
+  let $db-resource := $config:data-root || '/' || normalize-space($corpus/name)
+    || replace($path, '^' || $config:corpus-repo-prefix, '')
   let $action := $file/@action
   return
-    if($prefix and not(starts-with($path, $prefix))) then
+    if(not(starts-with($path, $config:corpus-repo-prefix))) then
       <action type="skip" path="{$path}" />
     else if ($action = 'remove') then
       <action type="remove" resource="{$db-resource}">
