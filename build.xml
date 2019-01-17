@@ -193,6 +193,7 @@
       Startup script not available. Run `ant devel` first.
     </fail>
     <exec executable="bash">
+      <env key="GITHUB_WEBHOOK_SECRET" value="${devel.webhook.secret}"/>
       <arg value="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
     </exec>
   </target>
