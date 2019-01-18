@@ -29,8 +29,8 @@ exposed, the following ones are considered to be useful:
 - `xar` (default)
 - `devel`
 - `run`
-- `load-corpus`
-- `cleanup`
+- `load.corpus`
+- `clean`
 
 **Note:** Path and file names mentioned here refer to the default settings in
 [build.properties](build.properties). Those can be overwritten in a private
@@ -70,14 +70,14 @@ Afterwards you can start the database with `ant run`.
 
 Starts the database. You can stop the database with `Ctrl-C`.
 
-### load-corpus
+### load.corpus
 
 Creates a test corpus and loads its data files into the database. You can use
 this target to load other corpora as well by overriding the corpus property
 like this:
 
 ```bash
-ant load-corpus -Dcorpus=rus
+ant load.corpus -Dcorpus=rus
 ```
 
 Currently the following corpora are available (see [corpora](corpora)):
@@ -90,7 +90,7 @@ Currently the following corpora are available (see [corpora](corpora)):
 Note that loading the data can take several minutes depending on the size of the
 corpus.
 
-### cleanup
+### clean
 
 Removes the `devel/` and the `build/` directories.
 

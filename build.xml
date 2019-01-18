@@ -47,12 +47,12 @@
     <echo  level="info" message="${package.version}"/>
   </target>
 
-  <target name="create-dirs">
+  <target name="create.dirs">
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${dependencies.dir}"/>
   </target>
 
-  <target name="dependencies" depends="create-dirs">
+  <target name="dependencies" depends="create.dirs">
     <!-- get exist -->
     <get
       src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
@@ -77,7 +77,7 @@
 
   <target
     name="xar"
-    depends="git.revision, create-dirs"
+    depends="git.revision, create.dirs"
     description="build an expath package">
     <property
       name="xarfile"
@@ -103,12 +103,12 @@
       excludes="${build.dir}/ ${test.dir}/ ${devel.dir}/ .existdb.json"/>
   </target>
 
-  <target name="cleanup" description="remove builds, cache and prepared instances">
+  <target name="clean" description="remove builds, cache and prepared instances">
     <delete dir="${devel.dir}"/>
     <delete dir="${build.dir}"/>
   </target>
 
-  <target name="check-metrics" unless="${check-metrics}">
+  <target name="check.metrics" unless="${check.metrics}">
     <echo  level="warning" message="metrics service is not available." />
     <echo  level="warning" message="loading the service from github…" />
     <get
@@ -134,7 +134,7 @@
 
   <target
     name="devel"
-    depends="check-devel, xar, dependencies, prepare-exist, init"
+    depends="check.devel, xar, dependencies, prepare.exist, init"
     description="create a development environment with dependencies included">
     <!-- now eXist is set up, we can start importing DraCors. -->
     <get
@@ -142,13 +142,13 @@
       quiet="true" ignoreerrors="true"
       dest="anttmp-${timestamp}"
       skipexisting="false"/>
-    <condition property="check-metrics">
+    <condition property="check.metrics">
       <available file="anttmp-${timestamp}" type="file" />
     </condition>
     <delete file="anttmp-${timestamp}"/>
-    <antcall target="check-metrics"/>
+    <antcall target="check.metrics"/>
     <echo message="Start the database with `ant run`."/>
-    <echo message="Use `ant load-corpus` to populate the database."/>
+    <echo message="Use `ant load.corpus` to populate the database."/>
   </target>
 
   <target name="init">
@@ -168,7 +168,7 @@
     <copy file="${xarfile}" todir="${install.dir}/autodeploy" />
   </target>
 
-  <target name="set-ports">
+  <target name="set.ports">
     <!-- HTTP port -->
     <property name="xsl" value="resources/ant/jetty-port-update.xslt"/>
     <xslt
@@ -202,7 +202,7 @@
       tofile="${install.dir}/tools/jetty/etc/jetty.xml"/>
   </target>
 
-  <target name="prepare-exist">
+  <target name="prepare.exist">
     <echo message="install eXist to ${install.dir}"/>
     <!-- get eXist -->
     <get
@@ -220,10 +220,10 @@
         <include name="*.xar"/>
       </fileset>
     </copy>
-    <antcall target="set-ports"/>
+    <antcall target="set.ports"/>
   </target>
 
-  <target name="check-devel">
+  <target name="check.devel">
     <condition property="devel.available">
       <available file="${devel.dir}" type="dir" />
     </condition>
@@ -245,7 +245,7 @@
     </exec>
   </target>
 
-  <target name="load-corpus">
+  <target name="load.corpus">
     <echo  level="info" message="Adding corpus '${corpus}' to database..." />
     <exec executable="curl">
       <arg value="-s"/>
