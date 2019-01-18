@@ -100,7 +100,7 @@
       </filterset>
     </copy>
     <zip basedir="." destfile="${xarfile}"
-      excludes="${build.dir}/ ${test.dir}/ ${devel.dir}/ .existdb.json"/>
+      excludes="${build.dir}/ ${devel.dir}/ .existdb.json"/>
   </target>
 
   <target name="clean" description="remove builds, cache and prepared instances">

@@ -1,6 +1,5 @@
 build/
 devel/
-test/
 .ant-targets-build.xml
 .existdb.json
 expath-pkg.xml
