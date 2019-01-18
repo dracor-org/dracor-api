@@ -28,7 +28,8 @@ exposed, the following ones are considered to be useful:
 
 - `xar` (default)
 - `devel`
-- `run`
+- `devel.startup`
+- `devel.shutdown`
 - `load.corpus`
 - `clean`
 
@@ -64,11 +65,15 @@ This target will do the following in this order:
     and started
   - the process will be [spawned](https://ant.apache.org/manual/Tasks/exec.html)
 
-Afterwards you can start the database with `ant run`.
+Afterwards you can start the database with `ant devel.startup`.
 
-### run
+### devel.startup
 
-Starts the database. You can stop the database with `Ctrl-C`.
+Starts the database. You can stop the database with `ant devel.shutdown`.
+
+### devel.shutdown
+
+Stops the database that has been started with `ant devel.startup`.
 
 ### load.corpus
 

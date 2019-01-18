@@ -147,7 +147,7 @@
     </condition>
     <delete file="anttmp-${timestamp}"/>
     <antcall target="check.metrics"/>
-    <echo message="Start the database with `ant run`."/>
+    <echo message="Start the database with `ant devel.startup`."/>
     <echo message="Use `ant load.corpus` to populate the database."/>
   </target>
 
@@ -232,7 +232,7 @@
     </fail>
   </target>
 
-  <target name="run">
+  <target name="devel.startup">
     <condition property="devel.available">
       <available file="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh" />
     </condition>
@@ -242,6 +242,22 @@
     <exec executable="bash">
       <env key="GITHUB_WEBHOOK_SECRET" value="${devel.webhook.secret}"/>
       <arg value="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
+    </exec>
+  </target>
+
+  <target name="devel.shutdown">
+    <property
+      name="shutdown.script"
+      value="${devel.dir}/eXist-db-${project.processorversion}/bin/shutdown.sh"
+    />
+    <condition property="devel.available">
+      <available file="${shutdown.script}"/>
+    </condition>
+    <fail if="!devel.available">
+      Shutdown script not available. Run `ant devel` first.
+    </fail>
+    <exec executable="bash">
+      <arg value="${shutdown.script}"/>
     </exec>
   </target>
 
