@@ -9,6 +9,44 @@
     <format property="timestamp" pattern="hhmmss" />
   </tstamp>
 
+  <!--
+  inspired by
+  https://stackoverflow.com/questions/2974106/how-to-lookup-the-latest-git-commit-hash-from-an-ant-build-script
+  -->
+  <available file=".git" type="dir" property="git.present"/>
+  <target
+    name="git.revision"
+    description="Store git revision in ${package.version}"
+    if="git.present"
+  >
+    <exec
+      executable="git"
+      outputproperty="git.revision"
+      failifexecutionfails="false"
+      errorproperty=""
+    >
+      <arg value="describe"/>
+      <arg value="--tags"/>
+      <arg value="--always"/>
+      <arg value="--dirty"/>
+    </exec>
+    <!-- strip the leading 'v' from git.revision -->
+    <exec executable="bash" outputproperty="git.version">
+      <arg value="-c"/>
+      <arg value="echo -n ${git.revision} | sed -e 's/^v//'"/>
+    </exec>
+    <condition property="package.version" value="${git.version}" else="unknown">
+      <and>
+        <isset property="git.version"/>
+        <length string="${git.version}" trim="yes" length="0" when="greater"/>
+      </and>
+    </condition>
+  </target>
+
+  <target name="print.version" depends="git.revision">
+    <echo  level="info" message="${package.version}"/>
+  </target>
+
   <target name="create-dirs">
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${dependencies.dir}"/>
@@ -39,11 +77,20 @@
 
   <target
     name="xar"
-    depends="create-dirs"
+    depends="git.revision, create-dirs"
     description="build an expath package">
-    <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
+    <property
+      name="xarfile"
+      value="${build.dir}/${project.abbrev}-${package.version}.xar"
+    />
+    <copy
+      file="expath-pkg.xml.tmpl"
+      tofile="expath-pkg.xml"
+      filtering="true"
+      overwrite="true"
+    >
       <filterset>
-        <filter token="project.version" value="${project.version}"/>
+        <filter token="package.version" value="${package.version}"/>
         <filter token="project.title" value="${project.title}"/>
         <filter token="project.abbrev" value="${project.abbrev}"/>
         <filter token="project.name" value="${project.name}"/>
@@ -52,7 +99,7 @@
           value="${project.processorversion}"/>
       </filterset>
     </copy>
-    <zip basedir="." destfile="${destfile}"
+    <zip basedir="." destfile="${xarfile}"
       excludes="${build.dir}/ ${test.dir}/ ${devel.dir}/ .existdb.json"/>
   </target>
 
@@ -118,7 +165,7 @@
     <move
       file="${install.dir}/conf.xml.tmp"
       tofile="${install.dir}/conf.xml"/>
-    <copy file="${destfile}" todir="${install.dir}/autodeploy" />
+    <copy file="${xarfile}" todir="${install.dir}/autodeploy" />
   </target>
 
   <target name="set-ports">
