@@ -1,0 +1,21 @@
+{
+  "servers": {
+    "localhost": {
+      "server": "http://localhost:@jetty.http.port@/exist",
+      "user": "admin",
+      "password": ""
+    }
+  },
+  "sync": {
+    "server": "localhost",
+    "root": "/db/apps/dracor",
+    "active": true,
+    "ignore": [
+      ".existdb.json*",
+      ".git/**",
+      "build.xml",
+      "build/**",
+      "devel/**"
+    ]
+  }
+}

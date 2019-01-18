@@ -95,6 +95,12 @@ Currently the following corpora are available (see [corpora](corpora)):
 Note that loading the data can take several minutes depending on the size of the
 corpus.
 
+### atom.config
+
+Creates a `.existdb.json` configuration for the database set up with `ant devel`
+to support the [existdb package](https://atom.io/packages/existdb) for the
+[Atom editor](https://atom.io).
+
 ### clean
 
 Removes the `devel/` and the `build/` directories.

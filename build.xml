@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project default="xar" name="dracor">
+<project default="xar" name="dracor" xmlns:if="ant:if">
   <property environment="env"/>
   <property name="build.dir" value="build"/>
   <property file="local.build.properties"/>
@@ -278,5 +278,34 @@
       <arg value="-uadmin:"/>
       <arg value="http://localhost:${jetty.http.port}/exist/restxq/corpora/${corpus}/load"/>
     </exec>
+  </target>
+
+  <target
+    name="atom.config"
+    description="create .existdb.json for integration with Atom editor"
+  >
+    <property name="atom.config.target" value=".existdb.json"/>
+    <condition property="existdb.json.available">
+      <available file="${atom.config.target}"/>
+    </condition>
+    <input
+      message="Overwrite existing ${atom.config.target}?"
+      validargs="y,n"
+      addproperty="yes.or.no"
+      if:true="${existdb.json.available}"
+    />
+    <condition property="overwrite" else="false">
+      <equals arg1="${yes.or.no}" arg2="y"/>
+    </condition>
+    <copy
+      file=".existdb.json.tmpl"
+      tofile="${atom.config.target}"
+      filtering="true"
+      overwrite="${overwrite}"
+    >
+      <filterset>
+        <filter token="jetty.http.port" value="${jetty.http.port}"/>
+      </filterset>
+    </copy>
   </target>
 </project>
