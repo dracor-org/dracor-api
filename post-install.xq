@@ -1,10 +1,10 @@
 xquery version "3.1";
-import module namespace config = "http://dracor.org/ns/exist/config" at "modules/config.xqm";
-import module namespace load = "http://dracor.org/ns/exist/load" at "modules/load.xqm";
+
+import module namespace config = "http://dracor.org/ns/exist/config"
+  at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)
 (: the target collection into which the app is deployed :)
-
 declare variable $target external;
 
 (:~
@@ -12,11 +12,14 @@ declare variable $target external;
  : @author Mathias Göbel
  : @see https://github.com/ljo/exist-sparql
 :)
-declare function local:prepare-rdf-index()
+declare function local:prepare-rdf-index ()
 as xs:boolean {
   (: prepare for RDF index :)
   let $rdf-collection := xmldb:create-collection("/", $config:rdf-root)
-  let $rdf-conf-coll := xmldb:create-collection("/", "/db/system/config" || $config:rdf-root)
+  let $rdf-conf-coll := xmldb:create-collection(
+    "/",
+    "/db/system/config" || $config:rdf-root
+  )
   let $xconf :=
       <collection xmlns="http://exist-db.org/collection-config/1.0">
          <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -28,26 +31,6 @@ as xs:boolean {
     true()
 };
 
-(:~
- : import corpora
- : @author Mathias Göbel
- : @see https://github.com/ljo/exist-sparql
-:)
-declare function local:import-data()
-as xs:boolean+ {
-  doc("corpora.xml")//name/string(.) ! (
-    if(xmldb:collection-available($config:data-root || .))
-    then true()
-    else
-      let $do :=
-        (util:log-system-out("[" || . || "] starting import…"),
-        load:load-corpus(.),
-        util:log-system-out("[" || . || "] done."))
-      return
-        true()
-  )
-};
-
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || '/github-webhook.xq')
 let $sitelinks-job := xs:anyURI($target || '/jobs/sitelinks.xq')
@@ -56,11 +39,6 @@ let $sitelinks-job := xs:anyURI($target || '/jobs/sitelinks.xq')
 let $restxq-module := xs:anyURI('modules/api.xpm')
 
 return (
-  (: FIXME: loading the data on install just takes too long and frequently gets
-   : in the way when developing. Software deployment and data maintenance should
-   : be decoupled which is why I'm disabling the automatic data import for now.
-   :)
-  (: local:import-data(), :)
   local:prepare-rdf-index(),
   sm:chown($webhook, "admin"),
   sm:chgrp($webhook, "dba"),
