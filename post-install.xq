@@ -32,7 +32,7 @@ as xs:boolean {
 };
 
 (: elevate privileges for github webhook :)
-let $webhook := xs:anyURI($target || '/github-webhook.xq')
+let $webhook := xs:anyURI($target || '/modules/webhook.xqm')
 let $sitelinks-job := xs:anyURI($target || '/jobs/sitelinks.xq')
 
 (: register the RESTXQ module :)

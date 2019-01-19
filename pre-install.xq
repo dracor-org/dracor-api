@@ -41,4 +41,5 @@ xdb:store-files-from-pattern(
 ),
 xdb:create-collection("/", $config:rdf-root),
 xdb:create-collection("/", $config:metrics-root),
-xdb:create-collection("/", $config:sitelinks-root)
+xdb:create-collection("/", $config:sitelinks-root),
+xdb:create-collection("/", $config:webhook-root)
