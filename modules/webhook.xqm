@@ -175,6 +175,16 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
         )
         else map {
           "message": "Delivery accepted.",
-          "result": $result
+          "result": $result,
+          "scheduled": scheduler:schedule-xquery-periodic-job(
+            "/db/apps/dracor/jobs/process-webhook-delivery.xq",
+            1000,
+            "webhook-update-" || $delivery,
+            (
+              <parameters>
+                <param name="delivery" value="{$delivery}"/>
+              </parameters>
+            ), 5000, 0
+          )
         }
 };
