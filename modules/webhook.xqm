@@ -78,14 +78,13 @@ declare function local:handle-delivery (
     current-dateTime(),
     "[Y0001][M01][D01][H01][m01][s01]"
   )
-  let $fname := concat($date, "-", $delivery-id, ".xml")
-  let $log := util:log(
-    "info",
-    "handling webhook delivery " || $delivery-id
-  )
+  let $id := replace($delivery-id, "[^-a-zA-Z\d]", "_")
+  let $fname := concat($date, "-", $id, ".xml")
+  let $l := util:log("info", "recording webhook delivery " || $delivery-id)
   let $files := local:get-files($payload)
   let $doc :=
     <delivery
+      id="{$delivery-id}"
       pusher="{$payload?pusher?name}"
       repo="{$payload?repository?html_url}"
     >
