@@ -49,5 +49,7 @@ return (
   exrest:register-module($restxq-module),
 
   (: a note on using the RDF index :)
-  util:log-system-out("To use the RDF index the database needs to be restarted. See ant target «exist-conf».")
+  util:log-system-out(
+    "To use the RDF index the database needs to be restarted. "
+  )
 )
