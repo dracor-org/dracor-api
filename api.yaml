@@ -626,7 +626,7 @@ paths:
       description: >-
         Endpoint accepting POST requests from Github (see
         https://developer.github.com/webhooks/). We currently only handle push
-        events on the master branch. 
+        events on the master branch.
       operationId: github-webhook
       tags: [webhook]
       parameters:
@@ -671,9 +671,9 @@ paths:
               schema:
                 type: object
               example: |
-              {
-                "message": "Delivery accepted.",
-                "result": "/db/data/dracor/webhook/20190121213010-xxx.xml",
-                "scheduled": true
-              }
+                {
+                  "message": "Delivery accepted.",
+                  "result": "/db/data/dracor/webhook/20190121213010-xxx.xml",
+                  "scheduled": true
+                }
 
