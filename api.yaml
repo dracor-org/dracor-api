@@ -619,3 +619,61 @@ paths:
             application/json:
               schema:
                 type: array
+
+  /webhook/github:
+    post:
+      summary: GitHub Webhook
+      description: >-
+        Endpoint accepting POST requests from Github (see
+        https://developer.github.com/webhooks/). We currently only handle push
+        events on the master branch. 
+      operationId: github-webhook
+      tags: [webhook]
+      parameters:
+        - in: header
+          name: User-Agent
+          required: true
+          schema:
+            type: string
+            pattern: "GitHub-Hookshot/.*"
+        - in: header
+          name: X-GitHub-Delivery
+          required: true
+          schema:
+            type: string
+          example: "4e16d4dc-1d87-11e9-830d-68e2a0832130"
+        - in: header
+          name: X-GitHub-Event
+          required: true
+          schema:
+            type: string
+            enum: ["push"]
+        - in: header
+          name: X-Hub-Signature
+          required: true
+          schema:
+            type: string
+          example: "sha1=6da21762fada5c1d0205c6e42xxxxxxxxxx357c0"
+      requestBody:
+        description: >-
+          Webhook payload (see https://developer.github.com/webhooks/#payloads)
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: >-
+            Webhook delivery has been recieved, a status message is being
+            returned.
+          content:
+            application/json:
+              schema:
+                type: object
+              example: |
+              {
+                "message": "Delivery accepted.",
+                "result": "/db/data/dracor/webhook/20190121213010-xxx.xml",
+                "scheduled": true
+              }
+
