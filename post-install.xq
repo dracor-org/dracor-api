@@ -19,7 +19,7 @@ as item()? {
       <config>{'<webhook-secret>xxx</webhook-secret>'}</config>
     ),
     (: FIXME: find a better solution to protect the webhook secret :)
-    sm:chmod("/db/data/dracor/config.xml", 'rw-------')
+    sm:chmod(xs:anyURI("/db/data/dracor/config.xml"), 'rw-------')
 };
 
 (:~
