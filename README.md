@@ -111,3 +111,11 @@ You can install the XAR package built with `ant xar` via the dashboard of any
 eXist DB instance.
 
 For development purposes use `ant devel`.
+
+## Webhook
+
+The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
+of the corpus data when the configured GitHub repository for the corpus changes.
+
+*Note:* For the webhook to work, the shared secret between DraCor and GitHub
+needs to be configured at `/db/data/dracor/config.xml` in the database.

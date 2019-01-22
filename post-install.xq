@@ -7,6 +7,21 @@ import module namespace config = "http://dracor.org/ns/exist/config"
 (: the target collection into which the app is deployed :)
 declare variable $target external;
 
+
+declare function local:create-config-file ()
+as item()? {
+  if(doc("/db/data/dracor/config.xml")/config) then
+    ()
+  else
+    xmldb:store(
+      "/db/data/dracor",
+      "config.xml",
+      <config>{'<webhook-secret>xxx</webhook-secret>'}</config>
+    ),
+    (: FIXME: find a better solution to protect the webhook secret :)
+    sm:chmod("/db/data/dracor/config.xml", 'rw-------')
+};
+
 (:~
  : Prepare RDF index according to the exist-sparql module description.
  : @author Mathias Göbel
@@ -32,13 +47,14 @@ as xs:boolean {
 };
 
 (: elevate privileges for github webhook :)
-let $webhook := xs:anyURI($target || '/github-webhook.xq')
+let $webhook := xs:anyURI($target || '/modules/webhook.xqm')
 let $sitelinks-job := xs:anyURI($target || '/jobs/sitelinks.xq')
 
 (: register the RESTXQ module :)
 let $restxq-module := xs:anyURI('modules/api.xpm')
 
 return (
+  local:create-config-file(),
   local:prepare-rdf-index(),
   sm:chown($webhook, "admin"),
   sm:chgrp($webhook, "dba"),
