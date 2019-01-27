@@ -184,7 +184,7 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
               <parameters>
                 <param name="delivery" value="{$delivery}"/>
               </parameters>
-            ), 5000, 0
+            ), 30000, 0
           )
         }
 };
