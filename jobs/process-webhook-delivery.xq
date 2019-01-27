@@ -18,7 +18,11 @@ declare function local:update (
     $target, 1, string-length($target) - string-length($filename) - 1
   )
   let $l := util:log("info", "Fetching " || $source)
-  let $response := httpclient:get($source, false(), ())
+  let $headers :=
+    <httpclient:headers>
+      <httpclient:header name="Cache-Control" value="no-cache"/>
+    </httpclient:headers>
+  let $response := httpclient:get($source, false(), $headers)
   let $status := $response/@statusCode/string()
   let $body := $response//httpclient:body
   return if ($status = "200") then
