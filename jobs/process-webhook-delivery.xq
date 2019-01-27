@@ -25,6 +25,9 @@ declare function local:update (
   let $response := httpclient:get($source, false(), $headers)
   let $status := $response/@statusCode/string()
   let $body := $response//httpclient:body
+  (: FIXME: remove these logs once we resolved the caching issue :)
+  let $l := util:log("info", $response//httpclient:headers)
+  let $l := util:log("info", $body//tei:teiHeader)
   return if ($status = "200") then
     let $data := if ($body[@type="xml"]/tei:TEI) then $body/tei:TEI else (
       util:log("warn", "Not a TEI document: " || $source)
