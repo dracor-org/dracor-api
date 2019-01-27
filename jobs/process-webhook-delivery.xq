@@ -85,7 +85,7 @@ declare function local:handle-file ($file as element(file)) as item() {
 
 declare function local:process-delivery () {
   let $delivery := collection($config:webhook-root)
-    /delivery[@id = $local:delivery]
+    /delivery[@id = $local:delivery and not(@processed)]
   return if($delivery/@repo/string() = $local:corpora/repository) then
     let $l := util:log("info", "Processing webhook delivery: " || $local:delivery)
     let $updates := for $file in $delivery//file
