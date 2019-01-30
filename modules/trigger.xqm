@@ -27,7 +27,7 @@ declare function trigger:after-update-document($url as xs:anyURI) {
   )
 };
 
-declare function trigger:after-delete-document($url as xs:anyURI) {
+declare function trigger:before-delete-document($url as xs:anyURI) {
   if (doc($url)/tei:TEI) then
     let $paths := dutil:filepaths($url)
     return try {

@@ -473,6 +473,31 @@ function api:play-info($corpusname, $playname) {
 };
 
 declare
+  %rest:DELETE
+  %rest:path("/corpora/{$corpusname}/play/{$playname}")
+  %rest:header-param("Authorization", "{$auth}")
+  %output:method("json")
+function api:play-delete($corpusname, $playname, $data, $auth) {
+  if (not($auth)) then
+    <rest:response>
+      <http:response status="401"/>
+    </rest:response>
+  else
+
+  let $doc := dutil:get-doc($corpusname, $playname)
+
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $filename := $playname || ".xml"
+      let $collection := $config:data-root || "/" || $corpusname
+      return (xmldb:remove($collection, $filename))
+};
+
+declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
   %rest:produces("application/xml", "text/xml")
@@ -492,6 +517,55 @@ function api:play-tei($corpusname, $playname) {
         processing-instruction {$target} {$content},
         $tei
       }
+};
+
+declare
+  %rest:PUT("{$data}")
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
+  %rest:header-param("Authorization", "{$auth}")
+  %rest:consumes("application/xml", "text/xml")
+  %output:method("xml")
+function api:play-tei-put($corpusname, $playname, $data, $auth) {
+  if (not($auth)) then
+    <rest:response>
+      <http:response status="401"/>
+    </rest:response>
+  else
+
+  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  let $doc := dutil:get-doc($corpusname, $playname)
+
+  return
+    if (not($corpus)) then
+      (
+        <rest:response>
+          <http:response status="404"/>
+        </rest:response>,
+        <message>No such corpus</message>
+      )
+    else if (
+      not($doc) and
+      not(matches($playname, "^[a-z0-9]+([-a-z0-9]?[a-z0-9])?$"))
+    )
+    then
+      (
+        <rest:response>
+          <http:response status="400"/>
+        </rest:response>,
+        <message>Unacceptable play name '{$playname}'. Use lower case ASCII characters, digits and dashes only.</message>
+      )
+    else if (not($data/tei:TEI)) then
+      (
+        <rest:response>
+          <http:response status="400"/>
+        </rest:response>,
+        <message>TEI document required</message>
+      )
+    else
+      let $filename := $playname || ".xml"
+      let $collection := $config:data-root || "/" || $corpusname
+      let $result := xmldb:store($collection, $filename, $data/tei:TEI)
+      return $data
 };
 
 declare
