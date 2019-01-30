@@ -325,7 +325,7 @@ declare
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:index($corpusname, $auth) {
+function api:delete-corpus($corpusname, $auth) {
   if (not($auth)) then
     (
       <rest:response>
