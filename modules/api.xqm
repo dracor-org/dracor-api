@@ -319,6 +319,50 @@ function api:index($corpusname) {
 };
 
 declare
+  %rest:POST("{$data}")
+  %rest:path("/corpora/{$corpusname}")
+  %rest:header-param("Authorization", "{$auth}")
+  %rest:consumes("application/json")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:post-corpus($corpusname, $data, $auth) {
+  if (not($auth)) then
+    (
+      <rest:response>
+        <http:response status="401"/>
+      </rest:response>,
+      map {
+        "message": "authorization required"
+      }
+    )
+  else
+
+  let $json := parse-json(util:base64-decode($data))
+  let $name := $json?name
+  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+
+  return
+    if (not($corpus)) then
+      (
+        <rest:response><http:response status="404"/></rest:response>,
+        map {"message": "no such corpus"}
+      )
+    else if (count($json) = 0) then
+      (
+        <rest:response><http:response status="400"/></rest:response>,
+        map {"message": "missing payload"}
+      )
+    else if ($json?load) then
+      array {load:load-corpus($corpus)}
+    else
+      (
+        <rest:response><http:response status="400"/></rest:response>,
+        map {"message": "invalid payload"}
+      )
+};
+
+declare
   %rest:DELETE
   %rest:path("/corpora/{$corpusname}")
   %rest:header-param("Authorization", "{$auth}")
@@ -414,24 +458,6 @@ function api:corpus-meta-data-dotcsv($corpusname) {
   let $data := for $row in $meta
     return concat(string-join($row/*/string(), ','), "&#10;")
   return ($header, $data)
-};
-
-declare
-  %rest:GET
-  %rest:path("/corpora/{$corpusname}/load")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
-  %output:method("json")
-function api:load-corpus($corpusname) {
-  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
-  return
-    if ($corpus) then
-      array {load:load-corpus($corpus)}
-    else
-      (
-        <rest:response><http:response status="404"/></rest:response>,
-        map {"message": "no such corpus"}
-      )
 };
 
 declare
