@@ -353,6 +353,50 @@ paths:
             application/xml:
               schema:
                 type: string
+    put:
+      summary: Add new or update existing TEI document
+      description: |
+        When sending a PUT request to a new play URI, the request body is stored
+        in the database as a new document accessible under that URI. If the URI
+        already exists the corresponding TEI document is updated with the
+        request body.
+
+        The `playname` parameter of a new URI must consist of lower case ASCII
+        characters, digits and/or dashes only.
+      operationId: play-tei-put
+      tags: [admin]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "[a-z0-9]+([-a-z0-9]?[a-z0-9])?"
+      requestBody:
+        description: TEI document
+        content:
+          application/xml:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: TEI document has been stored
+          content:
+            application/xml:
+              schema:
+                type: string
+        '400':
+          description: >-
+            The request body is not a valid TEI document or the `playname` is
+            invalid.
+        '404':
+          description: >-
+            There is no corpus with the given `corpusname`.
 
   /corpora/{corpusname}/play/{playname}/rdf:
     get:
