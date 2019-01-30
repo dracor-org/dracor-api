@@ -182,7 +182,7 @@ function api:corpora($include) {
 };
 
 declare
-  %rest:PUT("{$data}")
+  %rest:POST("{$data}")
   %rest:path("/corpora")
   %rest:consumes("application/json")
   %rest:produces("application/json")

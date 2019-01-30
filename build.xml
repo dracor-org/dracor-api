@@ -265,7 +265,7 @@
     <echo  level="info" message="Adding corpus '${corpus}' to database..." />
     <exec executable="curl">
       <arg value="-s"/>
-      <arg value="-XPUT"/>
+      <arg value="-XPOST"/>
       <arg value="-uadmin:"/>
       <arg value="http://localhost:${jetty.http.port}/exist/restxq/corpora"/>
       <arg value="-H"/>

@@ -159,9 +159,9 @@ paths:
                     }
                   }
                 ]
-    put:
+    post:
       summary: Add new corpus
-      operationId: put-corpora
+      operationId: post-corpora
       tags: [admin]
       requestBody:
         description: Corpus meta data
