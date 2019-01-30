@@ -275,8 +275,13 @@
     <echo  level="info" message="Loading data for corpus '${corpus}'..." />
     <exec executable="curl">
       <arg value="-s"/>
+      <arg value="-XPOST"/>
       <arg value="-uadmin:"/>
-      <arg value="http://localhost:${jetty.http.port}/exist/restxq/corpora/${corpus}/load"/>
+      <arg value="http://localhost:${jetty.http.port}/exist/restxq/corpora/${corpus}"/>
+      <arg value="-H"/>
+      <arg value="Content-Type: application/json"/>
+      <arg value="-d"/>
+      <arg value="{&quot;load&quot;:true}"/>
     </exec>
   </target>
 

@@ -243,6 +243,53 @@ paths:
                       type: object
         '404':
           description: Corpus not found
+    post:
+      summary: Load corpus data from its repository
+      description: >-
+        This endpoint requires authorization.
+
+        Posting `{"load": true}` to the corpus URI reloads the data for this
+        corpus from its repository (if defined).
+      operationId: load-corpus
+      tags: [admin]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - load
+              properties:
+                load:
+                  type: boolean
+            example: |
+              {"load": true}
+      responses:
+        '200':
+          description: Returns a list of created collections and documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items: string
+              example: |
+                [
+                  "/db/data/dracor/tei/test",
+                  "/db/data/dracor/metrics/test",
+                  "/db/data/dracor/rdf/test",
+                  "/db/data/dracor/tei/test/StrindbergA_FrokenJulie.xml",
+                  "/db/data/dracor/tei/test/gogol-revizor.xml",
+                  "/db/data/dracor/tei/test/lessing-emilia-galotti.xml",
+                  "/db/data/dracor/tei/test/shakespeare-macbeth.xml"
+                ]
+        '404':
+          description: Corpus not found
     delete:
       summary: Remove corpus from database
       operationId: delete-corpus
@@ -662,27 +709,6 @@ paths:
             application/sparql-results+xml:
               schema:
                 type: string
-
-  /corpora/{corpusname}/load:
-    get:
-      summary: Load corpus data from its repository
-      description: >-
-        This requires authorization.
-      operationId: load-corpus
-      tags: [admin]
-      parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Returns a list of created collections and documents
-          content:
-            application/json:
-              schema:
-                type: array
 
   /webhook/github:
     post:
