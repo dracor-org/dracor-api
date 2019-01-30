@@ -329,6 +329,26 @@ paths:
             application/json:
               schema:
                 type: object
+    delete:
+      summary: Remove a single play from the corpus
+      operationId: play-delete
+      tags: [admin]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Play has been removed
+        '404':
+          description: No such play under this URI
 
   /corpora/{corpusname}/play/{playname}/tei:
     get:

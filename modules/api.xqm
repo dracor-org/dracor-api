@@ -473,6 +473,31 @@ function api:play-info($corpusname, $playname) {
 };
 
 declare
+  %rest:DELETE
+  %rest:path("/corpora/{$corpusname}/play/{$playname}")
+  %rest:header-param("Authorization", "{$auth}")
+  %output:method("json")
+function api:play-delete($corpusname, $playname, $data, $auth) {
+  if (not($auth)) then
+    <rest:response>
+      <http:response status="401"/>
+    </rest:response>
+  else
+
+  let $doc := dutil:get-doc($corpusname, $playname)
+
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $filename := $playname || ".xml"
+      let $collection := $config:data-root || "/" || $corpusname
+      return (xmldb:remove($collection, $filename))
+};
+
+declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
   %rest:produces("application/xml", "text/xml")
