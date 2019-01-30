@@ -399,6 +399,9 @@ function api:corpus-meta-data-csv($corpusname) {
   return ($header, $rows)
 };
 
+(:
+ : Deprecated! Replaced by api:corpus-meta-data() or api:corpus-meta-data-csv().
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/metadata.csv")
