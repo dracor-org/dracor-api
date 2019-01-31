@@ -37,9 +37,6 @@ declare function local:check-repo ($url as xs:string) as xs:boolean {
 };
 
 declare function local:get-files ($payload as map(*)) as item()* {
-  let $repo := $payload?repository?html_url
-  let $source-base := 'https://raw.githubusercontent.com/'
-    || $payload?repository?full_name || '/master/'
   (: first collect all modified files in the order of commits :)
   let $changes :=
     <changes>
@@ -48,16 +45,11 @@ declare function local:get-files ($payload as map(*)) as item()* {
       let $id := $commit?id
       return (
         for $path in $commit?added?*
-        let $source :=  $source-base || $path
-        return <file action="add" path="{$path}" repo="{$repo}"
-                     source="{$source}" commit="{$id}"/>,
+        return <file action="add" path="{$path}" commit="{$id}"/>,
         for $path in $commit?removed?*
-        return <file action="remove" path="{$path}" repo="{$repo}"
-                     commit="{$id}"/>,
+        return <file action="remove" path="{$path}" commit="{$id}"/>,
         for $path in $commit?modified?*
-        let $source :=  $source-base || $path
-        return <file action="modify" path="{$path}" repo="{$repo}"
-                     source="{$source}" commit="{$id}"/>
+        return <file action="modify" path="{$path}" commit="{$id}"/>
       )
     }
     </changes>
