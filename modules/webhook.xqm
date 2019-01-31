@@ -87,6 +87,7 @@ declare function local:handle-delivery (
       id="{$delivery-id}"
       pusher="{$payload?pusher?name}"
       repo="{$payload?repository?html_url}"
+      contents-url="{$payload?repository?contents_url}"
     >
       {$files}
     </delivery>

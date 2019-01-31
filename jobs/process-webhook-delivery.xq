@@ -18,21 +18,25 @@ declare function local:update (
     $target, 1, string-length($target) - string-length($filename) - 1
   )
   let $l := util:log("info", "Fetching " || $source)
-  let $headers :=
-    <httpclient:headers>
-      <httpclient:header name="Cache-Control" value="no-cache"/>
-    </httpclient:headers>
-  let $response := httpclient:get($source, false(), $headers)
+  let $response := httpclient:get($source, false(), ())
   let $status := $response/@statusCode/string()
-  let $body := $response//httpclient:body
-  (: FIXME: remove these logs once we resolved the caching issue :)
-  let $l := util:log("info", $response//httpclient:headers)
-  let $l := util:log("info", $body//tei:teiHeader)
+
   return if ($status = "200") then
-    let $data := if ($body[@type="xml"]/tei:TEI) then $body/tei:TEI else (
-      util:log("warn", "Not a TEI document: " || $source)
-    )
-    let $l := util:log-system-out($data)
+    let $data := if (
+      $response//httpclient:body[
+        starts-with(@mimetype, "application/json") and
+        @encoding = "Base64Encoded"
+      ]
+    ) then
+      let $json := parse-json(
+        util:base64-decode($response//httpclient:body/string(.))
+      )
+      return util:base64-decode($json?content)
+    else
+      $response//httpclient:body[@type="xml"]
+
+    (: FIXME: make sure $data is valid TEI :)
+
     return if ($data) then
       if (
         util:log("info", "Updating " || $target),
@@ -62,42 +66,45 @@ declare function local:remove ($file as xs:string) as xs:boolean {
     }
 };
 
-declare function local:handle-file ($file as element(file)) as item() {
-  let $repo := $file/@repo/string()
-  let $corpus := collection($config:data-root)/corpus[repository = $repo]
-  let $corpusname := $corpus/name/normalize-space()
-  let $path := $file/@path/string()
-  let $source := $file/@source/string()
-  let $target := $config:data-root || '/' || $corpusname
-    || replace($path, '^' || $config:corpus-repo-prefix, '')
-  let $action := $file/@action
-  return
-    if(not(starts-with($path, $config:corpus-repo-prefix))) then
-      map {"path": $path, "action": "skip"}
-    else if ($action = 'remove') then
-      map {
-        "path": $path,
-        "action": "remove",
-        "uri": $target,
-        "status": if (local:remove($target)) then "ok" else "failed"
-      }
-    else
-      map {
-        "path": $path,
-        "action": "update",
-        "uri": $target,
-        "status": if (local:update($source, $target)) then "ok" else "failed"
-      }
+declare function local:get-repo-contents ($url-template) {
+  let $url := replace($url-template, '\{\+path\}', $config:corpus-repo-prefix)
+  let $response := httpclient:get($url, false(), ())
+  let $body := $response//httpclient:body
+    [@mimetype="application/json; charset=utf-8"]
+    [@encoding="Base64Encoded"]/string(.)
+  let $json := parse-json(util:base64-decode($body))
+  return ($json)
 };
 
 declare function local:process-delivery () {
   let $delivery := collection($config:webhook-root)
     /delivery[@id = $local:delivery and not(@processed)]
-  return if($delivery/@repo/string() = $local:corpora/repository) then
-    let $l := util:log("info", "Processing webhook delivery: " || $local:delivery)
-    let $updates := for $file in $delivery//file
-      let $result := local:handle-file($file)
-      let $u := if($result?status = "ok") then
+  let $repo := $delivery/@repo/string()
+  let $corpus := $local:corpora[repository = $repo]
+  let $corpusname := $corpus/name/normalize-space()
+
+  return if($corpus) then
+    let $l := util:log(
+      "info", "Processing webhook delivery: " || $local:delivery
+    )
+    let $contents := local:get-repo-contents($delivery/@contents-url/string())
+    let $files := $delivery//file[
+      starts-with(@path, $config:corpus-repo-prefix)
+    ]
+
+    let $updates := for $file in $files
+      let $path := $file/@path/string()
+      let $target := $config:data-root || '/' || $corpusname
+        || replace($path, '^' || $config:corpus-repo-prefix, '')
+      let $action := $file/@action
+
+      let $result := if ($action = "remove") then
+        local:remove($target)
+      else
+        let $source := $contents?*[?type = "file" and ?path = $path]?git_url
+        return local:update($source, $target)
+
+      let $u := if($result) then
         update insert attribute updated {current-dateTime()} into $file
       else
         update insert attribute failed {current-dateTime()} into $file
