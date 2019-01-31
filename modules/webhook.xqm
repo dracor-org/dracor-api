@@ -177,7 +177,11 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
               <parameters>
                 <param name="delivery" value="{$delivery}"/>
               </parameters>
-            ), 30000, 0
+            ),
+            (: The GitHub data API caches for 60s, so we delay the job to
+             : make sure we get fresh data. :)
+            60000,
+            0
           )
         }
 };
