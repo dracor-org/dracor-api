@@ -52,16 +52,12 @@
     <mkdir dir="${dependencies.dir}"/>
   </target>
 
-  <target name="dependencies" depends="create.dirs">
+  <target name="download.dependencies" depends="create.dirs">
     <!-- get exist -->
     <get
       src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
       dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
       skipexisting="true" />
-    <untar
-      src="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
-      dest="${devel.dir}"
-      compression="bzip2" />
     <!-- get dependencies -->
     <get
       src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=expath-crypto-exist-lib&amp;semver=0.3.5"
@@ -77,7 +73,7 @@
 
   <target
     name="xar"
-    depends="git.revision, create.dirs"
+    depends="create.dirs, git.revision"
     description="build an expath package">
     <property
       name="xarfile"
@@ -134,7 +130,7 @@
 
   <target
     name="devel"
-    depends="check.devel, xar, dependencies, prepare.exist, init"
+    depends="check.install, xar, prepare.exist, init"
     description="create a development environment with dependencies included">
     <!-- now eXist is set up, we can start importing DraCors. -->
     <get
@@ -202,13 +198,8 @@
       tofile="${install.dir}/tools/jetty/etc/jetty.xml"/>
   </target>
 
-  <target name="prepare.exist">
+  <target name="prepare.exist" depends="download.dependencies">
     <echo message="install eXist to ${install.dir}"/>
-    <!-- get eXist -->
-    <get
-      src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
-      dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
-      skipexisting="true" />
     <!-- extract eXist -->
     <untar
       src="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
@@ -223,12 +214,12 @@
     <antcall target="set.ports"/>
   </target>
 
-  <target name="check.devel">
-    <condition property="devel.available">
-      <available file="${devel.dir}" type="dir" />
+  <target name="check.install">
+    <condition property="install.available">
+      <available file="${install.dir}" type="dir" />
     </condition>
-    <fail if="devel.available">
-      Build aborted. You have to delete «${devel.dir}» at first.
+    <fail if="install.available">...
+      &#10;The directory '${install.dir}' already exists.&#10;Delete it before setting up a new one!
     </fail>
   </target>
 
