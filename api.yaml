@@ -552,6 +552,15 @@ paths:
                     "id": "luka_lukich"
                   }
                 ]
+            text/csv:
+              schema:
+                type: string
+              example: |
+                id,name,gender,isGroup,numOfScenes,numOfSpeechActs,numOfWords
+                "gorodnichij","Городничий","MALE","false","21","171","4985"
+                "ammos_fedorovich_ljapkin_tjapkin","Аммос Федорович","MALE","false","8","49","748"
+                "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
+                "luka_lukich","Лука Лукич","MALE","false","8","24","291"
 
   /corpora/{corpusname}/play/{playname}/networkdata/csv:
     get:

@@ -765,6 +765,32 @@ function api:cast-info($corpusname, $playname) {
 
 declare
   %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
+  %rest:produces("text/csv")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:cast-info-csv($corpusname, $playname) {
+  let $info := dutil:cast-info($corpusname, $playname)
+  let $keys := (
+    "id", "name", "gender", "isGroup",
+    "numOfScenes", "numOfSpeechActs", "numOfWords"
+  )
+  return if (count($info) = 0) then
+    <rest:response>
+      <http:response status="404"/>
+    </rest:response>
+  else (
+    string-join($keys, ",") || "&#10;",
+    for $c in $info?*
+    let $row := for $key in $keys
+      let $val := map:get($c, $key)
+      return ($val)
+    return '"' || string-join($row, '","') || '"&#10;'
+  )
+};
+
+declare
+  %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("text/xml")
