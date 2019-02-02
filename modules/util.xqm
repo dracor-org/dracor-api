@@ -293,6 +293,77 @@ declare function dutil:get-corpus-meta-data(
  : @param $corpusname
  : @param $playname
  :)
+declare function dutil:play-info-map(
+  $corpusname as xs:string,
+  $playname as xs:string
+) as map()? {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return if (not($doc)) then
+    ()
+  else
+    let $tei := $doc//tei:TEI
+    let $subtitle :=
+      $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+    let $cast := dutil:distinct-speakers($doc//tei:body)
+    let $lastone := $cast[last()]
+    let $segments := array {
+      for $segment at $pos in dutil:get-segments($tei)
+      let $heads :=
+        $segment/(ancestor::tei:div/tei:head,tei:head) ! normalize-space(.)
+      return map {
+        (: FIXME: only add `title` and `speakers` if not empty :)
+        "title": string-join($heads, ' | '),
+        "type": $segment/@type/string(),
+        "number": $pos,
+        "speakers": array {
+          for $sp in dutil:distinct-speakers($segment) return $sp
+        }
+      }
+    }
+
+    let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
+    let $all-in-index := $all-in-segment div count($segments?*)
+
+    return map {
+      "id": $playname,
+      "corpus": $corpusname,
+      "title": $tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space(),
+      "subtitle": $subtitle,
+      "authors": array {
+        for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author
+        return map {
+          "name": $author/string(),
+          "key": $author/@key/string()
+        }
+      },
+      "allInSegment": $all-in-segment,
+      "allInIndex": $all-in-index,
+      "cast": array {
+        for $id in $cast
+        let $node := $doc//tei:particDesc//(
+          tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
+        )
+        let $name := $node/(tei:persName | tei:name)[1]/text()
+        let $sex := $node/@sex/string()
+        let $isGroup := if ($node/name() eq 'personGrp')
+          then true() else false()
+        return map {
+          "id": $id,
+          "name": $name,
+          "isGroup": $isGroup,
+          "sex": if($sex) then $sex else ()
+        }
+      },
+      "segments": $segments
+    }
+};
+
+(:~
+ : Calculate meta data for a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
 declare function dutil:play-info(
   $corpusname as xs:string,
   $playname as xs:string
