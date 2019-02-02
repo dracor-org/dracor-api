@@ -555,9 +555,12 @@ paths:
             type: string
       responses:
         '200':
-          description: Returns XML document
+          description: Returns list of segments
           content:
             application/xml:
+              schema:
+                type: string
+            text/csv:
               schema:
                 type: string
 

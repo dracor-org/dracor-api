@@ -802,6 +802,33 @@ function api:segmentation($corpusname, $playname) {
 
 declare
   %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:segmentation-csv($corpusname, $playname) {
+  let $info := dutil:play-info-map($corpusname, $playname)
+  return if (count($info) = 0) then
+    <rest:response>
+      <http:response status="404"/>
+    </rest:response>
+  else
+  let $authors := string-join($info?authors?*?name, " | ")
+  return (
+    "segmentNumber,segmentTitle,castId,castName,gender,title,authors&#10;",
+    for $seg in $info?segments?*
+      for $id in $seg?speakers?*
+      let $speaker := $info?cast?*[?id=$id]
+      let $row := (
+        $seg?number, $seg?title, $id, $speaker?name, $speaker?sex,
+        $info?title, $authors
+      ) ! dutil:csv-escape(.)
+      return '"' || string-join($row, '","') || '"&#10;'
+  )
+};
+
+declare
+  %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text")
   %rest:query-param("gender", "{$gender}")
   %rest:produces("text/plain")
