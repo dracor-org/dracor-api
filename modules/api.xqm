@@ -748,6 +748,23 @@ function api:networkdata-gefx($corpusname, $playname) {
 
 declare
   %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:cast-info($corpusname, $playname) {
+  let $info := dutil:cast-info($corpusname, $playname)
+  return
+    if (count($info) > 0) then
+      $info
+    else
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+};
+
+declare
+  %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("text/xml")

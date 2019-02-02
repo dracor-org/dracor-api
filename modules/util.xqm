@@ -452,6 +452,55 @@ declare function dutil:play-info(
 };
 
 (:~
+ : Compile cast info for a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function dutil:cast-info (
+  $corpusname as xs:string,
+  $playname as xs:string
+) as item()? {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return if (not($doc)) then
+    ()
+  else
+    let $tei := $doc//tei:TEI
+    let $cast := dutil:distinct-speakers($doc//tei:body)
+
+    let $segments := array {
+      for $segment at $pos in dutil:get-segments($tei)
+      return map {
+        "number": $pos,
+        "speakers": array {
+          for $sp in dutil:distinct-speakers($segment) return $sp
+        }
+      }
+    }
+
+    return array {
+      for $id in $cast
+      let $node := $doc//tei:particDesc//(
+        tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
+      )
+      let $name := $node/(tei:persName | tei:name)[1]/text()
+      let $sex := $node/@sex/string()
+      let $isGroup := if ($node/name() eq 'personGrp')
+        then true() else false()
+      let $num-of-speech := $tei//tei:sp[@who='#'||$id]
+      return map {
+        "id": $id,
+        "name": $name,
+        "isGroup": $isGroup,
+        "gender": if($sex) then $sex else (),
+        "numOfScenes": count($segments?*[?speakers = $id]),
+        "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
+        "numOfWords": dutil:num-of-spoken-words($tei, $id)
+      }
+    }
+};
+
+(:~
  : Escape string for use in CSV
  :
  : @param $string
