@@ -84,7 +84,21 @@ declare function metrics:get-network-metrics($url as xs:string) {
 
   return
     <network>
-      {for $k in map:keys($metrics) return element {$k} {$metrics($k)}}
+      {
+        for $k in map:keys($metrics)
+        return element {$k} {
+          if($k eq "nodes") then
+            for $id in map:keys($metrics?nodes )
+            return
+            <node id="{$id}">
+              {
+                for $n in map:keys($metrics($k)($id))
+                return element {$n} {$metrics($k)($id)($n)}
+              }
+            </node>
+          else $metrics($k)
+        }
+      }
     </network>
 };
 
