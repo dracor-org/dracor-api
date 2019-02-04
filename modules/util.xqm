@@ -515,6 +515,8 @@ declare function dutil:cast-info (
       }
     }
 
+    let $metrics := doc(dutil:filepaths($corpusname, $playname)?files?metrics)
+
     return array {
       for $id in $cast
       let $node := $doc//tei:particDesc//(
@@ -525,6 +527,7 @@ declare function dutil:cast-info (
       let $isGroup := if ($node/name() eq 'personGrp')
         then true() else false()
       let $num-of-speech := $tei//tei:sp[@who='#'||$id]
+      let $metrics-node := $metrics//node[@id=$id]
       return map {
         "id": $id,
         "name": $name,
@@ -532,7 +535,12 @@ declare function dutil:cast-info (
         "gender": if($sex) then $sex else (),
         "numOfScenes": count($segments?*[?speakers = $id]),
         "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
-        "numOfWords": dutil:num-of-spoken-words($tei, $id)
+        "numOfWords": dutil:num-of-spoken-words($tei, $id),
+        "degree": $metrics-node/degree/xs:integer(.),
+        "closeness": $metrics-node/closeness/xs:decimal(.),
+        "betweenness": $metrics-node/betweenness/xs:decimal(.),
+        "eigenvector": if ($metrics-node/eigenvector) then
+          $metrics-node/eigenvector/xs:decimal(.) else 0
       }
     }
 };
