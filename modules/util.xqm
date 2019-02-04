@@ -18,7 +18,7 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
  : @param $url DB URL to play TEI document
  : @return map()
  :)
-declare function dutil:filepaths($url as xs:string) as map() {
+declare function dutil:filepaths ($url as xs:string) as map() {
   let $segments := tokenize($url, "/")
   let $corpusname := $segments[last() - 1]
   let $filename := $segments[last()]
@@ -32,7 +32,44 @@ declare function dutil:filepaths($url as xs:string) as map() {
       "metrics": $config:metrics-root || "/" || $corpusname,
       "rdf": $config:rdf-root || "/" || $corpusname
     },
+    "files": map {
+      "tei": $config:data-root || "/" || $corpusname || "/" || $filename,
+      "metrics": $config:metrics-root || "/" || $corpusname || "/" || $filename,
+      "rdf": $config:rdf-root || "/" || $corpusname || "/" || $playname
+        || ".rdf.xml"
+    },
     "url": $url
+  }
+};
+
+(:~
+ : Provide map of files and paths related to a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ : @return map()
+ :)
+declare function dutil:filepaths (
+  $corpusname as xs:string,
+  $playname as xs:string
+) as map() {
+  let $filename := $playname || ".xml"
+  return map {
+    "filename": $filename,
+    "playname": $playname,
+    "corpusname": $corpusname,
+    "collections": map {
+      "tei": $config:data-root || "/" || $corpusname,
+      "metrics": $config:metrics-root || "/" || $corpusname,
+      "rdf": $config:rdf-root || "/" || $corpusname
+    },
+    "files": map {
+      "tei": $config:data-root || "/" || $corpusname || "/" || $filename,
+      "metrics": $config:metrics-root || "/" || $corpusname || "/" || $filename,
+      "rdf": $config:rdf-root || "/" || $corpusname || "/" || $playname
+        || ".rdf.xml"
+    },
+    "url": $config:data-root || "/" || $corpusname || "/" || $filename
   }
 };
 
