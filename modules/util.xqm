@@ -537,6 +537,8 @@ declare function dutil:cast-info (
         "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
         "numOfWords": dutil:num-of-spoken-words($tei, $id),
         "degree": $metrics-node/degree/xs:integer(.),
+        "weightedDegree": if ($metrics-node/weightedDegree) then
+          $metrics-node/weightedDegree/xs:integer(.) else 0,
         "closeness": $metrics-node/closeness/xs:decimal(.),
         "betweenness": $metrics-node/betweenness/xs:decimal(.),
         "eigenvector": if ($metrics-node/eigenvector) then

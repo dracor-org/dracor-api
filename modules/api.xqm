@@ -774,7 +774,7 @@ function api:cast-info-csv($corpusname, $playname) {
   let $keys := (
     "id", "name", "gender", "isGroup",
     "numOfScenes", "numOfSpeechActs", "numOfWords",
-    "degree", "betweenness", "closeness", "eigenvector"
+    "degree", "weightedDegree", "betweenness", "closeness", "eigenvector"
   )
   return if (count($info) = 0) then
     <rest:response>
