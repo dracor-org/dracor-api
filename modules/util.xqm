@@ -18,7 +18,7 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
  : @param $url DB URL to play TEI document
  : @return map()
  :)
-declare function dutil:filepaths($url as xs:string) as map() {
+declare function dutil:filepaths ($url as xs:string) as map() {
   let $segments := tokenize($url, "/")
   let $corpusname := $segments[last() - 1]
   let $filename := $segments[last()]
@@ -32,7 +32,44 @@ declare function dutil:filepaths($url as xs:string) as map() {
       "metrics": $config:metrics-root || "/" || $corpusname,
       "rdf": $config:rdf-root || "/" || $corpusname
     },
+    "files": map {
+      "tei": $config:data-root || "/" || $corpusname || "/" || $filename,
+      "metrics": $config:metrics-root || "/" || $corpusname || "/" || $filename,
+      "rdf": $config:rdf-root || "/" || $corpusname || "/" || $playname
+        || ".rdf.xml"
+    },
     "url": $url
+  }
+};
+
+(:~
+ : Provide map of files and paths related to a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ : @return map()
+ :)
+declare function dutil:filepaths (
+  $corpusname as xs:string,
+  $playname as xs:string
+) as map() {
+  let $filename := $playname || ".xml"
+  return map {
+    "filename": $filename,
+    "playname": $playname,
+    "corpusname": $corpusname,
+    "collections": map {
+      "tei": $config:data-root || "/" || $corpusname,
+      "metrics": $config:metrics-root || "/" || $corpusname,
+      "rdf": $config:rdf-root || "/" || $corpusname
+    },
+    "files": map {
+      "tei": $config:data-root || "/" || $corpusname || "/" || $filename,
+      "metrics": $config:metrics-root || "/" || $corpusname || "/" || $filename,
+      "rdf": $config:rdf-root || "/" || $corpusname || "/" || $playname
+        || ".rdf.xml"
+    },
+    "url": $config:data-root || "/" || $corpusname || "/" || $filename
   }
 };
 
@@ -449,6 +486,65 @@ declare function dutil:play-info(
         }
         {$segments//segments}
       </info>
+};
+
+(:~
+ : Compile cast info for a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function dutil:cast-info (
+  $corpusname as xs:string,
+  $playname as xs:string
+) as item()? {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return if (not($doc)) then
+    ()
+  else
+    let $tei := $doc//tei:TEI
+    let $cast := dutil:distinct-speakers($doc//tei:body)
+
+    let $segments := array {
+      for $segment at $pos in dutil:get-segments($tei)
+      return map {
+        "number": $pos,
+        "speakers": array {
+          for $sp in dutil:distinct-speakers($segment) return $sp
+        }
+      }
+    }
+
+    let $metrics := doc(dutil:filepaths($corpusname, $playname)?files?metrics)
+
+    return array {
+      for $id in $cast
+      let $node := $doc//tei:particDesc//(
+        tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
+      )
+      let $name := $node/(tei:persName | tei:name)[1]/text()
+      let $sex := $node/@sex/string()
+      let $isGroup := if ($node/name() eq 'personGrp')
+        then true() else false()
+      let $num-of-speech := $tei//tei:sp[@who='#'||$id]
+      let $metrics-node := $metrics//node[@id=$id]
+      return map {
+        "id": $id,
+        "name": $name,
+        "isGroup": $isGroup,
+        "gender": if($sex) then $sex else (),
+        "numOfScenes": count($segments?*[?speakers = $id]),
+        "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
+        "numOfWords": dutil:num-of-spoken-words($tei, $id),
+        "degree": $metrics-node/degree/xs:integer(.),
+        "weightedDegree": if ($metrics-node/weightedDegree) then
+          $metrics-node/weightedDegree/xs:integer(.) else 0,
+        "closeness": $metrics-node/closeness/xs:decimal(.),
+        "betweenness": $metrics-node/betweenness/xs:decimal(.),
+        "eigenvector": if ($metrics-node/eigenvector) then
+          $metrics-node/eigenvector/xs:decimal(.) else 0
+      }
+    }
 };
 
 (:~
