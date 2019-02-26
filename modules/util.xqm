@@ -300,8 +300,9 @@ declare function dutil:get-corpus-meta-data(
     collection($sitelinks-collection)/sitelinks[@id=$wikidata-id]/uri
   )
   let $networkmetrics := map:new(
-    for $s in $stat/network/*[not(name() = "maxDegreeIds")]
-    return map:entry($s/name(), $s/text())
+    for $s in $stat/network/*[not(name() = ("maxDegreeIds", "nodes"))]
+    let $v := $s/text()
+    return map:entry($s/name(), if(number($v)) then xs:decimal($v) else $v)
   )
   let $meta := map {
     "name": $name,
@@ -310,14 +311,14 @@ declare function dutil:get-corpus-meta-data(
     "numOfSegments": count(dutil:get-segments($tei)),
     "numOfActs": count($tei//tei:div[@type="act"]),
     "numOfSpeakers": $num-speakers,
-    "yearNormalized": dutil:get-normalized-year($tei),
-    "yearWritten": $dates[@type="written"]/@when/string(),
-    "yearPremiered": $dates[@type="premiere"]/@when/string(),
-    "yearPrinted": $dates[@type="print"]/@when/string(),
+    "yearNormalized": xs:integer(dutil:get-normalized-year($tei)),
+    "yearWritten": xs:integer($dates[@type="written"]/@when/string()),
+    "yearPremiered": xs:integer($dates[@type="premiere"]/@when/string()),
+    "yearPrinted": xs:integer($dates[@type="print"]/@when/string()),
     "maxDegreeIds": if(count($max-degree-ids) < 4) then
       string-join($max-degree-ids, "|")
     else
-      '"several characters"',
+      "several characters",
     "wikipediaLinkCount": $sitelink-count
   }
   order by $filename
