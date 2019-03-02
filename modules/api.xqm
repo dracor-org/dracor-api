@@ -15,7 +15,8 @@ declare namespace repo = "http://exist-db.org/xquery/repo";
 declare namespace expath = "http://expath.org/ns/pkg";
 declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
-declare namespace jsn="http://www.json.org";
+declare namespace jsn = "http://www.json.org";
+declare namespace test = "http://exist-db.org/xquery/xqsuite";
 
 declare function local:get-info () {
   let $expath := config:expath-descriptor()
@@ -29,6 +30,13 @@ declare function local:get-info () {
     </info>
 };
 
+(:~
+ : API info
+ :
+ : Shows version numbers of the dracor-api app and the underlying eXist-db.
+ :
+ : @result JSON object
+ :)
 declare
   %rest:GET
   %rest:path("/info")
@@ -100,6 +108,14 @@ declare function local:get-corpus-metrics-xml ($corpus as xs:string) {
   </metrics>
 };
 
+(:~
+ : List available corpora and their basic metrics.
+ :
+ : This endpoint is deprecated. Please use `/corpora` with an appropriate
+ : `include` query parameter instead.
+ :
+ : @deprecated
+ :)
 declare
   %rest:GET
   %rest:path("/metrics")
@@ -154,6 +170,11 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
   }
 };
 
+(:~
+ : List available corpora
+ :
+ : @result JSON array of objects
+ :)
 declare
   %rest:GET
   %rest:path("/corpora")
@@ -181,6 +202,12 @@ function api:corpora($include) {
   }
 };
 
+(:~
+ : Add new corpus
+ :
+ : @param $data JSON object describing corpus meta data
+ : @result JSON object
+ :)
 declare
   %rest:POST("{$data}")
   %rest:path("/corpora")
@@ -243,6 +270,15 @@ function api:corpora-put($data) {
     )
 };
 
+(:~
+ : List corpus content
+ :
+ : Lists all plays available in the corpus including the id, title, author(s)
+ : and other meta data.
+ :
+ : @param $corpusname
+ : @result
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}")
@@ -318,6 +354,17 @@ function api:index($corpusname) {
       </index>
 };
 
+(:~
+ : Load corpus data from its repository
+ :
+ : Posting `{"load": true}` to the corpus URI reloads the data for this corpus
+ : from its repository (if defined). This endpoint requires authorization.
+ :
+ : @param $corpusname Corpus name
+ : @param $data JSON object
+ : @param $auth Authorization header value
+ : @result JSON object
+ :)
 declare
   %rest:POST("{$data}")
   %rest:path("/corpora/{$corpusname}")
@@ -326,6 +373,9 @@ declare
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
+  %test:arg("corpusname", "test")
+  %test:arg("data", '{"load": true}')
+  %test:arg("auth", "Basic YWRtaW46")
 function api:post-corpus($corpusname, $data, $auth) {
   if (not($auth)) then
     (
@@ -362,6 +412,13 @@ function api:post-corpus($corpusname, $data, $auth) {
       )
 };
 
+(:~
+ : Remove corpus from database
+ :
+ : @param $corpusname Corpus name
+ : @param $auth Authorization header value
+ : @result JSON object
+ :)
 declare
   %rest:DELETE
   %rest:path("/corpora/{$corpusname}")
@@ -410,6 +467,12 @@ function api:delete-corpus($corpusname, $auth) {
         )
 };
 
+(:~
+ : List of metadata for all plays in a corpus
+ :
+ : @param $corpusname Corpus name
+ : @result JSON array of metadata for all plays
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/metadata")
@@ -421,6 +484,12 @@ function api:corpus-meta-data($corpusname) {
   return $meta
 };
 
+(:~
+ : List of metadata for all plays in a corpus
+ :
+ : @param $corpusname Corpus name
+ : @result comma separated list of metadata for all plays
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/metadata")
@@ -443,8 +512,15 @@ function api:corpus-meta-data-csv($corpusname) {
   return ($header, $rows)
 };
 
-(:
- : Deprecated! Replaced by api:corpus-meta-data() or api:corpus-meta-data-csv().
+(:~
+ : List of metadata for all plays in a corpus
+ :
+ : This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata`
+ : with an appropriate `Accept` header instead.
+ :
+ : @param $corpusname Corpus name
+ : @result comma separated list of metadata for all plays
+ : @deprecated
  :)
 declare
   %rest:GET
@@ -484,6 +560,13 @@ function api:word-frequencies-csv($corpusname, $elem) {
   return concat($t/@name, ", ", $t/@count, ", ", $t/@docs, "&#10;")
 };
 
+(:~
+ : Get metadata and network metrics for a single play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result JSON object with play meta data
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}")
@@ -501,6 +584,14 @@ function api:play-info($corpusname, $playname) {
       </rest:response>
 };
 
+(:~
+ : Remove a single play from the corpus
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @param $auth Authorization header value
+ : @result JSON object
+ :)
 declare
   %rest:DELETE
   %rest:path("/corpora/{$corpusname}/play/{$playname}")
@@ -526,6 +617,13 @@ function api:play-delete($corpusname, $playname, $data, $auth) {
       return (xmldb:remove($collection, $filename))
 };
 
+(:~
+ : Get TEI representation of a single play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result TEI document
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
@@ -548,6 +646,22 @@ function api:play-tei($corpusname, $playname) {
       }
 };
 
+(:~
+ : Add new or update existing TEI document
+ :
+ : When sending a PUT request to a new play URI, the request body is stored in
+ : the database as a new document accessible under that URI. If the URI already
+ : exists the corresponding TEI document is updated with the request body.
+ :
+ : The `playname` parameter of a new URI must consist of lower case ASCII
+ : characters, digits and/or dashes only.
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @param $data TEI document
+ : @param $auth Authorization header value
+ : @result updated TEI document
+ :)
 declare
   %rest:PUT("{$data}")
   %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
@@ -597,6 +711,12 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
       return $data
 };
 
+(:~
+ : Get RDF document for a single play
+ :
+ : @param
+ : @result
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/rdf")
@@ -614,6 +734,13 @@ function api:play-rdf($corpusname, $playname) {
     else $doc
 };
 
+(:~
+ : Get RDF document for a single play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result RDF document
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/csv")
@@ -659,6 +786,13 @@ function api:networkdata-csv($corpusname, $playname) {
       return string-join(("Source,Type,Target,Weight", $rows), "&#10;")
 };
 
+(:~
+ : Get network data of a play as GEXF
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result GEXF document
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/gexf")
@@ -746,6 +880,13 @@ function api:networkdata-gefx($corpusname, $playname) {
         </gexf>
 };
 
+(:~
+ : Get a list of characters of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result JSON array of objects representing character data
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
@@ -763,6 +904,13 @@ function api:cast-info($corpusname, $playname) {
       </rest:response>
 };
 
+(:~
+ : Get a list of characters of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result comma separated list of character data
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
@@ -790,6 +938,13 @@ function api:cast-info-csv($corpusname, $playname) {
   )
 };
 
+(:~
+ : Get a list of segments and characters of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result XML document
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
@@ -844,6 +999,13 @@ function api:segmentation($corpusname, $playname) {
       </segmentation>
 };
 
+(:~
+ : Get a list of segments and characters of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result list of comma separated segment data
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
@@ -871,6 +1033,14 @@ function api:segmentation-csv($corpusname, $playname) {
   )
 };
 
+(:~
+ : Get spoken text of a play (excluding stage directions)
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @param $gender Gender ("MALE"|"FEMALE"|"UNKNOWN")
+ : @result text
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text")
@@ -927,6 +1097,13 @@ declare function local:get-text-by-character ($doc) {
   }
 };
 
+(:~
+ : Get spoken text for each character of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result JSON object with texts per character
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
@@ -944,6 +1121,13 @@ function api:spoken-text-by-character($corpusname, $playname) {
       local:get-text-by-character($doc)
 };
 
+(:~
+ : Get spoken text for each character of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result list of spoken text per character as CSV
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
@@ -970,6 +1154,13 @@ function api:spoken-text-by-character-csv($corpusname, $playname) {
       )
 };
 
+(:~
+ : Get all stage directions of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result text of all stage directions
+ :)
 declare
   %rest:GET
   %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions")
@@ -990,6 +1181,11 @@ function api:stage-directions($corpusname, $playname) {
 
 (:~
  : SPARQL endpoint
+ :
+ : Submit SPARQL queries with `query` parameter
+ :
+ : @param $query SPARQL query
+ : @result SPARQL results document
  :)
 declare
   %rest:GET
@@ -1022,6 +1218,15 @@ function api:sparql-get($query as xs:string*) {
   }
 };
 
+(:~
+ : SPARQL endpoint
+ :
+ : Post SPARQL queries
+ :
+ : @param $query SPARQL query
+ : @param $type content type of the posted payload
+ : @result SPARQL results document
+ :)
 declare
   %rest:POST("{$query}")
   %rest:path("/sparql")
@@ -1059,6 +1264,15 @@ function api:sparql-post($query as xs:string*, $type) {
  : "application/x-www-form-urlencoded". If the header specifies a charset like
  : "application/x-www-form-urlencoded; charset=UTF-8" $query will not get
  : populated.
+ :)
+(:~
+ : SPARQL endpoint
+ :
+ : Post SPARQL queries
+ :
+ : @param $query SPARQL query
+ : @param $type content type of the posted payload
+ : @result SPARQL results document
  :)
 declare
   %rest:POST

@@ -88,6 +88,20 @@ declare function local:handle-delivery (
   return $result
 };
 
+(:~
+ : GitHub Webhook
+ :
+ : Endpoint accepting POST requests from Github (see
+ : https://developer.github.com/webhooks/). We currently only handle push
+ : events on the master branch.
+ :
+ : @param $data JSON payload
+ : @param $agent User agent string
+ : @param $event GitHub event
+ : @param $delivery Delivery ID
+ : @param $signature Cryptographic signature
+ : @result JSON object
+ :)
 declare
   %rest:POST("{$data}")
   %rest:path("/webhook/github")
