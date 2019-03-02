@@ -7,6 +7,7 @@ import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
 import module namespace sparql = "http://exist-db.org/xquery/sparql"
   at "java:org.exist.xquery.modules.rdf.SparqlModule";
+import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -45,6 +46,21 @@ declare
   %output:method("json")
 function api:darcor() {
   local:get-info()
+};
+
+(:~
+ : OpenAPI info
+ :
+ : @result JSON object
+ :)
+declare
+  %rest:GET
+  %rest:path("/openapi")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:openapi() {
+  openapi:main("/db/apps/dracor")
 };
 
 declare
