@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <meta xmlns="http://exist-db.org/xquery/repo">
-  <description>Backend resources for dracor.org</description>
+  <description>RESTful API for the Drama Corpora Project (DraCor)</description>
   <author>Carsten Milling</author>
   <website>https://github.com/dracor-org/dracor-api</website>
   <status>alpha</status>
-  <license>GNU-LGPL</license>
+  <license ref="https://spdx.org/licenses/">Apache-2.0</license>
   <copyright>true</copyright>
   <type>application</type>
   <target>dracor</target>
