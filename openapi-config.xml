@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="https://lab.sub.uni-goettingen.de/restxqopenapi">
+  <info>
+    <termsOfService>https://dracor.org</termsOfService>
+    <contact>
+      <email>ffischer@hse.ru</email>
+    </contact>
+  </info>
+  <servers>
+    <server url="http://localhost:8080/exist/restxq">
+      Local development server
+    </server>
+    <server url="https://dracor.org/api">
+      Production server
+    </server>
+  </servers>
+</config>

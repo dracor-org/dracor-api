@@ -69,6 +69,11 @@
       dest="${dependencies.dir}/sparql-latest.xar"
       skipexisting="true"
       ignoreerrors="true"/>
+    <get
+      src="https://ci.de.dariah.eu/exist-repo/public/openapi-1.5.0.xar"
+      dest="${dependencies.dir}/openapi-1.5.0.xar"
+      skipexisting="true"
+      ignoreerrors="true"/>
   </target>
 
   <target
