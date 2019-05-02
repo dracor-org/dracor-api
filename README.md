@@ -90,6 +90,7 @@ Currently the following corpora are available (see [corpora](corpora)):
 - ger
 - rus
 - shake
+- span
 - test (default)
 
 Note that loading the data can take several minutes depending on the size of the
