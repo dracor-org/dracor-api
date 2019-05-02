@@ -322,14 +322,14 @@ function api:index($corpusname) {
           let $id := tokenize($filename, "\.")[1]
           let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
           let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
-          let $authors := $tei//tei:fileDesc/tei:titleStmt/tei:author
+          let $authors := dutil:get-authors($tei)
           let $play-uri :=
             $config:api-base || "/corpora/" || $corpusname || "/play/" || $id
           let $metrics-url :=
             $config:metrics-root || "/" || $corpusname || "/" || $filename
           let $network-size := doc($metrics-url)//network/size/text()
           let $yearNormalized := dutil:get-normalized-year($tei)
-          order by $authors[1]
+          order by $authors[1]?name
           return
             <dramas json:array="true">
               <id>{$id}</id>
@@ -337,14 +337,14 @@ function api:index($corpusname) {
                 {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space() }
               </title>
               {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-              <author key="{$tei//tei:titleStmt/tei:author/@key}">
-                <name>{$authors/string()}</name>
+              <author key="{$authors[1]?key}">
+                <name>{$authors[1]?name}</name>
               </author>
               {
                 for $author in $authors
                 return
-                  <authors key="{$author/@key}" json:array="true">
-                    <name>{$author/string()}</name>
+                  <authors key="{$author?key}" json:array="true">
+                    <name>{$author?name}</name>
                   </authors>
               }
               <yearNormalized>{$yearNormalized}</yearNormalized>

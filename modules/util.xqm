@@ -326,6 +326,23 @@ declare function dutil:get-corpus-meta-data(
 };
 
 (:~
+ : Retrieve author data from TEI.
+ :
+ : @param $tei
+ :)
+declare function dutil:get-authors($tei as node()) as map()* {
+  for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author
+  let $name := if($author/tei:name[@type = "full"]) then
+    $author/tei:name[@type = "full"]/string()
+  else
+    $author/string()
+  return map {
+    "name": $name,
+    "key": $author/@key/string()
+  }
+};
+
+(:~
  : Calculate meta data for a play.
  :
  : @param $corpusname
@@ -368,10 +385,10 @@ declare function dutil:play-info-map(
       "title": $tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space(),
       "subtitle": $subtitle,
       "authors": array {
-        for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author
+        for $author in dutil:get-authors($tei)
         return map {
-          "name": $author/string(),
-          "key": $author/@key/string()
+          "name": $author?name,
+          "key": $author?key
         }
       },
       "allInSegment": $all-in-segment,
@@ -442,6 +459,7 @@ declare function dutil:play-info(
         $segments//segments[speakers=$lastone][1]/preceding-sibling::segments
       ) + 1
       let $all-in-index := $all-in-segment div count($segments//segments)
+      let $authors := dutil:get-authors($tei)
 
       return
       <info>
@@ -451,18 +469,18 @@ declare function dutil:play-info(
           {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space()}
         </title>
         {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
-        <author key="{$tei//tei:fileDesc/tei:titleStmt/tei:author/@key}">
-          <name>{$tei//tei:fileDesc/tei:titleStmt/tei:author/string()}</name>
+        <author key="{$authors[1]?key}">
+          <name>{$authors[1]?name}</name>
         </author>
         <_deprecationWarning>{normalize-space(
           "The single author property is deprecated. Use the array of 'authors'
           instead!")}
         </_deprecationWarning>
         {
-          for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author
+          for $author in $authors
           return
-            <authors key="{$author/@key}" json:array="true">
-              <name>{$author/string()}</name>
+            <authors key="{$author?key}" json:array="true">
+              <name>{$author?name}</name>
             </authors>
         }
         <allInSegment>{$all-in-segment}</allInSegment>
