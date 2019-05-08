@@ -547,6 +547,8 @@ declare function dutil:cast-info (
         then true() else false()
       let $num-of-speech := $tei//tei:sp[@who='#'||$id]
       let $metrics-node := $metrics//node[@id=$id]
+      let $eigenvector := if ($metrics-node/eigenvector) then
+        number($metrics-node/eigenvector) else 0
       return map {
         "id": $id,
         "name": $name,
@@ -560,8 +562,7 @@ declare function dutil:cast-info (
           $metrics-node/weightedDegree/xs:integer(.) else 0,
         "closeness": $metrics-node/closeness/xs:decimal(.),
         "betweenness": $metrics-node/betweenness/xs:decimal(.),
-        "eigenvector": if ($metrics-node/eigenvector) then
-          $metrics-node/eigenvector/xs:decimal(.) else 0
+        "eigenvector": $eigenvector
       }
     }
 };
