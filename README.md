@@ -88,6 +88,7 @@ ant load.corpus -Dcorpus=rus
 Currently the following corpora are available (see [corpora](corpora)):
 
 - ger
+- greek
 - rus
 - shake
 - span
