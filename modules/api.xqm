@@ -205,7 +205,7 @@ function api:corpora($include) {
     for $corpus in collection($config:data-root)/corpus
     let $name := $corpus/name/text()
     order by $name
-    return map:new ((
+    return map:merge ((
       map:entry("name", $name),
       map:entry("title", $corpus/title/text()),
       map:entry("uri", $config:api-base || '/corpora/' || $name),
@@ -788,7 +788,7 @@ function api:networkdata-csv($corpusname, $playname) {
           }
         </segments>
 
-      let $links := map:new(
+      let $links := map:merge(
         for $spkr in $cast
         let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
         return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
@@ -843,7 +843,7 @@ function api:networkdata-gefx($corpusname, $playname) {
       let $authors := $info/authors/name/text()
       let $title := $info/title/text()
 
-      let $links := map:new(
+      let $links := map:merge(
         for $spkr in $cast
         let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
         return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])

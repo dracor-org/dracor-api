@@ -299,7 +299,7 @@ declare function dutil:get-corpus-meta-data(
   let $sitelink-count := count(
     collection($sitelinks-collection)/sitelinks[@id=$wikidata-id]/uri
   )
-  let $networkmetrics := map:new(
+  let $networkmetrics := map:merge(
     for $s in $stat/network/*[not(name() = ("maxDegreeIds", "nodes"))]
     let $v := $s/text()
     return map:entry($s/name(), if(number($v)) then xs:decimal($v) else $v)
@@ -322,7 +322,7 @@ declare function dutil:get-corpus-meta-data(
     "wikipediaLinkCount": $sitelink-count
   }
   order by $filename
-  return map:new(($meta, $networkmetrics))
+  return map:merge(($meta, $networkmetrics))
 };
 
 (:~
