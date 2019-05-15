@@ -181,7 +181,7 @@ declare function dutil:num-of-spoken-words (
  : @param $tei The TEI root element of a play
  :)
 declare function dutil:get-segments ($tei as element()*) as element()* {
-  $tei//tei:body//tei:div[tei:sp or (@type="scene" and not(.//tei:sp))]
+  $tei//tei:body//(tei:div[tei:sp or (@type="scene" and not(.//tei:sp))]|tei:div1)
 };
 
 (:~
