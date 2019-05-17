@@ -18,6 +18,7 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace jsn = "http://www.json.org";
 declare namespace test = "http://exist-db.org/xquery/xqsuite";
+declare namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
 declare function local:get-info () {
   let $expath := config:expath-descriptor()
@@ -123,6 +124,50 @@ declare function local:get-corpus-metrics-xml ($corpus as xs:string) {
     </wordcount>
     <updated>{max($metrics//metrics/xs:dateTime(@updated))}</updated>
   </metrics>
+};
+
+(:~
+ : Resolve DraCor ID of a play
+ :
+ : When "application/rdf+xml" is requested via the `Accept` header, this
+ : endpoint returns an RDF representation of the play identified by $id.
+ : Otherwise it redirects to the DraCor URL for that play.
+ :
+ : @param $id DraCor ID
+ : @param $accept Accept header value
+ : @result RDF or redirect
+ :)
+declare
+  %rest:GET
+  %rest:path("/id/{$id}")
+  %rest:header-param("Accept", "{$accept}")
+function api:id-to-url($id, $accept) {
+  if ($accept = "application/rdf+xml") then
+    let $uri := "https://dracor.org/id/" || $id
+    let $rdf := collection($config:rdf-root)//rdf:RDF[
+      rdf:Description/@rdf:about = $uri
+    ]
+    return
+      if (not($rdf)) then
+        <rest:response>
+          <http:response status="404"/>
+        </rest:response>
+      else
+        $rdf
+  else 
+    let $url := collection($config:data-root)//tei:publicationStmt
+      /tei:idno[@type="dracor" and .= $id]/../tei:idno[@type="URL"]
+    return 
+      if (not($url)) then
+        <rest:response>
+          <http:response status="404"/>
+        </rest:response>
+      else 
+        <rest:response>
+          <http:response status="302">
+            <http:header name="location" value="{$url}"/>
+          </http:response>
+        </rest:response>
 };
 
 (:~
