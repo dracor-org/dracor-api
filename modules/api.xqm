@@ -155,10 +155,14 @@ function api:id-to-url($id, $accept) {
       else
         $rdf
   else 
-    let $url := collection($config:data-root)//tei:publicationStmt
-      /tei:idno[@type="dracor" and .= $id]/../tei:idno[@type="URL"]
+    let $idno := collection($config:data-root)//tei:publicationStmt
+      /tei:idno[@type="dracor" and .= $id]
+    let $parts := tokenize(base-uri($idno/parent::*), "[/.]")
+    let $corpusname := $parts[last()-2]
+    let $playname := $parts[last()-1]
+    let $url := "https://dracor.org/" || $corpusname || "/" || $playname
     return 
-      if (not($url)) then
+      if (not($idno)) then
         <rest:response>
           <http:response status="404"/>
         </rest:response>
