@@ -565,10 +565,12 @@ declare
   %output:method("text")
 function api:corpus-meta-data-csv($corpusname) {
   let $meta := dutil:get-corpus-meta-data($corpusname)
-  (: make sure 'year' and 'name' are first :)
+  (: make sure 'name', 'id' and 'year' are first :)
   let $columns := (
-    "name", "yearNormalized",
-    map:keys($meta[1])[.!="name" and .!="yearNormalized" and .!="playName"]
+    "name", "id", "yearNormalized",
+    map:keys($meta[1])[
+      .!="name" and .!="id" and .!="yearNormalized" and .!="playName"
+    ]
   )
   let $header := concat(string-join($columns, ","), "&#10;")
   let $rows :=

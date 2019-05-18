@@ -287,6 +287,7 @@ declare function dutil:get-corpus-meta-data(
 
   for $tei in collection($collection)//tei:TEI
   let $filename := tokenize(base-uri($tei), "/")[last()]
+  let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
   let $name := tokenize($filename, "\.")[1]
   let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
   let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
@@ -305,6 +306,7 @@ declare function dutil:get-corpus-meta-data(
     return map:entry($s/name(), if(number($v)) then xs:decimal($v) else $v)
   )
   let $meta := map {
+    "id": $id,
     "name": $name,
     "playName": $name,
     "genre": $genre,
