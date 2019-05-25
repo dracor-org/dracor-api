@@ -757,7 +757,7 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
       )
     else if (
       not($doc) and
-      not(matches($playname, "^[a-z0-9]+([-a-z0-9]?[a-z0-9])?$"))
+      not(matches($playname, "^[a-z0-9]+(-?[a-z0-9]+)*$"))
     )
     then
       (
