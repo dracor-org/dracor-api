@@ -20,6 +20,29 @@ declare namespace jsn = "http://www.json.org";
 declare namespace test = "http://exist-db.org/xquery/xqsuite";
 declare namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
+declare variable $api:metadata-columns := (
+  "name",
+  "id",
+  "yearNormalized",
+  "size",
+  "genre",
+  "averageClustering",
+  "density",
+  "averagePathLength",
+  "maxDegreeIds",
+  "averageDegree",
+  "diameter",
+  "yearPremiered",
+  "yearPrinted",
+  "maxDegree",
+  "numOfSpeakers",
+  "numConnectedComponents",
+  "yearWritten",
+  "numOfSegments",
+  "wikipediaLinkCount",
+  "numOfActs"
+);
+
 declare function local:get-info () {
   let $expath := config:expath-descriptor()
   let $repo := config:repo-descriptor()
@@ -580,18 +603,12 @@ function api:corpus-meta-data-csv($corpusname) {
       </rest:response>
     else
       let $meta := dutil:get-corpus-meta-data($corpusname)
-      (: make sure 'name', 'id' and 'year' are first :)
-      let $columns := (
-        "name", "id", "yearNormalized",
-        map:keys($meta[1])[
-          .!="name" and .!="id" and .!="yearNormalized" and .!="playName"
-        ]
-      )
-      let $header := concat(string-join($columns, ","), "&#10;")
+      let $header := concat(string-join($api:metadata-columns, ","), "&#10;")
       let $rows :=
         for $m in $meta return concat(
           string-join((
-            for $c in $columns return if (count($m($c)) = 0) then '' else $m($c)
+            for $c in $api:metadata-columns
+            return if (count($m($c)) = 0) then '' else $m($c)
           ), ','), "&#10;")
       return ($header, $rows)
 };
