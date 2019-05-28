@@ -547,8 +547,16 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpus-meta-data($corpusname) {
-  let $meta := dutil:get-corpus-meta-data($corpusname)
-  return $meta
+  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  return
+    if (not($corpus)) then
+      (
+        <rest:response><http:response status="404"/></rest:response>,
+        map {"message": "no such corpus"}
+      )
+    else
+      let $meta := dutil:get-corpus-meta-data($corpusname)
+      return $meta
 };
 
 (:~
@@ -564,21 +572,28 @@ declare
   %output:media-type("text/csv")
   %output:method("text")
 function api:corpus-meta-data-csv($corpusname) {
-  let $meta := dutil:get-corpus-meta-data($corpusname)
-  (: make sure 'name', 'id' and 'year' are first :)
-  let $columns := (
-    "name", "id", "yearNormalized",
-    map:keys($meta[1])[
-      .!="name" and .!="id" and .!="yearNormalized" and .!="playName"
-    ]
-  )
-  let $header := concat(string-join($columns, ","), "&#10;")
-  let $rows :=
-    for $m in $meta return concat(
-      string-join((
-        for $c in $columns return if (count($m($c)) = 0) then '' else $m($c)
-      ), ','), "&#10;")
-  return ($header, $rows)
+  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  return
+    if (not($corpus)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $meta := dutil:get-corpus-meta-data($corpusname)
+      (: make sure 'name', 'id' and 'year' are first :)
+      let $columns := (
+        "name", "id", "yearNormalized",
+        map:keys($meta[1])[
+          .!="name" and .!="id" and .!="yearNormalized" and .!="playName"
+        ]
+      )
+      let $header := concat(string-join($columns, ","), "&#10;")
+      let $rows :=
+        for $m in $meta return concat(
+          string-join((
+            for $c in $columns return if (count($m($c)) = 0) then '' else $m($c)
+          ), ','), "&#10;")
+      return ($header, $rows)
 };
 
 (:~
