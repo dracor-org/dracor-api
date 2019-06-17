@@ -121,7 +121,7 @@ declare function dutil:get-speech (
 ) as item()* {
   let $lines := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
                 //(tei:p|tei:l)
-  return functx:remove-elements-deep($lines, ('*:stage'))
+  return functx:remove-elements-deep($lines, ('*:stage', '*:note'))
 };
 
 (:~
@@ -144,7 +144,7 @@ declare function dutil:get-speech-by-gender (
               /@xml:id/string()
   let $refs := for $id in $ids return '#'||$id
   let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
-  return functx:remove-elements-deep($sp, ('*:stage'))
+  return functx:remove-elements-deep($sp, ('*:stage', '*:note'))
 };
 
 (:~
