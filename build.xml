@@ -113,22 +113,27 @@
     <echo  level="warning" message="metrics service is not available." />
     <echo  level="warning" message="loading the service from github…" />
     <get
-      src="https://github.com/dracor-org/dracor-metrics/archive/master.zip"
+      src="https://github.com/dracor-org/dracor-metrics/archive/python.zip"
       dest="${build.dir}/metrics.zip"/>
     <unzip src="${build.dir}/metrics.zip" dest="${devel.dir}"/>
     <exec
       failifexecutionfails="false"
       failonerror="false"
-      dir="${devel.dir}/dracor-metrics-master"
-      executable="npm">
+      dir="${devel.dir}/dracor-metrics-python"
+      executable="pipenv">
       <arg value="install"/>
     </exec>
     <exec spawn="true"
       failifexecutionfails="false"
       failonerror="false"
-      dir="${devel.dir}/dracor-metrics-master"
-      executable="npm">
-      <arg value="start"/>
+      dir="${devel.dir}/dracor-metrics-python"
+      executable="pipenv">
+      <arg value="run"/>
+      <arg value="hug"/>
+      <arg value="-f"/>
+      <arg value="main.py"/>
+      <arg value="-p"/>
+      <arg value="8030"/>
     </exec>
     <echo  level="warning" message="metrics should be up and running." />
   </target>
