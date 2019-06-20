@@ -860,7 +860,7 @@ function api:networkdata-csv($corpusname, $playname) {
       let $segments :=
         <segments>
           {
-            for $seg in $doc//tei:body//tei:div[tei:sp]
+            for $seg in dutil:get-segments($doc//tei:TEI)
             return
               <sgm>
                 {
@@ -911,7 +911,7 @@ function api:networkdata-gefx($corpusname, $playname) {
       let $segments :=
         <segments>
           {
-            for $seg in $doc//tei:body//tei:div[tei:sp]
+            for $seg in dutil:get-segments($doc//tei:TEI)
             return
               <sgm>
                 {
