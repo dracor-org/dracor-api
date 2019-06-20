@@ -336,6 +336,10 @@ declare function dutil:get-authors($tei as node()) as map()* {
   for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author
   let $name := if($author/tei:name[@type = "full"]) then
     $author/tei:name[@type = "full"]/string()
+  else if ($author/tei:persName/tei:surname) then
+    $author/tei:persName/tei:surname
+    || ', '
+    || $author/tei:persName/tei:forename
   else
     $author/string()
   return map {
