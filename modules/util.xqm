@@ -214,6 +214,19 @@ declare function dutil:get-normalized-year ($tei as element()*) as item()* {
 };
 
 (:~
+ : Count number of site links for play identified by $wikidata-id.
+ :
+ : @param $wikidata-id
+ :)
+declare function dutil:count-sitelinks(
+  $wikidata-id as xs:string,
+  $corpusname as xs:string
+) {
+  let $col := concat($config:sitelinks-root, "/", $corpusname)
+  return count(collection($col)/sitelinks[@id=$wikidata-id]/uri)
+};
+
+(:~
  : Calculate meta data for corpus.
  :
  : @deprecated Use dutil:get-corpus-meta-data() instead.
@@ -239,10 +252,7 @@ declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
   let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
   let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
-  let $sitelinks-collection := concat($config:sitelinks-root, "/", $corpusname)
-  let $sitelink-count := count(
-    collection($sitelinks-collection)/sitelinks[@id=$wikidata-id]/uri
-  )
+  let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
   order by $filename
   return
     <play>
@@ -297,10 +307,8 @@ declare function dutil:get-corpus-meta-data(
   let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
   let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
-  let $sitelinks-collection := concat($config:sitelinks-root, "/", $corpusname)
-  let $sitelink-count := count(
-    collection($sitelinks-collection)/sitelinks[@id=$wikidata-id]/uri
-  )
+  let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
+
   let $networkmetrics := map:merge(
     for $s in $stat/network/*[not(name() = ("maxDegreeIds", "nodes"))]
     let $v := $s/text()
