@@ -675,9 +675,9 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:play-info($corpusname, $playname) {
-  let $info := dutil:play-info($corpusname, $playname)
+  let $info := dutil:play-info-map($corpusname, $playname)
   return
-    if ($info) then
+    if (count($info)) then
       $info
     else
       <rest:response>

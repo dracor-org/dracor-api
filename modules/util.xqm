@@ -363,60 +363,95 @@ declare function dutil:play-info-map(
     ()
   else
     let $tei := $doc//tei:TEI
+    let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
     let $subtitle :=
       $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+    let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
     let $cast := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $cast[last()]
+
     let $segments := array {
       for $segment at $pos in dutil:get-segments($tei)
       let $heads :=
         $segment/(ancestor::tei:div/tei:head,tei:head) ! normalize-space(.)
-      return map {
-        (: FIXME: only add `title` and `speakers` if not empty :)
-        "title": string-join($heads, ' | '),
-        "type": $segment/@type/string(),
-        "number": $pos,
-        "speakers": array {
-          for $sp in dutil:distinct-speakers($segment) return $sp
-        }
-      }
+      let $speakers := dutil:distinct-speakers($segment)
+      return map:merge((
+        map {
+          "type": $segment/@type/string(),
+          "number": $pos
+        },
+        if(count($heads)) then
+          map {"title": string-join($heads, ' | ')}
+        else (),
+        if(count($speakers)) then map:entry(
+          "speakers",
+          array { for $sp in $speakers return $sp }
+        ) else ()
+      ))
     }
+
+    let $authors := dutil:get-authors($tei)
+    let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
+      /@subtype/string()
+    let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
 
     let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
     let $all-in-index := $all-in-segment div count($segments?*)
 
-    return map {
-      "id": $playname,
-      "corpus": $corpusname,
-      "title": $tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space(),
-      "subtitle": $subtitle,
-      "authors": array {
-        for $author in dutil:get-authors($tei)
-        return map {
-          "name": $author?name,
-          "key": $author?key
-        }
+    return map:merge((
+      map {
+        "_dracorId": $id,
+        "id": $playname,
+        "name": $playname,
+        "corpus": $corpusname,
+        "title": $tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space(),
+        "author": map {
+          "name": $authors[1]?name,
+          "warning": "The single author property is deprecated. " ||
+          "Use the array of 'authors' instead!"
+        },
+        "authors": array {
+          for $author in $authors
+          return map {
+            "name": $author?name,
+            "key": $author?key
+          }
+        },
+        "genre": $genre,
+        "allInSegment": $all-in-segment,
+        "allInIndex": $all-in-index,
+        "cast": array {
+          for $id in $cast
+          let $node := $doc//tei:particDesc//(
+            tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
+          )
+          let $name := $node/(tei:persName | tei:name)[1]/text()
+          let $sex := $node/@sex/string()
+          let $isGroup := if ($node/name() eq 'personGrp')
+            then true() else false()
+          return map {
+            "id": $id,
+            "name": $name,
+            "isGroup": $isGroup,
+            "sex": if($sex) then $sex else ()
+          }
+        },
+        "segments": $segments,
+        "yearWritten": xs:integer($dates[@type="written"]/@when/string()),
+        "yearPremiered": xs:integer($dates[@type="premiere"]/@when/string()),
+        "yearPrinted": xs:integer($dates[@type="print"]/@when/string()),
+        "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
       },
-      "allInSegment": $all-in-segment,
-      "allInIndex": $all-in-index,
-      "cast": array {
-        for $id in $cast
-        let $node := $doc//tei:particDesc//(
-          tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
-        )
-        let $name := $node/(tei:persName | tei:name)[1]/text()
-        let $sex := $node/@sex/string()
-        let $isGroup := if ($node/name() eq 'personGrp')
-          then true() else false()
-        return map {
-          "id": $id,
-          "name": $name,
-          "isGroup": $isGroup,
-          "sex": if($sex) then $sex else ()
-        }
-      },
-      "segments": $segments
-    }
+      if($subtitle) then
+        map:entry("subtitle", $subtitle)
+      else (),
+      if($source) then
+        map:entry("source", map {
+          "name": $source/tei:name/string(),
+          "url": $source/tei:idno[@type="URL"]/string()
+        })
+      else ()
+    ))
 };
 
 (:~
