@@ -899,7 +899,7 @@ declare
   %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/gexf")
   %output:method("xml")
   %output:omit-xml-declaration("no")
-function api:networkdata-gefx($corpusname, $playname) {
+function api:networkdata-gexf($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
   return
     if (not($doc)) then
