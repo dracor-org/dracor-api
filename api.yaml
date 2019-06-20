@@ -397,6 +397,30 @@ paths:
         '404':
           description: No such play under this URI
 
+  /corpora/{corpusname}/play/{playname}/metrics:
+    get:
+      summary: Get network metrics for a single play
+      operationId: play-metrics
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns an object with metrics data
+          content:
+            application/json:
+              schema:
+                type: object
+
   /corpora/{corpusname}/play/{playname}/tei:
     get:
       summary: Get TEI document of a single play

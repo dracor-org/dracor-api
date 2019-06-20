@@ -662,7 +662,7 @@ function api:word-frequencies-csv($corpusname, $elem) {
 };
 
 (:~
- : Get metadata and network metrics for a single play
+ : Get metadata for a single play
  :
  : @param $corpusname Corpus name
  : @param $playname Play name
@@ -716,6 +716,30 @@ function api:play-delete($corpusname, $playname, $data, $auth) {
       let $filename := $playname || ".xml"
       let $collection := $config:data-root || "/" || $corpusname
       return (xmldb:remove($collection, $filename))
+};
+
+(:~
+ : Get metrics for a single play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result JSON object with play metrics
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/metrics")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:play-metrics($corpusname, $playname) {
+  let $metrics := dutil:get-play-metrics($corpusname, $playname)
+  return
+    if (count($metrics)) then
+      $metrics
+    else
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
 };
 
 (:~

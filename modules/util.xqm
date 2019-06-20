@@ -558,6 +558,58 @@ declare function dutil:play-info(
 };
 
 (:~
+ : Retrieve metrics data for a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function dutil:get-play-metrics(
+  $corpusname as xs:string,
+  $playname as xs:string
+)  {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return if (not($doc)) then
+    ()
+  else
+    let $tei := $doc//tei:TEI
+    let $paths := dutil:filepaths($corpusname, $playname)
+    let $metrics := doc($paths?files?metrics)//metrics
+
+    let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+    let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
+    let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
+
+    let $nodes := array {
+      for $n in $metrics/network/nodes/node
+      return map:merge((
+        map:entry("id", $n/@id/string()),
+        for $s in $n/*
+        let $v := $s/text()
+        return map:entry($s/name(), if(number($v)) then xs:decimal($v) else $v)
+      ))
+    }
+
+    let $meta := map {
+      "id": $id,
+      "name": $playname,
+      "corpus": $corpusname,
+      "wikipediaLinkCount": $sitelink-count,
+      "nodes": $nodes
+    }
+
+    let $networkmetrics := map:merge(
+      for $e in $metrics/network/*[not(name() = "nodes")]
+      let $v := if($e/name() = "maxDegreeIds") then
+        array {tokenize($e)}
+      else
+        $e/text()
+      return map:entry($e/name(), if(number($v)) then xs:decimal($v) else $v)
+    )
+    
+    return map:merge(($meta, $networkmetrics))
+};
+
+(:~
  : Compile cast info for a play.
  :
  : @param $corpusname
