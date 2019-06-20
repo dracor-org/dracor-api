@@ -61,7 +61,8 @@ declare function dutil:filepaths (
     "collections": map {
       "tei": $config:data-root || "/" || $corpusname,
       "metrics": $config:metrics-root || "/" || $corpusname,
-      "rdf": $config:rdf-root || "/" || $corpusname
+      "rdf": $config:rdf-root || "/" || $corpusname,
+      "sitelinks": $config:sitelinks-root || "/" || $corpusname
     },
     "files": map {
       "tei": $config:data-root || "/" || $corpusname || "/" || $filename,
