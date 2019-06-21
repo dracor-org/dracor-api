@@ -312,7 +312,7 @@ declare function dutil:get-corpus-meta-data(
   let $networkmetrics := map:merge(
     for $s in $stat/network/*[not(name() = ("maxDegreeIds", "nodes"))]
     let $v := $s/text()
-    return map:entry($s/name(), if(number($v)) then xs:decimal($v) else $v)
+    return map:entry($s/name(), if(number($v)) then number($v) else $v)
   )
   let $meta := map {
     "id": $id,
@@ -585,7 +585,7 @@ declare function dutil:get-play-metrics(
         map:entry("id", $n/@id/string()),
         for $s in $n/*
         let $v := $s/text()
-        return map:entry($s/name(), if(number($v)) then xs:decimal($v) else $v)
+        return map:entry($s/name(), if(number($v)) then number($v) else $v)
       ))
     }
 
@@ -603,7 +603,7 @@ declare function dutil:get-play-metrics(
         array {tokenize($e)}
       else
         $e/text()
-      return map:entry($e/name(), if(number($v)) then xs:decimal($v) else $v)
+      return map:entry($e/name(), if(number($v)) then number($v) else $v)
     )
     
     return map:merge(($meta, $networkmetrics))
@@ -662,8 +662,8 @@ declare function dutil:cast-info (
         "degree": $metrics-node/degree/xs:integer(.),
         "weightedDegree": if ($metrics-node/weightedDegree) then
           $metrics-node/weightedDegree/xs:integer(.) else 0,
-        "closeness": $metrics-node/closeness/xs:decimal(.),
-        "betweenness": $metrics-node/betweenness/xs:decimal(.),
+        "closeness": $metrics-node/closeness/number(.),
+        "betweenness": $metrics-node/betweenness/number(.),
         "eigenvector": $eigenvector
       }
     }
