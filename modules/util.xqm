@@ -409,8 +409,7 @@ declare function dutil:play-info-map(
 
     return map:merge((
       map {
-        "_dracorId": $id,
-        "id": $playname,
+        "id": $id,
         "name": $playname,
         "corpus": $corpusname,
         "title": $tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space(),
