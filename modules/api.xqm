@@ -386,7 +386,7 @@ function api:index($corpusname) {
           let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
           let $authors := dutil:get-authors($tei)
           let $play-uri :=
-            $config:api-base || "/corpora/" || $corpusname || "/play/" || $id
+            $config:api-base || "/corpora/" || $corpusname || "/play/" || $name
           let $metrics-url :=
             $config:metrics-root || "/" || $corpusname || "/" || $filename
           let $network-size := doc($metrics-url)//network/size/text()
