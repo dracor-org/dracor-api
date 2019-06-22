@@ -28,7 +28,7 @@ paths:
                 {
                     "existdb": "4.1.0",
                     "name": "DraCor",
-                    "status": "alpha",
+                    "status": "beta",
                     "version": "0.20.1"
                 }
 
