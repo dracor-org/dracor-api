@@ -54,22 +54,29 @@ declare function metrics:collect-sitelinks() {
  : @param $url URL of the TEI document
 :)
 declare function metrics:get-network-metrics($url as xs:string) {
-  let $parts := tokenize($url, '/')
-  let $playname := tokenize($parts[last()], '\.')[1]
-  let $corpusname := $parts[last() - 1]
+  let $tei := doc($url)/tei:TEI
 
-  let $info := dutil:play-info($corpusname, $playname)
+  let $segments := map {
+    "segments": array {
+      for $segment in dutil:get-segments($tei)
+      let $speakers := dutil:distinct-speakers($segment)
+      return map {
+        "speakers": array {
+          for $sp in $speakers return $sp
+        }
+      }
+    }
+  }
+
   let $payload := serialize(
-    $info,
+    $segments,
     <output:serialization-parameters>
       <output:method>json</output:method>
     </output:serialization-parameters>
   )
 
-  let $url := $config:metrics-server || '?' || $corpusname || '/' || $playname
-
   let $response := httpclient:post(
-    $url,
+    xs:anyURI($config:metrics-server || '?' || $url),
     $payload,
     false(),
     <headers>
