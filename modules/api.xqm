@@ -43,18 +43,6 @@ declare variable $api:metadata-columns := (
   "numOfActs"
 );
 
-declare function local:get-info () {
-  let $expath := config:expath-descriptor()
-  let $repo := config:repo-descriptor()
-  return
-    <info>
-      <name>{$expath/expath:title/string()}</name>
-      <version>{$expath/@version/string()}</version>
-      <status>{$repo/repo:status/string()}</status>
-      <existdb>{system:get-version()}</existdb>
-    </info>
-};
-
 (:~
  : API info
  :
@@ -68,8 +56,15 @@ declare
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:darcor() {
-  local:get-info()
+function api:info() {
+  let $expath := config:expath-descriptor()
+  let $repo := config:repo-descriptor()
+  return map {
+    "name": $expath/expath:title/string(),
+    "version": $expath/@version/string(),
+    "status": $repo/repo:status/string(),
+    "existdb": system:get-version()
+  }
 };
 
 (:~
@@ -85,14 +80,6 @@ declare
   %output:method("json")
 function api:openapi() {
   openapi:main("/db/apps/dracor")
-};
-
-declare
-  %rest:GET
-  %rest:path("/info.xml")
-  %rest:produces("application/xml")
-function api:info-xml() {
-  local:get-info()
 };
 
 declare
