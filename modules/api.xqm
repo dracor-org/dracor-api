@@ -677,7 +677,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:play-info($corpusname, $playname) {
-  let $info := dutil:play-info-map($corpusname, $playname)
+  let $info := dutil:get-play-info($corpusname, $playname)
   return
     if (count($info)) then
       $info
@@ -948,7 +948,7 @@ function api:networkdata-gexf($corpusname, $playname) {
           }
         </segments>
 
-      let $info := dutil:play-info-map($corpusname, $playname)
+      let $info := dutil:get-play-info($corpusname, $playname)
       let $authors := string-join($info?authors?*?name, ' · ')
       let $title := $info?title
 
@@ -1140,7 +1140,7 @@ declare
   %output:media-type("text/csv")
   %output:method("text")
 function api:segmentation-csv($corpusname, $playname) {
-  let $info := dutil:play-info-map($corpusname, $playname)
+  let $info := dutil:get-play-info($corpusname, $playname)
   return if (count($info) = 0) then
     <rest:response>
       <http:response status="404"/>
