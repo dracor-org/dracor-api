@@ -91,6 +91,15 @@ declare function dutil:get-doc(
 };
 
 (:~
+ : Return DraCor ID of a play.
+ :
+ : @param $tei TEI document
+ :)
+declare function dutil:get-dracor-id($tei as element()) as xs:string* {
+  $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+};
+
+(:~
  : Retrieve the speaker children of a given element and return the distinct IDs
  : referenced in @who attributes of those elements.
  :)
@@ -298,7 +307,7 @@ declare function dutil:get-corpus-meta-data(
 
   for $tei in collection($collection)//tei:TEI
   let $filename := tokenize(base-uri($tei), "/")[last()]
-  let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+  let $id := dutil:get-dracor-id($tei)
   let $name := tokenize($filename, "\.")[1]
   let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
   let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
@@ -372,7 +381,7 @@ declare function dutil:play-info-map(
     ()
   else
     let $tei := $doc//tei:TEI
-    let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+    let $id := dutil:get-dracor-id($tei)
     let $subtitle :=
       $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
     let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
@@ -478,7 +487,7 @@ declare function dutil:play-info(
       ()
     else
       let $tei := $doc//tei:TEI
-      let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+      let $id := dutil:get-dracor-id($tei)
       let $subtitle :=
         $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
       let $cast := dutil:distinct-speakers($doc//tei:body)
@@ -576,7 +585,7 @@ declare function dutil:get-play-metrics(
     let $paths := dutil:filepaths($corpusname, $playname)
     let $metrics := doc($paths?files?metrics)//metrics
 
-    let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+    let $id := dutil:get-dracor-id($tei)
     let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
     let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
 

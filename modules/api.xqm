@@ -394,7 +394,7 @@ function api:index($corpusname) {
           for $tei in $col//tei:TEI
           let $filename := tokenize(base-uri($tei), "/")[last()]
           let $name := tokenize($filename, "\.")[1]
-          let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+          let $id := dutil:get-dracor-id($tei)
           let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
           let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
           let $authors := dutil:get-authors($tei)
