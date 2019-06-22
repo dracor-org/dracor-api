@@ -228,11 +228,13 @@ declare function dutil:get-normalized-year ($tei as element()*) as item()* {
  : @param $wikidata-id
  :)
 declare function dutil:count-sitelinks(
-  $wikidata-id as xs:string,
+  $wikidata-id as xs:string*,
   $corpusname as xs:string
 ) {
   let $col := concat($config:sitelinks-root, "/", $corpusname)
-  return count(collection($col)/sitelinks[@id=$wikidata-id]/uri)
+  return if($wikidata-id) then
+    count(collection($col)/sitelinks[@id=$wikidata-id]/uri)
+  else ()
 };
 
 (:~
