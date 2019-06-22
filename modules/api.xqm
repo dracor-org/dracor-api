@@ -393,7 +393,8 @@ function api:index($corpusname) {
         {
           for $tei in $col//tei:TEI
           let $filename := tokenize(base-uri($tei), "/")[last()]
-          let $id := tokenize($filename, "\.")[1]
+          let $name := tokenize($filename, "\.")[1]
+          let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
           let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
           let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
           let $authors := dutil:get-authors($tei)
@@ -407,6 +408,7 @@ function api:index($corpusname) {
           return
             <dramas json:array="true">
               <id>{$id}</id>
+              <name>{$name}</name>
               <title>
                 {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space() }
               </title>
