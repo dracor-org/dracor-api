@@ -478,6 +478,7 @@ declare function dutil:play-info(
       ()
     else
       let $tei := $doc//tei:TEI
+      let $id := $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
       let $subtitle :=
         $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
       let $cast := dutil:distinct-speakers($doc//tei:body)
@@ -512,7 +513,8 @@ declare function dutil:play-info(
 
       return
       <info>
-        <id>{$playname}</id>
+        <id>{$id}</id>
+        <name>{$playname}</name>
         <corpus>{$corpusname}</corpus>
         <title>
           {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space()}
