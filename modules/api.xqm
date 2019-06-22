@@ -1068,9 +1068,13 @@ function api:cast-info-csv($corpusname, $playname) {
 (:~
  : Get a list of segments and characters of a play
  :
+ : This endpoint is deprecated. All the information is now available as JSON
+ : from `/corpora/{corpusname}/play/{playname}`.
+ :
  : @param $corpusname Corpus name
  : @param $playname Play name
  : @result XML document
+ : @deprecated
  :)
 declare
   %rest:GET

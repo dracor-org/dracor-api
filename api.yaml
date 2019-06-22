@@ -637,7 +637,12 @@ paths:
   /corpora/{corpusname}/play/{playname}/segmentation:
     get:
       summary: Get a list of segments and characters of a play
+      description: |
+        This endpoint is deprecated. All the information is now available as
+        JSON from `/corpora/{corpusname}/play/{playname}`. Please use that
+        endpoint instead.
       operationId: play-segments-xml
+      deprecated: true
       tags: [public]
       parameters:
         - name: corpusname
