@@ -948,9 +948,9 @@ function api:networkdata-gexf($corpusname, $playname) {
           }
         </segments>
 
-      let $info := dutil:play-info($corpusname, $playname)
-      let $authors := $info/authors/name/text()
-      let $title := $info/title/text()
+      let $info := dutil:play-info-map($corpusname, $playname)
+      let $authors := string-join($info?authors?*?name, ' · ')
+      let $title := $info?title
 
       let $links := map:merge(
         for $spkr in $cast
@@ -959,11 +959,11 @@ function api:networkdata-gexf($corpusname, $playname) {
       )
 
       let $nodes :=
-        for $n in $info/cast
-        let $id := $n/id/text()
-        let $label := $n/name/text()
-        let $sex := $n/sex/text()
-        let $group := if ($n/isGroup eq "true") then 1 else 0
+        for $n in $info?cast?*
+        let $id := $n?id
+        let $label := $n?name
+        let $sex := $n?sex
+        let $group := if ($n?isGroup) then 1 else 0
         let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
         return
           <node xmlns="http://www.gexf.net/1.2draft"
