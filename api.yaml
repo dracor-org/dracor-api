@@ -763,6 +763,30 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/play/{playname}/stage-directions-with-speakers:
+    get:
+      summary: Get all stage directions of a play including speakers
+      operationId: play-stage-directions-with-speakers
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns plain text document
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /id/{id}:
     get:
       summary: Resolve DraCor play ID
@@ -899,4 +923,3 @@ paths:
                   "result": "/db/data/dracor/webhook/20190121213010-xxx.xml",
                   "scheduled": true
                 }
-

@@ -164,19 +164,19 @@ function api:id-to-url($id, $accept) {
         </rest:response>
       else
         $rdf
-  else 
+  else
     let $idno := collection($config:data-root)//tei:publicationStmt
       /tei:idno[@type="dracor" and .= $id]
     let $parts := tokenize(base-uri($idno/parent::*), "[/.]")
     let $corpusname := $parts[last()-2]
     let $playname := $parts[last()-1]
     let $url := "https://dracor.org/" || $corpusname || "/" || $playname
-    return 
+    return
       if (not($idno)) then
         <rest:response>
           <http:response status="404"/>
         </rest:response>
-      else 
+      else
         <rest:response>
           <http:response status="302">
             <http:header name="location" value="{$url}"/>
@@ -1295,6 +1295,34 @@ function api:stage-directions($corpusname, $playname) {
       let $stage := $doc//tei:body//tei:stage
       let $txt := string-join($stage/normalize-space(), '&#10;')
       return $txt
+};
+
+(:~
+ : Get all stage directions of a play including speakers
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result text of all stage directions
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions-with-speakers")
+  %rest:produces("text/plain")
+  %output:media-type("text/plain")
+function api:stage-directions-with-speakers($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      for $stage in $doc//tei:body//tei:stage
+      let $speaker := $stage/preceding-sibling::tei:speaker
+      let $line := if ($speaker) then
+        $speaker || "  " || normalize-space($stage)
+      else normalize-space($stage)
+      return $line || '&#10;'
 };
 
 (:~
