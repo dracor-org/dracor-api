@@ -364,13 +364,17 @@ declare function dutil:get-corpus-meta-data(
  : @param $tei
  :)
 declare function dutil:get-authors($tei as node()) as map()* {
-  for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author
+  for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author[
+    not(@role="illustrator")
+  ]
   let $name := if($author/tei:name[@type = "full"]) then
     $author/tei:name[@type = "full"]/string()
   else if ($author/tei:persName/tei:surname) then
     $author/tei:persName/tei:surname
     || ', '
     || $author/tei:persName/tei:forename
+  else if ($author/tei:persName) then
+    $author/tei:persName/string()
   else
     $author/string()
   return map {
