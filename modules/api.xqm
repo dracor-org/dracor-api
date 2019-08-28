@@ -1244,6 +1244,32 @@ function api:spoken-text-by-character($corpusname, $playname) {
  :
  : @param $corpusname Corpus name
  : @param $playname Play name
+ : @result JSON object with texts per character
+ :)
+declare
+  %rest:GET
+  %rest:path(
+    "/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character.json"
+  )
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:spoken-text-by-character($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      local:get-text-by-character($doc)
+};
+
+(:~
+ : Get spoken text for each character of a play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
  : @result list of spoken text per character as CSV
  :)
 declare
