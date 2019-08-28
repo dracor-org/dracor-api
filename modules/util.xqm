@@ -432,6 +432,9 @@ declare function dutil:get-play-info(
 
     let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
     let $all-in-index := $all-in-segment div count($segments?*)
+    
+    let $wikidata-id := $tei//tei:publicationStmt/
+      tei:idno[@type="wikidata"]/string()
 
     return map:merge((
       map {
@@ -478,6 +481,9 @@ declare function dutil:get-play-info(
       },
       if($subtitle) then
         map:entry("subtitle", $subtitle)
+      else (),
+      if($wikidata-id) then
+        map:entry("wikidataId", $wikidata-id)
       else (),
       if($source) then
         map:entry("source", map {
