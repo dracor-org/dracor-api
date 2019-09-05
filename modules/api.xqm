@@ -571,19 +571,7 @@ function api:corpus-meta-data($corpusname) {
       return $meta
 };
 
-(:~
- : List of metadata for all plays in a corpus
- :
- : @param $corpusname Corpus name
- : @result comma separated list of metadata for all plays
- :)
-declare
-  %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata")
-  %rest:produces("text/csv", "text/plain")
-  %output:media-type("text/csv")
-  %output:method("text")
-function api:corpus-meta-data-csv($corpusname) {
+declare function api:get-corpus-meta-data-csv($corpusname) {
   let $corpus := collection($config:data-root)/corpus[name = $corpusname]
   return
     if (not($corpus)) then
@@ -605,6 +593,22 @@ function api:corpus-meta-data-csv($corpusname) {
 (:~
  : List of metadata for all plays in a corpus
  :
+ : @param $corpusname Corpus name
+ : @result comma separated list of metadata for all plays
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/metadata")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:corpus-meta-data-csv($corpusname) {
+  api:get-corpus-meta-data-csv($corpusname)
+};
+
+(:~
+ : List of metadata for all plays in a corpus
+ :
  : This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata`
  : with an appropriate `Accept` header instead.
  :
@@ -619,11 +623,7 @@ declare
   %output:media-type("text/csv")
   %output:method("text")
 function api:corpus-meta-data-dotcsv($corpusname) {
-  let $meta := dutil:corpus-meta-data($corpusname)
-  let $header := concat(string-join($meta[1]/*/name(), ','), "&#10;")
-  let $data := for $row in $meta
-    return concat(string-join($row/*/string(), ','), "&#10;")
-  return ($header, $data)
+  api:get-corpus-meta-data-csv($corpusname)
 };
 
 declare
