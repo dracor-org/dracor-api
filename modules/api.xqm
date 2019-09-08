@@ -752,12 +752,13 @@ function api:play-tei($corpusname, $playname) {
       </rest:response>
     else
       let $tei := $doc//tei:TEI
-      let $target := 'xml-stylesheet'
-      let $content := 'type="text/css" href="https://dracor.org/tei.css"'
-      return document {
-        processing-instruction {$target} {$content},
-        $tei
-      }
+      let $model-pi := $doc/processing-instruction(xml-model)
+      return if ($model-pi) then
+        document {
+          processing-instruction {'xml-model'} {$model-pi/string()},
+          $tei
+        }
+      else $tei
 };
 
 (:~
