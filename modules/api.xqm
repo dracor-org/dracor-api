@@ -105,37 +105,6 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
   </terms>
 };
 
-declare function local:get-corpus-metrics-xml ($corpus as xs:string) {
-  let $collection-uri := concat($config:data-root, "/", $corpus)
-  let $col := collection($collection-uri)
-  let $metrics-uri := concat($config:metrics-root, "/", $corpus)
-  let $metrics := collection($metrics-uri)
-  let $num-plays := count($col/tei:TEI)
-  let $list := $col//tei:particDesc/tei:listPerson
-  let $num-characters := count($list/(tei:person|tei:personGrp))
-  let $num-male := count($list/(tei:person|tei:personGrp)[@sex="MALE"])
-  let $num-female := count($list/(tei:person|tei:personGrp)[@sex="FEMALE"])
-  let $num-text := count($col//tei:text)
-  let $num-stage := count($col//tei:stage)
-  let $num-sp := count($col//tei:sp)
-  return
-  <metrics collection="{$collection-uri}">
-    <plays>{$num-plays}</plays>
-    <characters>{$num-characters}</characters>
-    <male>{$num-male}</male>
-    <female>{$num-female}</female>
-    <text>{$num-text}</text>
-    <sp>{$num-sp}</sp>
-    <stage>{$num-stage}</stage>
-    <wordcount>
-      <text>{sum($metrics//text)}</text>
-      <sp>{sum($metrics//sp)}</sp>
-      <stage>{sum($metrics//stage)}</stage>
-    </wordcount>
-    <updated>{max($metrics//metrics/xs:dateTime(@updated))}</updated>
-  </metrics>
-};
-
 (:~
  : Resolve DraCor ID of a play
  :
@@ -182,39 +151,6 @@ function api:id-to-url($id, $accept) {
             <http:header name="location" value="{$url}"/>
           </http:response>
         </rest:response>
-};
-
-(:~
- : List available corpora and their basic metrics.
- :
- : This endpoint is deprecated. Please use `/corpora` with an appropriate
- : `include` query parameter instead.
- :
- : @deprecated
- :)
-declare
-  %rest:GET
-  %rest:path("/metrics")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
-  %output:method("json")
-function api:metrics() {
-    let $expath := config:expath-descriptor()
-    let $repo := config:repo-descriptor()
-    return
-      <json>
-        {
-          for $corpus in collection($config:data-root)/corpus
-          return
-          <metrics>
-            <corpus>{$corpus/title, $corpus/name}</corpus>
-            {
-              for $m in local:get-corpus-metrics-xml($corpus/name/text())/*
-              return $m
-            }
-          </metrics>
-        }
-      </json>
 };
 
 declare function local:get-corpus-metrics ($corpus as xs:string) {

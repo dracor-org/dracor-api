@@ -32,47 +32,6 @@ paths:
                     "version": "0.20.1"
                 }
 
-  /metrics:
-    get:
-      summary: List available corpora and their basic metrics
-      description: >-
-        This endpoint is deprecated. Please use `/corpora`
-        with an appropriate `include` query parameter instead.
-      operationId: list-metrics
-      deprecated: true
-      tags: [public]
-      responses:
-        '200':
-          description: Returns object representing available corpora and their metrics
-          content:
-            application/json:
-              schema:
-                type: object
-              example:
-                {
-                  "metrics": [
-                    {
-                      "corpus": {
-                        "name": "rus",
-                        "title": "Russian Drama Corpus"
-                      },
-                      "characters": "1859",
-                      "female": "408",
-                      "male": "1376",
-                      "plays": "102",
-                      "sp": "53616",
-                      "stage": "24007",
-                      "text": "102",
-                      "updated": "2018-09-03T23:43:01.786+02:00",
-                      "wordcount": {
-                        "sp": "972008",
-                        "stage": "104111",
-                        "text": "1.031876E6"
-                      }
-                    }
-                  ]
-                }
-
   /corpora:
     get:
       summary: List available corpora
