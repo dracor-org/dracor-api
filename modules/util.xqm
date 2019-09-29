@@ -251,58 +251,6 @@ declare function dutil:count-sitelinks(
 (:~
  : Calculate meta data for corpus.
  :
- : @deprecated Use dutil:get-corpus-meta-data() instead.
- : @param $corpusname
- :)
-declare function dutil:corpus-meta-data($corpusname as xs:string) as item()* {
-  let $metrics-collection := concat($config:metrics-root, "/", $corpusname)
-  let $metrics := for $s in collection($metrics-collection)//metrics
-    let $uri := base-uri($s)
-    let $fname := tokenize($uri, "/")[last()]
-    let $name := tokenize($fname, "\.")[1]
-    return <metrics name="{$name}">{$s/*}</metrics>
-
-  let $collection := concat($config:data-root, "/", $corpusname)
-
-  for $tei in collection($collection)//tei:TEI
-  let $filename := tokenize(base-uri($tei), "/")[last()]
-  let $name := tokenize($filename, "\.")[1]
-  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
-  let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
-    /@subtype/string()
-  let $num-speakers := count(dutil:distinct-speakers($tei))
-  let $stat := $metrics[@name=$name]
-  let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
-  let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
-  let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
-  order by $filename
-  return
-    <play>
-      <name>{$name}</name>
-      <genre>{$genre}</genre>
-      <year>{dutil:get-normalized-year($tei)}</year>
-      <numOfSegments>{count(dutil:get-segments($tei))}</numOfSegments>
-      <numOfActs>{count($tei//tei:div[@type="act"])}</numOfActs>
-      <numOfSpeakers>{$num-speakers}</numOfSpeakers>
-      <yearWritten>{$dates[@type="written"]/@when/string()}</yearWritten>
-      <yearPremiered>{$dates[@type="premiere"]/@when/string()}</yearPremiered>
-      <yearPrinted>{$dates[@type="print"]/@when/string()}</yearPrinted>
-      {$stat/network/*[not(name() = "maxDegreeIds")]}
-      <maxDegreeIds>
-        {
-          if(count($max-degree-ids) < 4) then
-            string-join($max-degree-ids, "|")
-          else
-            '"several characters"'
-        }
-      </maxDegreeIds>
-      <wikipediaLinkCount>{$sitelink-count}</wikipediaLinkCount>
-    </play>
-};
-
-(:~
- : Calculate meta data for corpus.
- :
  : @param $corpusname
  : @return sequence of maps
  :)
