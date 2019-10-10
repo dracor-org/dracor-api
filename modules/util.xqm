@@ -276,7 +276,8 @@ declare function dutil:get-corpus-meta-data(
   let $num-speakers := count(dutil:distinct-speakers($tei))
   let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
-  let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
+  let $wikidata-id :=
+    $tei//tei:publicationStmt/tei:idno[@type="wikidata"]/text()[1]
   let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
 
   let $networkmetrics := map:merge(
@@ -465,7 +466,8 @@ declare function dutil:get-play-metrics(
     let $metrics := doc($paths?files?metrics)//metrics
 
     let $id := dutil:get-dracor-id($tei)
-    let $wikidata-id := $tei//tei:idno[@type="wikidata"]/text()
+    let $wikidata-id :=
+      $tei//tei:publicationStmt/tei:idno[@type="wikidata"]/text()[1]
     let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
 
     let $nodes := array {
