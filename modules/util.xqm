@@ -274,6 +274,13 @@ declare function dutil:get-corpus-meta-data(
   let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
     /@subtype/string()
   let $num-speakers := count(dutil:distinct-speakers($tei))
+
+  let $cast := $tei//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)
+  let $num-male := count($cast[@sex="MALE"])
+  let $num-female := count($cast[@sex="FEMALE"])
+  let $num-unknown := count($cast[@sex="UNKNOWN"])
+  let $num-groups := count($cast[name()="personGrp"])
+
   let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
   let $wikidata-id :=
@@ -293,6 +300,10 @@ declare function dutil:get-corpus-meta-data(
     "numOfSegments": count(dutil:get-segments($tei)),
     "numOfActs": count($tei//tei:div[@type="act"]),
     "numOfSpeakers": $num-speakers,
+    "numOfSpeakersMale": $num-male,
+    "numOfSpeakersFemale": $num-female,
+    "numOfSpeakersUnknown": $num-unknown,
+    "numOfPersonGroups": $num-groups,
     "yearNormalized": xs:integer(dutil:get-normalized-year($tei)),
     "yearWritten": xs:integer($dates[@type="written"]/@when/string()),
     "yearPremiered": xs:integer($dates[@type="premiere"]/@when/string()),
