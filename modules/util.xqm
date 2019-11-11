@@ -213,9 +213,9 @@ declare function dutil:get-segments ($tei as element()*) as element()* {
  :)
 declare function dutil:get-normalized-year ($tei as element()*) as item()* {
   let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
-  let $written := $dates[@type="written"]/@when/string()
-  let $premiere := $dates[@type="premiere"]/@when/string()
-  let $print := $dates[@type="print"]/@when/string()
+  let $written := $dates[@type="written"][1]/@when/string()
+  let $premiere := $dates[@type="premiere"][1]/@when/string()
+  let $print := $dates[@type="print"][1]/@when/string()
 
   let $published := if ($print and $premiere)
     then min(($print, $premiere))
