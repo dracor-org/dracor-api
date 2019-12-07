@@ -88,11 +88,14 @@ ant load.corpus -Dcorpus=rus
 Currently the following corpora are available (see [corpora](corpora)):
 
 - als
+- cal
 - ger
 - greek
+- rom
 - rus
 - shake
 - span
+- swe
 - test (default)
 
 Note that loading the data can take several minutes depending on the size of the
