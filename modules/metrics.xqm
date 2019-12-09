@@ -75,18 +75,9 @@ declare function metrics:get-network-metrics($url as xs:string) {
     </output:serialization-parameters>
   )
 
-  let $response := httpclient:post(
-    xs:anyURI($config:metrics-server || '?' || $url),
-    $payload,
-    false(),
-    <headers>
-      <header name="Content-Type" value="application/json"/>
-    </headers>
-  )
-  let $json := util:base64-decode(
-    $response//httpclient:body[@type="binary"]
-    [@encoding="Base64Encoded"]/string(.)
-  )
+  let $request := <hc:request method="post" href="{ $config:metrics-server || '?' || $url }" />
+  let $response := hc:send-request($request)
+  let $json := util:base64-decode($response[2])
   let $metrics := parse-json($json)
 
   return
