@@ -838,7 +838,7 @@ function api:networkdata-csv($corpusname, $playname) {
           let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
           return string-join(($spkr, 'Undirected',$cooc, $weight), ",")
 
-      return string-join(("Source,Type,Target,Weight", $rows), "&#10;")
+      return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
 };
 
 (:~
