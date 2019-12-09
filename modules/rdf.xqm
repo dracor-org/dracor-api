@@ -18,6 +18,8 @@ declare namespace owl="http://www.w3.org/2002/07/owl#";
 declare namespace dc="http://purl.org/dc/elements/1.1/";
 declare namespace dracon="http://dracor.org/ontology#";
 declare namespace crm="http://www.cidoc-crm.org/cidoc-crm/" ;
+declare namespace schema="http://schema.org/" ;
+declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 
 (:~
  : Create an RDF representation of a play.
@@ -33,6 +35,8 @@ as element(rdf:RDF) {
   let $paths := dutil:filepaths($play/base-uri())
   let $corpusname := $paths?corpusname
   let $playname := $paths?playname
+  let $metricspath := $paths?files?metrics
+  let $metrics := doc($metricspath)
 
   (: should get the id of the play <idno type='dracor' :)
   let $play-id := $play//tei:publicationStmt//tei:idno[@type="dracor"]/text()
@@ -221,7 +225,72 @@ as element(rdf:RDF) {
     </rdf:Description>
     
     let $dracor-link := <rdfs:seeAlso rdf:resource="https://dracor.org/{$corpusname}/{$playname}"/>
-  
+    
+    (: metrics :)
+    
+    let $averageClustering := if ($metrics/metrics/network/averageClustering/text() != "") then <dracon:averageClustering>{$metrics/metrics/network/averageClustering/text()}</dracon:averageClustering> else ()
+    
+    let $averagePathLength := if ( $metrics/metrics/network/averagePathLength/text() != "" ) then <dracon:averagePathLength>{$metrics/metrics/network/averagePathLength/text()}</dracon:averagePathLength> else ()
+    
+    let $averageDegree := if ( $metrics/metrics/network/averageDegree/text() != "" ) then <dracon:averageDegree>{$metrics/metrics/network/averageDegree/text()}</dracon:averageDegree> else ()
+    
+    let $density := if ( $metrics/metrics/network/density/text() != "" ) then <dracon:density>{$metrics/metrics/network/density/text()}</dracon:density> else ()
+    
+    let $diameter := if ( $metrics/metrics/network/diameter/text() != "" ) then <dracon:diameter>{$metrics/metrics/network/diameter/text()}</dracon:diameter> else ()
+    
+    let $maxDegree := if ( $metrics/metrics/network/maxDegree/text() != "" ) then <dracon:maxDegree>{$metrics/metrics/network/maxDegree/text()}</dracon:maxDegree> else ()
+    
+    let $maxDegreeIds := ()
+    
+    
+    let $numOfActs := if ( () ) then <dracon:numOfActs/> else ()
+    let $numOfSegments := if ( () ) then <dracon:numOfSegments/> else ()
+    let $numOfSpeakers := if ( () ) then <dracon:numOfSpeakers/> else ()
+    
+    (: Dates :)
+    
+    let $dates := $play//tei:bibl[@type="originalSource"]/tei:date
+    
+    let $normalisedYear := if (dutil:get-normalized-year($play) != "") then
+        <dracon:normalisedYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{dutil:get-normalized-year($play)}</dracon:normalisedYear> else ()
+    
+    let $premiereYear := if ( $dates[@type="premiere"]/@when/string() != '') then
+    <dracon:premiereYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{$dates[@type="premiere"]/@when/string()}</dracon:premiereYear> else ()
+    
+    let $printYear := if ( $dates[@type="print"]/@when/string() !='' ) then 
+    <dracon:printYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{$dates[@type="print"]/@when/string()}</dracon:printYear> else ()
+    
+    let $writtenYear := if ( $dates[@type="written"]/@when/string() ) then  <dracon:writtenYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{$dates[@type="written"]/@when/string()}</dracon:writtenYear> else ()
+    
+    (: chatacters :)
+    let $characters := $play//tei:particDesc/tei:listPerson/tei:person 
+    let $charactersindrama :=  for $character in $characters
+        let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
+    return
+        <schema:character rdf:resource="{$character-uri}"/>
+    
+    let $characterDescriptions := for $character in $characters
+        let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
+        return
+            <rdf:Description rdf:about="{$character-uri}">
+                <rdf:type rdf:resource="frbroo:F38_Character"/>
+                {
+                    for $persName in $character/tei:persName return
+                        <rdfs:label xml:lang="{if ( $persName/@xml:lang ) then $persName/@xml:lang else $play/@xml:lang}">{$persName/string()}</rdfs:label>
+                }
+                {
+                    if ($character/@ana) then 
+                        if ( matches($character/@ana/string(), 'https://www.wikidata.org/wiki/') ) then
+                            let $wd := substring-after($character/@ana/string(),'https://www.wikidata.org/wiki/') return
+                                <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
+                        else if ( matches($character/@ana/string(), 'http://www.wikidata.org/entity/') ) then
+                            <owl:sameAs rdf:resource="{$character/@ana/string()}"/>
+                        else ()
+                    else ()
+                    (: ana="https://www.wikidata.org/wiki/Q174278" :)
+                }
+            </rdf:Description>
+            
 
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
@@ -235,7 +304,26 @@ as element(rdf:RDF) {
         {$in_corpus}
         {$play-external-id}
         {$dracor-link}
+        
+        {$averageClustering}
+        {$averageDegree} 
+        {$averagePathLength}
+        {$density}
+        {$diameter} 
+        {$maxDegree}
+        {$maxDegreeIds}
+        {$normalisedYear} 
+        {$numOfActs} 
+        {$numOfSegments}
+        {$numOfSpeakers}
+        {$premiereYear}
+        {$printYear}
+        {$writtenYear}
+        
+        {$charactersindrama}
+        
     </rdf:Description>
+    
 
   return
     <rdf:RDF
@@ -245,11 +333,15 @@ as element(rdf:RDF) {
       xmlns:dc="http://purl.org/dc/elements/1.1/"
       xmlns:dracon="http://dracor.org/ontology#"
       xmlns:crm="http://www.cidoc-crm.org/cidoc-crm/"
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+      xmlns:schema="http://schema.org/"
+      xmlns:frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/"
     >
       {$inner}
       
       {$creation-activity}
       
+      {$characterDescriptions}
       
     </rdf:RDF>
 };
