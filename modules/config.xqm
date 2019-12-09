@@ -61,6 +61,8 @@ declare variable $config:repo-descriptor :=
 declare variable $config:expath-descriptor :=
   doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
+declare variable $config:fuseki-server := "http://localhost:3030/dracor/";
+
 declare variable $config:metrics-server :=
   xs:anyURI("http://localhost:8030/metrics/");
 
