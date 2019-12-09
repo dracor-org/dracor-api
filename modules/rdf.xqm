@@ -215,7 +215,7 @@ as element(rdf:RDF) {
   
   let $creation-activity := 
     <rdf:Description rdf:about="{$creation-uri}">
-        <rdf:type rdf:resource="crm:E65_Creation"/>
+        <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E65_Creation"/>
         <crm:P94_has_created rdf:resource="{$play-uri}"/>
         {
             for $author-idno in $author-idnos?*
@@ -273,7 +273,7 @@ as element(rdf:RDF) {
         let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
         return
             <rdf:Description rdf:about="{$character-uri}">
-                <rdf:type rdf:resource="frbroo:F38_Character"/>
+                <rdf:type rdf:resource="http://iflastandards.info/ns/fr/frbr/frbroo/F38_Character"/>
                 {
                     for $persName in $character/tei:persName return
                         <rdfs:label xml:lang="{if ( $persName/@xml:lang ) then $persName/@xml:lang else $play/@xml:lang}">{$persName/string()}</rdfs:label>
@@ -294,8 +294,8 @@ as element(rdf:RDF) {
 
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
-        <rdf:type rdf:resource="crm:E33_Linguistic_Object"/>
-        <rdf:type rdf:resource="dracon:play"/>
+        <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
+        <rdf:type rdf:resource="http://dracor.org/ontology#play"/>
         {$rdfs-labels}
         {$dc-creator}
         {$dc-titles}
