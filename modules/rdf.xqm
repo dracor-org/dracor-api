@@ -238,7 +238,7 @@ declare function drdf:update($url as xs:string) {
   let $resource := $paths?playname || ".rdf.xml"
   return (
     util:log('info', ('RDF update: ', $collection, "/", $resource)),
-    xmldb:store($collection, $resource, $rdf)
+    xmldb:store($collection, $resource, $rdf) => xs:anyURI() => drdf:fuseki()
   )
 };
 
@@ -250,4 +250,27 @@ declare function drdf:update() as xs:string* {
   for $tei in collection($config:data-root)//tei:TEI
   let $url := $tei/base-uri()
   return drdf:update($url)
+};
+
+(:~
+ : Send RDF data to Fuseki
+ https://github.com/dracor-org/dracor-api/issues/77
+ :)
+declare function drdf:fuseki($uri as xs:anyURI) {
+  let $corpus := tokenize($uri, "/")[position() = last() - 1]
+  let $url := $config:fuseki-server || "data?graph=" || encode-for-uri("http://dracor.org/" || $corpus)
+  let $rdf := doc($uri)
+  let $request :=
+    <hc:request method="put" href="{ $url }">
+      <hc:body media-type="application/rdf+xml">{ $rdf }</hc:body>
+    </hc:request>
+  let $response :=
+      hc:send-request($request)
+  let $status := string($response[1]/@status)
+  return
+      switch ($status)
+          case "200" return true()
+          case "201" return true()
+          default return
+              util:log("info", "unable to store to fuseki: " || $uri)
 };
