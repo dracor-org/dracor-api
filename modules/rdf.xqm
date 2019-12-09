@@ -17,6 +17,7 @@ declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#" ;
 declare namespace owl="http://www.w3.org/2002/07/owl#";
 declare namespace dc="http://purl.org/dc/elements/1.1/";
 declare namespace dracon="http://dracor.org/ontology#";
+declare namespace crm="http://www.cidoc-crm.org/cidoc-crm/" ;
 
 (:~
  : Create an RDF representation of a play.
@@ -39,7 +40,7 @@ as element(rdf:RDF) {
   (: maybe /id/{id} could be used in the future :)
   let $play-uri :=
     if ($play-id != "")
-    then "https://dracor.org/id/" || $play-id
+    then "https://dracor.org/entity/" || $play-id
     else "https://dracor.org/" || $corpusname || "/" || $playname
 
   (:
@@ -203,15 +204,37 @@ as element(rdf:RDF) {
 
   let $in_corpus := <dracon:in_corpus rdf:resource="{$collection-uri}"/>
   let $play-external-id := <owl:sameAs rdf:resource="{$wikidata-play-uri}"/>
+  
+  (: CIDOC-Stuff :)
+  let $creation-uri := $play-uri || "/creation"
+  let $created-by :=  <crm:P94i_was_created_by rdf:resource="{$creation-uri}"/>
+  
+  let $creation-activity := 
+    <rdf:Description rdf:about="{$creation-uri}">
+        <rdf:type rdf:resource="crm:E65_Creation"/>
+        <crm:P94_has_created rdf:resource="{$play-uri}"/>
+        {
+            for $author-idno in $author-idnos?*
+                return 
+                <crm:P14_carried_out_by rdf:resource="{$author-idno?uri}"/>
+        }
+    </rdf:Description>
+    
+    let $dracor-link := <rdfs:seeAlso rdf:resource="https://dracor.org/{$corpusname}/{$playname}"/>
+  
 
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
-      {$rdfs-labels}
-      {$dc-creator}
-      {$dc-titles}
-      {$author-nodes}
-      {$in_corpus}
-      {$play-external-id}
+        <rdf:type rdf:resource="crm:E33_Linguistic_Object"/>
+        <rdf:type rdf:resource="dracon:play"/>
+        {$rdfs-labels}
+        {$dc-creator}
+        {$dc-titles}
+        {$author-nodes}
+        {$created-by}
+        {$in_corpus}
+        {$play-external-id}
+        {$dracor-link}
     </rdf:Description>
 
   return
@@ -221,11 +244,15 @@ as element(rdf:RDF) {
       xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
       xmlns:dc="http://purl.org/dc/elements/1.1/"
       xmlns:dracon="http://dracor.org/ontology#"
+      xmlns:crm="http://www.cidoc-crm.org/cidoc-crm/"
     >
       {$inner}
+      
+      {$creation-activity}
+      
+      
     </rdf:RDF>
 };
-
 (:~
  : Update RDF for single play
  :
