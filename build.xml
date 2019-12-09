@@ -54,8 +54,9 @@
 
   <target name="download.dependencies" depends="create.dirs">
     <!-- get exist -->
+    <!-- this path may be and is subject to change! -->
     <get
-      src="https://bintray.com/existdb/releases/download_file?file_path=eXist-db-${project.processorversion}.tar.bz2"
+      src="https://bintray.com/existdb/releases/download_file?file_path=exist-distribution-${project.processorversion}-unix.tar.bz2"
       dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
       skipexisting="true" />
     <!-- get dependencies -->
@@ -164,13 +165,13 @@
       <arg value="${basedir}/${install.dir}"/>
     </exec>
     <xslt
-      in="${install.dir}/conf.xml"
-      out="${install.dir}/conf.xml.tmp"
+      in="${install.dir}/etc/conf.xml"
+      out="${install.dir}/etc/conf.xml.tmp"
       style="resources/ant/exist-conf.xslt">
     </xslt>
     <move
-      file="${install.dir}/conf.xml.tmp"
-      tofile="${install.dir}/conf.xml"/>
+      file="${install.dir}/etc/conf.xml.tmp"
+      tofile="${install.dir}/etc/conf.xml"/>
     <copy file="${xarfile}" todir="${install.dir}/autodeploy" />
   </target>
 
@@ -178,34 +179,34 @@
     <!-- HTTP port -->
     <property name="xsl" value="resources/ant/jetty-port-update.xslt"/>
     <xslt
-      in="${install.dir}/tools/jetty/etc/jetty-http.xml"
-      out="${install.dir}/tools/jetty/etc/jetty-http-tmp.xml"
+      in="${install.dir}/etc/jetty/jetty-http.xml"
+      out="${install.dir}/etc/jetty/jetty-http-tmp.xml"
       style="${xsl}">
       <param name="customPort" expression="${jetty.http.port}"/>
     </xslt>
     <move
-      file="${install.dir}/tools/jetty/etc/jetty-http-tmp.xml"
-      tofile="${install.dir}/tools/jetty/etc/jetty-http.xml"/>
+      file="${install.dir}/etc/jetty/jetty-http-tmp.xml"
+      tofile="${install.dir}/etc/jetty/jetty-http.xml"/>
     <!-- HTTPS port -->
     <xslt
-      in="${install.dir}/tools/jetty/etc/jetty-ssl.xml"
-      out="${install.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
+      in="${install.dir}/etc/jetty/jetty-ssl.xml"
+      out="${install.dir}/etc/jetty/jetty-ssl-tmp.xml"
       style="${xsl}">
       <param name="customPort" expression="${jetty.https.port}"/>
     </xslt>
     <move
-      file="${install.dir}/tools/jetty/etc/jetty-ssl-tmp.xml"
-      tofile="${install.dir}/tools/jetty/etc/jetty-ssl.xml"/>
+      file="${install.dir}/etc/jetty/jetty-ssl-tmp.xml"
+      tofile="${install.dir}/etc/jetty/jetty-ssl.xml"/>
 
     <xslt
-      in="${install.dir}/tools/jetty/etc/jetty.xml"
-      out="${install.dir}/tools/jetty/etc/jetty-tmp.xml"
+      in="${install.dir}/etc/jetty/jetty.xml"
+      out="${install.dir}/etc/jetty/jetty-tmp.xml"
       style="${xsl}">
       <param name="customPort" expression="${jetty.https.port}"/>
     </xslt>
     <move
-      file="${install.dir}/tools/jetty/etc/jetty-tmp.xml"
-      tofile="${install.dir}/tools/jetty/etc/jetty.xml"/>
+      file="${install.dir}/etc/jetty/jetty-tmp.xml"
+      tofile="${install.dir}/etc/jetty/jetty.xml"/>
   </target>
 
   <target name="prepare.exist" depends="download.dependencies">
@@ -215,6 +216,13 @@
       src="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
       dest="${devel.dir}"
       compression="bzip2" />
+      <move todir="${devel.dir}/eXist-db-${project.processorversion}">
+        <fileset dir="${devel.dir}/exist-distribution-${project.processorversion}" />
+      </move>
+      <!-- task setpermissions requries at least ant 1.10.0 -->
+      <setpermissions mode="755">
+        <file file="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
+      </setpermissions>
     <!-- move xar dependencies to autodeploy -->
     <copy todir="${install.dir}/autodeploy">
       <fileset dir="${dependencies.dir}">
