@@ -280,9 +280,12 @@ as element(rdf:RDF) {
                 }
                 {
                     if ($character/@ana) then 
-                        if ( matches($character/@ana/string(), 'https://www.wikidata.org/wiki/') ) then
+                        if ( matches($character/@ana/string(), 'https://wikidata.org/wiki/') ) then
                             let $wd := substring-after($character/@ana/string(),'https://www.wikidata.org/wiki/') return
                                 <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
+                        else if ( matches($character/@ana/string(), 'https://www.wikidata.org/entity/') ) then
+                            let $wd := substring-after($character/@ana/string(),'https://www.wikidata.org/entity/') return
+                            <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
                         else if ( matches($character/@ana/string(), 'http://www.wikidata.org/entity/') ) then
                             <owl:sameAs rdf:resource="{$character/@ana/string()}"/>
                         else ()
