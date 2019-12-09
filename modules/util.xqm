@@ -305,9 +305,9 @@ declare function dutil:get-corpus-meta-data(
     "numOfSpeakersUnknown": $num-unknown,
     "numOfPersonGroups": $num-groups,
     "yearNormalized": xs:integer(dutil:get-normalized-year($tei)),
-    "yearWritten": xs:integer($dates[@type="written"]/@when/string()),
-    "yearPremiered": xs:integer($dates[@type="premiere"]/@when/string()),
-    "yearPrinted": xs:integer($dates[@type="print"]/@when/string()),
+    "yearWritten": xs:integer($dates[@type="written"][1]/@when/string()),
+    "yearPremiered": xs:integer($dates[@type="premiere"][1]/@when/string()),
+    "yearPrinted": xs:integer($dates[@type="print"][1]/@when/string()),
     "maxDegreeIds": if(count($max-degree-ids) < 4) then
       string-join($max-degree-ids, "|")
     else
