@@ -54,10 +54,6 @@ This target will do the following in this order:
 - download all dependencies and place them in the `autodeploy` directory
 - set the http and https port of this instance (see
   [build.properties](build.properties))
-- start the database once to install all dependencies
-  - this step is required to set up the sparql package as it requires a change
-    in the configuration file of eXist to be made after the installation
-  - the database will shut down immediately
 - look for a running instance of the
   [metrics service](https://github.com/dracor-org/dracor-metrics) on
   `localhost:8030`
