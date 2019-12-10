@@ -7,6 +7,7 @@ module namespace drdf = "http://dracor.org/ns/exist/rdf";
 
 import module namespace config = "http://dracor.org/ns/exist/config"
   at "config.xqm";
+
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
@@ -213,147 +214,179 @@ as element(rdf:RDF) {
   let $creation-uri := $play-uri || "/creation"
   let $created-by :=  <crm:P94i_was_created_by rdf:resource="{$creation-uri}"/>
   
-  let $creation-activity := 
+  let $creation-activity :=
     <rdf:Description rdf:about="{$creation-uri}">
-        <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E65_Creation"/>
-        <crm:P94_has_created rdf:resource="{$play-uri}"/>
-        {
-            for $author-idno in $author-idnos?*
-                return 
-                <crm:P14_carried_out_by rdf:resource="{$author-idno?uri}"/>
-        }
+      <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E65_Creation"/>
+      <crm:P94_has_created rdf:resource="{$play-uri}"/>
+      {
+        for $author-idno in $author-idnos?*
+        return
+          <crm:P14_carried_out_by rdf:resource="{$author-idno?uri}"/>
+      }
     </rdf:Description>
     
-    let $dracor-link := 
+    let $dracor-link :=
       <rdfs:seeAlso rdf:resource="https://dracor.org/{$corpusname}/{$playname}"/>
     
     (: metrics :)
     
-    let $averageClustering := 
-      if ($metrics/metrics/network/averageClustering/text() != "") 
-      then <dracon:averageClustering>{$metrics/metrics/network/averageClustering/text()}</dracon:averageClustering> 
+    let $averageClustering :=
+      if ($metrics/metrics/network/averageClustering/text() != "")
+      then
+        <dracon:averageClustering>
+          {$metrics/metrics/network/averageClustering/text()}
+        </dracon:averageClustering>
       else ()
     
-    let $averagePathLength := 
-      if ( $metrics/metrics/network/averagePathLength/text() != "" ) 
-      then <dracon:averagePathLength>{$metrics/metrics/network/averagePathLength/text()}</dracon:averagePathLength> 
+    let $averagePathLength :=
+      if ( $metrics/metrics/network/averagePathLength/text() != "" )
+      then
+        <dracon:averagePathLength>
+          {$metrics/metrics/network/averagePathLength/text()}
+        </dracon:averagePathLength>
       else ()
     
-    let $averageDegree := 
-      if ( $metrics/metrics/network/averageDegree/text() != "" ) 
-      then <dracon:averageDegree>{$metrics/metrics/network/averageDegree/text()}</dracon:averageDegree> 
+    let $averageDegree :=
+      if ( $metrics/metrics/network/averageDegree/text() != "" )
+      then
+        <dracon:averageDegree>
+          {$metrics/metrics/network/averageDegree/text()}
+        </dracon:averageDegree>
       else ()
     
-    let $density := 
-      if ( $metrics/metrics/network/density/text() != "" ) 
-      then <dracon:density>{$metrics/metrics/network/density/text()}</dracon:density>
+    let $density :=
+      if ( $metrics/metrics/network/density/text() != "" )
+      then
+        <dracon:density>
+          {$metrics/metrics/network/density/text()}
+        </dracon:density>
       else ()
     
-    let $diameter := 
-      if ( $metrics/metrics/network/diameter/text() != "" ) 
-      then <dracon:diameter>{$metrics/metrics/network/diameter/text()}</dracon:diameter> 
+    let $diameter :=
+      if ( $metrics/metrics/network/diameter/text() != "" )
+      then
+        <dracon:diameter>
+          {$metrics/metrics/network/diameter/text()}
+        </dracon:diameter>
       else ()
     
-    let $maxDegree := 
-      if ( $metrics/metrics/network/maxDegree/text() != "" ) 
-      then <dracon:maxDegree>{$metrics/metrics/network/maxDegree/text()}</dracon:maxDegree> 
+    let $maxDegree :=
+      if ( $metrics/metrics/network/maxDegree/text() != "" )
+      then
+        <dracon:maxDegree>
+          {$metrics/metrics/network/maxDegree/text()}
+        </dracon:maxDegree>
       else ()
     
-    let $maxDegreeIds := 
-        for $character in tokenize($metrics/metrics/network/maxDegreeIds/text(),' ')
-        let $character-uri := $play-uri || '/character/' || $character 
-        return
-            <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
-    
-    
-    let $numOfActs := 
-      if ( count($play//tei:div[@type="act"]) > 0 ) 
-      then <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">{count($play//tei:div[@type="act"])}</dracon:numOfActs> 
-      else ()
-      
-      
-    let $numOfSegments := 
-      <dracon:numOfSegments 
-        rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">{count(dutil:get-segments($play))}</dracon:numOfSegments> 
+    let $maxDegreeIds :=
+      for $character in tokenize($metrics/metrics/network/maxDegreeIds/text(),' ')
+      let $character-uri := $play-uri || '/character/' || $character
+      return <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
 
-      
-     
-    let $numOfSpeakers := 
-      if ( count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)) > 0 ) 
-      then <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">{count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp))}</dracon:numOfSpeakers> 
+    let $numOfActs :=
+      if ( count($play//tei:div[@type="act"]) > 0 )
+      then
+        <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {count($play//tei:div[@type="act"])}
+        </dracon:numOfActs>
+      else ()
+
+    let $numOfSegments :=
+      <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+        {count(dutil:get-segments($play))}
+      </dracon:numOfSegments>
+
+    let $numOfSpeakers :=
+      if (count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)) > 0)
+      then
+        <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp))}
+        </dracon:numOfSpeakers>
       else ()
     
     (: Dates :)
     
     let $dates := $play//tei:bibl[@type="originalSource"]/tei:date
     
-    let $normalisedYear := 
-      if (dutil:get-normalized-year($play) != "") 
+    let $normalisedYear :=
+      if (dutil:get-normalized-year($play) != "")
       then
-        <dracon:normalisedYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{dutil:get-normalized-year($play)}</dracon:normalisedYear> 
+        <dracon:normalisedYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+          {dutil:get-normalized-year($play)}
+        </dracon:normalisedYear>
       else ()
     
-    let $premiereYear := 
-      if ( $dates[@type="premiere"]/@when/string() != '') 
+    let $premiereYear :=
+      if ( $dates[@type="premiere"]/@when/string() != '')
       then
-    <dracon:premiereYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{$dates[@type="premiere"]/@when/string()}</dracon:premiereYear> 
+        <dracon:premiereYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+          {$dates[@type="premiere"]/@when/string()}
+        </dracon:premiereYear>
       else ()
     
-    let $printYear := 
-      if ( $dates[@type="print"]/@when/string() !='' ) 
-      then 
-    <dracon:printYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{$dates[@type="print"]/@when/string()}</dracon:printYear> 
+    let $printYear :=
+      if ( $dates[@type="print"]/@when/string() !='' )
+      then
+        <dracon:printYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+          {$dates[@type="print"]/@when/string()}
+        </dracon:printYear>
       else ()
     
-    let $writtenYear := 
-      if ( $dates[@type="written"]/@when/string() ) 
-      then  <dracon:writtenYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">{$dates[@type="written"]/@when/string()}</dracon:writtenYear> 
+    let $writtenYear :=
+      if ( $dates[@type="written"]/@when/string() )
+      then
+        <dracon:writtenYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+          {$dates[@type="written"]/@when/string()}
+        </dracon:writtenYear>
       else ()
     
     (: chatacters :)
-    let $characters := 
-      $play//tei:particDesc/tei:listPerson/tei:person 
+    let $characters :=
+      $play//tei:particDesc/tei:listPerson/tei:person
     
-    let $charactersindrama :=  
+    let $charactersindrama :=
       for $character in $characters
-        let $character-uri := 
+        let $character-uri :=
           $play-uri || "/character/" || $character/@xml:id/string()
       return
         <schema:character rdf:resource="{$character-uri}"/>
     
-    let $characterDescriptions := 
+    let $characterDescriptions :=
       for $character in $characters
-        let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
+      let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
       return
-          <rdf:Description rdf:about="{$character-uri}">
-                <rdf:type rdf:resource="http://iflastandards.info/ns/fr/frbr/frbroo/F38_Character"/>
-                {
-                    for $persName in $character/tei:persName return
-                        <rdfs:label 
-                          xml:lang="{
-                              if ( $persName/@xml:lang ) 
-                              then $persName/@xml:lang 
-                              else $play/@xml:lang}">{$persName/string()}</rdfs:label>
-                }
-                {
-                    if ($character/@ana) then 
-                        if ( matches($character/@ana/string(), 'https://wikidata.org/wiki/') ) 
-                        then
-                          let $wd := 
-                            substring-after($character/@ana/string(),'https://www.wikidata.org/wiki/') 
-                            return
-                                <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
-                        else if ( matches($character/@ana/string(), 'https://www.wikidata.org/entity/') ) 
-                        then
-                          let $wd := substring-after($character/@ana/string(),'https://www.wikidata.org/entity/') return
-                            <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
-                        else if ( matches($character/@ana/string(), 'http://www.wikidata.org/entity/') ) then
-                            <owl:sameAs rdf:resource="{$character/@ana/string()}"/>
-                        else ()
-                    else ()
-                }
-            </rdf:Description>
-            
+        <rdf:Description rdf:about="{$character-uri}">
+          <rdf:type rdf:resource="http://iflastandards.info/ns/fr/frbr/frbroo/F38_Character"/>
+            {
+              for $persName in $character/tei:persName return
+                <rdfs:label
+                  xml:lang="{
+                    if ($persName/@xml:lang)
+                    then $persName/@xml:lang
+                    else $play/@xml:lang}"
+                >
+                  {$persName/string()}
+                </rdfs:label>
+              }
+              {
+                if ($character/@ana) then
+                  if (matches($character/@ana/string(), 'https://wikidata.org/wiki/'))
+                  then
+                    let $wd :=
+                      substring-after($character/@ana/string(),'https://www.wikidata.org/wiki/')
+                      return
+                        <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
+                  else if ( matches($character/@ana/string(), 'https://www.wikidata.org/entity/') )
+                  then
+                    let $wd := substring-after($character/@ana/string(),'https://www.wikidata.org/entity/')
+                    return
+                      <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
+                  else if ( matches($character/@ana/string(), 'http://www.wikidata.org/entity/') )
+                  then <owl:sameAs rdf:resource="{$character/@ana/string()}"/>
+                  else ()
+                else ()
+              }
+          </rdf:Description>
 
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
@@ -368,14 +401,14 @@ as element(rdf:RDF) {
       {$play-external-id}
       {$dracor-link}
       {$averageClustering}
-      {$averageDegree} 
+      {$averageDegree}
       {$averagePathLength}
       {$density}
-      {$diameter} 
+      {$diameter}
       {$maxDegree}
       {$maxDegreeIds}
-      {$normalisedYear} 
-      {$numOfActs} 
+      {$normalisedYear}
+      {$numOfActs}
       {$numOfSegments}
       {$numOfSpeakers}
       {$premiereYear}
