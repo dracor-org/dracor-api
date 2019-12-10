@@ -65,11 +65,6 @@
       skipexisting="true"
       ignoreerrors="true"/>
     <get
-      src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=exist-sparql&amp;processor=${project.processorversion}"
-      dest="${dependencies.dir}/sparql-latest.xar"
-      skipexisting="true"
-      ignoreerrors="true"/>
-    <get
       src="https://ci.de.dariah.eu/exist-repo/public/openapi-1.5.0.xar"
       dest="${dependencies.dir}/openapi-1.5.0.xar"
       skipexisting="true"
