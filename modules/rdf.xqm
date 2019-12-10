@@ -258,10 +258,10 @@ declare function drdf:update() as xs:string* {
  :)
 declare function drdf:fuseki($uri as xs:anyURI) {
   let $corpus := tokenize($uri, "/")[position() = last() - 1]
-  let $url := $config:fuseki-server || "data?graph=" || encode-for-uri("http://dracor.org/" || $corpus)
+  let $url := $config:fuseki-server || "data" || "?graph=" || encode-for-uri("http://dracor.org/" || $corpus)
   let $rdf := doc($uri)
   let $request :=
-    <hc:request method="put" href="{ $url }">
+    <hc:request method="post" href="{ $url }">
       <hc:body media-type="application/rdf+xml">{ $rdf }</hc:body>
     </hc:request>
   let $response :=
@@ -271,6 +271,8 @@ declare function drdf:fuseki($uri as xs:anyURI) {
       switch ($status)
           case "200" return true()
           case "201" return true()
-          default return
-              util:log("info", "unable to store to fuseki: " || $uri)
+          default return (
+              util:log("info", "unable to store to fuseki: " || $uri),
+              util:log("info", "response header from fuseki: " || $response[1]),
+              util:log("info", "response body from fuseki: " || $response[2]))
 };
