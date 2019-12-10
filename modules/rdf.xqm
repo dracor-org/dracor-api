@@ -267,15 +267,15 @@ as element(rdf:RDF) {
     
     
     let $numOfActs := 
-      if ( () ) 
-      then <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"/> 
+      if ( count($play//tei:div[@type="act"]) > 0 ) 
+      then <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">{count($play//tei:div[@type="act"])}</dracon:numOfActs> 
       else ()
       
       
     let $numOfSegments := 
-      if ( () ) 
-      then <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"/> 
-      else ()
+      <dracon:numOfSegments 
+        rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">{count(dutil:get-segments($play))}</dracon:numOfSegments> 
+
       
      
     let $numOfSpeakers := 
