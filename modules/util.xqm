@@ -290,7 +290,10 @@ declare function dutil:get-corpus-meta-data(
   let $networkmetrics := map:merge(
     for $s in $stat/network/*[not(name() = ("maxDegreeIds", "nodes"))]
     let $v := $s/text()
-    return map:entry($s/name(), if(number($v)) then number($v) else $v)
+    return map:entry(
+      $s/name(),
+      if(number($v) or $v = "0") then number($v) else $v
+    )
   )
   let $meta := map {
     "id": $id,
