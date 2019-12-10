@@ -22,29 +22,6 @@ as item()? {
     sm:chmod(xs:anyURI("/db/data/dracor/config.xml"), 'rw-------')
 };
 
-(:~
- : Prepare RDF index according to the exist-sparql module description.
- : @author Mathias Göbel
- : @see https://github.com/ljo/exist-sparql
-:)
-declare function local:prepare-rdf-index ()
-as xs:boolean {
-  (: prepare for RDF index :)
-  let $rdf-collection := xmldb:create-collection("/", $config:rdf-root)
-  let $rdf-conf-coll := xmldb:create-collection(
-    "/",
-    "/db/system/config" || $config:rdf-root
-  )
-  let $xconf :=
-      <collection xmlns="http://exist-db.org/collection-config/1.0">
-         <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
-            <rdf />
-         </index>
-      </collection>
-  let $config := xmldb:store($rdf-conf-coll, "collection.xconf", $xconf)
-  return
-    true()
-};
 
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || '/modules/webhook.xqm')
@@ -55,7 +32,6 @@ let $restxq-module := xs:anyURI('modules/api.xpm')
 
 return (
   local:create-config-file(),
-  local:prepare-rdf-index(),
   sm:chown($webhook, "admin"),
   sm:chgrp($webhook, "dba"),
   sm:chmod($webhook, 'rwsr-xr-x'),

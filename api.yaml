@@ -774,58 +774,6 @@ paths:
         '404':
           description: No play found for this ID
 
-  /sparql:
-    get:
-      summary: SPARQL endpoint
-      description: >-
-        Submit SPARQL queries with `query` parameter
-      operationId: get-sparql
-      tags: [public]
-      parameters:
-        - name: query
-          description: A SPARQL query
-          in: query
-          required: true
-          schema:
-            type: string
-          example: SELECT * WHERE {?s ?p ?o} LIMIT 10
-      responses:
-        '200':
-          description: Returns SPARQL results document
-          content:
-            application/sparql-results+xml:
-              schema:
-                type: string
-
-    post:
-      summary: SPARQL endpoint
-      description: >-
-        Post SPARQL queries
-      operationId: post-sparql
-      requestBody:
-        description: SPARQL query
-        content:
-          application/sparql-query:
-            schema:
-              type: string
-            example: |
-              PREFIX owl: <http://www.w3.org/2002/07/owl#>
-              PREFIX dracon: <http://dracor.org/ontology#>
-              SELECT ?play
-              WHERE {
-                ?author owl:sameAs <http://www.wikidata.org/entity/Q310866> .
-                ?play dracon:has_author ?author .
-              }
-              LIMIT 50
-      tags: [public]
-      responses:
-        '200':
-          description: Returns SPARQL results document
-          content:
-            application/sparql-results+xml:
-              schema:
-                type: string
-
   /webhook/github:
     post:
       summary: GitHub Webhook
