@@ -353,34 +353,31 @@ as element(rdf:RDF) {
 
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
-        <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
-        <rdf:type rdf:resource="http://dracor.org/ontology#play"/>
-        {$rdfs-labels}
-        {$dc-creator}
-        {$dc-titles}
-        {$author-nodes}
-        {$created-by}
-        {$in_corpus}
-        {$play-external-id}
-        {$dracor-link}
-        
-        {$averageClustering}
-        {$averageDegree} 
-        {$averagePathLength}
-        {$density}
-        {$diameter} 
-        {$maxDegree}
-        {$maxDegreeIds}
-        {$normalisedYear} 
-        {$numOfActs} 
-        {$numOfSegments}
-        {$numOfSpeakers}
-        {$premiereYear}
-        {$printYear}
-        {$writtenYear}
-        
-        {$charactersindrama}
-        
+      <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
+      <rdf:type rdf:resource="http://dracor.org/ontology#play"/>
+      {$rdfs-labels}
+      {$dc-creator}
+      {$dc-titles}
+      {$author-nodes}
+      {$created-by}
+      {$in_corpus}
+      {$play-external-id}
+      {$dracor-link}
+      {$averageClustering}
+      {$averageDegree} 
+      {$averagePathLength}
+      {$density}
+      {$diameter} 
+      {$maxDegree}
+      {$maxDegreeIds}
+      {$normalisedYear} 
+      {$numOfActs} 
+      {$numOfSegments}
+      {$numOfSpeakers}
+      {$premiereYear}
+      {$printYear}
+      {$writtenYear}
+      {$charactersindrama}
     </rdf:Description>
     
 
@@ -397,11 +394,8 @@ as element(rdf:RDF) {
       xmlns:frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/"
     >
       {$inner}
-      
       {$creation-activity}
-      
       {$characterDescriptions}
-      
     </rdf:RDF>
 };
 (:~
