@@ -1129,7 +1129,7 @@ function api:spoken-text($corpusname, $playname, $gender) {
         dutil:get-speech-by-gender($doc//tei:body, $genders)
       else
         dutil:get-speech($doc//tei:body, ())
-      let $txt := string-join($sp/normalize-space(), '&#10;')
+      let $txt := string-join(($sp/normalize-space(), ""), '&#10;')
       return $txt
 };
 
