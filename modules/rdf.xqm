@@ -259,24 +259,28 @@ as element(rdf:RDF) {
       then <dracon:maxDegree>{$metrics/metrics/network/maxDegree/text()}</dracon:maxDegree> 
       else ()
     
-    let $maxDegreeIds := ()
+    let $maxDegreeIds := 
+        for $character in tokenize($metrics/metrics/network/maxDegreeIds/text(),' ')
+        let $character-uri := $play-uri || '/character/' || $character 
+        return
+            <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
     
     
     let $numOfActs := 
       if ( () ) 
-      then <dracon:numOfActs/> 
+      then <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"/> 
       else ()
       
       
     let $numOfSegments := 
       if ( () ) 
-      then <dracon:numOfSegments/> 
+      then <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"/> 
       else ()
       
      
     let $numOfSpeakers := 
-      if ( () ) 
-      then <dracon:numOfSpeakers/> 
+      if ( count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)) > 0 ) 
+      then <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">{count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp))}</dracon:numOfSpeakers> 
       else ()
     
     (: Dates :)
