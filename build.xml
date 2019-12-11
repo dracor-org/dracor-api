@@ -159,14 +159,6 @@
       <arg value="${jetty.http.port}"/>
       <arg value="${basedir}/${install.dir}"/>
     </exec>
-    <xslt
-      in="${install.dir}/etc/conf.xml"
-      out="${install.dir}/etc/conf.xml.tmp"
-      style="resources/ant/exist-conf.xslt">
-    </xslt>
-    <move
-      file="${install.dir}/etc/conf.xml.tmp"
-      tofile="${install.dir}/etc/conf.xml"/>
     <copy file="${xarfile}" todir="${install.dir}/autodeploy" />
   </target>
 
