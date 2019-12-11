@@ -75,12 +75,12 @@ declare function metrics:get-network-metrics($url as xs:string) {
     </output:serialization-parameters>
   )
 
-  (: downgrade with http 1.0 to avoid chunked encoding which causes problems at
-   : the metrics service (python hug). this uses an undocumented attribute.
+  (: make chunked transfere encoding unavailable to the client as the metrics
+   : service can not handle. @chunked is undocumented.
    : see https://github.com/expath/expath-http-client-java/issues/9
   :)
   let $request :=
-    <hc:request method="post" http-version="1.0">
+    <hc:request method="post" chunked="false">
       <hc:body media-type="application/json" method="text"/>
     </hc:request>
   let $response := hc:send-request($request, ($config:metrics-server || '?' || $url), $payload)
