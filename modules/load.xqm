@@ -61,11 +61,11 @@ as xs:string* {
   return
     if (not($archive)) then ()
     else
-      let $response := httpclient:get($archive, false(), ())
+      let $request := <hc:request method="get" href="{ $archive }" />
+      let $response := hc:send-request($request)
       return
-        if ($response/@statusCode = 200) then
-          let $body := $response//httpclient:body[@mimetype="application/zip"]
-            [@type="binary"][@encoding="Base64Encoded"]/string(.)
+        if ($response[1]/@status = "200") then
+          let $body := $response[2]
           let $zip := xs:base64Binary($body)
           return (
             (: remove collections :)

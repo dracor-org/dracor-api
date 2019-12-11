@@ -75,18 +75,16 @@ declare function metrics:get-network-metrics($url as xs:string) {
     </output:serialization-parameters>
   )
 
-  let $response := httpclient:post(
-    xs:anyURI($config:metrics-server || '?' || $url),
-    $payload,
-    false(),
-    <headers>
-      <header name="Content-Type" value="application/json"/>
-    </headers>
-  )
-  let $json := util:base64-decode(
-    $response//httpclient:body[@type="binary"]
-    [@encoding="Base64Encoded"]/string(.)
-  )
+  (: downgrade with http 1.0 to avoid chunked encoding which causes problems at
+   : the metrics service (python hug). this uses an undocumented attribute.
+   : see https://github.com/expath/expath-http-client-java/issues/9
+  :)
+  let $request :=
+    <hc:request method="post" http-version="1.0">
+      <hc:body media-type="application/json" method="text"/>
+    </hc:request>
+  let $response := hc:send-request($request, ($config:metrics-server || '?' || $url), $payload)
+  let $json := util:base64-decode($response[2])
   let $metrics := parse-json($json)
 
   return
