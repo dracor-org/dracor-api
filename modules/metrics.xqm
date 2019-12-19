@@ -75,10 +75,9 @@ declare function metrics:get-network-metrics($url as xs:string) {
     </output:serialization-parameters>
   )
 
-  (: make chunked transfere encoding unavailable to the client as the metrics
-   : service can not handle. @chunked is undocumented.
-   : see https://github.com/expath/expath-http-client-java/issues/9
-  :)
+  (: Since the metrics service cannot properly handle chunked transfer encoding
+   : we disable it using the undocumented @chunked attribute.
+   : see https://github.com/expath/expath-http-client-java/issues/9 :)
   let $request :=
     <hc:request method="post" chunked="false">
       <hc:body media-type="application/json" method="text"/>
