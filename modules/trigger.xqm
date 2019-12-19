@@ -13,7 +13,11 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 declare function trigger:after-create-document($url as xs:anyURI) {
   if (doc($url)/tei:TEI) then
-    (metrics:update($url), drdf:update($url))
+    (
+      util:log("info", "running CREATION TRIGGER for " || $url),
+      metrics:update($url),
+      drdf:update($url)
+    )
   else (
     util:log("info", "ignoring creation of " || $url)
   )
@@ -21,7 +25,11 @@ declare function trigger:after-create-document($url as xs:anyURI) {
 
 declare function trigger:after-update-document($url as xs:anyURI) {
   if (doc($url)/tei:TEI) then
-    (metrics:update($url), drdf:update($url))
+    (
+      util:log("info", "running UPDATE TRIGGER for " || $url),
+      metrics:update($url),
+      drdf:update($url)
+    )
   else (
     util:log("info", "ignoring update of " || $url)
   )

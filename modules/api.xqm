@@ -836,7 +836,7 @@ function api:networkdata-csv($corpusname, $playname) {
           let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
           return string-join(($spkr, 'Undirected',$cooc, $weight), ",")
 
-      return string-join(("Source,Type,Target,Weight", $rows), "&#10;")
+      return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
 };
 
 (:~
@@ -1127,7 +1127,7 @@ function api:spoken-text($corpusname, $playname, $gender) {
         dutil:get-speech-by-gender($doc//tei:body, $genders)
       else
         dutil:get-speech($doc//tei:body, ())
-      let $txt := string-join($sp/normalize-space(), '&#10;')
+      let $txt := string-join(($sp/normalize-space(), ""), '&#10;')
       return $txt
 };
 

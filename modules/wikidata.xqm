@@ -19,14 +19,12 @@ declare function wd:get-sitelinks($id as xs:string) as xs:string* {
       FILTER (regex(str(?sitelink), "[.]wikipedia[.]org"))
     }'
     let $url := $wd:sparql-endpoint || '?query=' || xmldb:encode($sparql)
-    let $response := httpclient:get(
-      $url,
-      false(),
-      <headers>
-        <header name="Accept" value="application/xml"/>
-      </headers>
-    )
-    (: return $response//httpclient:body/sparqlres:sparql :)
-    return $response//httpclient:body/sparqlres:sparql/
+    let $request :=
+        <hc:request method="get" href="{ $url }">
+            <hc:header name="Accept" value="application/xml" />
+        </hc:request>
+    let $response := hc:send-request($request)
+    return
+        $response[2]//sparqlres:sparql/
       sparqlres:results/sparqlres:result/sparqlres:binding/sparqlres:uri/text()
 };

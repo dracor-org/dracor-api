@@ -18,22 +18,20 @@ declare function local:update (
     $target, 1, string-length($target) - string-length($filename) - 1
   )
   let $l := util:log("info", "Fetching " || $source)
-  let $response := httpclient:get($source, false(), ())
-  let $status := $response/@statusCode/string()
+  let $request := <hc:request method="get" href="{$source}" />
+  let $response := hc:send-request($request)
+  let $status := string($response[1]/@status)
 
   return if ($status = "200") then
     let $data := if (
-      $response//httpclient:body[
-        starts-with(@mimetype, "application/json") and
-        @encoding = "Base64Encoded"
-      ]
+      starts-with($response[1]/hc:body/@media-type, "application/json")
     ) then
       let $json := parse-json(
-        util:base64-decode($response//httpclient:body/string(.))
+        util:base64-decode($response[2])
       )
       return util:base64-decode($json?content)
     else
-      $response//httpclient:body[@type="xml"]
+      $response[2]
 
     (: FIXME: make sure $data is valid TEI :)
 
@@ -68,12 +66,11 @@ declare function local:remove ($file as xs:string) as xs:boolean {
 
 declare function local:get-repo-contents ($url-template) {
   let $url := replace($url-template, '\{\+path\}', $config:corpus-repo-prefix)
-  let $response := httpclient:get($url, false(), ())
-  let $body := $response//httpclient:body
-    [@mimetype="application/json; charset=utf-8"]
-    [@encoding="Base64Encoded"]/string(.)
-  let $json := parse-json(util:base64-decode($body))
-  return ($json)
+  let $request := <hc:request method="get" href="{ $url }" />
+  let $response := hc:send-request($request)
+  let $json := parse-json(util:base64-decode($response[2]))
+  return
+      $json
 };
 
 declare function local:process-delivery () {
