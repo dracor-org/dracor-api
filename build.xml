@@ -61,8 +61,8 @@
       skipexisting="true" />
     <!-- get dependencies -->
     <get
-      src="http://exist-db.org/exist/apps/public-repo/find.zip?abbrev=expath-crypto-exist-lib&amp;semver=0.3.5"
-      dest="${dependencies.dir}/crypto-0.3.5.xar"
+      src="http://exist-db.org/exist/apps/public-repo/public/expath-crypto-module-1.0.0.xar"
+      dest="${dependencies.dir}/crypto-1.0.0.xar"
       skipexisting="true"
       ignoreerrors="true"/>
     <get
