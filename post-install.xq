@@ -7,7 +7,8 @@ import module namespace config = "http://dracor.org/ns/exist/config"
 (: the target collection into which the app is deployed :)
 declare variable $target external;
 
-
+(: We create an empty config file that can be populated by XQuery updates
+ : from the deployment. :)
 declare function local:create-config-file ()
 as item()? {
   if(doc("/db/data/dracor/config.xml")/config) then
@@ -16,7 +17,7 @@ as item()? {
     xmldb:store(
       "/db/data/dracor",
       "config.xml",
-      <config>{'<webhook-secret>xxx</webhook-secret>'}</config>
+      <config></config>
     ),
     (: FIXME: find a better solution to protect the webhook secret :)
     sm:chmod(xs:anyURI("/db/data/dracor/config.xml"), 'rw-------')
