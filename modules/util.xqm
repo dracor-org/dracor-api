@@ -300,6 +300,10 @@ declare function dutil:get-corpus-meta-data(
     "name": $name,
     "playName": $name,
     "genre": $genre,
+    "maxDegreeIds": if(count($max-degree-ids) < 4) then
+      string-join($max-degree-ids, "|")
+    else
+      "several characters",
     "numOfSegments": count(dutil:get-segments($tei)),
     "numOfActs": count($tei//tei:div[@type="act"]),
     "numOfSpeakers": $num-speakers,
@@ -307,15 +311,11 @@ declare function dutil:get-corpus-meta-data(
     "numOfSpeakersFemale": $num-female,
     "numOfSpeakersUnknown": $num-unknown,
     "numOfPersonGroups": $num-groups,
-    "yearNormalized": xs:integer(dutil:get-normalized-year($tei)),
+    "wikipediaLinkCount": $sitelink-count,
     "yearWritten": xs:integer($dates[@type="written"][1]/@when/string()),
     "yearPremiered": xs:integer($dates[@type="premiere"][1]/@when/string()),
     "yearPrinted": xs:integer($dates[@type="print"][1]/@when/string()),
-    "maxDegreeIds": if(count($max-degree-ids) < 4) then
-      string-join($max-degree-ids, "|")
-    else
-      "several characters",
-    "wikipediaLinkCount": $sitelink-count
+    "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
   }
   order by $filename
   return map:merge(($meta, $networkmetrics))
