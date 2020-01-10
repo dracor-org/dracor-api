@@ -42,7 +42,10 @@ declare variable $api:metadata-columns := (
   "yearWritten",
   "numOfSegments",
   "wikipediaLinkCount",
-  "numOfActs"
+  "numOfActs",
+  "wordCountText",
+  "wordCountSp",
+  "wordCountStage"
 );
 
 (:~
