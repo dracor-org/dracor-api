@@ -409,7 +409,6 @@ function api:post-corpus($corpusname, $data, $auth) {
   else
 
   let $json := parse-json(util:base64-decode($data))
-  let $name := $json?name
   let $corpus := collection($config:data-root)/corpus[name = $corpusname]
 
   return
@@ -424,7 +423,28 @@ function api:post-corpus($corpusname, $data, $auth) {
         map {"message": "missing payload"}
       )
     else if ($json?load) then
-      array {load:load-corpus($corpus)}
+      let $job-name := "load-corpus-" || $corpusname
+      let $params := (
+        <parameters>
+          <param name="corpusname" value="{$corpusname}"/>
+        </parameters>
+      )
+
+      let $result := scheduler:schedule-xquery-periodic-job(
+        "/db/apps/dracor/jobs/load-corpus.xq",
+        1, $job-name, $params, 0, 0
+      )
+
+      return if ($result) then
+        (
+          <rest:response><http:response status="202"/></rest:response>,
+          map {"message": "corpus update scheduled"}
+        )
+      else
+        (
+          <rest:response><http:response status="409"/></rest:response>,
+          map {"message": "cannot schedule update"}
+        )
     else
       (
         <rest:response><http:response status="400"/></rest:response>,

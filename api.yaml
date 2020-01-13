@@ -230,25 +230,23 @@ paths:
             example: |
               {"load": true}
       responses:
-        '200':
-          description: Returns a list of created collections and documents
+        '202':
+          description: Corpus update has been scheduled
           content:
             application/json:
               schema:
-                type: array
-                items: string
+                type: object
               example: |
-                [
-                  "/db/data/dracor/tei/test",
-                  "/db/data/dracor/metrics/test",
-                  "/db/data/dracor/rdf/test",
-                  "/db/data/dracor/tei/test/StrindbergA_FrokenJulie.xml",
-                  "/db/data/dracor/tei/test/gogol-revizor.xml",
-                  "/db/data/dracor/tei/test/lessing-emilia-galotti.xml",
-                  "/db/data/dracor/tei/test/shakespeare-macbeth.xml"
-                ]
+                {
+                  "message": "corpus update scheduled"
+                }
         '404':
           description: Corpus not found
+        '409':
+          description: >-
+            Corpus update could not be scheduled.
+
+            This is the response when another update has not yet finished.
     delete:
       summary: Remove corpus from database
       operationId: delete-corpus
