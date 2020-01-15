@@ -430,6 +430,17 @@ function api:post-corpus($corpusname, $data, $auth) {
         </parameters>
       )
 
+      (: delete completed job befor scheduling new one :)
+      (: NB: usually this seems to happen automatically but apparently we
+       : cannot rely on it. :)
+      let $jobs := scheduler:get-scheduled-jobs()
+      let $complete := $jobs//scheduler:job
+        [@name=$job-name and scheduler:trigger/state = 'COMPLETE']
+      let $log := if ($complete) then (
+        util:log("info", "deleting completed job"),
+        scheduler:delete-scheduled-job($job-name)
+      ) else ()
+
       let $result := scheduler:schedule-xquery-periodic-job(
         "/db/apps/dracor/jobs/load-corpus.xq",
         1, $job-name, $params, 0, 0
