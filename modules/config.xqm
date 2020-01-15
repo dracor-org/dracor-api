@@ -52,6 +52,9 @@ declare variable $config:webhook-root := "/db/data/dracor/webhook";
 declare variable $config:webhook-secret :=
   doc('/db/data/dracor/config.xml')//webhook-secret/normalize-space();
 
+declare variable $config:fuseki-pw :=
+  doc('/db/data/dracor/config.xml')//fuseki-pw/normalize-space();
+
 (: the directory path in corpus repos where the TEI files reside :)
 declare variable $config:corpus-repo-prefix := 'tei';
 

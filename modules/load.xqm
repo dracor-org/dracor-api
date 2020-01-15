@@ -10,6 +10,7 @@ import module namespace config = "http://dracor.org/ns/exist/config"
 import module namespace metrics = "http://dracor.org/ns/exist/metrics"
   at "metrics.xqm";
 import module namespace drdf = "http://dracor.org/ns/exist/rdf" at "rdf.xqm";
+
 declare namespace compression = "http://exist-db.org/xquery/compression";
 declare namespace util = "http://exist-db.org/xquery/util";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
@@ -82,6 +83,8 @@ as xs:string* {
             xmldb:create-collection($config:data-root, $name),
             xmldb:create-collection($config:metrics-root, $name),
             xmldb:create-collection($config:rdf-root, $name),
+            (: clear fuseki graph :)
+            drdf:fuseki-clear-graph($name),
             (: load files from ZIP archive :)
             compression:unzip(
               $zip,

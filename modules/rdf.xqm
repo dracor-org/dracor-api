@@ -461,6 +461,33 @@ declare function drdf:update() as xs:string* {
   return drdf:update($url)
 };
 
+declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
+  let $url := $config:fuseki-server || "update"
+  let $graph := "http://dracor.org/" || $corpusname
+  let $request :=
+    <hc:request
+      method="post"
+      username="admin"
+      password="{$config:fuseki-pw}"
+      auth-method="basic"
+      send-authorization="true"
+    >
+      <hc:body media-type="application/sparql-update" method="text">
+        CLEAR SILENT GRAPH &lt;{$graph}&gt;
+      </hc:body>
+    </hc:request>
+
+  let $response := hc:send-request($request, $url)
+
+  return if ($response/@status = "204") then (
+    util:log("info", "Cleared graph <" || $graph || ">"),
+    true()
+  ) else (
+    util:log("warn", "Failed to clear graph <" || $graph || ">: " || $response/message),
+    false()
+  )
+};
+
 (:~
  : Send RDF data to Fuseki
  https://github.com/dracor-org/dracor-api/issues/77
