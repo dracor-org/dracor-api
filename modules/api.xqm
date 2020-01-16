@@ -127,7 +127,7 @@ declare
   %rest:header-param("Accept", "{$accept}")
 function api:id-to-url($id, $accept) {
   if ($accept = "application/rdf+xml") then
-    let $uri := "https://dracor.org/id/" || $id
+    let $uri := "https://dracor.org/entity/" || $id
     let $rdf := collection($config:rdf-root)//rdf:RDF[
       rdf:Description/@rdf:about = $uri
     ]
