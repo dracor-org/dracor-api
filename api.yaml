@@ -748,9 +748,9 @@ paths:
     get:
       summary: Resolve DraCor play ID
       description: |
-        When "application/rdf+xml" is requested via the `Accept` header, this
-        endpoint returns an RDF representation of the play identified by $id.
-        Otherwise it redirects to the DraCor URL for that play.
+        Depending on the `Accept` header this endpoint redirects to either the
+        RDF representation [play-rdf], the JSON meta data [play-info] or the
+        dracor.org URL of the play identified by the `id` parameter.
       operationId: resolve-id
       tags: [public]
       parameters:
@@ -761,14 +761,8 @@ paths:
             type: string
           example: ger000023
       responses:
-        '200':
-          description: Returns RDF document
-          content:
-            application/rdf+xml:
-              schema:
-                type: string
-        '302':
-          description: Redirect to dracor.org URL
+        '303':
+          description: Redirect to RDF or JSON resource or dracor.org URL.
         '404':
           description: No play found for this ID
 

@@ -110,52 +110,51 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
   </terms>
 };
 
+declare function local:id-to-url ($id, $accept) {
+  let $base := "https://dracor.org/"
+  let $idno := collection($config:data-root)//tei:publicationStmt
+    /tei:idno[@type="dracor" and .= $id]
+  let $parts := tokenize(base-uri($idno/parent::*), "[/.]")
+  let $corpusname := $parts[last()-2]
+  let $playname := $parts[last()-1]
+
+  return if ($idno) then
+    if ($accept = "application/rdf+xml") then
+      $base || "api/corpora/" || $corpusname || "/play/" || $playname || "/rdf"
+    else if ($accept = "application/json") then
+      $base || "api/corpora/" || $corpusname || "/play/" || $playname
+    else
+      $base || $corpusname || "/" || $playname
+  else ()
+};
+
 (:~
  : Resolve DraCor ID of a play
  :
- : When "application/rdf+xml" is requested via the `Accept` header, this
- : endpoint returns an RDF representation of the play identified by $id.
- : Otherwise it redirects to the DraCor URL for that play.
+ : Depending on the `Accept` header this endpoint redirects to either the RDF
+ : representation, the JSON metadata or the dracor.org page of the play
+ : identified by $id.
  :
  : @param $id DraCor ID
  : @param $accept Accept header value
- : @result RDF or redirect
+ : @result redirect
  :)
 declare
   %rest:GET
   %rest:path("/id/{$id}")
   %rest:header-param("Accept", "{$accept}")
 function api:id-to-url($id, $accept) {
-  if ($accept = "application/rdf+xml") then
-    let $uri := "https://dracor.org/entity/" || $id
-    let $rdf := collection($config:rdf-root)//rdf:RDF[
-      rdf:Description/@rdf:about = $uri
-    ]
-    return
-      if (not($rdf)) then
-        <rest:response>
-          <http:response status="404"/>
-        </rest:response>
-      else
-        $rdf
+  let $url := local:id-to-url($id, $accept)
+  return if (not($url)) then
+    <rest:response>
+      <http:response status="404"/>
+    </rest:response>
   else
-    let $idno := collection($config:data-root)//tei:publicationStmt
-      /tei:idno[@type="dracor" and .= $id]
-    let $parts := tokenize(base-uri($idno/parent::*), "[/.]")
-    let $corpusname := $parts[last()-2]
-    let $playname := $parts[last()-1]
-    let $url := "https://dracor.org/" || $corpusname || "/" || $playname
-    return
-      if (not($idno)) then
-        <rest:response>
-          <http:response status="404"/>
-        </rest:response>
-      else
-        <rest:response>
-          <http:response status="302">
-            <http:header name="location" value="{$url}"/>
-          </http:response>
-        </rest:response>
+    <rest:response>
+      <http:response status="303">
+        <http:header name="location" value="{$url}"/>
+      </http:response>
+    </rest:response>
 };
 
 declare function local:get-corpus-metrics ($corpus as xs:string) {
