@@ -577,6 +577,50 @@ declare function dutil:cast-info (
     }
 };
 
+declare function local:tokenize($idrefs as node()) as item()* {
+  for $ref in normalize-space($idrefs) => tokenize('\s+') => distinct-values()
+  where string-length($ref) > 1
+  return substring($ref, 2)
+};
+
+(:~
+ : Extract relations for a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function dutil:get-relations (
+  $corpusname as xs:string,
+  $playname as xs:string
+) as map()* {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  let $listRel := $doc//tei:listRelation[@type = "personal"]
+  let $relations := (
+    for $rel in $listRel/tei:relation[@mutual]
+      let $ids := local:tokenize($rel/@mutual)
+      for $source at $pos in $ids
+        for $target in $ids
+        where index-of($ids, $target) gt $pos
+        return map {
+          "directed": false(),
+          "type": string($rel/@name),
+          "source": $source,
+          "target": $target
+        }
+  ,
+    for $rel in $listRel/tei:relation[@active]
+      for $source in local:tokenize($rel/@active)
+         for  $target in local:tokenize($rel/@passive)
+         return map {
+           "directed": true(),
+           "type": string($rel/@name),
+           "source": $source,
+           "target": $target
+         }
+  )
+  return $relations
+};
+
 (:~
  : Escape string for use in CSV
  :
