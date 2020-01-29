@@ -403,6 +403,8 @@ declare function dutil:get-play-info(
     let $wikidata-id := $tei//tei:publicationStmt/
       tei:idno[@type="wikidata"]/string()
 
+    let $relations := dutil:get-relations($corpusname, $playname)
+
     return map:merge((
       map {
         "id": $id,
@@ -460,6 +462,9 @@ declare function dutil:get-play-info(
           "name": $source/tei:name/string(),
           "url": $source/tei:idno[@type="URL"]/string()
         })
+      else (),
+      if(count($relations)) then
+        map:entry("relations", array{$relations})
       else ()
     ))
 };
