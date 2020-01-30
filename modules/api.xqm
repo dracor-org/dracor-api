@@ -1004,7 +1004,7 @@ function api:relations-csv($corpusname, $playname) {
           $rel?type
         ), ",")
 
-      return string-join(("Source,Type,Target,Relation", $rows, ""), "&#10;")
+      return string-join(("Source,Type,Target,Label", $rows, ""), "&#10;")
 };
 
 (:~
@@ -1046,7 +1046,7 @@ function api:relations-gexf($corpusname, $playname) {
           return
             <edge xmlns="http://www.gexf.net/1.2draft"
             id="{$pos}" source="{$rel?source}" target="{$rel?target}"
-            type="{$type}" relation="{$rel?type}"/>
+            type="{$type}" label="{$rel?type}"/>
 
       return
         <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
@@ -1061,7 +1061,7 @@ function api:relations-gexf($corpusname, $playname) {
               <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
             </attributes>
             <attributes class="edge" mode="static">
-              <attribute id="relation" title="Relation" type="string"/>
+              <attribute id="label" title="Label" type="string"/>
             </attributes>
             <nodes>{$nodes}</nodes>
             <edges>{$edges}</edges>
