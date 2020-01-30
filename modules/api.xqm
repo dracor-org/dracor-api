@@ -1054,7 +1054,7 @@ function api:relations-gexf($corpusname, $playname) {
             <creator>dracor.org</creator>
             <description>Relations for {$authors}: {$title}</description>
           </meta>
-          <graph mode="static" defaultedgetype="undirected">
+          <graph mode="static">
             <attributes class="node" mode="static">
               <attribute id="gender" title="Gender" type="string"/>
               <attribute id="person-group" title="Person group" type="boolean"/>
