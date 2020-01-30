@@ -591,6 +591,165 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/play/{playname}/relations/csv:
+    get:
+      summary: Get relation data of a play as CSV
+      operationId: relations-csv
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: |
+                Source,Type,Target,Label
+                amaryllis,Undirected,atalanta,siblings
+                amaryllis,Undirected,menalkas,siblings
+                atalanta,Undirected,menalkas,siblings
+                myrtillus,Undirected,doris,siblings
+                amaryllis,Directed,corydon,lover_of
+                damoetas,Directed,atalanta,parent_of
+                damoetas,Directed,amaryllis,parent_of
+                damoetas,Directed,menalkas,parent_of
+                nisus,Directed,doris,lover_of
+                corydon,Directed,atalanta,lover_of
+        '404':
+          description: Unknown play or play does not provide relation data
+
+  /corpora/{corpusname}/play/{playname}/relations/gexf:
+    get:
+      summary: Get relation data of a play as GEXF
+      operationId: relations-gexf
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns GEXF file
+          content:
+            application/xml:
+              schema:
+                type: string
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
+                  <meta>
+                    <creator>dracor.org</creator>
+                    <description>Relations for Gottsched, Johann Christoph: Atalanta oder die bezwungene Sprödigkeit</description>
+                  </meta>
+                  <graph mode="static">
+                    <attributes class="node" mode="static">
+                      <attribute id="gender" title="Gender" type="string"/>
+                      <attribute id="person-group" title="Person group" type="boolean"/>
+                      <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
+                    </attributes>
+                    <attributes class="edge" mode="static">
+                      <attribute id="label" title="Label" type="string"/>
+                    </attributes>
+                    <nodes>
+                      <node id="doris" label="Doris">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="1037"/>
+                          <attvalue for="gender" value="FEMALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="menalkas" label="Menalkas">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="1509"/>
+                          <attvalue for="gender" value="MALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="nisus" label="Nisus">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="2203"/>
+                          <attvalue for="gender" value="MALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="atalanta" label="Atalanta">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="2307"/>
+                          <attvalue for="gender" value="FEMALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="corydon" label="Corydon">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="1373"/>
+                          <attvalue for="gender" value="MALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="damon" label="Damon">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="2674"/>
+                          <attvalue for="gender" value="MALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="amaryllis" label="Amaryllis">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="823"/>
+                          <attvalue for="gender" value="FEMALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="myrtillus" label="Myrtillus">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="1720"/>
+                          <attvalue for="gender" value="MALE"/>
+                        </attvalues>
+                      </node>
+                      <node id="damoetas" label="Damötas">
+                        <attvalues>
+                          <attvalue for="person-group" value="0"/>
+                          <attvalue for="number-of-words" value="679"/>
+                          <attvalue for="gender" value="MALE"/>
+                        </attvalues>
+                      </node>
+                    </nodes>
+                    <edges>
+                      <edge id="1" source="amaryllis" target="atalanta" type="undirected" label="siblings"/>
+                      <edge id="2" source="amaryllis" target="menalkas" type="undirected" label="siblings"/>
+                      <edge id="3" source="atalanta" target="menalkas" type="undirected" label="siblings"/>
+                      <edge id="4" source="myrtillus" target="doris" type="undirected" label="siblings"/>
+                      <edge id="5" source="amaryllis" target="corydon" type="directed" label="lover_of"/>
+                      <edge id="6" source="damoetas" target="atalanta" type="directed" label="parent_of"/>
+                      <edge id="7" source="damoetas" target="amaryllis" type="directed" label="parent_of"/>
+                      <edge id="8" source="damoetas" target="menalkas" type="directed" label="parent_of"/>
+                      <edge id="9" source="nisus" target="doris" type="directed" label="lover_of"/>
+                      <edge id="10" source="corydon" target="atalanta" type="directed" label="lover_of"/>
+                    </edges>
+                  </graph>
+                </gexf>
+        '404':
+          description: Unknown play or play does not provide relation data
+
   /corpora/{corpusname}/play/{playname}/segmentation:
     get:
       summary: Get a list of segments and characters of a play
