@@ -984,6 +984,7 @@ declare
   %output:method("text")
 function api:relations-csv($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
+  let $info := dutil:get-play-info($corpusname, $playname)
   let $relations := dutil:get-relations($corpusname, $playname)
   return
     if (not($doc)) then
@@ -1004,7 +1005,19 @@ function api:relations-csv($corpusname, $playname) {
           $rel?type
         ), ",")
 
-      return string-join(("Source,Type,Target,Label", $rows, ""), "&#10;")
+      let $filename := $info?id || '-' || $info?name || '-relations.csv'
+
+      return (
+        <rest:response>
+          <http:response status="200">
+            <http:header
+              name="Content-disposition"
+              value="inline; filename={$filename}"
+            />
+          </http:response>
+        </rest:response>,
+        string-join(("Source,Type,Target,Label", $rows, ""), "&#10;")
+      )
 };
 
 (:~
@@ -1048,7 +1061,17 @@ function api:relations-gexf($corpusname, $playname) {
             id="{$pos}" source="{$rel?source}" target="{$rel?target}"
             type="{$type}" label="{$rel?type}"/>
 
-      return
+      let $filename := $info?id || '-' || $info?name || '-relations.gexf'
+
+      return (
+        <rest:response>
+          <http:response status="200">
+            <http:header
+              name="Content-disposition"
+              value="inline; filename={$filename}"
+            />
+          </http:response>
+        </rest:response>,
         <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
           <meta>
             <creator>dracor.org</creator>
@@ -1067,6 +1090,7 @@ function api:relations-gexf($corpusname, $playname) {
             <edges>{$edges}</edges>
           </graph>
         </gexf>
+      )
 };
 
 (:~
