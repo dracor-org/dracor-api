@@ -872,6 +872,28 @@ function api:networkdata-csv($corpusname, $playname) {
       return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
 };
 
+declare function local:make-gexf-nodes($cast, $doc) as element()* {
+  for $n in $cast?*
+  let $id := $n?id
+  let $label := $n?name
+  let $sex := $n?sex
+  let $group := if ($n?isGroup) then 1 else 0
+  let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
+  return
+    <node xmlns="http://www.gexf.net/1.2draft"
+      id="{$id}" label="{$label}">
+      <attvalues>
+        <attvalue for="person-group" value="{$group}" />
+        <attvalue for="number-of-words" value="{$wc}" />
+      {
+        if ($sex) then
+          <attvalue for="gender" value="{$sex}"></attvalue>
+        else ()
+      }
+      </attvalues>
+    </node>
+};
+
 (:~
  : Get network data of a play as GEXF
  :
@@ -917,26 +939,7 @@ function api:networkdata-gexf($corpusname, $playname) {
         return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
       )
 
-      let $nodes :=
-        for $n in $info?cast?*
-        let $id := $n?id
-        let $label := $n?name
-        let $sex := $n?sex
-        let $group := if ($n?isGroup) then 1 else 0
-        let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
-        return
-          <node xmlns="http://www.gexf.net/1.2draft"
-            id="{$id}" label="{$label}">
-            <attvalues>
-              <attvalue for="person-group" value="{$group}" />
-              <attvalue for="number-of-words" value="{$wc}" />
-            {
-              if ($sex) then
-                <attvalue for="gender" value="{$sex}"></attvalue>
-              else ()
-            }
-            </attvalues>
-          </node>
+      let $nodes := local:make-gexf-nodes($info?cast, $doc)
 
       let $edges :=
         for $spkr at $pos in $cast
@@ -1035,23 +1038,7 @@ function api:relations-gexf($corpusname, $playname) {
       let $authors := string-join($info?authors?*?name, ' · ')
       let $title := $info?title
 
-      let $nodes :=
-        for $n in $info?cast?*
-        where not($n?isGroup)
-        let $id := $n?id
-        let $label := $n?name
-        let $sex := $n?sex
-        return
-          <node xmlns="http://www.gexf.net/1.2draft"
-            id="{$id}" label="{$label}">
-            <attvalues>
-            {
-              if ($sex) then
-                <attvalue for="gender" value="{$sex}"></attvalue>
-              else ()
-            }
-            </attvalues>
-          </node>
+      let $nodes := local:make-gexf-nodes($info?cast, $doc)
 
       let $edges :=
         for $rel at $pos in $info?relations?*
