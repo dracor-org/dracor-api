@@ -821,11 +821,11 @@ function api:play-rdf($corpusname, $playname) {
 };
 
 (:~
- : Get RDF document for a single play
+ : Get network data of a play as CSV
  :
  : @param $corpusname Corpus name
  : @param $playname Play name
- : @result RDF document
+ : @result CSV document
  :)
 declare
   %rest:GET
@@ -870,6 +870,28 @@ function api:networkdata-csv($corpusname, $playname) {
           return string-join(($spkr, 'Undirected',$cooc, $weight), ",")
 
       return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
+};
+
+declare function local:make-gexf-nodes($cast, $doc) as element()* {
+  for $n in $cast?*
+  let $id := $n?id
+  let $label := $n?name
+  let $sex := $n?sex
+  let $group := if ($n?isGroup) then 1 else 0
+  let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
+  return
+    <node xmlns="http://www.gexf.net/1.2draft"
+      id="{$id}" label="{$label}">
+      <attvalues>
+        <attvalue for="person-group" value="{$group}" />
+        <attvalue for="number-of-words" value="{$wc}" />
+      {
+        if ($sex) then
+          <attvalue for="gender" value="{$sex}"></attvalue>
+        else ()
+      }
+      </attvalues>
+    </node>
 };
 
 (:~
@@ -917,26 +939,7 @@ function api:networkdata-gexf($corpusname, $playname) {
         return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
       )
 
-      let $nodes :=
-        for $n in $info?cast?*
-        let $id := $n?id
-        let $label := $n?name
-        let $sex := $n?sex
-        let $group := if ($n?isGroup) then 1 else 0
-        let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
-        return
-          <node xmlns="http://www.gexf.net/1.2draft"
-            id="{$id}" label="{$label}">
-            <attvalues>
-              <attvalue for="person-group" value="{$group}" />
-              <attvalue for="number-of-words" value="{$wc}" />
-            {
-              if ($sex) then
-                <attvalue for="gender" value="{$sex}"></attvalue>
-              else ()
-            }
-            </attvalues>
-          </node>
+      let $nodes := local:make-gexf-nodes($info?cast, $doc)
 
       let $edges :=
         for $spkr at $pos in $cast
@@ -964,6 +967,130 @@ function api:networkdata-gexf($corpusname, $playname) {
             <edges>{$edges}</edges>
           </graph>
         </gexf>
+};
+
+(:~
+ : Get relation data for a play as CSV
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result CSV document
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/csv")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:relations-csv($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  let $info := dutil:get-play-info($corpusname, $playname)
+  let $relations := dutil:get-relations($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else if (count($relations) = 0) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $rows :=
+        for $rel in $relations
+        return string-join((
+          $rel?source,
+          if ($rel?directed) then 'Directed' else 'Undirected',
+          $rel?target,
+          $rel?type
+        ), ",")
+
+      let $filename := $info?id || '-' || $info?name || '-relations.csv'
+
+      return (
+        <rest:response>
+          <http:response status="200">
+            <http:header
+              name="Content-disposition"
+              value="inline; filename={$filename}"
+            />
+          </http:response>
+        </rest:response>,
+        string-join(("Source,Type,Target,Label", $rows, ""), "&#10;")
+      )
+};
+
+(:~
+ : Get relation data for a play as GEXF
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result GEXF document
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/gexf")
+  %output:method("xml")
+  %output:omit-xml-declaration("no")
+function api:relations-gexf($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  let $info := dutil:get-play-info($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else if (count($info?relations?*) = 0) then
+      (
+        <rest:response>
+          <http:response status="404"/>
+        </rest:response>,
+        <message>No relations available.</message>
+      )
+    else
+      let $authors := string-join($info?authors?*?name, ' · ')
+      let $title := $info?title
+
+      let $nodes := local:make-gexf-nodes($info?cast, $doc)
+
+      let $edges :=
+        for $rel at $pos in $info?relations?*
+          let $type := if ($rel?directed) then "directed" else "undirected"
+          return
+            <edge xmlns="http://www.gexf.net/1.2draft"
+            id="{$pos}" source="{$rel?source}" target="{$rel?target}"
+            type="{$type}" label="{$rel?type}"/>
+
+      let $filename := $info?id || '-' || $info?name || '-relations.gexf'
+
+      return (
+        <rest:response>
+          <http:response status="200">
+            <http:header
+              name="Content-disposition"
+              value="inline; filename={$filename}"
+            />
+          </http:response>
+        </rest:response>,
+        <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
+          <meta>
+            <creator>dracor.org</creator>
+            <description>Relations for {$authors}: {$title}</description>
+          </meta>
+          <graph mode="static">
+            <attributes class="node" mode="static">
+              <attribute id="gender" title="Gender" type="string"/>
+              <attribute id="person-group" title="Person group" type="boolean"/>
+              <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
+            </attributes>
+            <attributes class="edge" mode="static">
+              <attribute id="label" title="Label" type="string"/>
+            </attributes>
+            <nodes>{$nodes}</nodes>
+            <edges>{$edges}</edges>
+          </graph>
+        </gexf>
+      )
 };
 
 (:~
