@@ -158,6 +158,77 @@ declare function dutil:get-speech-by-gender (
 };
 
 (:~
+ : Retrieve and filter spoken text by gender and/or relation
+ :
+ : This function selects the `tei:p` and `tei:l` elements inside those `tei:sp`
+ : descendants of a given element $parent that reference a speaker with the
+ : given gender and/or relation. It then strips these elements possible stage
+ : directions (`tei:stage`).
+ :
+ : Possible values for the relation parameter are:
+ :  - siblings
+ :  - friends
+ :  - spouses
+ :  - parent_of_active
+ :  - lover_of_active
+ :  - related_with_active
+ :  - associated_with_active
+ :  - parent_of_passive
+ :  - lover_of_passive
+ :  - related_with_passive
+ :  - associated_with_passive
+ :
+ : @param $parent Element to search in
+ : @param $gender Gender of speaker
+ : @param $relation Relation of speaker.
+ :)
+declare function dutil:get-speech-filtered (
+  $parent as element(),
+  $gender as xs:string*,
+  $relation as xs:string*
+) as item()* {
+  let $undirected := ("siblings", "friends", "spouses")
+  let $directed := ("parent_of", "lover_of", "related_with", "associated_with")
+  let $active := for $x in $directed return $x || '_active'
+  let $passive := for $x in $directed return $x || '_passive'
+  let $rel := replace($relation, '_(active|passive)$', '')
+  let $genders := tokenize($gender, ',')
+
+  let $listPerson := $parent/ancestor::tei:TEI//tei:particDesc/tei:listPerson
+  let $relations := $listPerson/tei:listRelation[@type="personal"]
+
+  let $ids := $listPerson/(tei:person|tei:personGrp)
+    [not($gender) or @sex = $genders]/@xml:id/string()
+
+  let $filtered := for $id in $ids
+    return if (not($relation)) then
+      $id
+    else if (
+      $relation = $undirected
+      and $relations/tei:relation
+        [@name = $relation and contains(@mutual||' ', '#'||$id||' ')]
+    ) then
+      $id
+    else if (
+      $relation = $active
+      and $relations/tei:relation
+        [@name = $rel and contains(@active||' ', '#'||$id||' ')]
+    ) then
+      $id
+    else if (
+      $relation = $passive
+      and $relations/tei:relation
+        [@name = $rel and contains(@passive||' ', '#'||$id||' ')]
+    ) then
+      $id
+    else ()
+
+  let $refs := for $id in $filtered return '#'||$id
+  let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
+  return functx:remove-elements-deep($sp, ('*:stage', '*:note'))
+};
+
+(:~
  : Count words in spoken text, optionally limited to the speaker identified by
  : ID $speaker referenced in @who attributes of `tei:sp` elements.
  :
