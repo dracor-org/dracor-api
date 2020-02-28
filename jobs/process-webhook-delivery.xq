@@ -9,6 +9,31 @@ declare variable $local:delivery external;
 
 declare variable $local:corpora := collection($config:data-root)/corpus;
 
+declare variable $local:gh-client-id :=
+  environment-variable('DRACOR_GH_CLIENT_ID');
+
+declare variable $local:gh-client-secret :=
+  environment-variable('DRACOR_GH_CLIENT_SECRET');
+
+declare function local:gh-request (
+  $method as xs:string,
+  $href as xs:string
+) as item()+ {
+  let $request :=
+    <hc:request method="{$method}" href="{$href}">
+      {
+        if ($local:gh-client-id) then (
+          attribute {"auth-method"} {"basic"},
+          attribute {"send-authorization"} {"true"},
+          attribute {"username"} {$local:gh-client-id},
+          attribute {"password"} {$local:gh-client-secret}
+        ) else ()
+      }
+    </hc:request>
+  (: let $l := util:log("info", $request) :)
+  return hc:send-request($request)
+};
+
 declare function local:update (
   $source as xs:string,
   $target as xs:string
@@ -18,8 +43,7 @@ declare function local:update (
     $target, 1, string-length($target) - string-length($filename) - 1
   )
   let $l := util:log("info", "Fetching " || $source)
-  let $request := <hc:request method="get" href="{$source}" />
-  let $response := hc:send-request($request)
+  let $response := local:gh-request("get", $source)
   let $status := string($response[1]/@status)
 
   return if ($status = "200") then
@@ -66,8 +90,7 @@ declare function local:remove ($file as xs:string) as xs:boolean {
 
 declare function local:get-repo-contents ($url-template) {
   let $url := replace($url-template, '\{\+path\}', $config:corpus-repo-prefix)
-  let $request := <hc:request method="get" href="{ $url }" />
-  let $response := hc:send-request($request)
+  let $response := local:gh-request("get", $url)
   let $json := parse-json(util:base64-decode($response[2]))
   return
       $json
