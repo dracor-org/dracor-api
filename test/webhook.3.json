@@ -29,13 +29,11 @@
 
       ],
       "removed": [
-        "tei/schikaneder-die-zauberfloete.xml"
+
       ],
       "modified": [
-        "tei/StrindbergA_FrokenJulie.xml",
         "tei/gogol-revizor.xml",
-        "tei/lessing-emilia-galotti.xml",
-        "tei/shakespeare-macbeth.xml"
+        "tei/lessing-emilia-galotti.xml"
       ]
     }
   ],
@@ -60,13 +58,11 @@
 
     ],
     "removed": [
-      "tei/schikaneder-die-zauberfloete.xml"
+
     ],
     "modified": [
-      "tei/StrindbergA_FrokenJulie.xml",
       "tei/gogol-revizor.xml",
-      "tei/lessing-emilia-galotti.xml",
-      "tei/shakespeare-macbeth.xml"
+      "tei/lessing-emilia-galotti.xml"
     ]
   },
   "repository": {
