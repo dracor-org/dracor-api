@@ -970,6 +970,90 @@ function api:networkdata-gexf($corpusname, $playname) {
 };
 
 (:~
+ : Get network data of a play as GraphML
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result GraphML document
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/graphml")
+  %output:method("xml")
+  %output:omit-xml-declaration("no")
+function api:networkdata-graphml($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      let $cast := dutil:distinct-speakers($doc//tei:body)
+      let $segments :=
+        <segments>
+          {
+            for $seg in dutil:get-segments($doc//tei:TEI)
+            return
+              <sgm>
+                {
+                  for $id in dutil:distinct-speakers($seg)
+                  return <spkr>{$id}</spkr>
+                }
+              </sgm>
+          }
+        </segments>
+
+      let $info := dutil:get-play-info($corpusname, $playname)
+
+      let $links := map:merge(
+        for $spkr in $cast
+        let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
+        return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
+      )
+
+      let $edges :=
+        for $spkr at $pos in $cast
+          for $cooc in $links($spkr)
+          where index-of($cast, $cooc)[1] gt $pos
+          let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
+          return
+            <edge xmlns="http://graphml.graphdrawing.org/xmlns"
+             id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}">
+             <data key="weight">{$weight}</data>
+           </edge>
+
+      return
+        <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+          <key attr.name="label" attr.type="string" for="node" id="label"/>
+          <key attr.name="Edge Label" attr.type="string" for="edge" id="edgelabel"/>
+          <key attr.name="weight" attr.type="double" for="edge" id="weight"/>
+          <key attr.name="Gender" attr.type="string" for="node" id="gender"/>
+          <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
+          <key attr.name="Number of spoken words" attr.type="int" for="node" id="number-of-words"/>
+          <graph edgedefault="undirected">
+            {
+              for $n in $info?cast?*
+              let $id := $n?id
+              let $label := $n?name
+              let $sex := $n?sex
+              let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
+              return
+                <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
+                  <data key="label">{$label}</data>
+                  {if ($sex) then <data key="gender">{$sex}</data> else ()}
+                  <data key="person-group">
+                    {if ($n?isGroup) then "true" else "false"}
+                  </data>
+                  <data key="number-of-words">{$wc}</data>
+                </node>
+            }
+            {$edges}
+          </graph>
+        </graphml>
+};
+
+(:~
  : Get relation data for a play as CSV
  :
  : @param $corpusname Corpus name

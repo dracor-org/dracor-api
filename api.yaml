@@ -591,6 +591,30 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/play/{playname}/networkdata/graphml:
+    get:
+      summary: Get network data of a play as GraphML
+      operationId: network-graphml
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns GraphML file
+          content:
+            application/xml:
+              schema:
+                type: string
+
   /corpora/{corpusname}/play/{playname}/relations/csv:
     get:
       summary: Get relation data of a play as CSV
