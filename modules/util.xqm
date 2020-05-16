@@ -439,7 +439,7 @@ declare function dutil:get-play-info(
     let $subtitle :=
       $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
     let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-    let $orig-source := $tei//tei:bibl[@type="originalSource"]/tei:title
+    let $orig-source := $tei//tei:bibl[@type="originalSource"]/tei:title[1]
     let $cast := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $cast[last()]
 
