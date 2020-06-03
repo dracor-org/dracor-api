@@ -1230,8 +1230,8 @@ function api:cast-info-csv($corpusname, $playname) {
     for $c in $info?*
     let $row := for $key in $keys
       let $val := map:get($c, $key)
-      return ($val)
-    return '"' || string-join($row, '","') || '"&#10;'
+      return if (empty($val)) then ('') else ('"' || $val || '"')
+    return string-join($row, ',') || '&#10;'
   )
 };
 
