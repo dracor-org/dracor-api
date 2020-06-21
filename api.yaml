@@ -26,10 +26,10 @@ paths:
             application/json:
               example:
                 {
-                    "existdb": "4.1.0",
-                    "name": "DraCor",
-                    "status": "beta",
-                    "version": "0.20.1"
+                  "existdb": "4.1.0",
+                  "name": "DraCor",
+                  "status": "beta",
+                  "version": "0.20.1"
                 }
 
   /corpora:
@@ -52,6 +52,9 @@ paths:
             application/json:
               schema:
                 type: array
+                items:
+                  type: object
+
               example:
                 [
                   {
@@ -143,10 +146,10 @@ paths:
                   description: repository URL
                 archive:
                   type: string
-                  summary: >-
-                    URL of ZIP archive containing TEI files of the corpus
                   description: >
-                    The TEI file are expected to be placed in a `tei`
+                    URL of ZIP archive containing TEI files of the corpus
+
+                    The TEI files are expected to be placed in a `tei`
                     subdirectory. Other files will be ignored when loading the
                     archive.
             example: |
@@ -282,7 +285,8 @@ paths:
             application/json:
               schema:
                 type: array
-                items: object
+                items:
+                  type: object
             text/csv:
               schema:
                 type: string
@@ -493,7 +497,8 @@ paths:
             application/json:
               schema:
                 type: array
-                items: object
+                items:
+                  type: object
               example: |
                 [
                   {
