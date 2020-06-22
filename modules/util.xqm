@@ -267,7 +267,10 @@ declare function dutil:get-segments ($tei as element()*) as element()* {
     $tei//tei:body
   else if($tei//tei:body//tei:div2[@type="scene"]) then
     (: romdracor :)
-    $tei//tei:body//tei:div2[@type="scene"]
+    (: plautus-trinummus has the prologue coded as div1 which is why we
+     : recognize div1 without div2 children as segment
+     :)
+    $tei//tei:body//(tei:div2[@type="scene"]|tei:div1[tei:sp and not(tei:div2)])
   else if ($tei//tei:body//tei:div1) then
     (: greekdracor :)
     $tei//tei:body//tei:div1
