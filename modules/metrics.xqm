@@ -43,9 +43,9 @@ declare function metrics:collect-sitelinks($corpus as xs:string) {
  : sitelinks collection
 :)
 declare function metrics:collect-sitelinks() {
-  for $corpus in collection($config:data-root)/corpus
-  let $name := $corpus/name/text()
-  return metrics:collect-sitelinks($name)
+  for $corpus in collection($config:data-root)//tei:teiCorpus
+  let $info := dutil:get-corpus-info($corpus)
+  return metrics:collect-sitelinks($info?name)
 };
 
 (:~

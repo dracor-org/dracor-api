@@ -2,12 +2,12 @@ xquery version "3.1";
 
 import module namespace config = "http://dracor.org/ns/exist/config"
   at "../modules/config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/util"
+  at "../modules/util.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 declare variable $local:delivery external;
-
-declare variable $local:corpora := collection($config:data-root)/corpus;
 
 declare variable $local:gh-client-id :=
   environment-variable('DRACOR_GH_CLIENT_ID');
@@ -100,8 +100,12 @@ declare function local:process-delivery () {
   let $delivery := collection($config:webhook-root)
     /delivery[@id = $local:delivery and not(@processed)]
   let $repo := $delivery/@repo/string()
-  let $corpus := $local:corpora[repository = $repo]
-  let $corpusname := $corpus/name/normalize-space()
+  let $corpus := collection($config:data-root)//tei:teiCorpus[
+    tei:teiHeader//tei:publicationStmt/tei:idno[@type="repo" and . = $repo]
+  ]
+
+  let $info := dutil:get-corpus-info($corpus)
+  let $corpusname := $info?name
 
   return if($corpus) then
     let $l := util:log(
