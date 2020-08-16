@@ -126,7 +126,17 @@ paths:
       operationId: post-corpora
       tags: [admin]
       requestBody:
-        description: Corpus meta data
+        description: |
+          The meta data for the new corpus can be provided in either JSON or XML
+          format. The JSON structure is a straightforward object providing
+          corpus name, title and (optionally) a repository URL. The XML format
+          needs to be a TEI document with `teiCorpus` as its root element. The
+          corpus title needs to be provided in the `titleStmt` while the name
+          and repo URL are encoded in particular `idno` elements in the
+          `publicationStmt` (see example).
+
+          NB: Contrary to the TEI schema our teiCorpus document must not contain
+          the `TEI` elements for individual plays.
         content:
           application/json:
             schema:
@@ -158,6 +168,25 @@ paths:
                 "title": "Russian Drama Corpus",
                 "repository": "https://github.com/dracor-org/rusdracor"
               }
+          application/xml:
+            schema:
+              type: string
+            example: |
+              <?xml version="1.0" encoding="UTF-8"?>
+              <teiCorpus xmlns="http://www.tei-c.org/ns/1.0">
+                <teiHeader>
+                  <fileDesc>
+                    <titleStmt>
+                      <title>Test Drama Corpus</title>
+                    </titleStmt>
+                    <publicationStmt>
+                      <publisher>DraCor</publisher>
+                      <idno type="URI" xml:base="https://dracor.org/">test</idno>
+                      <idno type="repo">https://github.com/dracor-org/testdracor</idno>
+                    </publicationStmt>
+                  </fileDesc>
+                </teiHeader>
+              </teiCorpus>
       responses:
         '200':
           description: Returns corpus metadata

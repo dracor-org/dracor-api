@@ -222,6 +222,92 @@ function api:corpora($include) {
 (:~
  : Add new corpus
  :
+ : @param $data corpus.xml containing teiCorpus element.
+ : @result XML document
+ :)
+declare
+  %rest:POST("{$data}")
+  %rest:path("/corpora")
+  %rest:header-param("Authorization", "{$auth}")
+  %rest:consumes("application/xml", "text/xml")
+  %rest:produces("application/json")
+  %output:method("json")
+function api:corpora-post-tei($data, $auth) {
+  if (not($auth)) then
+    (
+      <rest:response>
+        <http:response status="401"/>
+      </rest:response>,
+      map {
+        "message": "authorization required"
+      }
+    )
+  else
+
+  let $header := $data//tei:teiCorpus/tei:teiHeader
+  let $name := $header//tei:publicationStmt/tei:idno[
+    @type = "URI" and @xml:base = "https://dracor.org/"
+  ]/text()
+
+  let $title := $header//tei:titleStmt/tei:title[1]/text()
+
+  return if (not($header)) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "invalid document, expecting <teiCorpus>"
+      }
+    )
+  else if (not($name) or not($title)) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "missing name or title"
+      }
+    )
+  else if (not(matches($name, '^[-a-z0-1]+$'))) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "invalid name",
+        "message": "Only lower case ASCII letters and digits are accepted."
+      }
+    )
+  else
+    let $corpus := dutil:get-corpus($name)
+    return if ($corpus) then (
+      <rest:response>
+        <http:response status="409"/>
+      </rest:response>,
+      map {
+        "error": "corpus already exists"
+      }
+    ) else (
+      let $tei-dir := concat($config:data-root, '/', $name)
+      return (
+        util:log-system-out("creating corpus"),
+        util:log-system-out($data),
+        xmldb:create-collection($config:data-root, $name),
+        xmldb:create-collection($config:metrics-root, $name),
+        xmldb:create-collection($config:rdf-root, $name),
+        xmldb:store($tei-dir, "corpus.xml", $data),
+        map {
+          "name": $name,
+          "title": $title
+        }
+      )
+    )
+};
+
+(:~
+ : Add new corpus
+ :
  : @param $data JSON object describing corpus meta data
  : @result JSON object
  :)
