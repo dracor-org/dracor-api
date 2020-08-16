@@ -464,6 +464,7 @@ declare function drdf:update() as xs:string* {
 declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
   let $url := $config:fuseki-server || "update"
   let $graph := "http://dracor.org/" || $corpusname
+  let $log := util:log-system-out("clearing fuseki graph: " || $graph)
   let $request :=
     <hc:request
       method="post"
