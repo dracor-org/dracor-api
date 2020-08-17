@@ -340,6 +340,23 @@ declare function dutil:get-corpus(
   ]
 };
 
+declare function local:to-markdown($input as element()) as item()* {
+  for $child in $input/node()
+  return
+    if ($child instance of element())
+    then (
+      if (name($child) = 'ref')
+      then "[" || $child/text() || "](" || $child/@target || ")"
+      else if (name($child) = 'hi')
+      then "**" || $child/text() || "**"
+      else local:to-markdown($child)
+    )
+    else $child
+};
+declare function local:markdown($input as element()) as item()* {
+  normalize-space(string-join(local:to-markdown($input), ''))
+};
+
 (:~
  : Get basic information for corpus identified by $corpusname.
  :
@@ -355,15 +372,16 @@ declare function dutil:get-corpus-info(
   ]/text()
   let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/text()
   let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"]/text()
-  let $description := $header/tei:encodingDesc/tei:projectDesc
+  let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
+  let $description := if ($projectDesc) then (
+    for $p in $projectDesc/tei:p return local:markdown($p)
+  ) else ()
   return if ($header) then (
     map:merge((
       map:entry("name", $name),
       map:entry("title", $title),
       if ($repo) then map:entry("repository", $repo) else (),
-      if ($description)
-      then map:entry("description", $description/tei:p)
-      else ()
+      if ($description) then map:entry("description", $description) else ()
     ))
   ) else ()
 };

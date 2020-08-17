@@ -204,13 +204,10 @@ function api:corpora($include) {
     for $corpus in collection($config:data-root)//tei:teiCorpus
     let $info := dutil:get-corpus-info($corpus)
     let $name := $info?name
-    let $repo := $info?repository
     order by $name
     return map:merge ((
-      map:entry("name", $name),
-      map:entry("title", $info?title),
+      $info,
       map:entry("uri", $config:api-base || '/corpora/' || $name),
-      if ($repo) then (map:entry("repository", $repo)) else (),
       if ($include = "metrics") then (
         map:entry("metrics", local:get-corpus-metrics($name))
       ) else ()
@@ -411,6 +408,7 @@ declare
 function api:index($corpusname) {
   let $corpus := dutil:get-corpus-info-by-name($corpusname)
   let $title := $corpus?title
+  let $description := $corpus?description
   let $collection := concat($config:data-root, "/", $corpusname)
   let $col := collection($collection)
   return
@@ -425,6 +423,11 @@ function api:index($corpusname) {
         {
           if ($corpus?repository)
           then <repository>{$corpus?repository}</repository>
+          else ()
+        }
+        {
+          if ($corpus?description)
+          then <description>{$corpus?description}</description>
           else ()
         }
         {
