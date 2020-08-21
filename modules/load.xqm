@@ -23,6 +23,7 @@ declare function local:entry-data(
   if($data) then
     let $collection := $param[1]
     let $name := tokenize($path, "/")[last()]
+    let $log := util:log-system-out($collection || " / " || $name)
     let $res := xmldb:store($collection, $name, $data)
     return $res
   else
@@ -32,8 +33,10 @@ declare function local:entry-data(
 declare function local:entry-filter(
   $path as xs:anyURI, $type as xs:string, $param as item()*
 ) as xs:boolean {
-  (: filter paths using only files in the "tei" subdirectory  :)
-  if ($type eq "resource" and contains($path, "/tei/"))
+  (: filter paths using only corpus.xml or files in the "tei" subdirectory :)
+  if ($type eq "resource" and (
+    contains($path, "/tei/") or contains($path, "corpus.xml")
+  ))
   then
     true()
   else
