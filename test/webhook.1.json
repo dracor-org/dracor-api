@@ -32,7 +32,7 @@
 
       ],
       "modified": [
-        "tei/StrindbergA_FrokenJulie.xml",
+        "tei/strindberg-froken-julie.xml",
         "tei/gogol-revizor.xml",
         "tei/lessing-emilia-galotti.xml"
       ]
@@ -82,7 +82,7 @@
         "username": "cmil"
       },
       "added": [
-        "tei/schikaneder-die-zauberfloete.xml"
+        "corpus.xml"
       ],
       "removed": [
 
@@ -110,7 +110,7 @@
       "username": "cmil"
     },
     "added": [
-      "tei/schikaneder-die-zauberfloete.xml"
+      "corpus.xml"
     ],
     "removed": [
 

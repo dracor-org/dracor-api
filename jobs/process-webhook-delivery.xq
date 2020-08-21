@@ -88,12 +88,16 @@ declare function local:remove ($file as xs:string) as xs:boolean {
     }
 };
 
+declare function local:make-url ($template, $path) {
+  let $url := replace($template, '\{\+path\}', $path)
+  return $url
+};
+
 declare function local:get-repo-contents ($url-template) {
-  let $url := replace($url-template, '\{\+path\}', $config:corpus-repo-prefix)
+  let $url := local:make-url($url-template, $config:corpus-repo-prefix)
   let $response := local:gh-request("get", $url)
   let $json := parse-json(util:base64-decode($response[2]))
-  return
-      $json
+  return $json
 };
 
 declare function local:process-delivery () {
@@ -111,22 +115,27 @@ declare function local:process-delivery () {
     let $l := util:log(
       "info", "Processing webhook delivery: " || $local:delivery
     )
-    let $contents := local:get-repo-contents($delivery/@contents-url/string())
+    let $contents-url := $delivery/@contents-url/string()
+    let $contents := local:get-repo-contents($contents-url)
     let $files := $delivery//file[
+      @path = "corpus.xml" or
       starts-with(@path, $config:corpus-repo-prefix)
     ]
 
     let $updates := for $file in $files
       let $path := $file/@path/string()
-      let $target := $config:data-root || '/' || $corpusname
-        || replace($path, '^' || $config:corpus-repo-prefix, '')
+      let $source := if ($path = "corpus.xml")
+        then local:make-url($contents-url, $path)
+        else $contents?*[?type = "file" and ?path = $path]?git_url
+      let $target := $config:data-root || '/' || $corpusname || '/'
+        || replace($path, '^' || $config:corpus-repo-prefix || '/', '')
       let $action := $file/@action
 
       let $result := if ($action = "remove") then
         local:remove($target)
-      else
-        let $source := $contents?*[?type = "file" and ?path = $path]?git_url
-        return local:update($source, $target)
+      else if ($source) then
+        local:update($source, $target)
+      else ()
 
       let $u := if($result) then
         update insert attribute updated {current-dateTime()} into $file
