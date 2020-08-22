@@ -201,22 +201,105 @@ declare
   %output:method("json")
 function api:corpora($include) {
   array {
-    for $corpus in collection($config:data-root)/corpus
-    let $name := $corpus/name/text()
+    for $corpus in collection($config:data-root)//tei:teiCorpus
+    let $info := dutil:get-corpus-info($corpus)
+    let $name := $info?name
     order by $name
     return map:merge ((
-      map:entry("name", $name),
-      map:entry("title", $corpus/title/text()),
+      $info,
       map:entry("uri", $config:api-base || '/corpora/' || $name),
-      if ($corpus/repository) then (
-        map:entry("repository", $corpus/repository/text())
-      ) else (),
       if ($include = "metrics") then (
         map:entry("metrics", local:get-corpus-metrics($name))
       ) else ()
 
     ))
   }
+};
+
+(:~
+ : Add new corpus
+ :
+ : @param $data corpus.xml containing teiCorpus element.
+ : @result XML document
+ :)
+declare
+  %rest:POST("{$data}")
+  %rest:path("/corpora")
+  %rest:header-param("Authorization", "{$auth}")
+  %rest:consumes("application/xml", "text/xml")
+  %rest:produces("application/json")
+  %output:method("json")
+function api:corpora-post-tei($data, $auth) {
+  if (not($auth)) then
+    (
+      <rest:response>
+        <http:response status="401"/>
+      </rest:response>,
+      map {
+        "message": "authorization required"
+      }
+    )
+  else
+
+  let $header := $data//tei:teiCorpus/tei:teiHeader
+  let $name := $header//tei:publicationStmt/tei:idno[
+    @type = "URI" and @xml:base = "https://dracor.org/"
+  ]/text()
+
+  let $title := $header//tei:titleStmt/tei:title[1]/text()
+
+  return if (not($header)) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "invalid document, expecting <teiCorpus>"
+      }
+    )
+  else if (not($name) or not($title)) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "missing name or title"
+      }
+    )
+  else if (not(matches($name, '^[-a-z0-1]+$'))) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {
+        "error": "invalid name",
+        "message": "Only lower case ASCII letters and digits are accepted."
+      }
+    )
+  else
+    let $corpus := dutil:get-corpus($name)
+    return if ($corpus) then (
+      <rest:response>
+        <http:response status="409"/>
+      </rest:response>,
+      map {
+        "error": "corpus already exists"
+      }
+    ) else (
+      let $tei-dir := concat($config:data-root, '/', $name)
+      return (
+        util:log-system-out("creating corpus"),
+        util:log-system-out($data),
+        xmldb:create-collection($config:data-root, $name),
+        xmldb:create-collection($config:metrics-root, $name),
+        xmldb:create-collection($config:rdf-root, $name),
+        xmldb:store($tei-dir, "corpus.xml", $data),
+        map {
+          "name": $name,
+          "title": $title
+        }
+      )
+    )
 };
 
 (:~
@@ -232,11 +315,13 @@ declare
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:corpora-put($data) {
+function api:corpora-post-json($data) {
   let $json := parse-json(util:base64-decode($data))
   let $name := $json?name
+  let $description := $json?description
+  let $corpus := dutil:get-corpus($name)
 
-  return if (collection($config:data-root)/corpus[name = $name]) then
+  return if ($corpus) then
     (
       <rest:response>
         <http:response status="409"/>
@@ -266,23 +351,41 @@ function api:corpora-put($data) {
     )
   else
     let $corpus :=
-      <corpus>
-        <name>{$name}</name>
-        <title>{$json?title}</title>
-        {
-          if ($json?repository)
-          then <repository>{$json?repository}</repository>
-          else ()
-        }
-        {if ($json?archive) then <archive>{$json?archive}</archive> else ()}
-      </corpus>
+      <teiCorpus xmlns="http://www.tei-c.org/ns/1.0">
+        <teiHeader>
+          <fileDesc>
+            <titleStmt>
+              <title>{$json?title}</title>
+            </titleStmt>
+            <publicationStmt>
+              <idno type="URI" xml:base="https://dracor.org/">{$name}</idno>
+              {
+                if ($json?repository)
+                then <idno type="repo">{$json?repository}</idno>
+                else ()
+              }
+            </publicationStmt>
+          </fileDesc>
+          {if ($json?description) then (
+            <encodingDesc>
+              <projectDesc>
+                {
+                  for $p in tokenize($json?description, "&#10;&#10;")
+                  return <p>{$p}</p>
+                }
+              </projectDesc>
+            </encodingDesc>
+          ) else ()}
+        </teiHeader>
+      </teiCorpus>
+    let $tei-dir := concat($config:data-root, '/', $name)
     return (
       util:log-system-out("creating corpus"),
       util:log-system-out($corpus),
       xmldb:create-collection($config:data-root, $name),
       xmldb:create-collection($config:metrics-root, $name),
       xmldb:create-collection($config:rdf-root, $name),
-      xmldb:store($config:data-root, $name || ".xml", $corpus),
+      xmldb:store($tei-dir, "corpus.xml", $corpus),
       $json
     )
 };
@@ -303,20 +406,30 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:index($corpusname) {
-  let $corpus := collection($config:data-root)/corpus[name=$corpusname]
-  let $title := $corpus/title/text()
+  let $corpus := dutil:get-corpus-info-by-name($corpusname)
+  let $title := $corpus?title
+  let $description := $corpus?description
   let $collection := concat($config:data-root, "/", $corpusname)
   let $col := collection($collection)
   return
-    if (not(xmldb:collection-available($collection))) then
+    if (not($corpus?name) or not(xmldb:collection-available($collection))) then
       <rest:response>
         <http:response status="404"/>
       </rest:response>
     else
       <index>
-        <name>{$corpusname}</name>
-        <title>{$title}</title>
-        {if ($corpus/repository) then $corpus/repository else ()}
+        <name>{$corpus?name}</name>
+        <title>{$corpus?title}</title>
+        {
+          if ($corpus?repository)
+          then <repository>{$corpus?repository}</repository>
+          else ()
+        }
+        {
+          if ($corpus?description)
+          then <description>{$corpus?description}</description>
+          else ()
+        }
         {
           for $tei in $col//tei:TEI
           let $filename := tokenize(base-uri($tei), "/")[last()]
@@ -408,10 +521,10 @@ function api:post-corpus($corpusname, $data, $auth) {
   else
 
   let $json := parse-json(util:base64-decode($data))
-  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  let $corpus := dutil:get-corpus-info-by-name($corpusname)
 
   return
-    if (not($corpus)) then
+    if (not($corpus?name)) then
       (
         <rest:response><http:response status="404"/></rest:response>,
         map {"message": "no such corpus"}
@@ -429,7 +542,7 @@ function api:post-corpus($corpusname, $data, $auth) {
         </parameters>
       )
 
-      (: delete completed job befor scheduling new one :)
+      (: delete completed job before scheduling new one :)
       (: NB: usually this seems to happen automatically but apparently we
        : cannot rely on it. :)
       let $jobs := scheduler:get-scheduled-jobs()
@@ -488,7 +601,7 @@ function api:delete-corpus($corpusname, $auth) {
     )
   else
 
-  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  let $corpus := dutil:get-corpus($corpusname)
 
   return
     if (not($corpus)) then
@@ -496,11 +609,10 @@ function api:delete-corpus($corpusname, $auth) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $url := $config:data-root || "/" || $corpusname || ".xml"
+      let $url := $config:data-root || "/" || $corpusname || "/corpus.xml"
       return
         if ($url = $corpus/base-uri()) then
         (
-          xmldb:remove($config:data-root, $corpusname || ".xml"),
           xmldb:remove($config:data-root || "/" || $corpusname),
           xmldb:remove($config:metrics-root || "/" || $corpusname),
           xmldb:remove($config:rdf-root || "/" || $corpusname),
@@ -530,7 +642,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpus-meta-data($corpusname) {
-  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  let $corpus := dutil:get-corpus($corpusname)
   return
     if (not($corpus)) then
       (
@@ -543,7 +655,7 @@ function api:corpus-meta-data($corpusname) {
 };
 
 declare function api:get-corpus-meta-data-csv($corpusname) {
-  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  let $corpus := dutil:get-corpus($corpusname)
   return
     if (not($corpus)) then
       <rest:response>
@@ -761,7 +873,7 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
     </rest:response>
   else
 
-  let $corpus := collection($config:data-root)/corpus[name = $corpusname]
+  let $corpus := dutil:get-corpus($corpusname)
   let $doc := dutil:get-doc($corpusname, $playname)
 
   return

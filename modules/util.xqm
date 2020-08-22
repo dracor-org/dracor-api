@@ -323,6 +323,83 @@ declare function dutil:count-sitelinks(
 };
 
 (:~
+ : Get teiCorpus element for corpus identified by $corpusname.
+ :
+ : @param $corpusname
+ : @return teiCorpus element
+ :)
+declare function dutil:get-corpus(
+  $corpusname as xs:string
+) as element()* {
+  collection($config:data-root)//tei:teiCorpus[
+    tei:teiHeader//tei:publicationStmt/tei:idno[
+      @type="URI" and
+      @xml:base="https://dracor.org/" and
+      . = $corpusname
+    ]
+  ]
+};
+
+declare function local:to-markdown($input as element()) as item()* {
+  for $child in $input/node()
+  return
+    if ($child instance of element())
+    then (
+      if (name($child) = 'ref')
+      then "[" || $child/text() || "](" || $child/@target || ")"
+      else if (name($child) = 'hi')
+      then "**" || $child/text() || "**"
+      else local:to-markdown($child)
+    )
+    else $child
+};
+declare function local:markdown($input as element()) as item()* {
+  normalize-space(string-join(local:to-markdown($input), ''))
+};
+
+(:~
+ : Get basic information for corpus identified by $corpusname.
+ :
+ : @param $corpusname
+ : @return map
+ :)
+declare function dutil:get-corpus-info(
+  $corpus as element(tei:teiCorpus)*
+) as map(*)* {
+  let $header := $corpus/tei:teiHeader
+  let $name := $header//tei:publicationStmt/tei:idno[
+    @type="URI" and @xml:base="https://dracor.org/"
+  ]/text()
+  let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/text()
+  let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"]/text()
+  let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
+  let $description := if ($projectDesc) then (
+    for $p in $projectDesc/tei:p return local:markdown($p)
+  ) else ()
+  return if ($header) then (
+    map:merge((
+      map:entry("name", $name),
+      map:entry("title", $title),
+      if ($repo) then map:entry("repository", $repo) else (),
+      if ($description) then map:entry("description", $description) else ()
+    ))
+  ) else ()
+};
+
+(:~
+ : Get basic information for corpus identified by $corpusname.
+ :
+ : @param $corpusname
+ : @return map
+ :)
+declare function dutil:get-corpus-info-by-name(
+  $corpusname as xs:string
+) as map(*)* {
+  let $corpus := dutil:get-corpus($corpusname)
+  return dutil:get-corpus-info($corpus)
+};
+
+(:~
  : Calculate meta data for corpus.
  :
  : @param $corpusname

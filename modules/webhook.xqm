@@ -29,7 +29,9 @@ declare function local:check-signature (
 };
 
 declare function local:get-corpus ($repo-url as xs:string) as element()? {
-  collection($config:data-root)/corpus[repository = $repo-url]
+  collection($config:data-root)//tei:teiCorpus[
+    tei:teiHeader//tei:publicationStmt/tei:idno[@type="repo" and . = $repo-url]
+  ]
 };
 
 declare function local:check-repo ($url as xs:string) as xs:boolean {
