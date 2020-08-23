@@ -431,6 +431,16 @@ function api:index($corpusname) {
           else ()
         }
         {
+          if ($corpus?licence)
+          then <licence>{$corpus?licence}</licence>
+          else ()
+        }
+        {
+          if ($corpus?licenceUrl)
+          then <licenceUrl>{$corpus?licenceUrl}</licenceUrl>
+          else ()
+        }
+        {
           for $tei in $col//tei:TEI
           let $filename := tokenize(base-uri($tei), "/")[last()]
           let $name := tokenize($filename, "\.")[1]
