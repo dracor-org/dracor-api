@@ -280,19 +280,52 @@ declare function dutil:get-segments ($tei as element()*) as element()* {
 };
 
 (:~
+ : Retrieve `written`, `premiere` and `print` years for the play passed in $tei.
+ :
+ : @param $tei The TEI root element of a play
+ : @return Map of years
+ :)
+declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
+  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+    [@type = ("print", "premiere", "written")]
+    [@when or @notAfter or @notBefore]
+
+  let $years := map:merge(
+    for $d in $dates
+    let $type := $d/@type/string()
+    let $year := if ($d/@when) then
+      $d/@when/string()
+    else if ($d/@notAfter) then
+      $d/@notAfter/string()
+    else
+      $d/@notBefore/string()
+    return map:entry($type, $year)
+  )
+
+  return $years
+};
+
+(:~
  : Determine the most fitting year from `written`, `premiere` and `print` of
  : the play passed in $tei.
  :
  : @param $tei The TEI root element of a play
  :)
-declare function dutil:get-normalized-year ($tei as element()*) as item()* {
-  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
-  let $written := $dates[@type="written"][1]/@when/string()
-  let $premiere := $dates[@type="premiere"][1]/@when/string()
-  let $print := $dates[@type="print"][1]/@when/string()
+declare function dutil:get-normalized-year (
+  $tei as element(tei:TEI)*
+) as item()* {
+  let $years := dutil:get-years($tei)
+
+  let $written := $years?written
+  let $premiere := $years?premiere
+  let $print := $years?print
 
   let $published := if ($print and $premiere)
-    then min(($print, $premiere))
+    then (
+      if (xs:integer($premiere) < xs:integer($print))
+      then $premiere
+      else $print
+    )
     else if ($premiere) then $premiere
     else $print
 
