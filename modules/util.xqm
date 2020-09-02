@@ -328,7 +328,8 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
       $d/@notAfter/string()
     else
       $d/@notBefore/string()
-    return map:entry($type, $year)
+    return if (matches($year, "^-?[0-9]{4}$"))
+      then map:entry($type, $year) else ()
   )
 
   return $years
@@ -342,7 +343,7 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
  :)
 declare function dutil:get-normalized-year (
   $tei as element(tei:TEI)*
-) as item()* {
+) as xs:integer* {
   let $years := dutil:get-years($tei)
 
   let $written := $years?written
@@ -366,7 +367,7 @@ declare function dutil:get-normalized-year (
     else if ($written) then $written
     else $published
 
-  return $year
+  return xs:integer($year)
 };
 
 (:~
