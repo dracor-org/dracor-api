@@ -62,6 +62,9 @@ paths:
                     "title": "German Drama Corpus",
                     "repository": "https://github.com/dracor-org/gerdracor",
                     "uri": "https://dracor.org/api/corpora/ger",
+                    "description": "Edited by Frank Fischer and Peer Trilcke. Features 501 German-language plays from the 1730s to the 1940s.",
+                    "licence": "CC0",
+                    "licenceUrl": "https://creativecommons.org/share-your-work/public-domain/cc0/",
                     "metrics": {
                       "characters": 10001,
                       "female": 1308,
