@@ -280,19 +280,82 @@ declare function dutil:get-segments ($tei as element()*) as element()* {
 };
 
 (:~
+ : Retrieve `written`, `premiere` and `print` years as ISO 8601 strings for the
+ : play passed in $tei.
+ :
+ : @param $tei The TEI root element of a play
+ : @return Map of years
+ :)
+declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
+  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+    [@type = ("print", "premiere", "written")]
+    [@when or @notAfter or @notBefore]
+
+  let $years := map:merge(
+    for $d in $dates
+    let $type := $d/@type/string()
+    let $year := if ($d/@when) then
+      $d/@when/string()
+    else if ($d/@notBefore and $d/@notAfter) then
+      $d/@notBefore/string() || '/' || $d/@notAfter/string()
+    else if ($d/@notAfter) then
+      '<' || $d/@notAfter/string()
+    else
+      '>' || $d/@notBefore/string()
+    return map:entry($type, $year)
+  )
+
+  return $years
+};
+
+(:~
+ : Retrieve `written`, `premiere` and `print` years for the play passed in $tei.
+ :
+ : @param $tei The TEI root element of a play
+ : @return Map of years
+ :)
+declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
+  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+    [@type = ("print", "premiere", "written")]
+    [@when or @notAfter or @notBefore]
+
+  let $years := map:merge(
+    for $d in $dates
+    let $type := $d/@type/string()
+    let $year := if ($d/@when) then
+      $d/@when/string()
+    else if ($d/@notAfter) then
+      $d/@notAfter/string()
+    else
+      $d/@notBefore/string()
+    return if (matches($year, "^-?[0-9]{4}$"))
+      then map:entry($type, $year) else ()
+  )
+
+  return $years
+};
+
+(:~
  : Determine the most fitting year from `written`, `premiere` and `print` of
  : the play passed in $tei.
  :
  : @param $tei The TEI root element of a play
  :)
-declare function dutil:get-normalized-year ($tei as element()*) as item()* {
-  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
-  let $written := $dates[@type="written"][1]/@when/string()
-  let $premiere := $dates[@type="premiere"][1]/@when/string()
-  let $print := $dates[@type="print"][1]/@when/string()
+declare function dutil:get-normalized-year (
+  $tei as element(tei:TEI)*
+) as xs:integer* {
+  let $years := dutil:get-years($tei)
+
+  let $written := $years?written
+  let $premiere := $years?premiere
+  let $print := $years?print
 
   let $published := if ($print and $premiere)
-    then min(($print, $premiere))
+    then (
+      if (xs:integer($premiere) < xs:integer($print))
+      then $premiere
+      else $print
+    )
     else if ($premiere) then $premiere
     else $print
 
@@ -304,7 +367,7 @@ declare function dutil:get-normalized-year ($tei as element()*) as item()* {
     else if ($written) then $written
     else $published
 
-  return $year
+  return xs:integer($year)
 };
 
 (:~
@@ -426,7 +489,7 @@ declare function dutil:get-corpus-meta-data(
   let $filename := tokenize(base-uri($tei), "/")[last()]
   let $id := dutil:get-dracor-id($tei)
   let $name := tokenize($filename, "\.")[1]
-  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+  let $years := dutil:get-years-iso($tei)
   let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
     /@subtype/string()
   let $num-speakers := count(dutil:distinct-speakers($tei))
@@ -471,9 +534,9 @@ declare function dutil:get-corpus-meta-data(
     "wordCountText": xs:integer($stat/text/string()),
     "wordCountSp": xs:integer($stat/sp/string()),
     "wordCountStage": xs:integer($stat/stage/string()),
-    "yearWritten": xs:integer($dates[@type="written"][1]/@when/string()),
-    "yearPremiered": xs:integer($dates[@type="premiere"][1]/@when/string()),
-    "yearPrinted": xs:integer($dates[@type="print"][1]/@when/string()),
+    "yearWritten": $years?written,
+    "yearPremiered": $years?premiere,
+    "yearPrinted": $years?print,
     "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
   }
   order by $filename
@@ -551,7 +614,7 @@ declare function dutil:get-play-info(
     let $authors := dutil:get-authors($tei)
     let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
       /@subtype/string()
-    let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+    let $years := dutil:get-years-iso($tei)
 
     let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
     let $all-in-index := $all-in-segment div count($segments?*)
@@ -599,9 +662,9 @@ declare function dutil:get-play-info(
           }
         },
         "segments": $segments,
-        "yearWritten": xs:integer($dates[@type="written"]/@when/string()),
-        "yearPremiered": xs:integer($dates[@type="premiere"]/@when/string()),
-        "yearPrinted": xs:integer($dates[@type="print"]/@when/string()),
+        "yearWritten": $years?written,
+        "yearPremiered": $years?premiere,
+        "yearPrinted": $years?print,
         "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
       },
       if($subtitle) then

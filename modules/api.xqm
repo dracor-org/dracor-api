@@ -446,7 +446,7 @@ function api:index($corpusname) {
           let $name := tokenize($filename, "\.")[1]
           let $id := dutil:get-dracor-id($tei)
           let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
-          let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+          let $years := dutil:get-years-iso($tei)
           let $authors := dutil:get-authors($tei)
           let $play-uri :=
             $config:api-base || "/corpora/" || $corpusname || "/play/" || $name
@@ -483,9 +483,9 @@ function api:index($corpusname) {
                     /tei:idno[@type="URL"]/string()
                 }
               </sourceUrl>
-              <printYear>{$dates[@type="print"]/@when/string()}</printYear>
-              <premiereYear>{$dates[@type="premiere"]/@when/string()}</premiereYear>
-              <writtenYear>{$dates[@type="written"]/@when/string()}</writtenYear>
+              <printYear>{$years?print}</printYear>
+              <premiereYear>{$years?premiere}</premiereYear>
+              <writtenYear>{$years?written}</writtenYear>
               <networkSize>{$network-size}</networkSize>
               <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
               <wikidataId>

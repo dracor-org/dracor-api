@@ -305,38 +305,38 @@ as element(rdf:RDF) {
       else ()
     
     (: Dates :)
-    
-    let $dates := $play//tei:bibl[@type="originalSource"]/tei:date
+    let $years := dutil:get-years-iso($play)
+    let $yn := dutil:get-normalized-year($play)
     
     let $normalisedYear :=
-      if (dutil:get-normalized-year($play) != "")
+      if ($yn != "")
       then
         <dracon:normalisedYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {dutil:get-normalized-year($play)}
+          {$yn}
         </dracon:normalisedYear>
       else ()
     
     let $premiereYear :=
-      if ( $dates[@type="premiere"]/@when/string() != '')
+      if (matches($years?premiere, "^-?[0-9]{4}$"))
       then
         <dracon:premiereYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {$dates[@type="premiere"]/@when/string()}
+          {$years?premiere}
         </dracon:premiereYear>
       else ()
     
     let $printYear :=
-      if ( $dates[@type="print"]/@when/string() !='' )
+      if (matches($years?print, "^-?[0-9]{4}$"))
       then
         <dracon:printYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {$dates[@type="print"]/@when/string()}
+          {$years?print}
         </dracon:printYear>
       else ()
     
     let $writtenYear :=
-      if ( $dates[@type="written"]/@when/string() )
+      if (matches($years?written, "^-?[0-9]{4}$"))
       then
         <dracon:writtenYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {$dates[@type="written"]/@when/string()}
+          {$years?written}
         </dracon:writtenYear>
       else ()
     
