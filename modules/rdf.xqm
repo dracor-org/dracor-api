@@ -309,7 +309,7 @@ as element(rdf:RDF) {
     let $yn := dutil:get-normalized-year($play)
     
     let $normalisedYear :=
-      if ($yn != "")
+      if ($yn)
       then
         <dracon:normalisedYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
           {$yn}
