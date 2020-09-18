@@ -1514,6 +1514,7 @@ declare function local:get-text-by-character ($doc) {
       tei:persName[@xml:id=$id]
     )
     let $gender := $label/parent::*/@sex/string()
+    let $role := $label/parent::*/@role/string()
     let $isGroup := if ($label/parent::tei:personGrp)
     then true() else false()
     let $sp := dutil:get-speech($doc//tei:body, $id)
@@ -1522,6 +1523,7 @@ declare function local:get-text-by-character ($doc) {
       "label": $label/text(),
       "isGroup": $isGroup,
       "gender": $gender,
+      "roles": array {tokenize($role, '\s+')},
       "text": array {for $l in $sp return $l/normalize-space()}
     }
   }
