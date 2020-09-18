@@ -185,7 +185,8 @@ declare function dutil:get-speech-by-gender (
 declare function dutil:get-speech-filtered (
   $parent as element(),
   $gender as xs:string*,
-  $relation as xs:string*
+  $relation as xs:string*,
+  $role as xs:string*
 ) as item()* {
   let $undirected := ("siblings", "friends", "spouses")
   let $directed := ("parent_of", "lover_of", "related_with", "associated_with")
@@ -193,12 +194,16 @@ declare function dutil:get-speech-filtered (
   let $passive := for $x in $directed return $x || '_passive'
   let $rel := replace($relation, '_(active|passive)$', '')
   let $genders := tokenize($gender, ',')
+  let $roles := tokenize($role, ',')
 
   let $listPerson := $parent/ancestor::tei:TEI//tei:particDesc/tei:listPerson
   let $relations := $listPerson/tei:listRelation[@type="personal"]
 
   let $ids := $listPerson/(tei:person|tei:personGrp)
-    [not($gender) or @sex = $genders]/@xml:id/string()
+    [
+      (not($gender) or @sex = $genders) and
+      (not($role) or tokenize(@role, '\s+') = $roles)
+    ]/@xml:id/string()
 
   let $filtered := for $id in $ids
     return if (not($relation)) then

@@ -882,6 +882,11 @@ paths:
               - related_with_passive
               - associated_with_active
               - associated_with_passive
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: Returns plain text document

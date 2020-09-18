@@ -1466,6 +1466,7 @@ function api:segmentation-csv($corpusname, $playname) {
  :   "parent_of_passive"|"lover_of_active"|"lover_of_passive"|
  :   "related_with_active"|"related_with_passive"|"associated_with_active"|
  :   "associated_with_passive")
+ : @param $role Role
  : @result text
  :)
 declare
@@ -1473,9 +1474,10 @@ declare
   %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text")
   %rest:query-param("gender", "{$gender}")
   %rest:query-param("relation", "{$relation}")
+  %rest:query-param("role", "{$role}")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
-function api:spoken-text($corpusname, $playname, $gender, $relation) {
+function api:spoken-text($corpusname, $playname, $gender, $relation, $role) {
   let $doc := dutil:get-doc($corpusname, $playname)
   let $genders := tokenize($gender, ',')
   return
@@ -1494,8 +1496,8 @@ function api:spoken-text($corpusname, $playname, $gender, $relation) {
         "gender must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
       )
     else
-      let $sp := if ($gender or $relation) then
-        dutil:get-speech-filtered($doc//tei:body, $gender, $relation)
+      let $sp := if ($gender or $relation or $role) then
+        dutil:get-speech-filtered($doc//tei:body, $gender, $relation, $role)
       else
         dutil:get-speech($doc//tei:body, ())
       let $txt := string-join(($sp/normalize-space(), ""), '&#10;')
