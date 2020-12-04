@@ -1357,6 +1357,15 @@ function api:cast-info-csv($corpusname, $playname) {
   )
 };
 
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast/csv")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:cast-info-csv-ext($corpusname, $playname) {
+  api:cast-info-csv($corpusname, $playname)
+};
+
 (:~
  : Get a list of segments and characters of a play
  :
