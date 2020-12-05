@@ -473,6 +473,22 @@ declare function dutil:get-corpus-info-by-name(
 };
 
 (:~
+ : Extract text class information from TEI document.
+ :
+ : See https://github.com/dracor-org/dracor-api/issues/120
+ :
+ : @param $tei
+ : @return string Tragedy|Comedy|Libretto
+ :)
+declare function dutil:get-text-class($tei as node()) as xs:string* {
+  let $wikidata-id := $tei//tei:textClass/tei:classCode[@scheme="http://www.wikidata.org/entity/"]
+  return
+    if ($wikidata-id = 'Q40831') then 'Comedy' else
+    if ($wikidata-id = 'Q80930') then 'Tragedy' else
+    if ($wikidata-id = 'Q131084') then 'Libretto' else ()
+};
+
+(:~
  : Calculate meta data for corpus.
  :
  : @param $corpusname
@@ -495,8 +511,11 @@ declare function dutil:get-corpus-meta-data(
   let $id := dutil:get-dracor-id($tei)
   let $name := tokenize($filename, "\.")[1]
   let $years := dutil:get-years-iso($tei)
-  let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
-    /@subtype/string()
+  
+  let $text-class := dutil:get-text-class($tei)
+  let $genre := if($text-class != 'Libretto') then $text-class else ()
+  let $libretto := if ($text-class) then $text-class = 'Libretto' else ()
+
   let $num-speakers := count(dutil:distinct-speakers($tei))
 
   let $cast := $tei//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)
@@ -524,6 +543,7 @@ declare function dutil:get-corpus-meta-data(
     "name": $name,
     "playName": $name,
     "genre": $genre,
+    "libretto": $libretto,
     "maxDegreeIds": if(count($max-degree-ids) < 4) then
       string-join($max-degree-ids, "|")
     else
@@ -617,8 +637,11 @@ declare function dutil:get-play-info(
     }
 
     let $authors := dutil:get-authors($tei)
-    let $genre := $tei//tei:textClass/tei:keywords/tei:term[@type="genreTitle"]
-      /@subtype/string()
+
+    let $text-class := dutil:get-text-class($tei)
+    let $genre := if($text-class != 'Libretto') then $text-class else ()
+    let $libretto := if ($text-class) then $text-class = 'Libretto' else ()
+
     let $years := dutil:get-years-iso($tei)
 
     let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
@@ -648,6 +671,7 @@ declare function dutil:get-play-info(
           }
         },
         "genre": $genre,
+        "libretto": $libretto,
         "allInSegment": $all-in-segment,
         "allInIndex": $all-in-index,
         "cast": array {

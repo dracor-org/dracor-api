@@ -24,6 +24,7 @@ declare variable $api:metadata-columns := (
   "yearNormalized",
   "size",
   "genre",
+  "libretto",
   "averageClustering",
   "density",
   "averagePathLength",
