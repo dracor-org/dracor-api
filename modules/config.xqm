@@ -70,6 +70,17 @@ declare variable $config:metrics-server :=
   xs:anyURI("http://localhost:8030/metrics/");
 
 (:~
+ : The Wikidata IDs for text classification currently recognized as text class
+ : codes in DraCor.
+ :)
+declare variable $config:wd-text-classes := map {
+  "Q40831": "Comedy",
+  "Q80930": "Tragedy",
+  "Q192881": "Tragicomedy",
+  "Q131084": "Libretto"
+};
+
+(:~
  : Resolve the given path using the current application context.
  : If the app resides in the file system,
  :)
