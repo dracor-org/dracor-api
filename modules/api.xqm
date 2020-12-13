@@ -1301,6 +1301,85 @@ function api:relations-gexf($corpusname, $playname) {
 };
 
 (:~
+ : Get relation data for a play as GraphML
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result GraphML document
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/graphml")
+  %output:method("xml")
+  %output:omit-xml-declaration("no")
+function api:relations-graphml($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  let $info := dutil:get-play-info($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else if (count($info?relations?*) = 0) then
+      (
+        <rest:response>
+          <http:response status="404"/>
+        </rest:response>,
+        <message>No relations available.</message>
+      )
+    else
+      let $edges :=
+        for $rel at $pos in $info?relations?*
+          let $directed := if ($rel?directed) then "true" else "false"
+          return
+            <edge
+              xmlns="http://graphml.graphdrawing.org/xmlns"
+              id="{$pos}"
+              directed="{$directed}"
+              source="{$rel?source}"
+              target="{$rel?target}"
+            >
+              <data key="relation">{$rel?type}</data>
+            </edge>
+
+      let $filename := $info?id || '-' || $info?name || '-relations.graphml'
+
+      return (
+        <rest:response>
+          <http:response status="200">
+            <http:header
+              name="Content-disposition"
+              value="inline; filename={$filename}"
+            />
+          </http:response>
+        </rest:response>,
+        <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+          <key attr.name="label" attr.type="string" for="node" id="label"/>
+          <key attr.name="Relation" attr.type="string" for="edge" id="relation"/>
+          <key attr.name="Gender" attr.type="string" for="node" id="gender"/>
+          <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
+          <graph edgedefault="undirected">
+            {
+              for $n in $info?cast?*
+              let $id := $n?id
+              let $label := $n?name
+              let $sex := $n?sex
+              return
+                <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
+                  <data key="label">{$label}</data>
+                  {if ($sex) then <data key="gender">{$sex}</data> else ()}
+                  <data key="person-group">
+                    {if ($n?isGroup) then "true" else "false"}
+                  </data>
+                </node>
+            }
+            {$edges}
+          </graph>
+        </graphml>
+      )
+};
+
+(:~
  : Get a list of characters of a play
  :
  : @param $corpusname Corpus name
