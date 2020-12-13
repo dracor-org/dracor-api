@@ -841,6 +841,117 @@ paths:
         '404':
           description: Unknown play or play does not provide relation data
 
+  /corpora/{corpusname}/play/{playname}/relations/graphml:
+    get:
+      summary: Get relation data of a play as GraphML
+      operationId: relations-graphml
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: playname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns GraphML file
+          content:
+            application/xml:
+              schema:
+                type: string
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+                  <key attr.name="label" attr.type="string" for="node" id="label"/>
+                  <key attr.name="Relation" attr.type="string" for="edge" id="relation"/>
+                  <key attr.name="Gender" attr.type="string" for="node" id="gender"/>
+                  <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
+                  <graph edgedefault="undirected">
+                    <node id="doris">
+                      <data key="label">Doris</data>
+                      <data key="gender">FEMALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="menalkas">
+                      <data key="label">Menalkas</data>
+                      <data key="gender">MALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="nisus">
+                      <data key="label">Nisus</data>
+                      <data key="gender">MALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="atalanta">
+                      <data key="label">Atalanta</data>
+                      <data key="gender">FEMALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="corydon">
+                      <data key="label">Corydon</data>
+                      <data key="gender">MALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="damon">
+                      <data key="label">Damon</data>
+                      <data key="gender">MALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="amaryllis">
+                      <data key="label">Amaryllis</data>
+                      <data key="gender">FEMALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="myrtillus">
+                      <data key="label">Myrtillus</data>
+                      <data key="gender">MALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <node id="damoetas">
+                      <data key="label">Damötas</data>
+                      <data key="gender">MALE</data>
+                      <data key="person-group">false</data>
+                    </node>
+                    <edge id="1" directed="false" source="amaryllis" target="atalanta">
+                      <data key="relation">siblings</data>
+                    </edge>
+                    <edge id="2" directed="false" source="amaryllis" target="menalkas">
+                      <data key="relation">siblings</data>
+                    </edge>
+                    <edge id="3" directed="false" source="atalanta" target="menalkas">
+                      <data key="relation">siblings</data>
+                    </edge>
+                    <edge id="4" directed="false" source="myrtillus" target="doris">
+                      <data key="relation">siblings</data>
+                    </edge>
+                    <edge id="5" directed="true" source="amaryllis" target="corydon">
+                      <data key="relation">lover_of</data>
+                    </edge>
+                    <edge id="6" directed="true" source="damoetas" target="atalanta">
+                      <data key="relation">parent_of</data>
+                    </edge>
+                    <edge id="7" directed="true" source="damoetas" target="amaryllis">
+                      <data key="relation">parent_of</data>
+                    </edge>
+                    <edge id="8" directed="true" source="damoetas" target="menalkas">
+                      <data key="relation">parent_of</data>
+                    </edge>
+                    <edge id="9" directed="true" source="nisus" target="doris">
+                      <data key="relation">lover_of</data>
+                    </edge>
+                    <edge id="10" directed="true" source="corydon" target="atalanta">
+                      <data key="relation">lover_of</data>
+                    </edge>
+                  </graph>
+                </graphml>
+        '404':
+          description: Unknown play or play does not provide relation data
+
   /corpora/{corpusname}/play/{playname}/segmentation:
     get:
       summary: Get a list of segments and characters of a play
