@@ -481,7 +481,7 @@ function api:index($corpusname) {
               <sourceUrl>
                 {
                   $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-                    /tei:idno[@type="URL"]/string()
+                    /tei:idno[@type="URL"][1]/string()
                 }
               </sourceUrl>
               <printYear>{$years?print}</printYear>
