@@ -543,7 +543,7 @@ declare function dutil:get-corpus-meta-data(
     let $v := $s/text()
     return map:entry(
       $s/name(),
-      if(number($v) or $v = "0") then number($v) else $v
+      if(xs:string(number($v)) != "NaN") then number($v) else $v
     )
   )
   let $meta := map {
@@ -752,7 +752,10 @@ declare function dutil:get-play-metrics(
         map:entry("id", $n/@id/string()),
         for $s in $n/*
         let $v := $s/text()
-        return map:entry($s/name(), if(number($v)) then number($v) else $v)
+        return map:entry(
+          $s/name(),
+          if(xs:string(number($v)) != "NaN") then number($v) else $v
+        )
       ))
     }
 
@@ -770,7 +773,10 @@ declare function dutil:get-play-metrics(
         array {tokenize($e)}
       else
         $e/text()
-      return map:entry($e/name(), if(number($v)) then number($v) else $v)
+      return map:entry(
+        $e/name(),
+        if(xs:string(number($v)) != "NaN") then number($v) else $v
+      )
     )
     
     return map:merge(($meta, $networkmetrics))
