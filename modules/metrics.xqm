@@ -83,8 +83,16 @@ declare function metrics:get-network-metrics($url as xs:string) {
       <hc:body media-type="application/json" method="text"/>
     </hc:request>
   let $response := hc:send-request($request, ($config:metrics-server || '?' || $url), $payload)
-  let $json := util:base64-decode($response[2])
-  let $metrics := parse-json($json)
+  let $status := string($response[1]/@status)
+  let $metrics := if ($status = "200") then
+    $response[2] => util:base64-decode() => parse-json()
+  else (
+    util:log(
+      "warn",
+      "metrics service FAILED with status '"|| $status ||"' for " || $url
+    ),
+    map{}
+  )
 
   return
     <network>
