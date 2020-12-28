@@ -55,7 +55,12 @@ declare function metrics:collect-sitelinks() {
 :)
 declare function metrics:get-network-metrics($url as xs:string) {
   let $tei := doc($url)/tei:TEI
+  let $num-speakers := count($tei//tei:sp/@who)
 
+  return if ($num-speakers = 0) then
+    (: when there are no speakers there is no network hence no calculation :)
+    <network><size>0</size></network>
+  else
   let $segments := map {
     "segments": array {
       for $segment in dutil:get-segments($tei)
