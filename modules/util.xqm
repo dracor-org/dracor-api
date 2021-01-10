@@ -576,6 +576,56 @@ declare function dutil:get-corpus-meta-data(
   return map:merge(($meta, $networkmetrics))
 };
 
+declare function local:get-full-name ($author as element(tei:author)) {
+  if ($author/tei:persName) then
+    normalize-space($author/tei:persName[1])
+  else if ($author/tei:name) then
+    normalize-space($author/tei:name[1])
+  else normalize-space($author)
+};
+
+declare function local:get-short-name ($author as element(tei:author)) {
+  let $name := if ($author/tei:persName) then
+    $author/tei:persName[1]
+  else if ($author/tei:name[@type = "short"]) then
+    (: FIXME: this is for SpanDraCor compatibility :)
+    $author/tei:name[@type = "short"][1]
+  else if ($author/tei:name) then
+    $author/tei:name[1]
+  else ()
+
+  return if (not($name)) then
+    normalize-space($author)
+  else if ($name/tei:surname) then
+    let $n := if ($name/tei:surname[@sort="1"]) then
+      $name/tei:surname[@sort="1"] else $name/tei:surname[1]
+    return normalize-space($n)
+  else normalize-space($name)
+};
+
+declare function local:get-sort-name ($author as element(tei:author)) {
+  let $name := if ($author/tei:persName) then
+    $author/tei:persName[1]
+  else if ($author/tei:name) then
+    $author/tei:name[1]
+  else ()
+
+  return if (not($name)) then
+    normalize-space($author)
+  else if ($name/tei:surname) then
+    let $start := if ($name/tei:surname[@sort="1"]) then
+      $name/tei:surname[@sort="1"] else $name/tei:surname[1]
+
+    return string-join(
+      ($start, $start/(following-sibling::text()|following-sibling::*)), ""
+    ) => normalize-space()
+    || ", "
+    || string-join(
+      $start/(preceding-sibling::text()|preceding-sibling::*), ""
+    ) => normalize-space()
+  else normalize-space($name)
+};
+
 (:~
  : Retrieve author data from TEI.
  :
@@ -585,19 +635,34 @@ declare function dutil:get-authors($tei as node()) as map()* {
   for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author[
     not(@role="illustrator")
   ]
-  let $name := if($author/tei:name[@type = "full"]) then
-    $author/tei:name[@type = "full"]/string()
-  else if ($author/tei:persName/tei:surname) then
-    $author/tei:persName/tei:surname
-    || ', '
-    || $author/tei:persName/tei:forename
-  else if ($author/tei:persName) then
-    $author/tei:persName/string()
-  else
-    $author/string()
+  let $name := local:get-sort-name($author)
+  let $fullname := local:get-full-name($author)
+  let $shortname := local:get-short-name($author)
+  let $refs := array {
+    for $idno in $author/tei:idno[@type]
+    let $ref := $idno => normalize-space()
+    let $type := string($idno/@type)
+    return map {
+      "ref": $ref,
+      "type": $type
+    }
+  }
+  (:
+    FIXME: support for author/@key can be removed once we fully transitioned to
+    author/idno
+  :)
+  let $key := if ($author/@key) then
+    $author/@key/string()
+  else if (array:size($refs) > 0) then
+    $refs?1?type || ":" || $refs?1?ref
+  else ()
+
   return map {
     "name": $name,
-    "key": $author/@key/string()
+    "fullname": $fullname,
+    "shortname": $shortname,
+    "key": $key,
+    "refs": $refs
   }
 };
 
@@ -669,13 +734,7 @@ declare function dutil:get-play-info(
           "warning": "The single author property is deprecated. " ||
           "Use the array of 'authors' instead!"
         },
-        "authors": array {
-          for $author in $authors
-          return map {
-            "name": $author?name,
-            "key": $author?key
-          }
-        },
+        "authors": array { for $author in $authors return $author },
         "genre": dutil:get-genre($text-classes),
         "libretto": $text-classes = 'Libretto',
         "allInSegment": $all-in-segment,

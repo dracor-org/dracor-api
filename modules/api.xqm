@@ -470,8 +470,11 @@ function api:index($corpusname) {
               {
                 for $author in $authors
                 return
-                  <authors key="{$author?key}" json:array="true">
+                  <authors json:array="true">
                     <name>{$author?name}</name>
+                    <fullname>{$author?fullname}</fullname>
+                    <shortname>{$author?shortname}</shortname>
+                    {if ($author?key != "") then <key>{$author?key}</key> else ()}
                   </authors>
               }
               <yearNormalized>{$yearNormalized}</yearNormalized>
