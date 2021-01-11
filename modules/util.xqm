@@ -714,7 +714,7 @@ declare function dutil:get-play-info(
       if($source) then
         map:entry("source", map {
           "name": $source/tei:name/string(),
-          "url": $source/tei:idno[@type="URL"]/string()
+          "url": $source/tei:idno[@type="URL"][1]/string()
         })
       else (),
       if(count($relations)) then
