@@ -647,6 +647,11 @@ declare function dutil:get-authors($tei as node()) as map()* {
       "type": $type
     }
   }
+  let $aka := array {
+    for $name in $author/tei:persName[position() > 1]
+    return $name => normalize-space()
+  }
+
   (:
     FIXME: support for author/@key can be removed once we fully transitioned to
     author/idno
@@ -657,13 +662,13 @@ declare function dutil:get-authors($tei as node()) as map()* {
     $refs?1?type || ":" || $refs?1?ref
   else ()
 
-  return map {
+  return map:merge((map {
     "name": $name,
     "fullname": $fullname,
     "shortname": $shortname,
     "key": $key,
     "refs": $refs
-  }
+  }, if (array:size($aka) > 0) then map {"alsoKnownAs": $aka} else ()))
 };
 
 (:~
