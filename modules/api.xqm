@@ -21,6 +21,8 @@ declare namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 declare variable $api:metadata-columns := (
   "name",
   "id",
+  "firstAuthor",
+  "numOfCoAuthors",
   "yearNormalized",
   "size",
   "genre",
@@ -470,8 +472,15 @@ function api:index($corpusname) {
               {
                 for $author in $authors
                 return
-                  <authors key="{$author?key}" json:array="true">
+                  <authors json:array="true">
                     <name>{$author?name}</name>
+                    <fullname>{$author?fullname}</fullname>
+                    <shortname>{$author?shortname}</shortname>
+                    {if ($author?key != "") then <key>{$author?key}</key> else ()}
+                    {
+                      for $name in $author?alsoKnownAs?*
+                      return <alsoKnownAs json:array="true">{$name}</alsoKnownAs>
+                    }
                   </authors>
               }
               <yearNormalized>{$yearNormalized}</yearNormalized>
@@ -677,10 +686,11 @@ declare function api:get-corpus-meta-data-csv($corpusname) {
       let $header := concat(string-join($api:metadata-columns, ","), "&#10;")
       let $rows :=
         for $m in $meta return concat(
+          '"',
           string-join((
             for $c in $api:metadata-columns
-            return if (count($m($c)) = 0) then '' else $m($c)
-          ), ','), "&#10;")
+            return if (count($m($c)) = 0) then '' else dutil:csv-escape($m($c))
+          ), '","'), '"&#10;')
       return ($header, $rows)
 };
 
