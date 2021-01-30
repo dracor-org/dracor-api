@@ -327,14 +327,21 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
   let $years := map:merge(
     for $d in $dates
     let $type := $d/@type/string()
-    let $year := if ($d/@when) then
+
+    let $date := if ($d/@when) then
       $d/@when/string()
     else if ($d/@notAfter) then
       $d/@notAfter/string()
     else
       $d/@notBefore/string()
-    return if (matches($year, "^-?[0-9]{4}$"))
-      then map:entry($type, $year) else ()
+
+    let $year := if(matches($date, "^[0-9]{4}")) then
+      substring($date, 1, 4)
+    else if (matches($date, "^-[0-9]{4}")) then
+      substring($date, 1, 5)
+    else ()
+
+    return if ($year) then map:entry($type, $year) else ()
   )
 
   return $years
