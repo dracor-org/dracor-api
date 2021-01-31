@@ -448,7 +448,7 @@ function api:index($corpusname) {
           let $filename := tokenize(base-uri($tei), "/")[last()]
           let $name := tokenize($filename, "\.")[1]
           let $id := dutil:get-dracor-id($tei)
-          let $subtitle := $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+          let $titles := dutil:get-titles($tei)
           let $years := dutil:get-years-iso($tei)
           let $authors := dutil:get-authors($tei)
           let $play-uri :=
@@ -462,10 +462,8 @@ function api:index($corpusname) {
             <dramas json:array="true">
               <id>{$id}</id>
               <name>{$name}</name>
-              <title>
-                {$tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space() }
-              </title>
-              {if ($subtitle) then <subtitle>{$subtitle}</subtitle> else ''}
+              <title>{$titles?main}</title>
+              {if ($titles?sub) then <subtitle>{$titles?sub}</subtitle> else ''}
               <author key="{$authors[1]?key}">
                 <name>{$authors[1]?name}</name>
               </author>

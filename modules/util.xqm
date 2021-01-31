@@ -682,6 +682,49 @@ declare function dutil:get-authors($tei as node()) as map()* {
 };
 
 (:~
+ : Retrieve title and subtitle from TEI.
+ :
+ : @param $tei
+ :)
+declare function dutil:get-titles(
+  $tei as element(tei:TEI)
+) as map() {
+  let $title := $tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space()
+  let $subtitle :=
+    $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+  return map:merge((
+    if ($title) then map {'main': $title} else (),
+    if ($subtitle) then map {'sub': $subtitle} else ()
+  ))
+};
+
+(:~
+ : Retrieve title and subtitle from TEI by language.
+ :
+ : @param $tei
+ : @param $lang
+ :)
+declare function dutil:get-titles(
+  $tei as element(tei:TEI),
+  $lang as xs:string
+) as map() {
+  if($lang = $tei/@xml:lang) then
+    dutil:get-titles($tei)
+  else
+  let $title :=
+    $tei//tei:fileDesc/tei:titleStmt
+      /tei:title[@xml:lang = $lang and not(@type = 'sub')][1]
+      /normalize-space()
+  let $subtitle :=
+    $tei//tei:titleStmt/tei:title[@type = 'sub' and @xml:lang = $lang][1]
+      /normalize-space()
+  return map:merge((
+    if ($title) then map {'main': $title} else (),
+    if ($subtitle) then map {'sub': $subtitle} else ()
+  ))
+};
+
+(:~
  : Calculate meta data for a play.
  :
  : @param $corpusname
@@ -697,8 +740,7 @@ declare function dutil:get-play-info(
   else
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
-    let $subtitle :=
-      $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
+    let $titles := dutil:get-titles($tei)
     let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
     let $orig-source := $tei//tei:bibl[@type="originalSource"]/tei:title[1]
     let $cast := dutil:distinct-speakers($doc//tei:body)
@@ -743,7 +785,7 @@ declare function dutil:get-play-info(
         "id": $id,
         "name": $playname,
         "corpus": $corpusname,
-        "title": $tei//tei:fileDesc/tei:titleStmt/tei:title[1]/normalize-space(),
+        "title": $titles?main,
         "author": map {
           "name": $authors[1]?name,
           "warning": "The single author property is deprecated. " ||
@@ -776,9 +818,7 @@ declare function dutil:get-play-info(
         "yearPrinted": $years?print,
         "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
       },
-      if($subtitle) then
-        map:entry("subtitle", $subtitle)
-      else (),
+      if($titles?sub) then map:entry("subtitle", $titles?sub) else (),
       if($wikidata-id) then
         map:entry("wikidataId", $wikidata-id)
       else (),
