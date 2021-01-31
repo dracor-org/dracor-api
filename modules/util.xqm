@@ -529,6 +529,7 @@ declare function dutil:get-corpus-meta-data(
   let $name := tokenize($filename, "\.")[1]
   let $years := dutil:get-years-iso($tei)
   let $authors := dutil:get-authors($tei)
+  let $titles := dutil:get-titles($tei)
   
   let $text-classes := dutil:get-text-classes($tei)
 
@@ -558,9 +559,11 @@ declare function dutil:get-corpus-meta-data(
     "id": $id,
     "name": $name,
     "playName": $name,
-    "genre": dutil:get-genre($text-classes),
+    "normalizedGenre": dutil:get-genre($text-classes),
     "libretto": $text-classes = 'Libretto',
     "firstAuthor": $authors[1]?shortname,
+    "title": $titles?main,
+    "subtitle": if ($titles?sub) then $titles?sub else (),
     "numOfCoAuthors": if(count($authors) > 0) then count($authors) - 1 else 0,
     "maxDegreeIds": if(count($max-degree-ids) < 4) then
       string-join($max-degree-ids, "|")
