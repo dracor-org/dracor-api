@@ -1,5 +1,5 @@
 {
-  "ref": "refs/heads/master",
+  "ref": "refs/heads/main",
   "before": "f79c6a9615d698b171c4b0f17f7ec38c84e137b2",
   "after": "5969e0b07eba260c226554fc66574391e94c855d",
   "created": false,
@@ -158,9 +158,9 @@
     "forks": 0,
     "open_issues": 0,
     "watchers": 0,
-    "default_branch": "master",
+    "default_branch": "main",
     "stargazers": 0,
-    "master_branch": "master",
+    "master_branch": "main",
     "organization": "dracor-org"
   },
   "pusher": {

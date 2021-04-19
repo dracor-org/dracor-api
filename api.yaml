@@ -1155,7 +1155,7 @@ paths:
       description: >-
         Endpoint accepting POST requests from Github (see
         https://developer.github.com/webhooks/). We currently only handle push
-        events on the master branch.
+        events on the main branch.
       operationId: github-webhook
       tags: [webhook]
       parameters:

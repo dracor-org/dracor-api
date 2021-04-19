@@ -95,7 +95,7 @@ declare function local:handle-delivery (
  :
  : Endpoint accepting POST requests from Github (see
  : https://developer.github.com/webhooks/). We currently only handle push
- : events on the master branch.
+ : events on the main branch.
  :
  : @param $data JSON payload
  : @param $agent User agent string
@@ -162,10 +162,10 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
         <rest:response><http:response status="400"/></rest:response>,
         map {"message": "Missing delivery ID."}
       )
-    else if (not($json?ref = 'refs/heads/master')) then
+    else if (not($json?ref = 'refs/heads/main')) then
       (
         <rest:response><http:response status="400"/></rest:response>,
-        map {"message": "Not from master branch."}
+        map {"message": "Not from main branch."}
       )
     else if (not(local:check-repo($json?repository?html_url))) then
       (

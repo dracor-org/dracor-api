@@ -62,7 +62,7 @@ as xs:string* {
     if ($info?archive) then
       $info?archive
     else if (starts-with($info?repository, "https://github.com")) then
-      $info?repository || "/archive/master.zip"
+      $info?repository || "/archive/main.zip"
     else ()
 
   return
