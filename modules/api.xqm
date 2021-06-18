@@ -5,6 +5,7 @@ module namespace api = "http://dracor.org/ns/exist/api";
 import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
+import module namespace wd = "http://dracor.org/ns/exist/wikidata" at "wikidata.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
@@ -1759,4 +1760,35 @@ function api:stage-directions-with-speakers($corpusname, $playname) {
         $speaker || "  " || normalize-space($stage)
       else normalize-space($stage)
       return $line || '&#10;'
+};
+
+(:~
+ : List author information from Wikidata
+ :
+ : @param $id Wikidata ID
+ : @result JSON object
+ :)
+declare
+  %rest:GET
+  %rest:path("/author/{$id}")
+  %rest:query-param("lang", "{$lang}")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:authorInfo($id, $lang) {
+  if (not(matches($id, '^Q[0-9]+$'))) then
+    (
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>,
+      map {"error": "invalid author ID"}
+    )
+  else if ($lang and not(matches($lang, '^[a-z]{2}$'))) then
+    (
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>,
+      map {"error": "invalid language code"}
+    )
+  else wd:get-author-info($id, $lang)
 };
