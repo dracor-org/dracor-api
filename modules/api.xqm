@@ -51,7 +51,9 @@ declare variable $api:metadata-columns := (
   "numOfActs",
   "wordCountText",
   "wordCountSp",
-  "wordCountStage"
+  "wordCountStage",
+  "numOfP",
+  "numOfL"
 );
 
 (:~

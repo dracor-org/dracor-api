@@ -541,6 +541,9 @@ declare function dutil:get-corpus-meta-data(
   let $num-unknown := count($cast[@sex="UNKNOWN"])
   let $num-groups := count($cast[name()="personGrp"])
 
+  let $num-p := count($tei//tei:body//tei:sp//tei:p)
+  let $num-l := count($tei//tei:body//tei:sp//tei:l)
+
   let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
   let $wikidata-id :=
@@ -576,6 +579,8 @@ declare function dutil:get-corpus-meta-data(
     "numOfSpeakersFemale": $num-female,
     "numOfSpeakersUnknown": $num-unknown,
     "numOfPersonGroups": $num-groups,
+    "numOfP": $num-p,
+    "numOfL": $num-l,
     "wikipediaLinkCount": $sitelink-count,
     "wordCountText": xs:integer($stat/text/string()),
     "wordCountSp": xs:integer($stat/sp/string()),
