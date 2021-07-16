@@ -21,15 +21,9 @@ ENV PATH ${PATH}:${ANT_HOME}/bin
 
 WORKDIR /home/dracor-api
 COPY . .
-
-RUN ant
-
-
-# START STAGE 2
-FROM existdb/existdb:5.2.0
-
-COPY --from=0 /home/dracor-api/build/dracor-latest.xar /exist/autodeploy/
+RUN rm -rf devel
+RUN ant devel
 
 EXPOSE 8080 8443
 
-CMD [ "java", "-jar", "start.jar", "jetty" ]
+CMD [ "ant", "devel.startup" ] 
