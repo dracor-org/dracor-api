@@ -1,0 +1,11 @@
+version: '2'
+services:
+  api:
+    image: "dracor/dracor-api"
+    build:
+      context: .
+      dockerfile: devDockerfile
+    ports:
+      - "9099:8080"
+    volumes:
+      - .:/tmp/export
