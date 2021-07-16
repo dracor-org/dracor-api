@@ -56,7 +56,7 @@
     <!-- get exist -->
     <!-- this path may be and is subject to change! -->
     <get
-      src="https://bintray.com/existdb/releases/download_file?file_path=exist-distribution-${project.processorversion}-unix.tar.bz2"
+      src="https://github.com/eXist-db/exist/releases/download/eXist-${project.processorversion}/exist-distribution-${project.processorversion}-unix.tar.bz2"
       dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
       skipexisting="true" />
     <!-- get dependencies -->
