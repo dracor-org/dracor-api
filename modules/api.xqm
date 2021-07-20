@@ -716,8 +716,25 @@ function api:corpus-meta-data-csv($corpusname) {
 (:~
  : List of metadata for all plays in a corpus
  :
- : This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata`
- : with an appropriate `Accept` header instead.
+ : @param $corpusname Corpus name
+ : @result comma separated list of metadata for all plays
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/metadata/csv")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:corpus-meta-data-csv-endpoint($corpusname) {
+  api:get-corpus-meta-data-csv($corpusname)
+};
+
+(:~
+ : List of metadata for all plays in a corpus
+ :
+ : This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata/csv`
+ : or `/corpora/{corpusname}/metadata` with an appropriate `Accept` header
+ : instead.
  :
  : @param $corpusname Corpus name
  : @result comma separated list of metadata for all plays

@@ -323,6 +323,25 @@ paths:
               schema:
                 type: string
 
+  /corpora/{corpusname}/metadata/csv:
+    get:
+      summary: List of metadata for all plays in a corpus
+      operationId: corpus-metadata-csv-endpoint
+      tags: [public]
+      parameters:
+        - name: corpusname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns a comma separated list of metadata for all plays
+          content:
+            text/csv:
+              schema:
+                type: string
+
   /corpora/{corpusname}/metadata.csv:
     get:
       summary: List of metadata for all plays in a corpus
