@@ -1450,7 +1450,7 @@ function api:cast-info-csv($corpusname, $playname) {
   let $info := dutil:cast-info($corpusname, $playname)
   let $keys := (
     "id", "name", "gender", "isGroup",
-    "numOfScenes", "numOfSpeechActs", "numOfWords",
+    "numOfScenes", "numOfSpeechActs", "numOfWords", "wikidataId",
     "degree", "weightedDegree", "betweenness", "closeness", "eigenvector"
   )
   return if (count($info) = 0) then

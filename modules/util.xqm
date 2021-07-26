@@ -733,6 +733,25 @@ declare function dutil:get-titles(
 };
 
 (:~
+ : Retrieve Wikidata ID from element with `ana` attribute.
+ :
+ : @param $e element with 'ana' attribute
+ :
+ : NB: we make the $e parameter optional to gracefully handle cases where no
+ : `person` element is found in `particDesc` for a given speaker ID. We may
+ : consider to change this after stricter schematron rules are in place. See
+ : https://github.com/dracor-org/dracor-schema/issues/16#issuecomment-887005105.
+ :)
+declare function dutil:get-wikidata-id-from-ana(
+  $e as element()?
+) as xs:string* {
+  if(starts-with($e/@ana, 'http://www.wikidata.org/entity/')) then
+    substring($e/@ana, 32)
+  else
+    ()
+};
+
+(:~
  : Calculate meta data for a play.
  :
  : @param $corpusname
@@ -813,12 +832,16 @@ declare function dutil:get-play-info(
           let $sex := $node/@sex/string()
           let $isGroup := if ($node/name() eq 'personGrp')
             then true() else false()
-          return map {
-            "id": $id,
-            "name": $name,
-            "isGroup": $isGroup,
-            "sex": if($sex) then $sex else ()
-          }
+          let $wikidata-id := dutil:get-wikidata-id-from-ana($node)
+          return map:merge((
+            map {
+              "id": $id,
+              "name": $name,
+              "isGroup": $isGroup,
+              "sex": if($sex) then $sex else ()
+            },
+            if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
+          ))
         },
         "segments": $segments,
         "yearWritten": $years?written,
@@ -946,21 +969,25 @@ declare function dutil:cast-info (
       let $metrics-node := $metrics//node[@id=$id]
       let $eigenvector := if ($metrics-node/eigenvector) then
         number($metrics-node/eigenvector) else 0
-      return map {
-        "id": $id,
-        "name": $name,
-        "isGroup": $isGroup,
-        "gender": if($sex) then $sex else (),
-        "numOfScenes": count($segments?*[?speakers = $id]),
-        "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
-        "numOfWords": dutil:num-of-spoken-words($tei, $id),
-        "degree": $metrics-node/degree/xs:integer(.),
-        "weightedDegree": if ($metrics-node/weightedDegree) then
-          $metrics-node/weightedDegree/xs:integer(.) else 0,
-        "closeness": $metrics-node/closeness/number(.),
-        "betweenness": $metrics-node/betweenness/number(.),
-        "eigenvector": $eigenvector
-      }
+      let $wikidata-id := dutil:get-wikidata-id-from-ana($node)
+      return map:merge((
+        map {
+          "id": $id,
+          "name": $name,
+          "isGroup": $isGroup,
+          "gender": if($sex) then $sex else (),
+          "numOfScenes": count($segments?*[?speakers = $id]),
+          "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
+          "numOfWords": dutil:num-of-spoken-words($tei, $id),
+          "degree": $metrics-node/degree/xs:integer(.),
+          "weightedDegree": if ($metrics-node/weightedDegree) then
+            $metrics-node/weightedDegree/xs:integer(.) else 0,
+          "closeness": $metrics-node/closeness/number(.),
+          "betweenness": $metrics-node/betweenness/number(.),
+          "eigenvector": $eigenvector
+        },
+        if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
+      ))
     }
 };
 
