@@ -22,6 +22,35 @@ declare namespace crm="http://www.cidoc-crm.org/cidoc-crm/" ;
 declare namespace schema="http://schema.org/" ;
 declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 
+
+(: baseuri of entities :)
+declare variable $drdf:baseuri := "https://dracor.org/entity/";
+
+(: Refactor drdf:play-to-rdf  :)
+
+(:~
+ : Create an RDF representation of tei:author
+ :
+ : @param $author TEI element
+ : @param $playID ID of the play entity
+ : @param $wrapRDF set to true if output should be wrapped in <rdf:RDF> for standalone use; false is default.
+ :)
+declare function drdf:author-to-rdf($author as element(tei:author), $playID as xs:string, $wrapRDF as xs:boolean)
+as element()* {
+    (: construct an ID for author; default use md5 hash of Wikidata-Identifier; if not present, create some kind of fallback of first persName --> "{first surname}, {first forename}" :)
+    (: ideally, all authors are identified by a wikidata ID! should be checkt by schema :)
+    let $authorURI :=
+        if ($author/tei:idno[@type eq "wikidata"])
+        then $drdf:baseuri || util:hash($author//tei:idno[@type eq "wikidata"]/string(),"md5")
+        else
+            let $authornamestring := $author//tei:persName[1]/tei:surname[1]/string() || ", " || $author//tei:persName[1]/tei:forename[1]/string()
+            return $drdf:baseuri || util:hash($authornamestring,"md5")
+
+    return
+        <debug>{$authorURI}</debug>
+};
+
+
 (:~
  : Create an RDF representation of a play.
  :
