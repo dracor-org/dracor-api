@@ -66,12 +66,21 @@ as element()* {
     (: can handle wikidata, gnd/pnd and viaf :)
     (: this somehow duplicates the functionality of dutil:get-authors, which would return an array of refs but operates on the whole tei:TEI instead of a single author :)
     let $sameAs :=
-        for $idno in $author//tei:idno return
+        for $refMap in $authorMap?refs?* return
+
+            switch($refMap?type)
+                case "wikidata" return <owl:sameAs rdf:resource="{$drdf:wd}{$refMap?ref}"/>
+                case "pnd" return <owl:sameAs rdf:resource="{$drdf:gnd}{$refMap?ref}"/>
+                case "viaf" return <owl:sameAs rdf:resource="{$drdf:viaf}{$refMap?ref}"/>
+                default return ()
+
+        (: for $idno in $author//tei:idno return
             switch($idno/@type/string())
             case "wikidata" return <owl:sameAs rdf:resource="{$drdf:wd}{$idno/string()}"/>
             case "pnd" return <owl:sameAs rdf:resource="{$drdf:gnd}{$idno/string()}"/>
             case "viaf" return <owl:sameAs rdf:resource="{$drdf:viaf}{$idno/string()}"/>
             default return ()
+        :)
 
 
 
