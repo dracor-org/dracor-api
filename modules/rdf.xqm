@@ -25,6 +25,12 @@ declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 
 (: baseuri of entities :)
 declare variable $drdf:baseuri := "https://dracor.org/entity/";
+(: baseuris of ontologies :)
+declare variable $drdf:crm := "http://www.cidoc-crm.org/cidoc-crm/" ;
+declare variable $drdf:dracon := "http://dracor.org/ontology#" ;
+declare variable $drdf:wd := "http://www.wikidata.org/entity/" ;
+declare variable $drdf:gnd := "https://d-nb.info/gnd/" ;
+declare variable $drdf:viaf := "http://viaf.org/viaf/" ;
 
 (: Refactor drdf:play-to-rdf  :)
 
@@ -46,8 +52,34 @@ as element()* {
             let $authornamestring := $author//tei:persName[1]/tei:surname[1]/string() || ", " || $author//tei:persName[1]/tei:forename[1]/string()
             return $drdf:baseuri || util:hash($authornamestring,"md5")
 
+    (: ToDo: generate rdfs:label/s of author :)
+
+    (: add links to external reference resources as owl:sameAs statements :)
+    (: can handle wikidata, gnd/pnd and viaf :)
+    let $sameAs :=
+        for $idno in $author//tei:idno return
+            switch($idno/@type/string())
+            case "wikidata" return <owl:sameAs rdf:resource="{$drdf:wd}{$idno/string()}"/>
+            case "pnd" return <owl:sameAs rdf:resource="{$drdf:gnd}{$idno/string()}"/>
+            case "viaf" return <owl:sameAs rdf:resource="{$drdf:viaf}{$idno/string()}"/>
+            default return ()
+
+
+
+    (: generated RDF follows :)
+    let $generatedRDF :=
+
+        (: Author related triples :)
+        <rdf:Description rdf:about="{$authorURI}">
+            <rdf:type rdf:resource="{$drdf:crm}E21_Person"/>
+            <rdf:type rdf:resource="{$drdf:dracon}author"/>
+            {$sameAs}
+        </rdf:Description>
+
     return
-        <debug>{$authorURI}</debug>
+        (: maybe should switch here on param $wrapRDF :)
+        $generatedRDF
+
 };
 
 
