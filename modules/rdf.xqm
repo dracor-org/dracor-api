@@ -52,10 +52,19 @@ as element()* {
             let $authornamestring := $author//tei:persName[1]/tei:surname[1]/string() || ", " || $author//tei:persName[1]/tei:forename[1]/string()
             return $drdf:baseuri || util:hash($authornamestring,"md5")
 
-    (: ToDo: generate rdfs:label/s of author :)
+    (: Information-extraction from TEI would ideally be based on dutil:get-authors; but this function handles multiple authors and operates on the whole tei:TEI instead of an already extracted single author-element :)
+    (: hack: send a <tei:TEI> with a single <author> – expects xpath  $tei//tei:fileDesc/tei:titleStmt/  :)
+    let $dummyTEI := <tei:TEI><tei:fileDesc><tei:titleStmt>{$author}</tei:titleStmt></tei:fileDesc></tei:TEI>
+    let $authorMap := dutil:get-authors($dummyTEI)
+
+    (: generate rdfs:label/s of author :)
+
+
+
 
     (: add links to external reference resources as owl:sameAs statements :)
     (: can handle wikidata, gnd/pnd and viaf :)
+    (: this somehow duplicates the functionality of dutil:get-authors, which would return an array of refs but operates on the whole tei:TEI instead of a single author :)
     let $sameAs :=
         for $idno in $author//tei:idno return
             switch($idno/@type/string())
