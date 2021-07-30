@@ -594,7 +594,13 @@ declare function dutil:get-corpus-meta-data(
   return map:merge(($meta, $networkmetrics))
 };
 
-declare function local:get-full-name ($author as element(tei:author)) {
+(:~
+ : Extract full name from author element.
+ :
+ : @param $author author element
+ : @return string
+ :)
+declare function dutil:get-full-name ($author as element(tei:author)) {
   if ($author/tei:persName) then
     normalize-space($author/tei:persName[1])
   else if ($author/tei:name) then
@@ -602,7 +608,13 @@ declare function local:get-full-name ($author as element(tei:author)) {
   else normalize-space($author)
 };
 
-declare function local:get-short-name ($author as element(tei:author)) {
+(:~
+ : Extract short name from author element.
+ :
+ : @param $author author element
+ : @return string
+ :)
+declare function dutil:get-short-name ($author as element(tei:author)) {
   let $name := if ($author/tei:persName) then
     $author/tei:persName[1]
   else if ($author/tei:name[@type = "short"]) then
@@ -621,7 +633,13 @@ declare function local:get-short-name ($author as element(tei:author)) {
   else normalize-space($name)
 };
 
-declare function local:get-sort-name ($author as element(tei:author)) {
+(:~
+ : Extract name from author element that is suitable for sorting.
+ :
+ : @param $author author element
+ : @return string
+ :)
+declare function dutil:get-sort-name ($author as element(tei:author)) {
   let $name := if ($author/tei:persName) then
     $author/tei:persName[1]
   else if ($author/tei:name) then
@@ -653,9 +671,9 @@ declare function dutil:get-authors($tei as node()) as map()* {
   for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author[
     not(@role="illustrator")
   ]
-  let $name := local:get-sort-name($author)
-  let $fullname := local:get-full-name($author)
-  let $shortname := local:get-short-name($author)
+  let $name := dutil:get-sort-name($author)
+  let $fullname := dutil:get-full-name($author)
+  let $shortname := dutil:get-short-name($author)
   let $refs := array {
     for $idno in $author/tei:idno[@type]
     let $ref := $idno => normalize-space()
