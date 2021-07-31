@@ -454,6 +454,7 @@ function api:index($corpusname) {
           let $name := tokenize($filename, "\.")[1]
           let $id := dutil:get-dracor-id($tei)
           let $titles := dutil:get-titles($tei)
+          let $titlesEng := dutil:get-titles($tei, 'eng')
           let $years := dutil:get-years-iso($tei)
           let $authors := dutil:get-authors($tei)
           let $play-uri :=
@@ -469,6 +470,10 @@ function api:index($corpusname) {
               <name>{$name}</name>
               <title>{$titles?main}</title>
               {if ($titles?sub) then <subtitle>{$titles?sub}</subtitle> else ''}
+              {if ($titlesEng?main) then
+                <titleEn>{$titlesEng?main}</titleEn> else ''}
+              {if ($titlesEng?sub) then
+                <subtitleEn>{$titlesEng?sub}</subtitleEn> else ''}
               <author key="{$authors[1]?key}">
                 <name>{$authors[1]?name}</name>
               </author>
@@ -479,6 +484,15 @@ function api:index($corpusname) {
                     <name>{$author?name}</name>
                     <fullname>{$author?fullname}</fullname>
                     <shortname>{$author?shortname}</shortname>
+                    {if ($author?nameEn) then (
+                      <nameEn>{$author?nameEn}</nameEn>
+                    ) else ()}
+                    {if ($author?fullnameEn) then (
+                      <fullnameEn>{$author?fullnameEn}</fullnameEn>
+                    ) else ()}
+                    {if ($author?shortnameEn) then (
+                      <shortnameEn>{$author?shortnameEn}</shortnameEn>
+                    ) else ()}
                     {if ($author?key != "") then <key>{$author?key}</key> else ()}
                     {
                       for $name in $author?alsoKnownAs?*
