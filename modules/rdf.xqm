@@ -56,20 +56,6 @@ as element()* {
     (: hack: send a <tei:TEI> with a single <author> – expects xpath  $tei//tei:fileDesc/tei:titleStmt/  :)
     let $dummyTEI := <tei:TEI><tei:fileDesc><tei:titleStmt>{$author}</tei:titleStmt></tei:fileDesc></tei:TEI>
 
-    (: will return something like
-    map {
-    "refs": [map {
-        "ref": "Q729569",
-        "type": "wikidata"
-    }],
-    "shortname": "Афиногенов",
-    "name": "Афиногенов, Александр Николаевич",
-    "alsoKnownAs": ["Alexander Afinogenov"],
-    "fullname": "Александр Николаевич Афиногенов",
-    "key": "wikidata:Q729569"
-}
-
-    :)
 
     let $authorMap := dutil:get-authors($dummyTEI)
 
@@ -78,7 +64,10 @@ as element()* {
     (: todo: add language :)
     let $main-rdfs-label := <rdfs:label>{$authorMap?name}</rdfs:label>
 
+    (: todo: add appellations :)
 
+    (: Link author and play according to dracor ontology :)
+    let $is-author-of := <dracon:is_author_of rdf:resource="{$drdf:baseuri}{$playID}"/>
 
 
     (: add links to external reference resources as owl:sameAs statements :)
@@ -103,6 +92,7 @@ as element()* {
             <rdf:type rdf:resource="{$drdf:crm}E21_Person"/>
             <rdf:type rdf:resource="{$drdf:dracon}author"/>
             {$main-rdfs-label}
+            {$is-author-of}
             {$sameAs}
         </rdf:Description>
 
