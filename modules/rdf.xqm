@@ -55,9 +55,28 @@ as element()* {
     (: Information-extraction from TEI would ideally be based on dutil:get-authors; but this function handles multiple authors and operates on the whole tei:TEI instead of an already extracted single author-element :)
     (: hack: send a <tei:TEI> with a single <author> – expects xpath  $tei//tei:fileDesc/tei:titleStmt/  :)
     let $dummyTEI := <tei:TEI><tei:fileDesc><tei:titleStmt>{$author}</tei:titleStmt></tei:fileDesc></tei:TEI>
+
+    (: will return something like
+    map {
+    "refs": [map {
+        "ref": "Q729569",
+        "type": "wikidata"
+    }],
+    "shortname": "Афиногенов",
+    "name": "Афиногенов, Александр Николаевич",
+    "alsoKnownAs": ["Alexander Afinogenov"],
+    "fullname": "Александр Николаевич Афиногенов",
+    "key": "wikidata:Q729569"
+}
+
+    :)
+
     let $authorMap := dutil:get-authors($dummyTEI)
 
     (: generate rdfs:label/s of author :)
+    (: use map returned by dutil:get-authors function :)
+    (: todo: add language :)
+    let $main-rdfs-label := <rdfs:label>{$authorMap?name}</rdfs:label>
 
 
 
@@ -74,14 +93,6 @@ as element()* {
                 case "viaf" return <owl:sameAs rdf:resource="{$drdf:viaf}{$refMap?ref}"/>
                 default return ()
 
-        (: for $idno in $author//tei:idno return
-            switch($idno/@type/string())
-            case "wikidata" return <owl:sameAs rdf:resource="{$drdf:wd}{$idno/string()}"/>
-            case "pnd" return <owl:sameAs rdf:resource="{$drdf:gnd}{$idno/string()}"/>
-            case "viaf" return <owl:sameAs rdf:resource="{$drdf:viaf}{$idno/string()}"/>
-            default return ()
-        :)
-
 
 
     (: generated RDF follows :)
@@ -91,6 +102,7 @@ as element()* {
         <rdf:Description rdf:about="{$authorURI}">
             <rdf:type rdf:resource="{$drdf:crm}E21_Person"/>
             <rdf:type rdf:resource="{$drdf:dracon}author"/>
+            {$main-rdfs-label}
             {$sameAs}
         </rdf:Description>
 
