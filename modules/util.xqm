@@ -857,6 +857,7 @@ declare function dutil:get-play-info(
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
     let $titles := dutil:get-titles($tei)
+    let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
     let $orig-source := $tei//tei:bibl[@type="originalSource"]/tei:title[1]
     let $cast := dutil:distinct-speakers($doc//tei:body)
@@ -938,7 +939,9 @@ declare function dutil:get-play-info(
         "yearPrinted": $years?print,
         "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
       },
+      if($titlesEn?main) then map:entry("titleEn", $titlesEn?main) else (),
       if($titles?sub) then map:entry("subtitle", $titles?sub) else (),
+      if($titlesEn?sub) then map:entry("subtitleEn", $titlesEn?sub) else (),
       if($wikidata-id) then
         map:entry("wikidataId", $wikidata-id)
       else (),
