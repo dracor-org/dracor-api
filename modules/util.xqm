@@ -609,6 +609,32 @@ declare function dutil:get-full-name ($author as element(tei:author)) {
 };
 
 (:~
+ : Extract full name from author element by language.
+ :
+ : @param $author author element
+ : @param $lang language code
+ : @return string
+ :)
+declare function dutil:get-full-name (
+  $author as element(tei:author),
+  $lang as xs:string
+) {
+  if ($author/tei:persName[@xml:lang=$lang]) then
+    normalize-space($author/tei:persName[@xml:lang=$lang][1])
+  else if ($author/tei:name[@xml:lang=$lang]) then
+    normalize-space($author/tei:name[@xml:lang=$lang][1])
+  else ()
+};
+
+declare function local:build-short-name ($name as element()) {
+  if ($name/tei:surname) then
+    let $n := if ($name/tei:surname[@sort="1"]) then
+      $name/tei:surname[@sort="1"] else $name/tei:surname[1]
+    return normalize-space($n)
+  else normalize-space($name)
+};
+
+(:~
  : Extract short name from author element.
  :
  : @param $author author element
@@ -617,38 +643,37 @@ declare function dutil:get-full-name ($author as element(tei:author)) {
 declare function dutil:get-short-name ($author as element(tei:author)) {
   let $name := if ($author/tei:persName) then
     $author/tei:persName[1]
-  else if ($author/tei:name[@type = "short"]) then
-    (: FIXME: this is for SpanDraCor compatibility :)
-    $author/tei:name[@type = "short"][1]
   else if ($author/tei:name) then
     $author/tei:name[1]
   else ()
 
   return if (not($name)) then
     normalize-space($author)
-  else if ($name/tei:surname) then
-    let $n := if ($name/tei:surname[@sort="1"]) then
-      $name/tei:surname[@sort="1"] else $name/tei:surname[1]
-    return normalize-space($n)
-  else normalize-space($name)
+  else local:build-short-name($name)
 };
 
 (:~
- : Extract name from author element that is suitable for sorting.
+ : Extract short name from author element by language.
  :
  : @param $author author element
+ : @param $lang language code
  : @return string
  :)
-declare function dutil:get-sort-name ($author as element(tei:author)) {
-  let $name := if ($author/tei:persName) then
-    $author/tei:persName[1]
-  else if ($author/tei:name) then
-    $author/tei:name[1]
+declare function dutil:get-short-name (
+  $author as element(tei:author),
+  $lang as xs:string
+) {
+  let $name := if ($author/tei:persName[@xml:lang=$lang]) then
+    $author/tei:persName[@xml:lang=$lang][1]
+  else if ($author/tei:name[@xml:lang=$lang]) then
+    $author/tei:name[@xml:lang=$lang][1]
   else ()
 
-  return if (not($name)) then
-    normalize-space($author)
-  else if ($name/tei:surname) then
+  return if (not($name)) then () else local:build-short-name($name)
+};
+
+declare function local:build-sort-name ($name as element()) {
+  if ($name/tei:surname) then
     let $start := if ($name/tei:surname[@sort="1"]) then
       $name/tei:surname[@sort="1"] else $name/tei:surname[1]
 
@@ -663,6 +688,44 @@ declare function dutil:get-sort-name ($author as element(tei:author)) {
 };
 
 (:~
+ : Extract name from author element that is suitable for sorting.
+ :
+ : @param $author author element
+ : @return string
+ :)
+declare function dutil:get-sort-name ($author as element(tei:author) ) {
+  let $name := if ($author/tei:persName) then
+    $author/tei:persName[1]
+  else if ($author/tei:name) then
+    $author/tei:name[1]
+  else ()
+
+  return if (not($name)) then
+    normalize-space($author)
+  else local:build-sort-name($name)
+};
+
+(:~
+ : Extract name by language from author element that is suitable for sorting.
+ :
+ : @param $author author element
+ : @param $lang language code
+ : @return string
+ :)
+declare function dutil:get-sort-name (
+  $author as element(tei:author),
+  $lang as xs:string
+) {
+  let $name := if ($author/tei:persName[@xml:lang=$lang]) then
+    $author/tei:persName[@xml:lang=$lang][1]
+  else if ($author/tei:name[@xml:lang=$lang]) then
+    $author/tei:name[@xml:lang=$lang][1]
+  else ()
+
+  return if (not($name)) then () else local:build-sort-name($name)
+};
+
+(:~
  : Retrieve author data from TEI.
  :
  : @param $tei
@@ -674,6 +737,9 @@ declare function dutil:get-authors($tei as node()) as map()* {
   let $name := dutil:get-sort-name($author)
   let $fullname := dutil:get-full-name($author)
   let $shortname := dutil:get-short-name($author)
+  let $nameEn := dutil:get-sort-name($author, 'eng')
+  let $fullnameEn := dutil:get-full-name($author, 'eng')
+  let $shortnameEn := dutil:get-short-name($author, 'eng')
   let $refs := array {
     for $idno in $author/tei:idno[@type]
     let $ref := $idno => normalize-space()
@@ -688,23 +754,18 @@ declare function dutil:get-authors($tei as node()) as map()* {
     return $name => normalize-space()
   }
 
-  (:
-    FIXME: support for author/@key can be removed once we fully transitioned to
-    author/idno
-  :)
-  let $key := if ($author/@key) then
-    $author/@key/string()
-  else if (array:size($refs) > 0) then
-    $refs?1?type || ":" || $refs?1?ref
-  else ()
-
-  return map:merge((map {
-    "name": $name,
-    "fullname": $fullname,
-    "shortname": $shortname,
-    "key": $key,
-    "refs": $refs
-  }, if (array:size($aka) > 0) then map {"alsoKnownAs": $aka} else ()))
+  return map:merge((
+    map {
+      "name": $name,
+      "fullname": $fullname,
+      "shortname": $shortname,
+      "refs": $refs
+    },
+    if ($nameEn) then map {"nameEn": $nameEn} else (),
+    if ($fullnameEn) then map {"fullnameEn": $fullnameEn} else (),
+    if ($shortnameEn) then map {"shortnameEn": $shortnameEn} else (),
+    if (array:size($aka) > 0) then map {"alsoKnownAs": $aka} else ()
+  ))
 };
 
 (:~
@@ -786,6 +847,7 @@ declare function dutil:get-play-info(
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
     let $titles := dutil:get-titles($tei)
+    let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
     let $orig-source := $tei//tei:bibl[@type="originalSource"]/tei:title[1]
     let $cast := dutil:distinct-speakers($doc//tei:body)
@@ -867,7 +929,9 @@ declare function dutil:get-play-info(
         "yearPrinted": $years?print,
         "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
       },
+      if($titlesEn?main) then map:entry("titleEn", $titlesEn?main) else (),
       if($titles?sub) then map:entry("subtitle", $titles?sub) else (),
+      if($titlesEn?sub) then map:entry("subtitleEn", $titlesEn?sub) else (),
       if($wikidata-id) then
         map:entry("wikidataId", $wikidata-id)
       else (),
