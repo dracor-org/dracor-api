@@ -493,10 +493,17 @@ function api:index($corpusname) {
                     {if ($author?shortnameEn) then (
                       <shortnameEn>{$author?shortnameEn}</shortnameEn>
                     ) else ()}
-                    {if ($author?key != "") then <key>{$author?key}</key> else ()}
                     {
                       for $name in $author?alsoKnownAs?*
                       return <alsoKnownAs json:array="true">{$name}</alsoKnownAs>
+                    }
+                    {
+                      for $ref in $author?refs?*
+                      return
+                        <refs json:array="true">
+                          <ref>{$ref?ref}</ref>
+                          <type>{$ref?type}</type>
+                        </refs>
                     }
                   </authors>
               }

@@ -754,16 +754,6 @@ declare function dutil:get-authors($tei as node()) as map()* {
     return $name => normalize-space()
   }
 
-  (:
-    FIXME: support for author/@key can be removed once we fully transitioned to
-    author/idno
-  :)
-  let $key := if ($author/@key) then
-    $author/@key/string()
-  else if (array:size($refs) > 0) then
-    $refs?1?type || ":" || $refs?1?ref
-  else ()
-
   return map:merge((
     map {
       "name": $name,
