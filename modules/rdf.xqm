@@ -246,6 +246,27 @@ as element(rdf:RDF) {
   let $eng-rdfs-label-string := if (map:contains($authors[1], "nameEn")) then $authors?nameEn => string-join(" / ") || ": " || $engTitleString else ""
   let $eng-rdfs-label := if ($eng-rdfs-label-string != "" and $lang != "eng" ) then <rdfs:label xml:lang="eng">{$eng-rdfs-label-string}</rdfs:label> else ()
 
+  (: CIDOC: E33_Linguistic_Object P102_has_title E35_Title :)
+  (: uri-pattern https://dracor.org/entity/ger000165/title/main/ger, https://dracor.org/entity/ger000165/title/sub/ger, ...   :)
+  (: todo refactor, maybe, add titles in other languages; for author-appellations it is done by function drdf:generate-crm-appellation :)
+  (: should move title stuff to separate function :)
+
+  (: main title :)
+  let $default-main-title-uri := $play-uri || "/title/main/" || $lang
+  let $default-main-title-element :=
+    <rdf:Description rdf:about="{$default-main-title-uri}">
+        <rdf:type rdf:resource="{$drdf:crm}E35_Title"/>
+        <rdfs:label>{$defaultLanguageTitlesMap?main} [main title]</rdfs:label>
+        <crm:P2_has_type rdf:resource="{$drdf:typebaseuri || 'maintitle'}"/>
+        <crm:P102i_is_title_of rdf:resource="{$play-uri}"/>
+        <rdf:value>{$defaultLanguageTitlesMap?main}</rdf:value>
+    </rdf:Description>
+
+    let $default-main-title-link := <crm:P102_has_title rdf:resource="{$default-main-title-uri}"/>
+
+    (: subtitle :)
+
+
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -255,6 +276,7 @@ as element(rdf:RDF) {
       {$default-rdfs-label}
       {$eng-rdfs-label}
       {$dc-titles}
+      {$default-main-title-link}
     </rdf:Description>
 
 
@@ -271,6 +293,7 @@ as element(rdf:RDF) {
       xmlns:frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/"
     >
     {$inner}
+    {$default-main-title-element}
     </rdf:RDF>
 
 
