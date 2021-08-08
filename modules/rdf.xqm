@@ -34,23 +34,52 @@ declare variable $drdf:viaf := "http://viaf.org/viaf/" ;
 
 (: Refactor drdf:play-to-rdf  :)
 
+(: Functions to generate URIs of dracor-entites :)
+
+(:~
+ : Generate an URI for the tei:author of a play
+ :
+ : @param $author TEI element
+ :)
+declare function drdf:get-author-uri($author as element(tei:author))
+as xs:string
+{
+(:
+ : construct an ID for author; default use unique Wikidata-Identifier in uri (to be discussed)
+ : if not present, create some kind of fallback of md5 hash of name
+ : ideally, all authors are identified by a wikidata ID! should be checked by schema
+ :)
+
+
+    (: hack :)
+    let $dummyTEI := <tei:TEI><tei:fileDesc><tei:titleStmt>{$author}</tei:titleStmt></tei:fileDesc></tei:TEI>
+    let $authorMap := dutil:get-authors($dummyTEI)
+    (: if wikidata Q is present --> /entity/{Q} :)
+    let $uri :=
+        if ( $author//tei:idno[@type eq "wikidata"] ) then
+            $drdf:baseuri ||  $author//tei:idno[@type eq "wikidata"]/string()
+        else
+            $drdf:baseuri || util:hash($authorMap?name ,"md5")
+
+    return $uri
+};
+
+
+(: Functions to generate RDF of certain dracor-entities :)
+
 (:~
  : Create an RDF representation of tei:author
  :
  : @param $author TEI element
  : @param $playID ID of the play entity
+ : @param $lang ISO language code of play
  : @param $wrapRDF set to true if output should be wrapped in <rdf:RDF> for standalone use; false is default.
+
  :)
-declare function drdf:author-to-rdf($author as element(tei:author), $playID as xs:string, $wrapRDF as xs:boolean)
+declare function drdf:author-to-rdf($author as element(tei:author), $playID as xs:string, $lang as xs:string, $wrapRDF as xs:boolean)
 as element()* {
-    (: construct an ID for author; default use md5 hash of Wikidata-Identifier; if not present, create some kind of fallback of first persName --> "{first surname}, {first forename}" :)
-    (: ideally, all authors are identified by a wikidata ID! should be checkt by schema :)
-    let $authorURI :=
-        if ($author/tei:idno[@type eq "wikidata"])
-        then $drdf:baseuri || util:hash($author//tei:idno[@type eq "wikidata"]/string(),"md5")
-        else
-            let $authornamestring := $author//tei:persName[1]/tei:surname[1]/string() || ", " || $author//tei:persName[1]/tei:forename[1]/string()
-            return $drdf:baseuri || util:hash($authornamestring,"md5")
+
+    let $authorURI := drdf:get-author-uri($author)
 
     (: Information-extraction from TEI would ideally be based on dutil:get-authors; but this function handles multiple authors and operates on the whole tei:TEI instead of an already extracted single author-element :)
     (: hack: send a <tei:TEI> with a single <author> – expects xpath  $tei//tei:fileDesc/tei:titleStmt/  :)
@@ -62,7 +91,9 @@ as element()* {
     (: generate rdfs:label/s of author :)
     (: use map returned by dutil:get-authors function :)
     (: todo: add language :)
-    let $main-rdfs-label := <rdfs:label>{$authorMap?name}</rdfs:label>
+    let $main-rdfs-label := <rdfs:label xml:lang="{$lang}">{$authorMap?name}</rdfs:label>
+
+    let $en-rdfs-label := if ( map:contains($authorMap, "shortnameEn") ) then <rdfs:label xml:lang="eng">{$authorMap?nameEn}</rdfs:label> else false()
 
     (: todo: add appellations :)
 
@@ -82,8 +113,6 @@ as element()* {
                 case "viaf" return <owl:sameAs rdf:resource="{$drdf:viaf}{$refMap?ref}"/>
                 default return ()
 
-
-
     (: generated RDF follows :)
     let $generatedRDF :=
 
@@ -91,9 +120,10 @@ as element()* {
         <rdf:Description rdf:about="{$authorURI}">
             <rdf:type rdf:resource="{$drdf:crm}E21_Person"/>
             <rdf:type rdf:resource="{$drdf:dracon}author"/>
-            {$main-rdfs-label}
+            {if ($main-rdfs-label) then $main-rdfs-label else ()}
+            {if ($en-rdfs-label) then $en-rdfs-label else () }
             {$is-author-of}
-            {$sameAs}
+            {if ($sameAs) then $sameAs else ()}
         </rdf:Description>
 
     return
