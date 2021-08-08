@@ -278,13 +278,14 @@ as element(rdf:RDF) {
 
   (: CIDOC: E33_Linguistic_Object P102_has_title E35_Title :)
   (: uri-pattern https://dracor.org/entity/ger000165/title/main/ger, https://dracor.org/entity/ger000165/title/sub/ger, ...   :)
-  (: todo refactor, maybe, add titles in other languages; for author-appellations it is done by function drdf:generate-crm-appellation :)
-  (: should move title stuff to separate function :)
 
   let $titleTypes := ("main", "sub")
   let $default-crm-title-elements := for $titleItem in $titleTypes return drdf:generate-crm-title($play-uri, $titleItem, map:get($defaultLanguageTitlesMap,$titleItem), $lang, false())
   let $eng-crm-title-elements := if ( map:contains($engTitlesMap, "main" ) ) then  for $titleItem in $titleTypes return drdf:generate-crm-title($play-uri, $titleItem, map:get($engTitlesMap,$titleItem), "eng", false()) else ()
 
+  (: dc:creators :)
+  (: maybe include english creator-elements :)
+  let $dc-creators := for $author in $authors return <dc:creator xml:lang="{$lang}">{$author?name}</dc:creator>
 
 
   (: build main RDF Chunk :)
@@ -295,6 +296,7 @@ as element(rdf:RDF) {
       {$default-rdfs-label}
       {$eng-rdfs-label}
       {$dc-titles}
+      {$dc-creators}
     </rdf:Description>
 
 
