@@ -25,6 +25,7 @@ declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 
 (: baseuri of entities :)
 declare variable $drdf:baseuri := "https://dracor.org/entity/";
+declare variable $drdf:typebaseuri := $drdf:baseuri || "type/";
 (: baseuris of ontologies :)
 declare variable $drdf:crm := "http://www.cidoc-crm.org/cidoc-crm/" ;
 declare variable $drdf:dracon := "http://dracor.org/ontology#" ;
@@ -84,18 +85,28 @@ as element()* {
     (: Information-extraction from TEI would ideally be based on dutil:get-authors; but this function handles multiple authors and operates on the whole tei:TEI instead of an already extracted single author-element :)
     (: hack: send a <tei:TEI> with a single <author> – expects xpath  $tei//tei:fileDesc/tei:titleStmt/  :)
     let $dummyTEI := <tei:TEI><tei:fileDesc><tei:titleStmt>{$author}</tei:titleStmt></tei:fileDesc></tei:TEI>
-
-
     let $authorMap := dutil:get-authors($dummyTEI)
 
     (: generate rdfs:label/s of author :)
-    (: use map returned by dutil:get-authors function :)
-    (: todo: add language :)
-    let $main-rdfs-label := <rdfs:label xml:lang="{$lang}">{$authorMap?name}</rdfs:label>
+
+    let $main-rdfs-label := if ($lang != "" ) then <rdfs:label xml:lang="{$lang}">{$authorMap?name}</rdfs:label> else <rdfs:label>{$authorMap?name}</rdfs:label>
 
     let $en-rdfs-label := if ( map:contains($authorMap, "shortnameEn") ) then <rdfs:label xml:lang="eng">{$authorMap?nameEn}</rdfs:label> else false()
 
-    (: todo: add appellations :)
+    (: appellations :)
+
+    (: use generic function to generate appellations of certain type :)
+    (: appellations to generate: name, fullname, fullnameEn, shortname, shortnameEn :)
+    (: todo: $lang is not evaluated :)
+    let $appellationTypes := ("name", "fullname", "fullnameEn", "shortname", "shortnameEn" )
+    let $appellations := for $nameType in $appellationTypes return
+        if ( map:contains($authorMap, $nameType) )
+        then drdf:generate-crm-appellation($authorURI, $nameType, map:get($authorMap,$nameType), $lang, false() )
+        else ()
+
+    (: todo: shortname, shortnameEn should be the same appellation type, maybe :)
+    (: todo: handle alsoKnownAs (Pseudonym,...) – see schema :)
+
 
     (: Link author and play according to dracor ontology :)
     let $is-author-of := <dracon:is_author_of rdf:resource="{$drdf:baseuri}{$playID}"/>
@@ -115,6 +126,7 @@ as element()* {
 
     (: generated RDF follows :)
     let $generatedRDF :=
+        (
 
         (: Author related triples :)
         <rdf:Description rdf:about="{$authorURI}">
@@ -125,11 +137,53 @@ as element()* {
             {$is-author-of}
             {if ($sameAs) then $sameAs else ()}
         </rdf:Description>
+        , (: important!:)
+
+        $appellations
+        )
 
     return
         (: maybe should switch here on param $wrapRDF :)
         $generatedRDF
 
+};
+
+(:~
+ : Create a CIDOC appellation of a certain type
+ :
+ : @param $entityUri URI of the entity
+ : @param $type of the appellation
+ : @param $value String-Value of the appellation
+ : @param $language of the Value of the appellation
+ : @param $wrapRDF wrap with rdf:RDF?
+ :  :)
+declare function drdf:generate-crm-appellation($entityUri as xs:string, $type as xs:string, $value as xs:string, $lang as xs:string, $wrapRDF as xs:boolean )
+as element()* {
+
+    (: todo: handle language parameter :)
+    (: shortname and shortnameEn shound be the same type, but in different language :)
+
+    let $appellationUri := $entityUri || "/appellation/" || $type
+    let $appellationTypeUri := $drdf:typebaseuri || $type
+
+    let $appellationRDF :=
+        <rdf:Description rdf:about="{$appellationUri}">
+            <rdf:type rdf:resource="{$drdf:crm}E41_Appellation"/>
+            <rdfs:label>{$value} [appellation; {$type}]</rdfs:label>
+            <crm:P2_has_type rdf:resource="{$appellationTypeUri}"/>
+            <crm:P1i_identifies rdf:resource="{$entityUri}"/>
+            <rdf:value>{$value}</rdf:value>
+        </rdf:Description>
+
+    let $link :=
+        <rdf:Description rdf:about="{$entityUri}">
+            <crm:P1_is_identified_by rdf:resource="{$appellationUri}"/>
+        </rdf:Description>
+
+    let $generatedRDF :=
+        ( $appellationRDF, $link )
+
+    return $generatedRDF
 };
 
 
