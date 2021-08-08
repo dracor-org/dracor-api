@@ -139,6 +139,7 @@ as element()* {
         </rdf:Description>
         , (: important!:)
 
+        (: appellations and their connections :)
         $appellations
         )
 
@@ -186,6 +187,15 @@ as element()* {
     return $generatedRDF
 };
 
+(:~
+ : Get Uri of a play
+ :)
+declare function drdf:get-play-uri($play as element(tei:TEI) )
+as xs:string {
+    (:reuse dutil function :)
+    $drdf:baseuri || dutil:get-dracor-id($play)
+};
+
 
 (:~
  : Create an RDF representation of a play.
@@ -196,391 +206,55 @@ as element()* {
  :)
 declare function drdf:play-to-rdf ($play as element(tei:TEI))
 as element(rdf:RDF) {
-  (: store data for triples in variables :)
-  (: http://dracor.org/ontology#in_corpus :)
   let $paths := dutil:filepaths($play/base-uri())
   let $corpusname := $paths?corpusname
   let $playname := $paths?playname
   let $metricspath := $paths?files?metrics
   let $metrics := doc($metricspath)
+  let $lang := $play/@xml:lang/string()
 
-  (: should get the id of the play <idno type='dracor' :)
-  let $play-id := dutil:get-dracor-id($play)
+  let $play-uri := drdf:get-play-uri($play)
 
-  (: maybe /id/{id} could be used in the future :)
-  let $play-uri :=
-    if ($play-id != "")
-    then "https://dracor.org/entity/" || $play-id
-    else "https://dracor.org/" || $corpusname || "/" || $playname
+  (: Titles, ... :)
+  let $defaultLanguageTitlesMap := dutil:get-titles($play)
+  let $engTitlesMap := dutil:get-titles($play, "eng")
 
-  (:
-   : get metadata of play to generate rdfs:label, dc:creator, dc:title ,...
-   :)
+  let $defaultTitleString := if ( map:contains($defaultLanguageTitlesMap, "sub") )
+        then ( $defaultLanguageTitlesMap?main, if ( matches($defaultLanguageTitlesMap?main, "[!?.]$") ) then "" else ".", " ", $defaultLanguageTitlesMap?sub ) => string-join("")
+        else $defaultLanguageTitlesMap?main
 
-  (: handle multilingual titles "main"/"sub"... :)
-  (: maybe this part could be or is handled by a seperate function? :)
-  let $titles := array {
-    for $lang in distinct-values(
-      $play//tei:titleStmt//tei:title/@xml:lang/string()
-    ) return
-      map {
-        "lang": $lang,
-        "main": normalize-space(
-          $play//tei:titleStmt//tei:title[@type = "main"][@xml:lang = $lang]
-          /string()
-        ),
-        "sub": normalize-space(
-          $play//tei:titleStmt//tei:title[@type = "sub"][@xml:lang = $lang]
-          /string()
-        )
-      }
-  }
+    let $engTitleString := if ( map:contains($engTitlesMap, "main" ) ) then
+        if ( map:contains($engTitlesMap, "sub") )
+        then ( $engTitlesMap?main, if ( matches($engTitlesMap?main, "[!?.]$") ) then "" else ".", " ", $engTitlesMap?sub ) => string-join("")
+        else $engTitlesMap?main
+    else "" (: no english titles:)
 
-  (: handle multilingual author-names... :)
-  let $author-names := array {
-    if ($play//tei:titleStmt//tei:author/@xml:lang)
-    then
-      for $lang in distinct-values(
-        $play//tei:titleStmt//tei:author/@xml:lang/string()
-      ) return
-        map {
-          "lang": $lang,
-          "name": distinct-values(
-            $play//tei:titleStmt//tei:author[@xml:lang=$lang]/string()
-          )
-        }
-    else
-      map {
-        "lang": "",
-        "name": distinct-values($play//tei:titleStmt//tei:author/string())
-      }
-  }
+  (: build dc:title Elements :)
+  let $dc-titles := (
+        <dc:title xml:lang="{$lang}">{$defaultTitleString}</dc:title> ,
+        if ($engTitleString != "" and $lang != "eng" ) then <dc:title xml:lang="eng">{$engTitleString}</dc:title> else ()
+    )
 
-  (: handle multiple key-values, decide if gnd or wikidata :)
-  let $author-idnos := array {
-    (: if there would be multiple values in key, tokenize them :)
-    for $author in $play//tei:titleStmt//tei:author[@key]
-    let $key := $author/@key/string()
-    return
-      map {
-        "label": $author/text(),
-        "id-type":
-          if (matches($key, "(w|W)ikidata:Q[0-9]*?")) then "wikidata"
-          else if (matches($key, "pnd:[0-9X]*?")) then "pnd"
-          else (),
-        "id-value": replace($key, ".*?:([0-9X]*?)", "$1" ),
-        "uri":
-          if (matches($key, "(w|W)ikidata:Q[0-9]*?"))
-          then "http://www.wikidata.org/entity/"
-            || replace($key, ".*?:([0-9X]*?)", "$1")
-          else if (matches($key, "pnd:[0-9X]*?"))
-          then "http://d-nb.info/gnd/"
-            || replace($key, ".*?:([0-9X]*?)", "$1")
-          else ()
-      }
+  (: Get the map(s) containing metadata on the authors :)
+  let $authors := dutil:get-authors($play)
+
+  (: create rdfs-label from author and title data :)
+  let $default-rdfs-label-string := $authors?name => string-join(" / ") || ": " || $defaultTitleString
+  let $default-rdfs-label := <rdfs:label xml:lang="{$lang}">{$default-rdfs-label-string}</rdfs:label>
+
+  (: create english rdfs:label :)
+  let $eng-rdfs-label-string := if (map:contains($authors[1], "nameEn")) then $authors?nameEn => string-join(" / ") || ": " || $engTitleString else ""
+  let $eng-rdfs-label := if ($eng-rdfs-label-string != "" and $lang != "eng" ) then <rdfs:label xml:lang="eng">{$eng-rdfs-label-string}</rdfs:label> else ()
 
 
-  }
-
-  (: generate blank nodes for authors :)
-  let $author-nodes :=
-    (: maybe check, if there are distinct authors.. how could i detect this
-    case? :)
-    <dracon:has_author>
-      <rdf:Description>
-      {
-        if (count($author-names) > 1) then
-          for $author-lang in $author-names
-          return
-            <rdfs:label xml:lang="{$author-lang?lang}">
-              {$author-lang?name}
-            </rdfs:label>
-        else
-          <rdfs:label>{$author-names?1?name}</rdfs:label>
-      }
-      {
-        for $author-idno in $author-idnos?*
-        return <owl:sameAs rdf:resource="{$author-idno?uri}"/>
-      }
-      </rdf:Description>
-    </dracon:has_author>
-
-  let $collection-uri := "https://dracor.org/" || $corpusname
-
-  (: construct rdfs:labels – Author : Title. Subtitle.
-   : If there is no @xml:lang on tei:author, skip author-name; but include
-   : name in the label in the language of the play :)
-  let $rdfs-labels := for $lang in $titles?*?lang return
-    <rdfs:label xml:lang="{$lang}">
-      {
-        if ($author-names?*[?lang = $lang])
-        then $author-names?*[?lang = $lang]?name
-        else if (
-          not($play//tei:titleStmt//tei:author/@xml:lang)
-          and $play/@xml:lang = $lang
-        )
-        then $author-names?1?name || ": "
-        else ""
-      }
-      {
-        if ($author-names?*[?lang = $lang] and $titles?*[?lang = $lang]?main)
-        then ": "
-        else ""
-      }
-      {
-        if ($titles?*[?lang = $lang]?main)
-        then $titles?*[?lang = $lang]?main
-        else ""
-      }
-      {
-        if ($titles?*[?lang = $lang]?sub)
-        then ". " || $titles?*[?lang = $lang]?sub
-        else "."
-      }
-    </rdfs:label>
-
-  (: construct dc:creator for each language, if there xml:lang tags on
-  tei:author :)
-  let $dc-creator :=
-    if (count($author-names) > 1) then
-      for $creator-lang in $author-names return
-        <dc:creator xml:lang="{$creator-lang?lang}">
-          {$creator-lang?name}
-        </dc:creator>
-    else
-      <dc:creator>{$author-names?1?name}</dc:creator>
-
-  (: construct dc:title tags for each language :)
-  let $dc-titles :=
-    for $lang in $titles?*?lang return
-      if ($titles?*[?lang = $lang]?main or $titles?*[?lang = $lang]?sub)
-      then
-        <dc:title xml:lang="{$lang}">
-          {
-            if ($titles?*[?lang = $lang]?main)
-            then $titles?*[?lang = $lang]?main
-            else ""
-          }
-          {
-            if ($titles?*[?lang = $lang]?sub)
-            then ". " || $titles?*[?lang = $lang]?sub
-            else "."
-          }
-        </dc:title>
-      else ()
-
-  let $in_corpus := <dracon:in_corpus rdf:resource="{$collection-uri}"/>
-
-  let $wikidata-id := dutil:get-play-wikidata-id($play)
-  let $play-external-id := if ($wikidata-id)
-    then <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wikidata-id}"/>
-    else ()
-
-  (: CIDOC-Stuff :)
-  let $creation-uri := $play-uri || "/creation"
-  let $created-by :=  <crm:P94i_was_created_by rdf:resource="{$creation-uri}"/>
-
-  let $creation-activity :=
-    <rdf:Description rdf:about="{$creation-uri}">
-      <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E65_Creation"/>
-      <crm:P94_has_created rdf:resource="{$play-uri}"/>
-      {
-        for $author-idno in $author-idnos?*
-        return
-          <crm:P14_carried_out_by rdf:resource="{$author-idno?uri}"/>
-      }
-    </rdf:Description>
-
-    let $dracor-link :=
-      <rdfs:seeAlso rdf:resource="https://dracor.org/{$corpusname}/{$playname}"/>
-
-    (: metrics :)
-
-    let $averageClustering :=
-      if ($metrics/metrics/network/averageClustering/text() != "")
-      then
-        <dracon:averageClustering>
-          {$metrics/metrics/network/averageClustering/text()}
-        </dracon:averageClustering>
-      else ()
-
-    let $averagePathLength :=
-      if ( $metrics/metrics/network/averagePathLength/text() != "" )
-      then
-        <dracon:averagePathLength>
-          {$metrics/metrics/network/averagePathLength/text()}
-        </dracon:averagePathLength>
-      else ()
-
-    let $averageDegree :=
-      if ( $metrics/metrics/network/averageDegree/text() != "" )
-      then
-        <dracon:averageDegree>
-          {$metrics/metrics/network/averageDegree/text()}
-        </dracon:averageDegree>
-      else ()
-
-    let $density :=
-      if ( $metrics/metrics/network/density/text() != "" )
-      then
-        <dracon:density>
-          {$metrics/metrics/network/density/text()}
-        </dracon:density>
-      else ()
-
-    let $diameter :=
-      if ( $metrics/metrics/network/diameter/text() != "" )
-      then
-        <dracon:diameter>
-          {$metrics/metrics/network/diameter/text()}
-        </dracon:diameter>
-      else ()
-
-    let $maxDegree :=
-      if ( $metrics/metrics/network/maxDegree/text() != "" )
-      then
-        <dracon:maxDegree>
-          {$metrics/metrics/network/maxDegree/text()}
-        </dracon:maxDegree>
-      else ()
-
-    let $maxDegreeIds :=
-      for $character in tokenize($metrics/metrics/network/maxDegreeIds/text(),' ')
-      let $character-uri := $play-uri || '/character/' || $character
-      return <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
-
-    let $numOfActs :=
-      if ( count($play//tei:div[@type="act"]) > 0 )
-      then
-        <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-          {count($play//tei:div[@type="act"])}
-        </dracon:numOfActs>
-      else ()
-
-    let $numOfSegments :=
-      <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-        {count(dutil:get-segments($play))}
-      </dracon:numOfSegments>
-
-    let $numOfSpeakers :=
-      if (count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)) > 0)
-      then
-        <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-          {count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp))}
-        </dracon:numOfSpeakers>
-      else ()
-
-    (: Dates :)
-    let $years := dutil:get-years-iso($play)
-    let $yn := dutil:get-normalized-year($play)
-
-    let $normalisedYear :=
-      if ($yn)
-      then
-        <dracon:normalisedYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {$yn}
-        </dracon:normalisedYear>
-      else ()
-
-    let $yearPremiered :=
-      if (matches($years?premiere, "^-?[0-9]{4}$"))
-      then
-        <dracon:yearPremiered rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {$years?premiere}
-        </dracon:yearPremiered>
-      else ()
-
-    let $yearPrinted :=
-      if (matches($years?print, "^-?[0-9]{4}$"))
-      then
-        <dracon:yearPrinted rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {$years?print}
-        </dracon:yearPrinted>
-      else ()
-
-    let $yearWritten :=
-      if (matches($years?written, "^-?[0-9]{4}$"))
-      then
-        <dracon:yearWritten rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
-          {$years?written}
-        </dracon:yearWritten>
-      else ()
-
-    (: characters :)
-    let $characters :=
-      $play//tei:particDesc/tei:listPerson/tei:person
-
-    let $charactersindrama :=
-      for $character in $characters
-        let $character-uri :=
-          $play-uri || "/character/" || $character/@xml:id/string()
-      return
-        <schema:character rdf:resource="{$character-uri}"/>
-
-    let $characterDescriptions :=
-      for $character in $characters
-      let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
-      return
-        <rdf:Description rdf:about="{$character-uri}">
-          <rdf:type rdf:resource="http://iflastandards.info/ns/fr/frbr/frbroo/F38_Character"/>
-            {
-              for $persName in $character/tei:persName return
-                <rdfs:label
-                  xml:lang="{
-                    if ($persName/@xml:lang)
-                    then $persName/@xml:lang
-                    else $play/@xml:lang}"
-                >
-                  {$persName/string()}
-                </rdfs:label>
-              }
-              {
-                if ($character/@ana) then
-                  if (matches($character/@ana/string(), 'https://wikidata.org/wiki/'))
-                  then
-                    let $wd :=
-                      substring-after($character/@ana/string(),'https://www.wikidata.org/wiki/')
-                      return
-                        <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
-                  else if ( matches($character/@ana/string(), 'https://www.wikidata.org/entity/') )
-                  then
-                    let $wd := substring-after($character/@ana/string(),'https://www.wikidata.org/entity/')
-                    return
-                      <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wd}"/>
-                  else if ( matches($character/@ana/string(), 'http://www.wikidata.org/entity/') )
-                  then <owl:sameAs rdf:resource="{$character/@ana/string()}"/>
-                  else ()
-                else ()
-              }
-          </rdf:Description>
-
+  (: build main RDF Chunk :)
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
-      <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
-      <rdf:type rdf:resource="http://dracor.org/ontology#play"/>
-      {$rdfs-labels}
-      {$dc-creator}
+      <rdf:type rdf:resource="{$drdf:crm}E33_Linguistic_Object"/>
+      <rdf:type rdf:resource="{$drdf:dracon}play"/>
+      {$default-rdfs-label}
+      {$eng-rdfs-label}
       {$dc-titles}
-      {$author-nodes}
-      {$created-by}
-      {$in_corpus}
-      {$play-external-id}
-      {$dracor-link}
-      {$averageClustering}
-      {$averageDegree}
-      {$averagePathLength}
-      {$density}
-      {$diameter}
-      {$maxDegree}
-      {$maxDegreeIds}
-      {$normalisedYear}
-      {$numOfActs}
-      {$numOfSegments}
-      {$numOfSpeakers}
-      {$yearPremiered}
-      {$yearPrinted}
-      {$yearWritten}
-      {$charactersindrama}
     </rdf:Description>
 
 
@@ -596,10 +270,10 @@ as element(rdf:RDF) {
       xmlns:schema="http://schema.org/"
       xmlns:frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/"
     >
-      {$inner}
-      {$creation-activity}
-      {$characterDescriptions}
+    {$inner}
     </rdf:RDF>
+
+
 };
 (:~
  : Update RDF for single play
