@@ -72,12 +72,12 @@ as xs:string
  : Create an RDF representation of tei:author
  :
  : @param $author TEI element
- : @param $playID ID of the play entity
+ : @param $playUri URI of the play entity
  : @param $lang ISO language code of play
  : @param $wrapRDF set to true if output should be wrapped in <rdf:RDF> for standalone use; false is default.
 
  :)
-declare function drdf:author-to-rdf($author as element(tei:author), $playID as xs:string, $lang as xs:string, $wrapRDF as xs:boolean)
+declare function drdf:author-to-rdf($author as element(tei:author), $playUri as xs:string, $lang as xs:string, $wrapRDF as xs:boolean)
 as element()* {
 
     let $authorURI := drdf:get-author-uri($author)
@@ -109,7 +109,7 @@ as element()* {
 
 
     (: Link author and play according to dracor ontology :)
-    let $is-author-of := <dracon:is_author_of rdf:resource="{$drdf:baseuri}{$playID}"/>
+    let $is-author-of := <dracon:is_author_of rdf:resource="{$playUri}"/>
 
 
     (: add links to external reference resources as owl:sameAs statements :)
@@ -287,6 +287,14 @@ as element(rdf:RDF) {
   (: maybe include english creator-elements :)
   let $dc-creators := for $author in $authors return <dc:creator xml:lang="{$lang}">{$author?name}</dc:creator>
 
+  (: author-nodes :)
+  (: uses the tei:author elements, not the author-map :)
+  let $author-rdf := for $author in $play//tei:titleStmt//tei:author return drdf:author-to-rdf($author, $play-uri, $lang, false())
+
+  (: creation-activity to connect author and play CIDOC like :)
+  (: todo :)
+
+
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -315,6 +323,7 @@ as element(rdf:RDF) {
     {$inner}
     {$default-crm-title-elements}
     {$eng-crm-title-elements}
+    {$author-rdf}
     </rdf:RDF>
 
 
