@@ -24,8 +24,10 @@ declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 
 
 (: baseuri of entities :)
+declare variable $drdf:sitebase := "https://dracor.org/";
 declare variable $drdf:baseuri := "https://dracor.org/entity/";
 declare variable $drdf:typebaseuri := $drdf:baseuri || "type/";
+declare variable $drdf:corpusbaseuri := $drdf:baseuri || "corpus/";
 (: baseuris of ontologies :)
 declare variable $drdf:crm := "http://www.cidoc-crm.org/cidoc-crm/" ;
 declare variable $drdf:dracon := "http://dracor.org/ontology#" ;
@@ -294,7 +296,14 @@ as element(rdf:RDF) {
   (: creation-activity to connect author and play CIDOC like :)
   (: todo :)
 
+  (: Link of web-representation :)
+  let $dracor-url := $drdf:sitebase || $paths?corpusname || "/" || $paths?playname
+  let $dracor-link :=
+      <rdfs:seeAlso rdf:resource="{$dracor-url}"/>
 
+  (: parent corpus :)
+  let $parent-corpus-uri := $drdf:corpusbaseuri || $paths?corpusname
+  let $in_corpus := <dracon:in_corpus rdf:resource="{$parent-corpus-uri}"/>
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -305,6 +314,8 @@ as element(rdf:RDF) {
       {$eng-rdfs-label}
       {$dc-titles}
       {$dc-creators}
+      {$dracor-link}
+      {$in_corpus}
     </rdf:Description>
 
 
