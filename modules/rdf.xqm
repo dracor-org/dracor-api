@@ -228,6 +228,122 @@ as element()* {
     return ($titleRDF , $link)
 
 };
+(:~
+ : Metrics of a play as RDF
+ : @param $corpusname
+ : @param $playname
+ : @param $playuri URI of the play
+ : @param $wrapRDF wrap with rdf:RDF?
+ :)
+declare function drdf:play-metrics-to-rdf($corpusname as xs:string, $playname as xs:string, $playuri as xs:string, $wrapRDF as xs:boolean)
+as element()* {
+    let $metrics := dutil:get-play-metrics($corpusname, $playname)
+    (: which metrics are computed? :)
+    (:
+    "size": 4.9e1,
+    "averageClustering": 8.497673123239153e-1, --> implemented
+    "density": 3.129251700680272e-1, --> implemented
+    "averagePathLength": 1.751700680272109e0, --> implemented
+    "maxDegreeIds": ["muenzer"],
+    "corpus": "ger", --> irrelevant
+    "averageDegree": 1.5020408163265307e1, --> implemented
+    "name": "alberti-brot", --> irrelevant
+    "diameter": 3.0e0, --> implemented
+    "maxDegree": 4.0e1,
+    "numConnectedComponents": 1.0e0,
+    "id": "ger000171",
+    "wikipediaLinkCount": 0
+    :)
+
+    (: for each character, there are metrics, that are included in an array with the key   "nodes": which contains maps :)
+    (:
+    map {
+        "weightedDegree": 7.6e1,
+        "degree": 2.8e1,
+        "closeness": 7.058823529411765e-1,
+        "eigenvector": 2.2702062167043066e-1,
+        "id": "blinte",
+        "betweenness": 2.1865702380953058e-2
+    :)
+
+    (: datatypes see https://www.w3.org/TR/xmlschema-2/ :)
+
+    let $averageClustering :=
+        if ( map:contains($metrics, "averageClustering") ) then
+        <dracon:averageClustering rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+          {$metrics?averageClustering}
+        </dracon:averageClustering>
+        else ()
+
+
+    let $averagePathLength :=
+        if ( map:contains($metrics, "averagePathLength") ) then
+        <dracon:averagePathLength rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+          {$metrics?averagePathLength}
+        </dracon:averagePathLength>
+        else ()
+
+    let $averageDegree :=
+        if ( map:contains($metrics, "averageDegree") ) then
+        <dracon:averageDegree rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+            {$metrics?averageDegree}
+        </dracon:averageDegree>
+        else ()
+
+    let $density :=
+        if ( map:contains($metrics, "density") ) then
+        <dracon:density rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+          {$metrics?density}
+        </dracon:density>
+        else ()
+
+    (: ist der immer ganzzahlig? :)
+    let $diameter :=
+        if ( map:contains($metrics, "diameter") ) then
+        <dracon:diameter rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {$metrics?diameter}
+        </dracon:diameter>
+        else ()
+
+    let $maxDegree :=
+        <dracon:maxDegree>
+          {()}
+        </dracon:maxDegree>
+
+    (:
+    let $maxDegreeIds :=
+      for $character in tokenize($metrics/metrics/network/maxDegreeIds/text(),' ')
+      let $character-uri := $play-uri || '/character/' || $character
+      return <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
+    :)
+
+    let $numOfActs :=
+        <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+            {()}
+        </dracon:numOfActs>
+
+    let $numOfSegments :=
+      <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+        {()}
+      </dracon:numOfSegments>
+
+    let $numOfSpeakers :=
+        <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {()}
+        </dracon:numOfSpeakers>
+
+    let $generatedRDF :=
+        <rdf:Description rdf:about="{$playuri}">
+            {$averageClustering}
+            {$averagePathLength}
+            {$averageDegree}
+            {$density}
+            {$diameter}
+        </rdf:Description>
+
+    return
+        $generatedRDF
+};
 
 (:~
  : Create an RDF representation of a play.
@@ -304,6 +420,8 @@ as element(rdf:RDF) {
   (: parent corpus :)
   let $parent-corpus-uri := $drdf:corpusbaseuri || $paths?corpusname
   let $in_corpus := <dracon:in_corpus rdf:resource="{$parent-corpus-uri}"/>
+
+  (: separate function will handle metrics :)
 
   (: build main RDF Chunk :)
   let $inner :=
