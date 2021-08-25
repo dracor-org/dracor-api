@@ -348,13 +348,63 @@ as element()* {
                 return <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
         else ()
 
+    (: network-metrics of the single character, that are included in the map "nodes" :)
+    let $character-network-metrics :=
+        if ( map:contains($metrics , "nodes" )  ) then
+            for $character-map in $metrics?nodes?*
+                let $character-id := $character-map?id
+                let $character-uri := drdf:get-character-uri($playuri, $character-id)
+                (:
+                "weightedDegree": 1.4e1,
+                "degree": 9.0e0,
+                "closeness": 5.333333333333333e-1,
+                "eigenvector": 8.233954138362518e-2,
+                :)
+
+                let $character-degree :=
+                    if ( map:contains($character-map, "degree") ) then
+                        <dracon:degree rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                            {$character-map?degree}
+                        </dracon:degree>
+                    else ()
+
+                let $character-weightedDegree :=
+                    if ( map:contains($character-map, "weightedDegree") ) then
+                        <dracon:weightedDegree rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                            {$character-map?weightedDegree}
+                        </dracon:weightedDegree>
+                    else ()
+
+                let $character-closeness :=
+                    if ( map:contains($character-map, "closeness") ) then
+                        <dracon:closeness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                            {$character-map?closeness}
+                        </dracon:closeness>
+                    else ()
+
+                let $character-eigenvector :=
+                    if ( map:contains($character-map, "eigenvector") ) then
+                        <dracon:eigenvector rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                            {$character-map?eigenvector}
+                        </dracon:eigenvector>
+                    else ()
+
+
+                return
+                    <rdf:Description rdf:about="{$character-uri}">
+                        {$character-degree}
+                        {$character-weightedDegree}
+                        {$character-closeness}
+                        {$character-eigenvector}
+                    </rdf:Description>
 
 
 
-    (: metrics, that have to be retrieved from somewhere else /function :)
-    (: not in function - dutil:get-play-metrics($corpusname, $playname)  :)
+        else ()
 
-    let $generatedRDF :=
+
+
+    let $playRDF :=
         <rdf:Description rdf:about="{$playuri}">
             {$averageClustering}
             {$averagePathLength}
@@ -367,8 +417,11 @@ as element()* {
             {$maxDegreeCharacters}
         </rdf:Description>
 
+    let $charactersRDF :=
+        $character-network-metrics
+
     return
-        $generatedRDF
+        ( $playRDF , $charactersRDF)
 };
 
 (:~
