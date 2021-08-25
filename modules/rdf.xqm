@@ -228,6 +228,18 @@ as element()* {
     return ($titleRDF , $link)
 
 };
+
+(:~
+ : Uri of an character of a play
+ : @param $play-uri URI of the play
+ : @param $character-id ID of the character used in xml:id and @who in the TEI representation
+ :)
+declare function drdf:get-character-uri($play-uri as xs:string, $character-id as xs:string)
+as xs:string {
+    $play-uri || '/character/' || $character-id
+};
+
+
 (:~
  : Metrics of a play as RDF
  : @param $corpusname
@@ -249,9 +261,9 @@ as element()* {
     "averageDegree": 1.5020408163265307e1, --> implemented
     "name": "alberti-brot", --> irrelevant
     "diameter": 3.0e0, --> implemented
-    "maxDegree": 4.0e1,
-    "numConnectedComponents": 1.0e0,
-    "id": "ger000171",
+    "maxDegree": 4.0e1, --> implemented
+    "numConnectedComponents": 1.0e0, --> implemented
+    "id": "ger000171", --> irrelevant
     "wikipediaLinkCount": 0
     :)
 
@@ -297,7 +309,6 @@ as element()* {
         </dracon:density>
         else ()
 
-    (: ist der immer ganzzahlig? :)
     let $diameter :=
         if ( map:contains($metrics, "diameter") ) then
         <dracon:diameter rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
@@ -306,31 +317,42 @@ as element()* {
         else ()
 
     let $maxDegree :=
-        <dracon:maxDegree>
-          {()}
+        if ( map:contains($metrics, "maxDegree") ) then
+        <dracon:maxDegree rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {$metrics?maxDegree}
         </dracon:maxDegree>
+        else ()
 
-    (:
-    let $maxDegreeIds :=
-      for $character in tokenize($metrics/metrics/network/maxDegreeIds/text(),' ')
-      let $character-uri := $play-uri || '/character/' || $character
-      return <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
-    :)
+    (: missing in dracon: "size"?, "numConnectedComponents", wikipediaLinkCount"  :)
 
-    let $numOfActs :=
-        <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-            {()}
-        </dracon:numOfActs>
+    let $numConnectedComponents :=
+        if ( map:contains($metrics, "numConnectedComponents") ) then
+            <dracon:numConnectedComponents rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                {$metrics?numConnectedComponents}
+            </dracon:numConnectedComponents>
+        else ()
 
-    let $numOfSegments :=
-      <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-        {()}
-      </dracon:numOfSegments>
+    let $wikipediaLinkCount :=
+        if ( map:contains($metrics, "wikipediaLinkCount") ) then
+            <dracon:wikipediaLinkCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                {$metrics?wikipediaLinkCount}
+            </dracon:wikipediaLinkCount>
+        else ()
 
-    let $numOfSpeakers :=
-        <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-          {()}
-        </dracon:numOfSpeakers>
+
+    (: use array "maxDegreeIds" to construct triples of maxDegree-Character :)
+    let $maxDegreeCharacters :=
+        if ( map:contains($metrics, "maxDegreeIds") ) then
+            for $character-id in $metrics?maxDegreeIds?*
+                let $character-uri := drdf:get-character-uri($playuri, $character-id)
+                return <dracon:maxDegreeCharacter rdf:resource="{$character-uri}"/>
+        else ()
+
+
+
+
+    (: metrics, that have to be retrieved from somewhere else /function :)
+    (: not in function - dutil:get-play-metrics($corpusname, $playname)  :)
 
     let $generatedRDF :=
         <rdf:Description rdf:about="{$playuri}">
@@ -339,6 +361,10 @@ as element()* {
             {$averageDegree}
             {$density}
             {$diameter}
+            {$maxDegree}
+            {$numConnectedComponents}
+            {$wikipediaLinkCount}
+            {$maxDegreeCharacters}
         </rdf:Description>
 
     return
@@ -421,7 +447,25 @@ as element(rdf:RDF) {
   let $parent-corpus-uri := $drdf:corpusbaseuri || $paths?corpusname
   let $in_corpus := <dracon:in_corpus rdf:resource="{$parent-corpus-uri}"/>
 
-  (: separate function will handle metrics :)
+  (: network-metrics – wrapper for dutil:get-play-metrics($corpusname, $playname) :)
+  let $network-metrics := drdf:play-metrics-to-rdf($corpusname, $playname, $play-uri, false())
+
+
+  (: these metrics have to be retrieved by separate util-function :)
+  let $numOfActs :=
+        <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+            {()}
+        </dracon:numOfActs>
+
+    let $numOfSegments :=
+      <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+        {()}
+      </dracon:numOfSegments>
+
+    let $numOfSpeakers :=
+        <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {()}
+        </dracon:numOfSpeakers>
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -453,6 +497,7 @@ as element(rdf:RDF) {
     {$default-crm-title-elements}
     {$eng-crm-title-elements}
     {$author-rdf}
+    {$network-metrics}
     </rdf:RDF>
 
 
