@@ -34,6 +34,7 @@ declare variable $drdf:dracon := "http://dracor.org/ontology#" ;
 declare variable $drdf:wd := "http://www.wikidata.org/entity/" ;
 declare variable $drdf:gnd := "https://d-nb.info/gnd/" ;
 declare variable $drdf:viaf := "http://viaf.org/viaf/" ;
+declare variable $drdf:frbroo := "http://iflastandards.info/ns/fr/frbr/frbroo/" ;
 
 (: Refactor drdf:play-to-rdf  :)
 
@@ -367,6 +368,7 @@ as element()* {
                 "closeness": 5.333333333333333e-1,
                 "eigenvector": 8.233954138362518e-2,
                 :)
+                (: betweenness might be missing :)
 
                 let $character-degree :=
                     if ( map:contains($character-map, "degree") ) then
@@ -396,6 +398,13 @@ as element()* {
                         </dracon:eigenvector>
                     else ()
 
+                let $character-betweenness :=
+                    if ( map:contains($character-map, "betweenness") ) then
+                        <dracon:betweenness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                            {$character-map?betweenness}
+                        </dracon:betweenness>
+                    else ()
+
 
                 return
                     <rdf:Description rdf:about="{$character-uri}">
@@ -403,6 +412,7 @@ as element()* {
                         {$character-weightedDegree}
                         {$character-closeness}
                         {$character-eigenvector}
+                        {$character-betweenness}
                     </rdf:Description>
 
         else () (: no map-key "nodes" :)
@@ -428,6 +438,97 @@ as element()* {
 
     return
         ( $playRDF , $charactersRDF)
+};
+
+
+
+
+(:~
+ : Characters of a play as RDF
+ : @param $corpusname
+ : @param $playname
+ : @param $playuri URI of the play
+ : @param $includeMetrics should be set to true if network metrics of characters should be included; default true
+ : @param $wrapRDF wrap with rdf:RDF?
+ :)
+
+declare function drdf:characters-to-rdf($corpusname as xs:string, $playname as xs:string, $playuri as xs:string, $includeMetrics as xs:boolean , $wrapRDF as xs:boolean)
+as element()* {
+    let $cast := dutil:cast-info($corpusname, $playname)
+    let $characters :=
+        for $character-map in $cast?*
+        let $character-uri := drdf:get-character-uri($playuri, $character-map?id)
+        (:
+        "numOfSpeechActs": 68,
+        "gender": "MALE", / "FEMALE" / "UNKNOWN" --> implemented
+        ""numOfScenes": 15,"
+        "name": Dietrich,
+    "numOfWords": 1580,
+    "isGroup": false(),
+    "id": "dietrich",
+        :)
+
+        (: let $rdfs-label := $character-map?name :)
+
+        let $gender :=
+            if ( map:contains($character-map, "gender") ) then
+                let $gendertype := $drdf:typebaseuri || "gender/" || lower-case($character-map?gender) return
+                <crm:P2_has_type rdf:resource="{$gendertype}"/>
+            else ()
+
+
+
+        (: metrics :)
+        let $character-degree :=
+                    if ( map:contains($character-map, "degree") ) then
+                        <dracon:degree rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                            {$character-map?degree}
+                        </dracon:degree>
+                    else ()
+
+                let $character-weightedDegree :=
+                    if ( map:contains($character-map, "weightedDegree") ) then
+                        <dracon:weightedDegree rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                            {$character-map?weightedDegree}
+                        </dracon:weightedDegree>
+                    else ()
+
+                let $character-closeness :=
+                    if ( map:contains($character-map, "closeness") ) then
+                        <dracon:closeness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                            {$character-map?closeness}
+                        </dracon:closeness>
+                    else ()
+
+                let $character-eigenvector :=
+                    if ( map:contains($character-map, "eigenvector") ) then
+                        <dracon:eigenvector rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                            {$character-map?eigenvector}
+                        </dracon:eigenvector>
+                    else ()
+
+               let $character-betweenness :=
+                    if ( map:contains($character-map, "betweenness") ) then
+                        <dracon:betweenness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                            {$character-map?betweenness}
+                        </dracon:betweenness>
+                    else ()
+
+
+        return
+            <rdf:Description rdf:about="{$character-uri}">
+                <rdf:type rdf:resource="{$drdf:frbroo}F38_Character"/>
+                <rdf:type rdf:resource="{$drdf:dracon}character"/>
+                {(: $rdfs-label :) ()}
+                {$gender}
+                {if ( $includeMetrics ) then $character-degree else ()}
+                {if ( $includeMetrics ) then $character-weightedDegree else ()}
+                {if ( $includeMetrics ) then $character-closeness else ()}
+                {if ( $includeMetrics ) then $character-eigenvector else ()}
+                {if ( $includeMetrics ) then $character-betweenness else ()}
+            </rdf:Description>
+
+    return $characters
 };
 
 (:~
@@ -583,6 +684,7 @@ as element(rdf:RDF) {
 
 
   (: these metrics have to be retrieved by separate util-function :)
+  (: could be retrieved by counting div @type 'act' :)
   let $numOfActs :=
         <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
             {()}
@@ -599,6 +701,7 @@ as element(rdf:RDF) {
                 </dracon:numOfSegments>
         else ()
 
+    (: same as networkSize? :)
     let $numOfSpeakers :=
         <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
           {()}
@@ -608,7 +711,7 @@ as element(rdf:RDF) {
     (: todo :)
 
     (: cast :)
-    (: todo :)
+    let $cast := ()
 
   (: build main RDF Chunk :)
   let $inner :=
