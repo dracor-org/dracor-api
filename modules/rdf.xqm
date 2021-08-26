@@ -325,6 +325,13 @@ as element()* {
 
     (: missing in dracon: "size"?, "numConnectedComponents", wikipediaLinkCount"  :)
 
+    let $networkSize :=
+        if ( map:contains($metrics, "size") ) then
+            <dracon:networkSize rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                {$metrics?size}
+            </dracon:networkSize>
+        else ()
+
     let $numConnectedComponents :=
         if ( map:contains($metrics, "numConnectedComponents") ) then
             <dracon:numConnectedComponents rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
@@ -412,6 +419,7 @@ as element()* {
             {$density}
             {$diameter}
             {$maxDegree}
+            {$networkSize}
             {$numConnectedComponents}
             {$wikipediaLinkCount}
             {$maxDegreeCharacters}
@@ -501,10 +509,11 @@ as element(rdf:RDF) {
   let $in_corpus := <dracon:in_corpus rdf:resource="{$parent-corpus-uri}"/>
 
   (: network-metrics – wrapper for dutil:get-play-metrics($corpusname, $playname) :)
+  (: includes triples for network-metrics of play and it's character-nodes :)
   let $network-metrics := drdf:play-metrics-to-rdf($corpusname, $playname, $play-uri, false())
 
-
   (: these metrics have to be retrieved by separate util-function :)
+  (: HIER :)
   let $numOfActs :=
         <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
             {()}
