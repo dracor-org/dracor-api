@@ -405,9 +405,7 @@ as element()* {
                         {$character-eigenvector}
                     </rdf:Description>
 
-
-
-        else ()
+        else () (: no map-key "nodes" :)
 
 
 
@@ -444,11 +442,11 @@ as element(rdf:RDF) {
   let $paths := dutil:filepaths($play/base-uri())
   let $corpusname := $paths?corpusname
   let $playname := $paths?playname
-  let $metricspath := $paths?files?metrics
-  let $metrics := doc($metricspath)
   let $lang := $play/@xml:lang/string()
 
   let $play-uri := drdf:get-play-uri($play)
+
+  let $play-info := dutil:get-play-info($corpusname, $playname)
 
   (: Titles, ... :)
   let $defaultLanguageTitlesMap := dutil:get-titles($play)
@@ -512,6 +510,51 @@ as element(rdf:RDF) {
   (: includes triples for network-metrics of play and it's character-nodes :)
   let $network-metrics := drdf:play-metrics-to-rdf($corpusname, $playname, $play-uri, false())
 
+  (: dates can be retrieved either from the play-info map generated or dutil:get-years-iso($tei); $play-info is available at this point :)
+  (: "yearWritten": "1888", xs:string, "yearPremiered": (),
+    "yearPrinted": "1888", xs:string :)
+    (: "yearNormalized": xs:integer(dutil:get-normalized-year($tei)) is cast to an integer! not xs:string or empty sequence! :)
+    (:
+     <owl:DatatypeProperty rdf:about="http://dracor.org/ontology#normalisedYear">
+     <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#gYear"/>
+
+      <owl:DatatypeProperty rdf:about="http://dracor.org/ontology#premiereYear">
+      <owl:DatatypeProperty rdf:about="http://dracor.org/ontology#printYear">
+      <owl:DatatypeProperty rdf:about="http://dracor.org/ontology#writtenYear">
+    :)
+
+    let $writtenYear :=
+        if ( map:contains($play-info, "yearWritten") ) then
+            if ( $play-info?yearWritten ) then
+                <dracon:writtenYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+                    {$play-info?yearWritten}
+                </dracon:writtenYear>
+            else ()
+        else ()
+
+    let $printYear :=
+        if ( map:contains($play-info, "yearPrinted") ) then
+            if ( $play-info?yearPrinted ) then
+                <dracon:printYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+                    {$play-info?yearPrinted}
+                </dracon:printYear>
+            else ()
+        else ()
+
+
+    let $premiereYear :=
+        if ( map:contains($play-info, "yearPremiered") ) then
+                if ( $play-info?yearPremiered ) then
+                <dracon:premiereYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+                    {$play-info?yearPremiered}
+                </dracon:premiereYear>
+                else ()
+        else ()
+
+
+
+
+
   (: these metrics have to be retrieved by separate util-function :)
   (: HIER :)
   let $numOfActs :=
@@ -540,6 +583,9 @@ as element(rdf:RDF) {
       {$dc-creators}
       {$dracor-link}
       {$in_corpus}
+      {$writtenYear}
+      {$printYear}
+      {$premiereYear}
     </rdf:Description>
 
 
