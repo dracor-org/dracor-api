@@ -551,12 +551,19 @@ as element(rdf:RDF) {
                 else ()
         else ()
 
-
+        (: normalized year :)
+    let $normalisedYear :=
+        if ( map:contains($play-info, "yearNormalized") ) then
+            if ( $play-info?yearNormalized ) then
+                <dracon:normalisedYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+                    {$play-info?yearNormalized}
+                </dracon:normalisedYear>
+                else ()
+        else ()
 
 
 
   (: these metrics have to be retrieved by separate util-function :)
-  (: HIER :)
   let $numOfActs :=
         <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
             {()}
@@ -586,6 +593,7 @@ as element(rdf:RDF) {
       {$writtenYear}
       {$printYear}
       {$premiereYear}
+      {$normalisedYear}
     </rdf:Description>
 
 
