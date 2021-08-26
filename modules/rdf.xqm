@@ -561,6 +561,25 @@ as element(rdf:RDF) {
                 else ()
         else ()
 
+    (: dutil:get-play-info($corpusname, $playname) provides some additional metrics :)
+    (: "allInIndex" :)
+    (: "allInSegment" should point to a segment :)
+
+    (: wikidata-id of the play: "wikidataId": "Q51370104", :)
+    let $sameAs-wikidata :=
+        if ( map:contains($play-info, "wikidataId") ) then
+            <owl:sameAs rdf:resource="{$drdf:wd || $play-info?wikidataId}"/>
+        else ()
+    (: should add external identifiers via crm:identified by... :)
+
+
+    (: "originalSource" :)
+    (: maybe use dc:source :)
+    let $dc-source :=
+        if ( map:contains($play-info, "originalSource") ) then
+            <dc:source>{$play-info?originalSource}</dc:source>
+        else ()
+
 
 
   (: these metrics have to be retrieved by separate util-function :)
@@ -569,15 +588,27 @@ as element(rdf:RDF) {
             {()}
         </dracon:numOfActs>
 
+    (: will count the segments in $play-info :)
+    (: there seems to be no dutil:function to retrieve this value :)
     let $numOfSegments :=
-      <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-        {()}
-      </dracon:numOfSegments>
+        if ( map:contains($play-info, "segments") ) then
+            let $segmentCnt := count($play-info?segments?*)
+            return
+                <dracon:numOfSegments rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                    {$segmentCnt}
+                </dracon:numOfSegments>
+        else ()
 
     let $numOfSpeakers :=
         <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
           {()}
         </dracon:numOfSpeakers>
+
+    (: segments :)
+    (: todo :)
+
+    (: cast :)
+    (: todo :)
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -588,12 +619,15 @@ as element(rdf:RDF) {
       {$eng-rdfs-label}
       {$dc-titles}
       {$dc-creators}
+      {$dc-source}
       {$dracor-link}
       {$in_corpus}
       {$writtenYear}
       {$printYear}
       {$premiereYear}
       {$normalisedYear}
+      {$numOfSegments}
+      {$sameAs-wikidata}
     </rdf:Description>
 
 
