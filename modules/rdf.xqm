@@ -464,9 +464,11 @@ as element()* {
         "gender": "MALE", / "FEMALE" / "UNKNOWN" --> implemented
         ""numOfScenes": 15,"
         "name": Dietrich,
-    "numOfWords": 1580,
-    "isGroup": false(),
+    "numOfWords": 1580, --> implemented
+    "isGroup": false(), --> implemented
+    "numOfScenes": 1,
     "id": "dietrich",
+    Wikidata --> implemented
         :)
 
         let $rdfs-label :=
@@ -480,6 +482,14 @@ as element()* {
                 <crm:P2_has_type rdf:resource="{$gendertype}"/>
             else ()
 
+        let $hasGroupType :=
+            if ( map:contains($character-map, "isGroup") ) then
+                if ( $character-map?isGroup ) (:true():) then
+                    let $groupType := $drdf:typebaseuri || "group"
+                    return <crm:P2_has_type rdf:resource="{$groupType}"/>
+                else ()
+            else ()
+
         let $character-in := <dracon:is_character_in rdf:resource="{$playuri}"/>
         let $has-character := <dracon:has_character rdf:resource="{$character-uri}"/>
 
@@ -487,6 +497,14 @@ as element()* {
             if ( map:contains($character-map, "wikidataId") ) then
                 <frbroo:R57_is_based_on rdf:resource="{$drdf:wd}{$character-map?wikidataId}"/>
             else ()
+
+        let $speaks_numOfWords :=
+            if ( map:contains($character-map, "numOfWords") ) then
+                <dracon:speaks_numOfWords rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                    {$character-map?numOfWords}
+                </dracon:speaks_numOfWords>
+            else ()
+
 
 
 
@@ -534,11 +552,13 @@ as element()* {
                 <rdf:type rdf:resource="{$drdf:dracon}character"/>
                 {$rdfs-label}
                 {$gender}
+                {$hasGroupType}
                 {if ( $includeMetrics ) then $character-degree else ()}
                 {if ( $includeMetrics ) then $character-weightedDegree else ()}
                 {if ( $includeMetrics ) then $character-closeness else ()}
                 {if ( $includeMetrics ) then $character-eigenvector else ()}
                 {if ( $includeMetrics ) then $character-betweenness else ()}
+                {$speaks_numOfWords}
                 {$character-in}
                 {$based-on-wikidata}
             </rdf:Description> ,
