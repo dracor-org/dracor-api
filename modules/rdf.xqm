@@ -447,12 +447,13 @@ as element()* {
  : Characters of a play as RDF
  : @param $corpusname
  : @param $playname
+ : @param $playtitle Title of play (will be added to rdfs:label). If empty string, no additional text will be added to label
  : @param $playuri URI of the play
  : @param $includeMetrics should be set to true if network metrics of characters should be included; default true
  : @param $wrapRDF wrap with rdf:RDF?
  :)
 
-declare function drdf:characters-to-rdf($corpusname as xs:string, $playname as xs:string, $playuri as xs:string, $includeMetrics as xs:boolean , $wrapRDF as xs:boolean)
+declare function drdf:characters-to-rdf($corpusname as xs:string, $playname as xs:string, $playtitle as xs:string, $playuri as xs:string, $includeMetrics as xs:boolean , $wrapRDF as xs:boolean)
 as element()* {
     let $cast := dutil:cast-info($corpusname, $playname)
     let $characters :=
@@ -468,12 +469,23 @@ as element()* {
     "id": "dietrich",
         :)
 
-        (: let $rdfs-label := $character-map?name :)
+        let $rdfs-label :=
+            if ( map:contains($character-map, "name") ) then
+                <rdfs:label>{$character-map?name}{ if ($playtitle != "") then " [Character in '" || $playtitle || "']" else ""}</rdfs:label>
+            else ()
 
         let $gender :=
             if ( map:contains($character-map, "gender") ) then
                 let $gendertype := $drdf:typebaseuri || "gender/" || lower-case($character-map?gender) return
                 <crm:P2_has_type rdf:resource="{$gendertype}"/>
+            else ()
+
+        let $character-in := <dracon:is_character_in rdf:resource="{$playuri}"/>
+        let $has-character := <dracon:has_character rdf:resource="{$character-uri}"/>
+
+        let $based-on-wikidata :=
+            if ( map:contains($character-map, "wikidataId") ) then
+                <frbroo:R57_is_based_on rdf:resource="{$drdf:wd}{$character-map?wikidataId}"/>
             else ()
 
 
@@ -516,17 +528,24 @@ as element()* {
 
 
         return
+            (
             <rdf:Description rdf:about="{$character-uri}">
                 <rdf:type rdf:resource="{$drdf:frbroo}F38_Character"/>
                 <rdf:type rdf:resource="{$drdf:dracon}character"/>
-                {(: $rdfs-label :) ()}
+                {$rdfs-label}
                 {$gender}
                 {if ( $includeMetrics ) then $character-degree else ()}
                 {if ( $includeMetrics ) then $character-weightedDegree else ()}
                 {if ( $includeMetrics ) then $character-closeness else ()}
                 {if ( $includeMetrics ) then $character-eigenvector else ()}
                 {if ( $includeMetrics ) then $character-betweenness else ()}
+                {$character-in}
+                {$based-on-wikidata}
+            </rdf:Description> ,
+            <rdf:Description rdf:about="{$playuri}">
+             {$has-character}
             </rdf:Description>
+            )
 
     return $characters
 };
@@ -711,7 +730,7 @@ as element(rdf:RDF) {
     (: todo :)
 
     (: cast :)
-    let $cast := ()
+    let $cast := () (: use $play-info?title for playtitle :)
 
   (: build main RDF Chunk :)
   let $inner :=
