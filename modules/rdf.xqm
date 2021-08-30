@@ -460,13 +460,12 @@ as element()* {
         for $character-map in $cast?*
         let $character-uri := drdf:get-character-uri($playuri, $character-map?id)
         (:
-        "numOfSpeechActs": 68,
+        "numOfSpeechActs": 68, --> implemented
         "gender": "MALE", / "FEMALE" / "UNKNOWN" --> implemented
-        ""numOfScenes": 15,"
         "name": Dietrich,
     "numOfWords": 1580, --> implemented
     "isGroup": false(), --> implemented
-    "numOfScenes": 1,
+    "numOfScenes": 1, --> implemented
     "id": "dietrich",
     Wikidata --> implemented
         :)
@@ -504,6 +503,23 @@ as element()* {
                     {$character-map?numOfWords}
                 </dracon:speaks_numOfWords>
             else ()
+
+        let $has_numOfSpeechActs :=
+            if ( map:contains($character-map, "numOfSpeechActs") ) then
+                <dracon:has_numOfSpeechActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                    {$character-map?numOfSpeechActs}
+                </dracon:has_numOfSpeechActs>
+            else ()
+
+        let $in_numOfScenes :=
+            if ( map:contains($character-map, "numOfScenes") ) then
+                <dracon:in_numOfScenes rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+                    {$character-map?numOfScenes}
+                </dracon:in_numOfScenes>
+            else ()
+
+
+
 
 
 
@@ -559,6 +575,8 @@ as element()* {
                 {if ( $includeMetrics ) then $character-eigenvector else ()}
                 {if ( $includeMetrics ) then $character-betweenness else ()}
                 {$speaks_numOfWords}
+                {$has_numOfSpeechActs}
+                {$in_numOfScenes}
                 {$character-in}
                 {$based-on-wikidata}
             </rdf:Description> ,
