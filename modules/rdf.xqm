@@ -786,7 +786,7 @@ as element(rdf:RDF) {
     (: todo :)
 
     (: cast :)
-    let $cast := () (: use $play-info?title for playtitle :)
+    let $cast := drdf:characters-to-rdf($corpusname, $playname, $play-info?title, $play-uri, false() , false()) (: use $play-info?title for playtitle, do not include metrics, do not wrap :)
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -826,6 +826,7 @@ as element(rdf:RDF) {
     {$eng-crm-title-elements}
     {$author-rdf}
     {$network-metrics}
+    {$cast}
     </rdf:RDF>
 
 
