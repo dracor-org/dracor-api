@@ -518,8 +518,23 @@ as element()* {
                 </dracon:in_numOfScenes>
             else ()
 
+            let $character-appellation-uri := $character-uri || "/appellation/" || "1"
+
+            let $identified_by_appellation :=
+                if (map:contains($character-map, "name") ) then
+                    <crm:P1_is_identified_by rdf:resource="{$character-appellation-uri}"/>
+                else ()
 
 
+            let $appellation-node :=
+                if (map:contains($character-map, "name") ) then
+                    <rdf:Description rdf:about="{$character-appellation-uri}">
+                        <rdf:type rdf:resource="{$drdf:crm}E41_Appellation"/>
+                        <rdfs:label>{$character-map?name} [appellation of character]</rdfs:label>
+                        <crm:P1i_identifies rdf:resource="{$character-uri}"/>
+                        <rdf:value>{$character-map?name}</rdf:value>
+                    </rdf:Description>
+                else ()
 
 
 
@@ -567,6 +582,7 @@ as element()* {
                 <rdf:type rdf:resource="{$drdf:frbroo}F38_Character"/>
                 <rdf:type rdf:resource="{$drdf:dracon}character"/>
                 {$rdfs-label}
+                {$identified_by_appellation}
                 {$gender}
                 {$hasGroupType}
                 {if ( $includeMetrics ) then $character-degree else ()}
@@ -583,6 +599,8 @@ as element()* {
             <rdf:Description rdf:about="{$playuri}">
              {$has-character}
             </rdf:Description>
+            ,
+            $appellation-node
             )
 
     return $characters
