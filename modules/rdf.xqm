@@ -808,14 +808,27 @@ as element(rdf:RDF) {
             <dc:source>{$play-info?originalSource}</dc:source>
         else ()
 
+  (: some metrics are only in dutil:dutil:get-corpus-meta-data; which could be moved to separate dutil function  - see https://github.com/dracor-org/dracor-api/issues/152 :)
 
+  (:
+   "numOfSegments": count(dutil:get-segments($tei)),
+    "numOfActs": count($tei//tei:div[@type="act"]), --> implemented
+    "numOfSpeakers": $num-speakers, --> implemented
+    "numOfSpeakersMale": $num-male,
+    "numOfSpeakersFemale": $num-female,
+    "numOfSpeakersUnknown": $num-unknown,
+    "numOfPersonGroups": $num-groups,
+    "numOfP": $num-p,
+    "numOfL": $num-l,
+  :)
 
-  (: these metrics have to be retrieved by separate util-function :)
-  (: could be retrieved by counting div @type 'act' :)
+  (: in dutil:get-corpus-meta-data: "numOfActs": count($tei//tei:div[@type="act"]), :)
   let $numOfActs :=
+        if ( $play//tei:div[@type eq "act"] ) then
         <dracon:numOfActs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-            {()}
+            {count($play//tei:div[@type eq "act"])}
         </dracon:numOfActs>
+        else ()
 
     (: will count the segments in $play-info :)
     (: there seems to be no dutil:function to retrieve this value :)
@@ -828,17 +841,70 @@ as element(rdf:RDF) {
                 </dracon:numOfSegments>
         else ()
 
+    (: numOfSpeakers :)
+    (: let $num-speakers := count(dutil:distinct-speakers($tei)) :)
     (: same as networkSize? :)
+    (: could count cast :)
+    let $num-speakers := count(dutil:distinct-speakers($play))
     let $numOfSpeakers :=
         <dracon:numOfSpeakers rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
-          {()}
+          {$num-speakers}
         </dracon:numOfSpeakers>
+
+    (: gender of speakers :)
+    (: copied code from dutil:get-corpus-meta-data :)
+    let $cast-tei := $play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)
+    let $num-male := count($cast-tei[@sex="MALE"])
+    let $num-female := count($cast-tei[@sex="FEMALE"])
+    let $num-unknown := count($cast-tei[@sex="UNKNOWN"])
+    let $num-groups := count($cast-tei[name()="personGrp"])
+    (: "numOfSpeakersMale": $num-male, :)
+
+    let $numOfSpeakersMale :=
+        <dracon:numOfSpeakersMale rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {$num-male}
+        </dracon:numOfSpeakersMale>
+
+    let $numOfSpeakersFemale :=
+        <dracon:numOfSpeakersFemale rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {$num-female}
+        </dracon:numOfSpeakersFemale>
+
+    let $numOfSpeakersUnknown :=
+        <dracon:numOfSpeakersUnknown rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {$num-unknown}
+        </dracon:numOfSpeakersUnknown>
+
+    let $numOfSpeakerGroups :=
+        <dracon:numOfSpeakerGroups rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+          {$num-groups}
+        </dracon:numOfSpeakerGroups>
+
+    (: only in dutil:get-corpus-meta-data :)
+    (:     "numOfP": $num-p,
+    "numOfL": $num-l, :)
+    let $num-p := count($play//tei:body//tei:sp//tei:p)
+    let $num-l := count($play//tei:body//tei:sp//tei:l)
+
+    let $numOfParagraphs :=
+        <dracon:numOfParagraphs rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+            {$num-p}
+        </dracon:numOfParagraphs>
+
+    let $numOfLines :=
+        <dracon:numOfLines rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">
+            {$num-l}
+        </dracon:numOfLines>
+
 
     (: segments :)
     let $segments := drdf:segments-to-rdf($play-info?segments, $play-uri, $play-info?title )
 
     (: cast :)
     let $cast := drdf:characters-to-rdf($corpusname, $playname, $play-info?title, $play-uri, false() , false()) (: use $play-info?title for playtitle, do not include metrics, do not wrap :)
+
+    (: (social)relations of characters of a play :)
+    (: to do :)
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -857,6 +923,14 @@ as element(rdf:RDF) {
       {$premiereYear}
       {$normalisedYear}
       {$numOfSegments}
+      {$numOfActs}
+      {$numOfLines}
+      {$numOfParagraphs}
+      {$numOfSpeakers}
+      {$numOfSpeakersMale}
+      {$numOfSpeakersFemale}
+      {$numOfSpeakersUnknown}
+      {$numOfSpeakerGroups}
       {$sameAs-wikidata}
     </rdf:Description>
 
