@@ -697,7 +697,7 @@ declare function drdf:relations-to-rdf($relations as array(map()), $playuri as x
                 local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri, $relation-map?source || " has spouse " || $relation-map?target) ,
                 local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri-inverse, $relation-map?target || " is spouse of " || $relation-map?source),
                 local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri, $relation-map?target || " has spouse " || $relation-map?source),
-                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-inverse, $relation-map?source || " is spouse of " || $relation-map?target) ,
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-inverse, $relation-map?source || " is spouse of " || $relation-map?target)
                 )
 
 
