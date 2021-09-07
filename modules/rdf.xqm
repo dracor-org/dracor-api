@@ -699,11 +699,77 @@ declare function drdf:relations-to-rdf($relations as array(map()), $playuri as x
                 local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri, $relation-map?target || " has spouse " || $relation-map?source),
                 local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-inverse, $relation-map?source || " is spouse of " || $relation-map?target)
                 )
-
-
         (: siblings :)
+        (: mutual :)
+        case "siblings" return
+            let $relation-type-uri := $drdf:relationtypebaseuri || "has_sibling"
+            let $relation-type-uri-inverse := $drdf:relationtypebaseuri || "is_sibling_of"
+            return
+                (
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri, $relation-map?source || " has sibling " || $relation-map?target) ,
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri-inverse, $relation-map?target || " is sibling of " || $relation-map?source),
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri, $relation-map?target || " has sibling " || $relation-map?source),
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-inverse, $relation-map?source || " is sibling of " || $relation-map?target)
+                )
 
         (: friends :)
+        case "friends" return
+            let $relation-type-uri := $drdf:relationtypebaseuri || "has_friend"
+            let $relation-type-uri-inverse := $drdf:relationtypebaseuri || "is_friend_of"
+            return
+                (
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri, $relation-map?source || " has friend " || $relation-map?target) ,
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri-inverse, $relation-map?target || " is friend of " || $relation-map?source),
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri, $relation-map?target || " has friend " || $relation-map?source),
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-inverse, $relation-map?source || " is friend of " || $relation-map?target)
+                )
+
+        (: lover :)
+        (: consider lover_of/has_lover mutual relations :)
+        (: but subject to discussion .. :)
+        case "lover_of" return
+            let $relation-type-uri := $drdf:relationtypebaseuri || "is_lover_of"
+            let $relation-type-uri-inverse := $drdf:relationtypebaseuri || "has_lover"
+            return
+                (
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri, $relation-map?source || " is lover of " || $relation-map?target) ,
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri-inverse, $relation-map?target || " has lover " || $relation-map?source),
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri, $relation-map?target || " is lover of " || $relation-map?source),
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-inverse, $relation-map?source || " has lover " || $relation-map?target)
+                )
+
+        (: parent_of, child_of :)
+        case "parent_of" return
+            let $relation-type-uri-1 := $drdf:relationtypebaseuri || "is_parent_of"
+            let $relation-type-uri-inverse-1 := $drdf:relationtypebaseuri || "has_parent"
+            let $relation-type-uri-2 := $drdf:relationtypebaseuri || "is_child_of"
+            let $relation-type-uri-inverse-2 := $drdf:relationtypebaseuri || "has_child"
+            return
+                (
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-1, $relation-map?source || " is parent of " || $relation-map?target) ,
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri-inverse-1, $relation-map?target || " has parent " || $relation-map?source),
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri-2, $relation-map?target || " is child of " || $relation-map?source),
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri-inverse-2, $relation-map?source || " has child " || $relation-map?target)
+                )
+
+
+        (: associated_with :)
+        case "associated_with" return
+            let $relation-type-uri := $drdf:relationtypebaseuri || "is_associated_with"
+            return
+                (
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri, $relation-map?source || " is associated with " || $relation-map?target) ,
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri, $relation-map?target || " is associated with " || $relation-map?source)
+                )
+
+        (: related to :)
+        case "related_with" return
+             let $relation-type-uri := $drdf:relationtypebaseuri || "is_related_with"
+             return
+                 (
+                local:relation-to-rdf($source-uri, $target-uri, $relation-type-uri, $relation-map?source || " is related with " || $relation-map?target) ,
+                local:relation-to-rdf($target-uri, $source-uri, $relation-type-uri, $relation-map?target || " is related with " || $relation-map?source)
+                )
 
         default return ()
 
