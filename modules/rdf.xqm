@@ -28,6 +28,7 @@ declare variable $drdf:sitebase := "https://dracor.org/";
 declare variable $drdf:baseuri := "https://dracor.org/entity/";
 declare variable $drdf:typebaseuri := $drdf:baseuri || "type/";
 declare variable $drdf:relationtypebaseuri := $drdf:typebaseuri || "relation/";
+declare variable $drdf:genretypebaseuri := $drdf:typebaseuri || "genre/";
 declare variable $drdf:corpusbaseuri := $drdf:baseuri || "corpus/";
 declare variable $drdf:relationbaseuri := $drdf:baseuri || "relation/";
 (: baseuris of ontologies :)
@@ -798,6 +799,81 @@ declare function local:relation-to-rdf($source-uri as xs:string, $target-uri as 
         )
 };
 
+
+(:~
+ : Add genre information in RDF based on tei:textClass of a play
+ :
+ : @param $textClass textClass element from the play instance
+ : @param $play-uri URI of the play
+ : :)
+declare function drdf:textClass-genre-to-rdf($textClass as element(tei:textClass) , $play-uri as xs:string ) as element()* {
+    (: see function dutil:get-text-classes($tei as node()) as xs:string* {
+  for $id in $tei//tei:textClass
+    /tei:classCode[@scheme="http://www.wikidata.org/entity/"]/string()
+  where map:contains($config:wd-text-classes, $id)
+  return $config:wd-text-classes($id)
+}; :)
+
+    (: iterate over classcodes and take only the one's that are valid genre class codes as defined in $config:wd-text-classes :)
+
+    for $textClass-id in $textClass/tei:classCode[@scheme="http://www.wikidata.org/entity/"]/string()
+        where map:contains($config:wd-text-classes, $textClass-id)
+        let $genre-label-string := $config:wd-text-classes($textClass-id)
+        let $genre-type-uri := $drdf:genretypebaseuri || $genre-label-string
+
+        let $type-creation-uri := $drdf:baseuri || "E38/" || $textClass-id
+        let $type-assignment-uri := $drdf:baseuri || "E17/"  || util:hash((concat($genre-type-uri,"+",$play-uri)) ,"md5")
+
+        let $type-creation-rdf :=
+            (
+            <rdf:Description rdf:about="{$type-creation-uri}">
+                <rdf:type rdf:resource="{$drdf:crm}E83_Type_Creation"/>
+                <rdfs:label>Creation of Genre Type '{$genre-label-string}' based on Wikidata-Entity '{$textClass-id}'</rdfs:label>
+                <crm:P136_was_based_on rdf:resource="{$drdf:wd}{$textClass-id}"/>
+                <crm:P135_created_type rdf:resource="{$genre-type-uri}"/>
+            </rdf:Description>  ,
+            <rdf:Description rdf:about="{$drdf:wd}{$textClass-id}">
+                <crm:P136i_supported_type_creation rdf:resource="{$type-creation-uri}"/>
+            </rdf:Description>
+            )
+
+        let $genre-type-rdf :=
+            <rdf:Description rdf:about="{$genre-type-uri}">
+                <rdf:type rdf:resource="{$drdf:crm}E55_Type"/>
+                <crm:P2_has_type rdf:resource="{$drdf:typebaseuri}genre"/>
+                <rdfs:label>{$genre-label-string} [Genre]</rdfs:label>
+                <crm:P135i_was_created_by rdf:resource="{$type-creation-uri}"/>
+                <crm:P42i_was_assigned_by rdf:resource="{$type-assignment-uri}"/>
+            </rdf:Description>
+
+
+        let $type-assignment-rdf :=
+            (
+            <rdf:Description rdf:about="{$type-assignment-uri}">
+                <rdf:type rdf:resource="{$drdf:crm}E17_Type_Assignment"/>
+                <rdfs:label>Assigning of Genre Type '{$genre-label-string}' to Play '{$play-uri}'</rdfs:label>
+                <crm:P2_has_type rdf:resource="{$drdf:typebaseuri}classification/genre"/>
+                <crm:P41_classified rdf:resource="{$play-uri}"/>
+                <crm:P42_assigned rdf:resource="{$genre-type-uri}"/>
+            </rdf:Description> ,
+            <rdf:Description rdf:about="{$play-uri}">
+                <crm:P41i_was_classified_by rdf:resource="{$type-assignment-uri}"/>
+            </rdf:Description>
+
+            )
+
+
+
+
+        return
+            (
+             $genre-type-rdf ,
+             $type-creation-rdf ,
+             $type-assignment-rdf
+            )
+
+};
+
 (:~
  : Create an RDF representation of a play.
  :
@@ -1046,7 +1122,10 @@ as element(rdf:RDF) {
     let $relations := drdf:relations-to-rdf($play-info?relations, $play-uri )
 
     (: genre :)
-    (: 2do :)
+
+    (: in play-info: "genre": "Tragedy", :)
+    (: functionality somehow in of dutil:get-corpus-meta-data, but modelling will be more complex! :)
+
 
   (: build main RDF Chunk :)
   let $inner :=
