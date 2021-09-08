@@ -819,7 +819,7 @@ declare function drdf:textClass-genre-to-rdf($textClass as element(tei:textClass
     for $textClass-id in $textClass/tei:classCode[@scheme="http://www.wikidata.org/entity/"]/string()
         where map:contains($config:wd-text-classes, $textClass-id)
         let $genre-label-string := $config:wd-text-classes($textClass-id)
-        let $genre-type-uri := $drdf:genretypebaseuri || $genre-label-string
+        let $genre-type-uri := $drdf:genretypebaseuri || lower-case($genre-label-string)
 
         let $type-creation-uri := $drdf:baseuri || "E38/" || $textClass-id
         let $type-assignment-uri := $drdf:baseuri || "E17/"  || util:hash((concat($genre-type-uri,"+",$play-uri)) ,"md5")
@@ -1125,6 +1125,9 @@ as element(rdf:RDF) {
 
     (: in play-info: "genre": "Tragedy", :)
     (: functionality somehow in of dutil:get-corpus-meta-data, but modelling will be more complex! :)
+    let $tei-textClass :=  $play//tei:textClass
+    let $genre-rdf := if ($tei-textClass//tei:classCode) then drdf:textClass-genre-to-rdf($tei-textClass, $play-uri) else ()
+
 
 
   (: build main RDF Chunk :)
@@ -1176,6 +1179,7 @@ as element(rdf:RDF) {
     {$cast}
     {$segments}
     {$relations}
+    {$genre-rdf}
     </rdf:RDF>
 
 
