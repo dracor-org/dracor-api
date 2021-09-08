@@ -1043,7 +1043,7 @@ as element(rdf:RDF) {
     let $cast := drdf:characters-to-rdf($corpusname, $playname, $play-info?title, $play-uri, false() , false()) (: use $play-info?title for playtitle, do not include metrics, do not wrap :)
 
     (: (social)relations of characters of a play :)
-    let $relations := ()
+    let $relations := drdf:relations-to-rdf($play-info?relations, $play-uri )
 
     (: genre :)
     (: 2do :)
@@ -1096,6 +1096,7 @@ as element(rdf:RDF) {
     {$network-metrics}
     {$cast}
     {$segments}
+    {$relations}
     </rdf:RDF>
 
 
