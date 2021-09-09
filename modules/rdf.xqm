@@ -132,18 +132,13 @@ as element()* {
                 default return ()
 
     (: Wikidata-Identifier also cidoc-appellation-style :)
-
+    (: maybe add this functionality to more generic id generation function :)
     let $wd := for $refMap in $authorMap?refs?* where $refMap?type eq "wikidata" return $refMap?ref
     let $wd-identifier-uri := $authorURI || "/id/wikidata"
+    let $wd-identifier-label := "Wikidata Identifier of " || $authorMap?name
     let $wd-identifier-triples :=
         if ( $wd != "" or $wd != () ) then
-        <rdf:Description rdf:about="{$wd-identifier-uri}">
-            <rdf:type rdf:resource="{$drdf:crm}E42_Identifier"/>
-            <crm:P2_has_type rdf:resource="{$drdf:typebaseuri}id/wikidata"/>
-            <rdfs:label>Wikidata Identifier of {$authorMap?name}</rdfs:label>
-            <crm:P1i_identifies rdf:resource="{$authorURI}"/>
-            <rdf:value>{$wd}</rdf:value>
-        </rdf:Description>
+            drdf:cidoc-identifier($wd-identifier-uri, "wikidata", $wd-identifier-label , $authorURI, $wd)
         else ()
 
     (: generated RDF follows :)
@@ -157,7 +152,6 @@ as element()* {
             {if ($main-rdfs-label) then $main-rdfs-label else ()}
             {if ($en-rdfs-label) then $en-rdfs-label else () }
             {$is-author-of}
-            { if ( $wd != "" or $wd != () ) then <crm:P1_is_identified_by rdf:resource="{$wd-identifier-uri}"/> else ()}
             {if ($sameAs) then $sameAs else ()}
         </rdf:Description>
         , (: important!:)
@@ -890,6 +884,31 @@ declare function drdf:textClass-genre-to-rdf($textClass as element(tei:textClass
 };
 
 (:~
+ : Generates crm:E42_Identifier and connect it to an crm:E1_Entity
+ :
+ : @param $id-uri URI of the identifier
+ : @param $id-type-part part that will be added to the E55 Type after type/id/, e.g. type/id/wikidata
+ : @param $label text that will be added to rdfs:label of the identifier
+ : @param $identifies-uri URI of the Entity that will be identified by the identifier
+ : @param $value value of the identifier
+ : :)
+declare function drdf:cidoc-identifier($id-uri as xs:string, $id-type-part as xs:string, $label as xs:string, $identifies-uri as xs:string, $value as xs:string)
+as element()* {
+    (
+        <rdf:Description rdf:about="{$id-uri}">
+            <rdf:type rdf:resource="{$drdf:crm}E42_Identifier"/>
+            <crm:P2_has_type rdf:resource="{$drdf:typebaseuri}id/{$id-type-part}"/>
+            <rdfs:label>{$label}</rdfs:label>
+            <crm:P1i_identifies rdf:resource="{$identifies-uri}"/>
+            <rdf:value>{$value}</rdf:value>
+        </rdf:Description>,
+        <rdf:Description rdf:about="{$identifies-uri}">
+            <crm:P1_is_identified_by rdf:resource="{$id-uri}"/>
+        </rdf:Description>
+    )
+};
+
+(:~
  : Create an RDF representation of a play.
  :
  : @param $play TEI element
@@ -1047,7 +1066,23 @@ as element(rdf:RDF) {
         if ( map:contains($play-info, "wikidataId") ) then
             <owl:sameAs rdf:resource="{$drdf:wd || $play-info?wikidataId}"/>
         else ()
+
     (: should add external identifiers via crm:identified by... :)
+    let $wd-identifier-cidoc :=
+        if ( map:contains($play-info, "wikidataId") ) then
+            let $wd-identifier-uri := $play-uri || "/id/wikidata"
+            let $wd-identifier-label := "Wikidata Identifier of play '" || $defaultTitleString ||"'"
+            return
+                drdf:cidoc-identifier($wd-identifier-uri, "wikidata", $wd-identifier-label , $play-uri, $play-info?wikidataId)
+        else ()
+
+    (: dracor-identifiers id and playname cidoc style :)
+    let $playname-id-uri := $play-uri || "/id/playname"
+    let $playname-id-label := "DraCor Identifier 'playname' of play '" || $defaultTitleString || "'"
+    let $playname-id-rdf := drdf:cidoc-identifier($playname-id-uri, "playname", $playname-id-label , $play-uri, $playname)
+
+
+
 
 
     (: "originalSource" :)
@@ -1217,6 +1252,8 @@ as element(rdf:RDF) {
     {$segments}
     {$relations}
     {$genre-rdf}
+    {$wd-identifier-cidoc}
+    {$playname-id-rdf}
     </rdf:RDF>
 
 
