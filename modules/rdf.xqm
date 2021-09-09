@@ -27,6 +27,7 @@ declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 declare variable $drdf:sitebase := "https://dracor.org/";
 declare variable $drdf:baseuri := "https://dracor.org/entity/";
 declare variable $drdf:typebaseuri := $drdf:baseuri || "type/";
+declare variable $drdf:activitybaseuri := $drdf:baseuri || "activity/";
 declare variable $drdf:relationtypebaseuri := $drdf:typebaseuri || "relation/";
 declare variable $drdf:genretypebaseuri := $drdf:typebaseuri || "genre/";
 declare variable $drdf:corpusbaseuri := $drdf:baseuri || "corpus/";
@@ -821,8 +822,8 @@ declare function drdf:textClass-genre-to-rdf($textClass as element(tei:textClass
         let $genre-label-string := $config:wd-text-classes($textClass-id)
         let $genre-type-uri := $drdf:genretypebaseuri || lower-case($genre-label-string)
 
-        let $type-creation-uri := $drdf:baseuri || "E38/" || $textClass-id
-        let $type-assignment-uri := $drdf:baseuri || "E17/"  || util:hash((concat($genre-type-uri,"+",$play-uri)) ,"md5")
+        let $type-creation-uri := $drdf:activitybaseuri || "type_creation/" || $textClass-id
+        let $type-assignment-uri := $drdf:activitybaseuri || "classification/" || util:hash((concat($genre-type-uri,"+",$play-uri)) ,"md5")
 
         let $type-creation-rdf :=
             (
