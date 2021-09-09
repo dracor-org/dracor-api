@@ -967,10 +967,12 @@ as element(rdf:RDF) {
       <owl:DatatypeProperty rdf:about="http://dracor.org/ontology#writtenYear">
     :)
 
+    (: written, print and premiere years are actually string-values, 1919/1920...; removed the explicit datatype --> will be untyped literal in RDF Serialization :)
+
     let $writtenYear :=
         if ( map:contains($play-info, "yearWritten") ) then
             if ( $play-info?yearWritten ) then
-                <dracon:writtenYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+                <dracon:writtenYear>
                     {$play-info?yearWritten}
                 </dracon:writtenYear>
             else ()
@@ -979,7 +981,7 @@ as element(rdf:RDF) {
     let $printYear :=
         if ( map:contains($play-info, "yearPrinted") ) then
             if ( $play-info?yearPrinted ) then
-                <dracon:printYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+                <dracon:printYear>
                     {$play-info?yearPrinted}
                 </dracon:printYear>
             else ()
@@ -989,7 +991,7 @@ as element(rdf:RDF) {
     let $premiereYear :=
         if ( map:contains($play-info, "yearPremiered") ) then
                 if ( $play-info?yearPremiered ) then
-                <dracon:premiereYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+                <dracon:premiereYear>
                     {$play-info?yearPremiered}
                 </dracon:premiereYear>
                 else ()
@@ -1023,6 +1025,8 @@ as element(rdf:RDF) {
         if ( map:contains($play-info, "originalSource") ) then
             <dc:source>{$play-info?originalSource}</dc:source>
         else ()
+
+    (: todo digital source! :)
 
   (: some metrics are only in dutil:dutil:get-corpus-meta-data; which could be moved to separate dutil function  - see https://github.com/dracor-org/dracor-api/issues/152 :)
 
