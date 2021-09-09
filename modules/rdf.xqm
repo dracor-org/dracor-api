@@ -651,7 +651,7 @@ as element()*{
                 <rdfs:label>{$segment-map?title} [Segment in '{$playtitle}']</rdfs:label>
                 <crm:P2_has_type rdf:resource="{$segmentTypeUri}"/>
                 <crm:P106i_forms_part_of rdf:resource="{$playuri}"/>
-                <crm:is_segment_of rdf:resource="{$playuri}"/>
+                <dracon:is_segment_of rdf:resource="{$playuri}"/>
             </rdf:Description>
 
         let $linked-play :=
@@ -1008,8 +1008,24 @@ as element(rdf:RDF) {
         else ()
 
     (: dutil:get-play-info($corpusname, $playname) provides some additional metrics :)
+
     (: "allInIndex" :)
+    let $allInIndex :=
+        if ( map:contains($play-info, "allInIndex") ) then
+            <dracon:allInIndex rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                {$play-info?allInIndex}
+            </dracon:allInIndex>
+        else ()
+
     (: "allInSegment" should point to a segment :)
+    let $allInSegment :=
+        if ( map:contains($play-info, "allInSegment") ) then
+            let $allInSegment-uri := $play-uri || "/segment/" || xs:string($play-info?allInSegment)
+            return
+                <dracon:allInSegment rdf:resource="{$allInSegment-uri}"/>
+        else
+            ()
+
 
     (: wikidata-id of the play: "wikidataId": "Q51370104", :)
     let $sameAs-wikidata :=
@@ -1159,6 +1175,8 @@ as element(rdf:RDF) {
       {$numOfSpeakersFemale}
       {$numOfSpeakersUnknown}
       {$numOfSpeakerGroups}
+      {$allInIndex}
+      {$allInSegment}
       {$sameAs-wikidata}
     </rdf:Description>
 
