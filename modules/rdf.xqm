@@ -131,6 +131,21 @@ as element()* {
                 case "viaf" return <owl:sameAs rdf:resource="{$drdf:viaf}{$refMap?ref}"/>
                 default return ()
 
+    (: Wikidata-Identifier also cidoc-appellation-style :)
+
+    let $wd := for $refMap in $authorMap?refs?* where $refMap?type eq "wikidata" return $refMap?ref
+    let $wd-identifier-uri := $authorURI || "/id/wikidata"
+    let $wd-identifier-triples :=
+        if ( $wd != "" or $wd != () ) then
+        <rdf:Description rdf:about="{$wd-identifier-uri}">
+            <rdf:type rdf:resource="{$drdf:crm}E42_Identifier"/>
+            <crm:P2_has_type rdf:resource="{$drdf:typebaseuri}id/wikidata"/>
+            <rdfs:label>Wikidata Identifier of {$authorMap?name}</rdfs:label>
+            <crm:P1i_identifies rdf:resource="{$authorURI}"/>
+            <rdf:value>{$wd}</rdf:value>
+        </rdf:Description>
+        else ()
+
     (: generated RDF follows :)
     let $generatedRDF :=
         (
@@ -142,12 +157,14 @@ as element()* {
             {if ($main-rdfs-label) then $main-rdfs-label else ()}
             {if ($en-rdfs-label) then $en-rdfs-label else () }
             {$is-author-of}
+            { if ( $wd != "" or $wd != () ) then <crm:P1_is_identified_by rdf:resource="{$wd-identifier-uri}"/> else ()}
             {if ($sameAs) then $sameAs else ()}
         </rdf:Description>
         , (: important!:)
 
         (: appellations and their connections :)
-        $appellations
+        $appellations,
+        $wd-identifier-triples
         )
 
     return
@@ -862,9 +879,6 @@ declare function drdf:textClass-genre-to-rdf($textClass as element(tei:textClass
             </rdf:Description>
 
             )
-
-
-
 
         return
             (
