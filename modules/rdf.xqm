@@ -286,7 +286,7 @@ as element()* {
 
     let $averageClustering :=
         if ( map:contains($metrics, "averageClustering") ) then
-        <dracon:averageClustering rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+        <dracon:averageClustering rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
           {$metrics?averageClustering}
         </dracon:averageClustering>
         else ()
@@ -294,21 +294,21 @@ as element()* {
 
     let $averagePathLength :=
         if ( map:contains($metrics, "averagePathLength") ) then
-        <dracon:averagePathLength rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+        <dracon:averagePathLength rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
           {$metrics?averagePathLength}
         </dracon:averagePathLength>
         else ()
 
     let $averageDegree :=
         if ( map:contains($metrics, "averageDegree") ) then
-        <dracon:averageDegree rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+        <dracon:averageDegree rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
             {$metrics?averageDegree}
         </dracon:averageDegree>
         else ()
 
     let $density :=
         if ( map:contains($metrics, "density") ) then
-        <dracon:density rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+        <dracon:density rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
           {$metrics?density}
         </dracon:density>
         else ()
@@ -389,21 +389,21 @@ as element()* {
 
                 let $character-closeness :=
                     if ( map:contains($character-map, "closeness") ) then
-                        <dracon:closeness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                        <dracon:closeness rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
                             {$character-map?closeness}
                         </dracon:closeness>
                     else ()
 
                 let $character-eigenvector :=
                     if ( map:contains($character-map, "eigenvector") ) then
-                        <dracon:eigenvector rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                        <dracon:eigenvector rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
                             {$character-map?eigenvector}
                         </dracon:eigenvector>
                     else ()
 
                 let $character-betweenness :=
                     if ( map:contains($character-map, "betweenness") ) then
-                        <dracon:betweenness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                        <dracon:betweenness rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
                             {$character-map?betweenness}
                         </dracon:betweenness>
                     else ()
@@ -559,21 +559,21 @@ as element()* {
 
                 let $character-closeness :=
                     if ( map:contains($character-map, "closeness") ) then
-                        <dracon:closeness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                        <dracon:closeness rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
                             {$character-map?closeness}
                         </dracon:closeness>
                     else ()
 
                 let $character-eigenvector :=
                     if ( map:contains($character-map, "eigenvector") ) then
-                        <dracon:eigenvector rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                        <dracon:eigenvector rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
                             {$character-map?eigenvector}
                         </dracon:eigenvector>
                     else ()
 
                let $character-betweenness :=
                     if ( map:contains($character-map, "betweenness") ) then
-                        <dracon:betweenness rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">
+                        <dracon:betweenness rdf:datatype="http://www.w3.org/2001/XMLSchema#float">
                             {$character-map?betweenness}
                         </dracon:betweenness>
                     else ()
