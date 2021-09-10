@@ -27,6 +27,7 @@ declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 declare variable $drdf:sitebase := "https://dracor.org/";
 declare variable $drdf:baseuri := "https://dracor.org/entity/";
 declare variable $drdf:typebaseuri := $drdf:baseuri || "type/";
+declare variable $drdf:datebaseuri := $drdf:baseuri || "date/";
 declare variable $drdf:activitybaseuri := $drdf:baseuri || "activity/";
 declare variable $drdf:relationtypebaseuri := $drdf:typebaseuri || "relation/";
 declare variable $drdf:genretypebaseuri := $drdf:typebaseuri || "genre/";
@@ -909,6 +910,94 @@ as element()* {
 };
 
 (:~
+ : Create an RDF representation of first performance of a play.
+ :
+ : @param $play-uri URI of the play
+ : @param $label text, that will be put to rdfs:label
+ : @param $yearPremiered value of year premiered as extracted by dutil-function
+ : @param $ts-label text, that will be put to rdfs:label of the corresponding time-span
+ :)
+declare function drdf:cidoc-performance($play-uri as xs:string, $label as xs:string, $yearPremiered as xs:string, $ts-label as xs:string) {
+    let $performance-uri := $play-uri || "/performance/" || "premiere"
+    let $work-uri := $play-uri || "/work" (: URI of the F1 !!:)
+    let $timespan-uri := $performance-uri || "/ts"
+
+    let $performance-rdf :=
+        <rdf:Description rdf:about="{$performance-uri}">
+            <rdf:type rdf:resource="{$drdf:frbroo}F31_Performance"/>
+            <rdfs:label>{$label}</rdfs:label>
+            <frbroo:R66_included_performed_version_of rdf:resource="{$work-uri}"/>
+            <crm:P4_has_time-span rdf:resource="{$timespan-uri}"/>
+        </rdf:Description>
+
+    let $work-links-back :=
+        <rdf:Description rdf:about="{$work-uri}">
+            <frbroo:R66i_had_a_performed_version_through rdf:resource="{$performance-uri}"/>
+        </rdf:Description>
+
+    let $ts-type-uri := $drdf:typebaseuri || "date" || "/premiere" (: Premierendatum:)
+
+    (: Premierendatum :)
+    let $ts-rdf :=
+        <rdf:Description rdf:about="{$timespan-uri}">
+        <rdf:type rdf:resource="{$drdf:crm}E52_Time-Span"/>
+        <crm:P3_has_note>dated: {$yearPremiered}</crm:P3_has_note>
+        <crm:P2_has_type rdf:resource="{$ts-type-uri}"/>
+        <rdfs:label>{$ts-label}</rdfs:label>
+        <crm:P4i_is_time-span_of rdf:resource="{$performance-uri}"/>
+    </rdf:Description>
+
+    (: data on the year must be generated at some other point! :)
+    let $year-rdf := drdf:generate-time-span-year($yearPremiered, $timespan-uri)
+
+
+    (: can be connected to F1 Work / or Expression (which is risky, because we don't know, which version was performed; and if that's the version that we are using) :)
+    (: R66 included performed version of (had a performed version through) :)
+
+    return
+       ( $performance-rdf ,
+         $work-links-back ,
+         $ts-rdf,
+         $year-rdf
+       )
+};
+
+(:
+ : Generates time-span of a calendar year and connects it to time-spans that fall within this year
+ :
+ : @param $year-value, e.g. 1905
+ : @param $uris sequence of uris that fall within this year
+ :
+ :  :)
+declare function drdf:generate-time-span-year($year-value as xs:string, $uris as xs:string*)
+as element()* {
+    let $year-type-uri := $drdf:typebaseuri || "date" || "/year"
+    let $year-uri :=
+        if (matches($year-value, "^\d+$")) then
+            $drdf:datebaseuri || $year-value
+        else ""
+
+    return
+        if ($year-uri != "") then
+            (
+            <rdf:Description rdf:about="{$year-uri}">
+                <rdf:type rdf:resource="{$drdf:crm}E52_Time-Span"/>
+                <rdfs:label>{$year-value} [Year]</rdfs:label>
+                <crm:P2_has_type rdf:resource="{$year-type-uri}"/>
+                {
+                    for $uri in $uris return
+                        <crm:P86i_contains rdf:resource="{$uri}"/>
+                }
+            </rdf:Description> ,
+            for $uri in $uris return
+                <rdf:Description rdf:about="{$uri}">
+                    <crm:P86_falls_within rdf:resource="{$year-uri}"/>
+                </rdf:Description>
+            )
+    else ()
+};
+
+(:~
  : Create an RDF representation of a play.
  :
  : @param $play TEI element
@@ -1081,7 +1170,10 @@ as element(rdf:RDF) {
     let $playname-id-label := "DraCor Identifier 'playname' of play '" || $defaultTitleString || "'"
     let $playname-id-rdf := drdf:cidoc-identifier($playname-id-uri, "playname", $playname-id-label , $play-uri, $playname)
 
-
+    (: dracor-id :)
+    let $dracor-id-uri := $play-uri || "/id/dracor"
+    let $dracor-id-label := "DraCor Identifier of play '" || $defaultTitleString || "'"
+    let $dracor-id-rdf := drdf:cidoc-identifier($dracor-id-uri, "dracor", $dracor-id-label , $play-uri, $play-info?id)
 
 
 
@@ -1192,13 +1284,13 @@ as element(rdf:RDF) {
     let $relations := drdf:relations-to-rdf($play-info?relations, $play-uri )
 
     (: genre :)
-
     (: in play-info: "genre": "Tragedy", :)
     (: functionality somehow in of dutil:get-corpus-meta-data, but modelling will be more complex! :)
     let $tei-textClass :=  $play//tei:textClass
     let $genre-rdf := if ($tei-textClass//tei:classCode) then drdf:textClass-genre-to-rdf($tei-textClass, $play-uri) else ()
 
-
+    (: (first) performance :)
+    (: todo :)
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -1254,6 +1346,7 @@ as element(rdf:RDF) {
     {$genre-rdf}
     {$wd-identifier-cidoc}
     {$playname-id-rdf}
+    {$dracor-id-rdf}
     </rdf:RDF>
 
 
