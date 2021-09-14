@@ -1290,7 +1290,12 @@ as element(rdf:RDF) {
     let $genre-rdf := if ($tei-textClass//tei:classCode) then drdf:textClass-genre-to-rdf($tei-textClass, $play-uri) else ()
 
     (: (first) performance :)
-    (: todo :)
+    let $rdf-first-performance :=
+        if ( map:contains($play-info, "yearPremiered") ) then
+                let $first-performance-label := "Premiere of " || $default-rdfs-label-string
+                let $first-performance-ts-label := "Premiere of " || $default-rdfs-label-string || " [Time-span]"
+                return drdf:cidoc-performance($play-uri, $first-performance-label, $play-info?yearPremiered, $first-performance-ts-label)
+        else ()
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -1347,6 +1352,7 @@ as element(rdf:RDF) {
     {$wd-identifier-cidoc}
     {$playname-id-rdf}
     {$dracor-id-rdf}
+    {$rdf-first-performance}
     </rdf:RDF>
 
 
