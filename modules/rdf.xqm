@@ -917,8 +917,9 @@ as element()* {
  : @param $yearPremiered value of year premiered as extracted by dutil-function
  : @param $ts-label text, that will be put to rdfs:label of the corresponding time-span
  :)
-declare function drdf:cidoc-performance($play-uri as xs:string, $label as xs:string, $yearPremiered as xs:string, $ts-label as xs:string) {
+declare function drdf:frbroo-performance($play-uri as xs:string, $label as xs:string, $yearPremiered as xs:string, $ts-label as xs:string) {
     let $performance-uri := $play-uri || "/performance/" || "premiere"
+    let $performance-type-uri := $drdf:typebaseuri || "performance" || "/premiere"
     let $work-uri := $play-uri || "/work" (: URI of the F1 !!:)
     let $timespan-uri := $performance-uri || "/ts"
 
@@ -926,6 +927,7 @@ declare function drdf:cidoc-performance($play-uri as xs:string, $label as xs:str
         <rdf:Description rdf:about="{$performance-uri}">
             <rdf:type rdf:resource="{$drdf:frbroo}F31_Performance"/>
             <rdfs:label>{$label}</rdfs:label>
+            <crm:P2_has_type rdf:resource="{$performance-type-uri}"/>
             <frbroo:R66_included_performed_version_of rdf:resource="{$work-uri}"/>
             <crm:P4_has_time-span rdf:resource="{$timespan-uri}"/>
         </rdf:Description>
@@ -960,6 +962,28 @@ declare function drdf:cidoc-performance($play-uri as xs:string, $label as xs:str
          $ts-rdf,
          $year-rdf
        )
+};
+
+
+(:~
+ : Create an RDF representation of the F1 Work of a play.
+ :
+ : @param $play-uri URI of the play
+ : @param $label text, that will be put to rdfs:label
+ : @param $yearWritten value of year written as extracted by dutil-function
+ : @param $ts-label text, that will be put to rdfs:label of the corresponding time-span
+ :)
+declare function drdf:frbroo-entites($play-uri as xs:string) {
+    let $work-uri := $play-uri || "/work"
+
+    let $work-rdf :=
+        <rdf:Description rdf:about="{$work-uri}">
+            <rdf:type rdf:resource="{$drdf:frbroo}F14_Individual_Work"/>
+        </rdf:Description>
+
+    return
+        ( $work-rdf)
+
 };
 
 (:
@@ -1294,8 +1318,12 @@ as element(rdf:RDF) {
         if ( map:contains($play-info, "yearPremiered") ) then
                 let $first-performance-label := "Premiere of " || $default-rdfs-label-string
                 let $first-performance-ts-label := "Premiere of " || $default-rdfs-label-string || " [Time-span]"
-                return drdf:cidoc-performance($play-uri, $first-performance-label, $play-info?yearPremiered, $first-performance-ts-label)
+                return drdf:frbroo-performance($play-uri, $first-performance-label, $play-info?yearPremiered, $first-performance-ts-label)
         else ()
+
+    (: frbroo:F1 Work :)
+    (: must be linked to performace and play-entity :)
+    let $work-rdf := drdf:frbroo-entites($play-uri)
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -1353,6 +1381,7 @@ as element(rdf:RDF) {
     {$playname-id-rdf}
     {$dracor-id-rdf}
     {$rdf-first-performance}
+    {$work-rdf}
     </rdf:RDF>
 
 
