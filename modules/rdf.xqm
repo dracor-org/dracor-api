@@ -975,17 +975,38 @@ declare function drdf:frbroo-performance($play-uri as xs:string, $label as xs:st
  :)
 declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()) {
     let $work-uri := $play-uri || "/work"
-    let $expression-uri := $play-uri || "/expression/1"
-    let $manifestation-uri := $play-uri || "/manifestation/1"
-    let $publication-expression-uri := $play-uri || "/publication-expression/1"
 
+    (: Representative Text, that is also included in the corpus document - uris :)
+    let $expression-uri := $play-uri || "/expression/2" (: we use /2 for the expression that the file is derived from; this doesn't really indicate, any special sequence, though; but /1 can be easily remembered as first publication? :)
+    let $manifestation-uri := $play-uri || "/manifestation/2"
+    let $publication-expression-uri := $play-uri || "/publication-expression/2"
+    let $publication-event-uri := $play-uri || "/publication/2"
+
+    (: uris of first publication :)
+    let $publication-event-first-publication-uri := $play-uri || "/publication/1"
+    let $first-publication-activity-type :=  $drdf:typebaseuri || "activity/publishing/first-time"
+    let $first-publication-ts-uri := $publication-event-first-publication-uri || "/ts"
+    let $first-publication-ts-type-uri := $drdf:typebaseuri || "date" || "/first-publication" (: Erstveröffentlichungsdatum :)
+    let $first-publication-expression-uri := $play-uri || "/publication-expression/1"
+     let $text-first-publication-as-expression-uri := $play-uri || "/expression/1"
+
+    (: Uris of the writing process :)
+    let $expression-creation-uri := $play-uri || "/creation/0" (: some activity that is related to the work and is equivalent to "writing" a text, but not necessary materializing it :)
+
+
+    (: Work :)
     let $work-rdf :=
         <rdf:Description rdf:about="{$work-uri}">
             <rdf:type rdf:resource="{$drdf:frbroo}F14_Individual_Work"/>
             <rdfs:label>{$play-info?title} [Work]</rdfs:label>
             <frbroo:R40_has_representative_expression rdf:resource="{$expression-uri}"/>
             <frbroo:R9_is_realised_in rdf:resource="{$expression-uri}"/>
+            <frbroo:R9_is_realised_in rdf:resource="{$text-first-publication-as-expression-uri}"/>
+            <frbroo:R19i_was_realised_through rdf:resource="{$expression-creation-uri}"/>
         </rdf:Description>
+
+    (: this expression will be included/is the basis of in the dracor-play-document; but the document also exhibits features of the representative publication expression; so maybe this has also be linked to the corpus document :)
+    (: actually, one would have to specify or type the P165i between Expression (Text) and the corpus document :)
 
     let $self-contained-expression-rdf :=
         <rdf:Description rdf:about="{$expression-uri}">
@@ -1004,6 +1025,7 @@ declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()
             <crm:P165_incorporates rdf:resource="{$expression-uri}"/>
         </rdf:Description>
 
+    (: this publication expression is also somehow relevant for the corpus document :)
     let $manifestation-product-type-rdf :=
         <rdf:Description rdf:about="{$expression-uri}">
             <rdf:type rdf:resource="{$drdf:frbroo}F3_Manifestation_Product_Type"/>
@@ -1013,6 +1035,7 @@ declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()
             <frbroo:CLR6_should_carry rdf:resource="{$publication-expression-uri}"/>
         </rdf:Description>
 
+    (: this publication expression is also somehow incorporated in the corpus document; TODO model this! :)
     let $publication-expression-rdf :=
         <rdf:Description rdf:about="{$publication-expression-uri}">
             <rdf:type rdf:resource="{$drdf:frbroo}F24_Publication_Expression"/>
@@ -1021,9 +1044,124 @@ declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()
 cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
 <frbroo:CLR6i_should_be_carried_by rdf:resource="{$manifestation-uri}"/>
     <crm:P165_incorporates rdf:resource="{$expression-uri}"/>
+    <frbroo:R24i_was_created_through rdf:resource="{$publication-event-uri}"/>
         </rdf:Description>
 
-        (: HIER weiter Publication-Event ?; Written activity somehow link to F22 Expression :)
+    (: Publication-Event of the publication product, that includes the representative expression; this is something different, that is modeled by adding the publicationYear :)
+    (: we might have to type this?! :)
+    (: maybe should add blank time-span? :)
+    let $publication-event-rdf :=
+        <rdf:Description rdf:about="{$publication-event-uri}">
+            <rdf:type rdf:resource="{$drdf:frbroo}F30_Publication_Event"/>
+            <rdfs:label>{$play-info?title} [Publication Event]</rdfs:label>
+            <crm:P3_has_note>Publishing of '{$play-info?title}' in the publication {$play-info?originalSource}</crm:P3_has_note>
+            <frbroo:R24_created rdf:resource="{$publication-expression-uri}"/>
+        </rdf:Description>
+
+    (: Written activity somehow link to F22 Expression :)
+
+    (: Expression and Publications Expression, Publication Event that results from the first publication "ersterscheinung" :)
+    (: fleance: in dracor ist yearPublished immer das jahr der ersterscheinung (bei verteiltem erstdruck in zeitschriften immer das jahr des erscheinens des letzten stückes, soweit es dann vollständig war). :)
+
+    (: first publication :)
+
+
+    let $publication-event-first-publication-rdf :=
+        <rdf:Description rdf:about="{$publication-event-first-publication-uri}">
+            <rdf:type rdf:resource="{$drdf:frbroo}F30_Publication_Event"/>
+            <rdfs:label>First Publication of '{$play-info?title}' [Publication Event]</rdfs:label>
+            <crm:P2_has_type rdf:resource="{$first-publication-activity-type}"/>
+            <crm:P4_has_time-span rdf:resource="{$first-publication-ts-uri}"/>
+            <frbroo:R24_created rdf:resource="{$first-publication-expression-uri}"/>
+        </rdf:Description>
+
+    let $first-publication-ts-rdf :=
+        <rdf:Description rdf:about="{$first-publication-ts-uri}">
+            <rdf:type rdf:resource="{$drdf:crm}E52_Time-Span"/>
+            {if ($play-info?yearPrinted != "" or $play-info?yearPrinted != () ) then <crm:P3_has_note>dated: {$play-info?yearPrinted}</crm:P3_has_note> else () }
+            <crm:P2_has_type rdf:resource="{$first-publication-ts-type-uri}"/>
+            <rdfs:label>Date of first Publication of '{$play-info?title}' [Time-span]</rdfs:label>
+            <crm:P4i_is_time-span_of rdf:resource="{$publication-event-first-publication-uri}"/>
+        </rdf:Description>
+
+    let $first-publication-year := drdf:generate-time-span-year($play-info?yearPrinted, $first-publication-ts-uri)
+
+    (: first publication has a publication expression :)
+    (: this should maybe get a type :)
+
+    let $first-publication-expression-rdf :=
+        <rdf:Description rdf:about="{$first-publication-expression-uri}">
+            <rdf:type rdf:resource="{$drdf:frbroo}F24_Publication_Expression"/>
+            <rdfs:label>First Publication of '{$play-info?title}' [Publication Expression]</rdfs:label>
+            <crm:P3_has_note>The text '{$play-info?title}', its layout and the textual and graphic content of the first publication.</crm:P3_has_note>
+            <crm:P165_incorporates rdf:resource="{$text-first-publication-as-expression-uri}"/>
+            <frbroo:R24i_was_created_through rdf:resource="{$publication-event-first-publication-uri}"/>
+        </rdf:Description>
+
+    (: this publication expression incorporates an expression that is a relization of the work F1 :)
+    let $text-first-publication-as-expression-rdf :=
+        <rdf:Description rdf:about="{$text-first-publication-as-expression-uri}">
+            <rdf:type rdf:resource="{$drdf:frbroo}F22_Self-Contained_Expression"/>
+            <rdfs:label>{$play-info?title} [Text of first publication; Expression]</rdfs:label>
+            <crm:P3_has_note>The text of '{$play-info?title}' as found in its first publication.</crm:P3_has_note>
+            <frbroo:R9i_realises rdf:resource="{$work-uri}"/>
+            <crm:P165i_is_incorporated_in rdf:resource="{$first-publication-expression-uri}"/>
+        </rdf:Description>
+
+    (: expression creation that is relevant for the WrittenYear .. :)
+    (: Connect the work to an activity that creates an expression, but don't instanciate this expression; we don't always know, what was the exact expression, that resulted from this activity :)
+
+    (: Expression-Creation :)
+    let $expression-creation-ts-uri := $expression-creation-uri || "/ts"
+    let $creation-finishing-activity-uri := $expression-creation-uri || "/end"
+
+    (: attach the creators here! :)
+    let $expression-creation-rdf :=
+        <rdf:Description rdf:about="{$expression-creation-uri}">
+            <rdf:type rdf:resource="{$drdf:frbroo}F28_Expression_Creation"/>
+            <rdfs:label>Writing of '{$play-info?title}', until it was first published.</rdfs:label>
+            <frbroo:R19_created_a_realization_of rdf:resource="{$work-uri}"/>
+            <crm:P4_has_time-span rdf:resource="{$expression-creation-ts-uri}"/>
+            <crm:P134i_was_continued_by rdf:resource="{$creation-finishing-activity-uri}"/>
+        </rdf:Description>
+
+    let $expression-creation-ts-type := $drdf:typebaseuri || "date" || "/writing" (: Written Year :)
+
+    (: we can not say, when this is :)
+    let $expression-creation-ts-rdf :=
+        <rdf:Description rdf:about="{$expression-creation-ts-uri}">
+            <rdf:type rdf:resource="{$drdf:crm}E52_Time-Span"/>
+            <crm:P2_has_type rdf:resource="{$expression-creation-ts-type}"/>
+            <rdfs:label>Time-span, in which '{$play-info?title}' was written until it was considered ready to be published for the first time.</rdfs:label>
+            <crm:P4i_is_time-span_of rdf:resource="{$expression-creation-uri}"/>
+        </rdf:Description>
+
+      let $creation-finishing-activity-ts-uri := $creation-finishing-activity-uri || "/ts"
+      let $creation-finishing-activity-type := ""
+
+    let $creation-finishing-activity-rdf :=
+        <rdf:Description rdf:about="{$creation-finishing-activity-uri}">
+            <rdf:type rdf:resource="{$drdf:crm}E7_Activity"/>
+            <rdfs:label>Finishing writing '{$play-info?title}', resulting in the text being ready for it's first publication.</rdfs:label>
+            <crm:P2_has_type rdf:resource="{$creation-finishing-activity-type}"/>
+            <crm:P134_continued rdf:resource="{$expression-creation-uri}"/>
+            <crm:P4_has_time-span rdf:resource="{$creation-finishing-activity-ts-uri}"/>
+        </rdf:Description>
+
+    (: auxillary time-span to connect have the writing activity end at some point :)
+    let $creation-finishing-activity-ts-rdf :=
+         <rdf:Description rdf:about="{$creation-finishing-activity-ts-uri}">
+            <rdf:type rdf:resource="{$drdf:crm}E52_Time-Span"/>
+            <rdfs:label>Time-span, in which writing '{$play-info?title}' was finished, resulting in the text being ready for it's first publication.</rdfs:label>
+            <crm:P4i_is_time-span_of rdf:resource="{$creation-finishing-activity-uri}"/>
+        </rdf:Description>
+
+    (: this can fall into a year, but depends on the value of play-info?yearWritten :)
+    (: HIER :)
+
+
+    (: es gibt auch noch die digitale Quelle, die relevant ist für das Corpus-Dokument :)
+
 
 
     return
@@ -1031,7 +1169,18 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
             $work-rdf ,
             $self-contained-expression-rdf ,
             $corpus-document-expression-link-back ,
-            $manifestation-product-type-rdf
+            $manifestation-product-type-rdf,
+            $publication-expression-rdf ,
+            $publication-event-rdf ,
+            $publication-event-first-publication-rdf ,
+            $first-publication-ts-rdf ,
+            $first-publication-year ,
+            $first-publication-expression-rdf ,
+            $text-first-publication-as-expression-rdf ,
+            $expression-creation-rdf ,
+            $expression-creation-ts-rdf ,
+            $creation-finishing-activity-rdf ,
+            $creation-finishing-activity-ts-rdf
         )
 
 };
