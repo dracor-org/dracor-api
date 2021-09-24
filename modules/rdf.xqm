@@ -1048,8 +1048,10 @@ declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()
         </rdf:Description>
 
     (: this publication expression is also somehow relevant for the corpus document :)
+    (: there is an error, this cant be about expression-uri!:)
+    (: ERROR :)
     let $manifestation-product-type-rdf :=
-        <rdf:Description rdf:about="{$expression-uri}">
+        <rdf:Description rdf:about="{$manifestation-uri}">
             <rdf:type rdf:resource="{$drdf:frbroo}F3_Manifestation_Product_Type"/>
             <rdfs:label>{$play-info?title} [Manifestation]</rdfs:label>
             <crm:P3_has_note>The publication product containing the edition of the text '{$play-info?title}', published as: {$play-info?originalSource}</crm:P3_has_note>
@@ -1137,7 +1139,7 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
 
 
 
-    (: attach the creators here! :)
+    (: creators are attached when generating the authors in another function :)
     let $expression-creation-rdf :=
         <rdf:Description rdf:about="{$expression-creation-uri}">
             <rdf:type rdf:resource="{$drdf:frbroo}F28_Expression_Creation"/>
@@ -1191,6 +1193,47 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
 
 
     (: es gibt auch noch die digitale Quelle, die relevant ist für das Corpus-Dokument :)
+    (:
+    "source": map {
+        "name": "TextGrid Repository",
+        "url": "http://www.textgridrep.org/textgrid:rksp.0"
+    }
+    :)
+    (: could be the digital source, that was used? :)
+    let $digital-source-uri := $play-uri || "/digitalsource/1"
+    let $digital-source-rdf :=
+        if ( map:contains($play-info,'source') ) then
+            let $source-url := if ( map:contains($play-info?source,"url") ) then $play-info?source?url else ""
+            let $source-name := if ( map:contains($play-info?source,"name") ) then $play-info?source?name else ""
+            let $source-identifier := if ( map:contains($play-info?source,"url")) then
+                let $source-identifier-uri := $digital-source-uri || "/id/url/1"
+                let $source-identifier-label := "Url of digital source of play '" || $play-info?title ||"'"
+                    return
+                    drdf:cidoc-identifier($source-identifier-uri, "url", $source-identifier-label , $digital-source-uri, $source-url)
+                else ()
+
+            return
+                (
+                    <rdf:Description rdf:about="{$digital-source-uri}">
+                        <rdf:type rdf:resource="{$drdf:crm}E73_Information_Object"/>
+                        <rdfs:label>Digital Source of '{$play-info?title}'</rdfs:label>
+                        {if ( $source-name != "" ) then <crm:P3_has_note>Provenance of file: {$source-name}</crm:P3_has_note> else ()}
+                        <crm:P165i_is_incorporated_in rdf:resource="{$play-uri}"/>
+                        <crm:P165_incorporates rdf:resource="{$expression-uri}"/>
+                        {if ($source-url != "") then <rdfs:seeAlso rdf:resource="{$source-url}"/> else () }
+                    </rdf:Description> ,
+                    <rdf:Description rdf:about="{$play-uri}">
+                        <crm:P165_incorporates rdf:resource="{$digital-source-uri}"/>
+                    </rdf:Description> ,
+                    <rdf:Description rdf:about="{$expression-uri}">
+                        <crm:P165i_is_incorporated_in rdf:resource="{$digital-source-uri}"/>
+                    </rdf:Description>,
+                    $source-identifier
+                )
+
+        else ()
+
+
 
 
 
@@ -1212,7 +1255,8 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
             $expression-creation-ts-rdf ,
             $creation-finishing-activity-rdf ,
             $creation-finishing-activity-ts-rdf ,
-            $finishing-falls-into-year-rdf
+            $finishing-falls-into-year-rdf ,
+            $digital-source-rdf
         )
 
 };
@@ -1552,9 +1596,9 @@ as element(rdf:RDF) {
                 return drdf:frbroo-performance($play-uri, $first-performance-label, $play-info?yearPremiered, $first-performance-ts-label)
         else ()
 
-    (: frbroo:F1 Work :)
-    (: must be linked to performace and play-entity :)
-    let $work-rdf := drdf:frbroo-entites($play-uri, $play-info)
+    (: frbroo-Stuff :)
+    (: Work, expressions, publication, digital object :)
+    let $frbroo-rdf := drdf:frbroo-entites($play-uri, $play-info)
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -1612,7 +1656,7 @@ as element(rdf:RDF) {
     {$playname-id-rdf}
     {$dracor-id-rdf}
     {$rdf-first-performance}
-    {$work-rdf}
+    {$frbroo-rdf}
     </rdf:RDF>
 
 
