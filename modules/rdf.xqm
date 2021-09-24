@@ -1114,12 +1114,17 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
     (: Expression-Creation :)
     let $expression-creation-ts-uri := $expression-creation-uri || "/ts"
     let $creation-finishing-activity-uri := $expression-creation-uri || "/end"
+    let $expression-creation-activity-type :=  $drdf:typebaseuri || "activity/writing"
+    let $creation-finishing-activity-type := $drdf:typebaseuri || "activity/finishing"
+    let $creation-finishing-activity-ts-type := $drdf:typebaseuri || "date" || "/finishing" (: should mark the end of the timespan defined by Written Year :)
+
 
     (: attach the creators here! :)
     let $expression-creation-rdf :=
         <rdf:Description rdf:about="{$expression-creation-uri}">
             <rdf:type rdf:resource="{$drdf:frbroo}F28_Expression_Creation"/>
             <rdfs:label>Writing of '{$play-info?title}', until it was first published.</rdfs:label>
+            <crm:P2_has_type rdf:resource="{$expression-creation-activity-type}"/>
             <frbroo:R19_created_a_realization_of rdf:resource="{$work-uri}"/>
             <crm:P4_has_time-span rdf:resource="{$expression-creation-ts-uri}"/>
             <crm:P134i_was_continued_by rdf:resource="{$creation-finishing-activity-uri}"/>
@@ -1137,8 +1142,8 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
         </rdf:Description>
 
       let $creation-finishing-activity-ts-uri := $creation-finishing-activity-uri || "/ts"
-      let $creation-finishing-activity-type := ""
 
+    (: finishing creation of an text :)
     let $creation-finishing-activity-rdf :=
         <rdf:Description rdf:about="{$creation-finishing-activity-uri}">
             <rdf:type rdf:resource="{$drdf:crm}E7_Activity"/>
@@ -1149,15 +1154,24 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
         </rdf:Description>
 
     (: auxillary time-span to connect have the writing activity end at some point :)
+    (: this has to be refined, because there are date-strings, that contain "/"; they probably have to be treated differently :)
     let $creation-finishing-activity-ts-rdf :=
          <rdf:Description rdf:about="{$creation-finishing-activity-ts-uri}">
             <rdf:type rdf:resource="{$drdf:crm}E52_Time-Span"/>
-            <rdfs:label>Time-span, in which writing '{$play-info?title}' was finished, resulting in the text being ready for it's first publication.</rdfs:label>
+            <rdfs:label>Time-span, in which writing '{$play-info?title}' was finished, resulting in the text being ready for its first publication.</rdfs:label>
+            <crm:P2_has_type rdf:resource="{$creation-finishing-activity-ts-type}"/>
+            {if ($play-info?yearWritten != "" or $play-info?yearWritten != () ) then <crm:P3_has_note>dated: {$play-info?yearWritten}</crm:P3_has_note> else () }
             <crm:P4i_is_time-span_of rdf:resource="{$creation-finishing-activity-uri}"/>
         </rdf:Description>
 
     (: this can fall into a year, but depends on the value of play-info?yearWritten :)
-    (: HIER :)
+    let $finishing-falls-into-year-rdf :=
+        if (matches($play-info?yearWritten, "^\d+$")) then
+            drdf:generate-time-span-year($play-info?yearWritten, $creation-finishing-activity-ts-uri)
+        else if ( matches($play-info?yearWritten, "^\d+/d+$") ) then
+            let $finishing-end-year-value := tokenize($play-info?yearWritten,'/')[2] return
+                drdf:generate-time-span-year($finishing-end-year-value, $creation-finishing-activity-ts-uri)
+        else ()
 
 
     (: es gibt auch noch die digitale Quelle, die relevant ist für das Corpus-Dokument :)
@@ -1180,7 +1194,8 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
             $expression-creation-rdf ,
             $expression-creation-ts-rdf ,
             $creation-finishing-activity-rdf ,
-            $creation-finishing-activity-ts-rdf
+            $creation-finishing-activity-ts-rdf ,
+            $finishing-falls-into-year-rdf
         )
 
 };
