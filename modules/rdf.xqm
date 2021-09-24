@@ -144,6 +144,20 @@ as element()* {
             drdf:cidoc-identifier($wd-identifier-uri, "wikidata", $wd-identifier-label , $authorURI, $wd)
         else ()
 
+    (: link author to expression creation equivalent to writing of a text – see cidoc-function below :)
+    let $creation-uri := $playUri || "/creation/0" (: check below, otherwhise the graph won't be connected! :)
+    let $creation-links-rdf :=
+    (
+        <rdf:Description rdf:about="{$creation-uri}">
+            <crm:P14_carried_out_by rdf:resource="{$authorURI}"/>
+        </rdf:Description> ,
+        <rdf:Description rdf:about="{$authorURI}">
+            <crm:P14i_performed rdf:resource="{$creation-uri}"/>
+        </rdf:Description>
+
+    )
+
+
     (: generated RDF follows :)
     let $generatedRDF :=
         (
@@ -161,7 +175,8 @@ as element()* {
 
         (: appellations and their connections :)
         $appellations,
-        $wd-identifier-triples
+        $wd-identifier-triples,
+        $creation-links-rdf
         )
 
     return
@@ -991,7 +1006,14 @@ declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()
      let $text-first-publication-as-expression-uri := $play-uri || "/expression/1"
 
     (: Uris of the writing process :)
+    (: the creators are attached to this activity :)
     let $expression-creation-uri := $play-uri || "/creation/0" (: some activity that is related to the work and is equivalent to "writing" a text, but not necessary materializing it :)
+    let $expression-creation-ts-uri := $expression-creation-uri || "/ts"
+    let $creation-finishing-activity-uri := $expression-creation-uri || "/end"
+    let $expression-creation-activity-type :=  $drdf:typebaseuri || "activity/writing"
+    let $creation-finishing-activity-type := $drdf:typebaseuri || "activity/finishing"
+    let $creation-finishing-activity-ts-type := $drdf:typebaseuri || "date" || "/finishing" (: should mark the end of the timespan defined by Written Year :)
+    let $expression-creation-ts-type := $drdf:typebaseuri || "date" || "/writing" (: Written Year :)
 
 
     (: Work :)
@@ -1112,11 +1134,7 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
     (: Connect the work to an activity that creates an expression, but don't instanciate this expression; we don't always know, what was the exact expression, that resulted from this activity :)
 
     (: Expression-Creation :)
-    let $expression-creation-ts-uri := $expression-creation-uri || "/ts"
-    let $creation-finishing-activity-uri := $expression-creation-uri || "/end"
-    let $expression-creation-activity-type :=  $drdf:typebaseuri || "activity/writing"
-    let $creation-finishing-activity-type := $drdf:typebaseuri || "activity/finishing"
-    let $creation-finishing-activity-ts-type := $drdf:typebaseuri || "date" || "/finishing" (: should mark the end of the timespan defined by Written Year :)
+
 
 
     (: attach the creators here! :)
@@ -1129,8 +1147,6 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
             <crm:P4_has_time-span rdf:resource="{$expression-creation-ts-uri}"/>
             <crm:P134i_was_continued_by rdf:resource="{$creation-finishing-activity-uri}"/>
         </rdf:Description>
-
-    let $expression-creation-ts-type := $drdf:typebaseuri || "date" || "/writing" (: Written Year :)
 
     (: we can not say, when this is :)
     let $expression-creation-ts-rdf :=
@@ -1175,6 +1191,7 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
 
 
     (: es gibt auch noch die digitale Quelle, die relevant ist für das Corpus-Dokument :)
+
 
 
 
