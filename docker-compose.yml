@@ -4,7 +4,7 @@ services:
     image: "dracor/dracor-api"
     build:
       context: .
-      dockerfile: devDockerfile
+      dockerfile: Dockerfile
     ports:
       - "9099:8080"
     volumes:
