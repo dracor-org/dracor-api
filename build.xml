@@ -99,8 +99,8 @@
     <zip basedir="." destfile="${xarfile}"
       excludes="${build.dir}/ ${devel.dir}/ test/ .* *build.properties expath-pkg.xml.tmpl"/>
     <symlink
-      resource="${project.abbrev}-${package.version}.xar"
-      link="${build.dir}/${project.abbrev}-latest.xar"
+      resource="${build.dir}/${project.abbrev}-${package.version}.xar"
+      link="${project.abbrev}-latest.xar"
       overwrite="true"
     />
   </target>
