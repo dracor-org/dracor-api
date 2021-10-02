@@ -1,14 +1,20 @@
+ARG EXIST_VERSION=5.3.0
+
 # START STAGE 1
-FROM openjdk:8
+FROM openjdk:8-jdk-slim as builder
 
 USER root
 
-ENV ANT_VERSION 1.10.10
+ENV ANT_VERSION 1.10.11
 ENV ANT_HOME /etc/ant-${ANT_VERSION}
 
 WORKDIR /tmp
 
-RUN wget http://www-us.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
+RUN apt-get update && apt-get install -y \
+    git \
+    curl
+
+RUN curl -L -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
     && mkdir ant-${ANT_VERSION} \
     && tar -zxvf apache-ant-${ANT_VERSION}-bin.tar.gz \
     && mv apache-ant-${ANT_VERSION} ${ANT_HOME} \
@@ -19,11 +25,40 @@ RUN wget http://www-us.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bi
 
 ENV PATH ${PATH}:${ANT_HOME}/bin
 
-WORKDIR /home/dracor-api
+
+WORKDIR /tmp/dracor-api
 COPY . .
-RUN rm -rf devel
-RUN ant devel
+RUN curl -L -o /tmp/crypto.xar http://exist-db.org/exist/apps/public-repo/public/expath-crypto-module-1.0.0.xar \
+    && ant
 
-EXPOSE 8080 8443
+FROM existdb/existdb:${EXIST_VERSION}
 
-CMD [ "ant", "devel.startup" ] 
+COPY --from=builder /tmp/crypto.xar /exist/autodeploy
+COPY --from=builder /tmp/dracor-api/build/dracor-*.xar /exist/autodeploy
+
+ENV DATA_DIR /exist-data
+
+ENV JAVA_TOOL_OPTIONS \
+    -Dfile.encoding=UTF8 \
+    -Dsun.jnu.encoding=UTF-8 \
+    -Djava.awt.headless=true \
+    -Dorg.exist.db-connection.cacheSize=${CACHE_MEM:-256}M \
+    -Dorg.exist.db-connection.pool.max=${MAX_BROKER:-20} \
+    -Dlog4j.configurationFile=/exist/etc/log4j2.xml \
+    -Dexist.home=/exist \
+    -Dexist.configurationFile=/exist/etc/conf.xml \
+    -Djetty.home=/exist \
+    -Dexist.jetty.config=/exist/etc/jetty/standard.enabled-jetty-configs \
+    -XX:+UnlockExperimentalVMOptions \
+    -XX:+UseCGroupMemoryLimitForHeap \
+    -XX:+UseG1GC \
+    -XX:+UseStringDeduplication \
+    -XX:MaxRAMFraction=1 \
+    -XX:+ExitOnOutOfMemoryError \
+    -Dorg.exist.db-connection.files=${DATA_DIR} \
+    -Dorg.exist.db-connection.recovery.journal-dir=${DATA_DIR}
+
+# pre-populate the database by launching it once
+RUN [ "java", \
+    "org.exist.start.Main", "client", "-l", \
+    "--no-gui",  "--xpath", "system:get-version()" ]
