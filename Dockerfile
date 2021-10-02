@@ -28,12 +28,13 @@ ENV PATH ${PATH}:${ANT_HOME}/bin
 
 WORKDIR /tmp/dracor-api
 COPY . .
-RUN curl -L -o /tmp/crypto.xar http://exist-db.org/exist/apps/public-repo/public/expath-crypto-module-1.0.0.xar \
-    && ant
+RUN ant \
+    && curl -L -o /tmp/0-crypto.xar https://github.com/eXist-db/expath-crypto-module/releases/download/6.0.1/expath-crypto-module-6.0.1.xar \
+    && curl -L -o /tmp/0-openapi.xar https://ci.de.dariah.eu/exist-repo/public/openapi-1.7.0.xar
 
 FROM existdb/existdb:${EXIST_VERSION}
 
-COPY --from=builder /tmp/crypto.xar /exist/autodeploy
+COPY --from=builder /tmp/*.xar /exist/autodeploy
 COPY --from=builder /tmp/dracor-api/build/dracor-*.xar /exist/autodeploy
 
 ENV DATA_DIR /exist-data
