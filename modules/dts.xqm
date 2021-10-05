@@ -119,14 +119,31 @@ function ddts:collections($id, $page, $nav) {
                 (: display as a readable collection :)
                 local:child-readable-collection-by-id($id)
     else
+        (: requesting a collection, but not the root-collection :)
         (: evaluate $id – check if collection with "id" exists :)
         let $corpus := dutil:get-corpus($id)
         return
             (: there is something, that's a teiCorpus :)
             if ( $corpus/name() eq "teiCorpus" ) then
+                (: should check for paging and nav :)
+                if ( $page ) then
+                    (: will probably not implement paging for the moment :)
+                    (
+                        <rest:response>
+                        <http:response status="501"/>
+                        </rest:response>,
+                    "Paging on a collection is not implemented. Try without parameter 'page'!"
+                    )
+                    else
 
-                (: return the collection by id :)
-                local:corpus-to-collection($id)
+
+                    if ( $nav eq "parents")
+                    then
+                        (: requesting the corpus + its parent, which will be the root-collection in the dracor-context :)
+                        local:corpus-to-collection-with-parent-as-member($id)
+                    else
+                        (: return the collection by id :)
+                    local:corpus-to-collection($id)
 
             else
                 (: if the corpus doesn't exist, return 404 Not found :)
@@ -327,4 +344,30 @@ declare function local:child-readable-collection-with-parent-by-id($id as xs:str
     let $members := map {"member" : array { $parent-withou-context }}
     return
         map:merge(($self-with-new-totalItems, $members))
+};
+
+
+(:~
+ : Get a corpus with information on parent collection
+ :  :)
+declare function local:corpus-to-collection-with-parent-as-member($id as xs:string) {
+    let $self := local:corpus-to-collection($id)
+    (: remove the members and the totalItems; set value of totalItems to one because there is only one root-collection  :)
+    let $self-without-members := map:remove($self, "member")
+    let $self-without-totalItems := map:remove($self-without-members, "totalItems")
+    let $prepared-self := map:merge(( $self-without-totalItems, map{"totalItems" : 1} ))
+
+    (: get the root collection and prepare :)
+    let $parent := local:root-collection()
+    (: remove the members :)
+    let $parent-without-members := map:remove($parent, "member")
+    (: remove "@context" :)
+    let $prepared-parent := map:remove($parent-without-members, "@context")
+
+    let $member := map { "member" : array { $prepared-parent } }
+
+    (: merge the maps :)
+    let $result := map:merge( ($prepared-self, $member) )
+
+    return $result
 };
