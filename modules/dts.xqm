@@ -100,6 +100,9 @@ function ddts:collections($id) {
     (: if root-collection "corpora is explicitly requested by id = 'corpora'" :)
     if ( $id eq "corpora" ) then
         local:root-collection()
+    (: could also be a single document :)
+    else if ( matches($id, "^[a-z]+[0-9]+$") ) then
+        local:child-readable-collection-by-id($id)
     else
         (: evaluate $id – check if collection with "id" exists :)
         let $corpus := dutil:get-corpus($id)
@@ -271,4 +274,21 @@ declare function local:teidoc-to-collection-member($tei) {
             "dts:citeDepth" : $dts-citeDepth
 
         }
+};
+
+(:~
+ : Return a Document, that has been requested via the collections endpoint – see Child Readable Collection (i.e. a textual Resource)
+ :)
+declare function local:child-readable-collection-by-id($id as xs:string) {
+  let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][./text() eq $id]/root()/tei:TEI
+  return
+      if ( $tei ) then
+      map:merge( (map {"@context" : $ddts:context } , local:teidoc-to-collection-member($tei)) )
+      else
+        (
+                    <rest:response>
+                    <http:response status="404"/>
+                    </rest:response>,
+                    "Resource '" || $id || "' does not exist!"
+        )
 };
