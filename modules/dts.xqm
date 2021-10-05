@@ -24,6 +24,10 @@ declare namespace hydra = "https://www.w3.org/ns/hydra/core#";
 declare namespace dc = "http://purl.org/dc/terms/";
 
 (: Variables used in responses :)
+declare variable $ddts:api-base := "https://staging.dracor.org/api"; (: change for production :)
+declare variable $ddts:collections-base := "/dts/collections" ;
+declare variable $ddts:documents-base := "/dts/documents" ;
+
 declare variable $ddts:ns-dts := "https://w3id.org/dts/api#";
 declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#";
 declare variable $ddts:ns-dc := "http://purl.org/dc/terms/";
@@ -104,7 +108,7 @@ function ddts:collections($id) {
             if ( $corpus/name() eq "teiCorpus" ) then
 
                 (: return the collection by id :)
-                local:corpus2collection($id)
+                local:corpus-to-collection($id)
 
             else
                 (: if the corpus doesn't exist, return 404 Not found :)
@@ -150,6 +154,7 @@ declare function local:root-collection() {
       "@type": "Collection" ,
       "dts:totalParents": $totalParents ,
       "dts:totalChildren": $totalChildren ,
+      "totalItems": $totalChildren , (:! same as children:)
       "title": $title,
       "member" : $members
     }
@@ -188,7 +193,7 @@ declare function local:collection-member-by-id($id as xs:string) {
 (:~
  : Transform a DraCor-Corpus to a DTS-Collection – https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-collection-containing-a-single-work
  :)
-declare function local:corpus2collection($id as xs:string) {
+declare function local:corpus-to-collection($id as xs:string) {
     (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($id)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
@@ -207,6 +212,9 @@ declare function local:corpus2collection($id as xs:string) {
   let $totalChildren := count( $teis )
   let $totalItems := count( $teis )
 
+  let $members := for $tei in $teis
+    return local:teidoc-to-collection-member($tei)
+
   return
     map {
       "@context" : $ddts:context ,
@@ -217,8 +225,50 @@ declare function local:corpus2collection($id as xs:string) {
       "totalItems" : $totalItems ,
       "title": $title,
       "description" : $description ,
-      "member" : array {()}
+      "member" : array {$members}
     }
 
 
+};
+
+(:~
+ : Transform a DraCor-TEI-Document to a member in a DTS-Collection
+ :)
+declare function local:teidoc-to-collection-member($tei) {
+    let $id := dutil:get-dracor-id($tei)
+    let $titles := dutil:get-titles($tei)
+    let $lang := $tei/@xml:lang/string()
+
+    let $filename := util:document-name($tei)
+    let $playname := substring-before($filename, ".xml")
+    let $collection-name := util:collection-name($tei)
+    let $corpusname := tokenize($collection-name, '/')[last()]
+
+    (: todo: add more metadata to dublin core :)
+    let $dublincore :=
+        map {
+            "dc:language" : $lang
+        }
+
+    let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/play/" || $playname || "/tei"
+    let $dts-passage := $ddts:documents-base || "?id=" || $id
+    (: todo: add navigation endpoint! :)
+
+    (: todo: do something here! :)
+    let $dts-citeDepth := 1
+
+    return
+        map {
+            "@id" : $id ,
+            "@type": "Resource" ,
+            "title" : $titles?main ,
+            "dts:dublincore" : $dublincore ,
+            "totalItems": 0 ,
+            "dts:totalParents": 1 ,
+            "dts:totalChildren": 0 ,
+            "dts:passage": $dts-passage ,
+            "dts:download": $dts-download ,
+            "dts:citeDepth" : $dts-citeDepth
+
+        }
 };
