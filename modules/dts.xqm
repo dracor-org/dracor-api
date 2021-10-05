@@ -89,10 +89,12 @@ declare
   %rest:GET
   %rest:path("/dts/collections")
   %rest:query-param("id", "{$id}")
+  %rest:query-param("page", "{$page}")
+  %rest:query-param("nav", "{$nav}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function ddts:collections($id) {
+function ddts:collections($id, $page, $nav) {
 
   (: check, if param $id is set -- request a certain collection :)
   if ( $id ) then
@@ -102,7 +104,20 @@ function ddts:collections($id) {
         local:root-collection()
     (: could also be a single document :)
     else if ( matches($id, "^[a-z]+[0-9]+$") ) then
-        local:child-readable-collection-by-id($id)
+          if ( $page ) then
+            (: paging on readable collection = single document is not supported :)
+            (
+                    <rest:response>
+                    <http:response status="400"/>
+                    </rest:response>,
+                    "Paging is not possible on a single resource. Try without parameter 'page'!"
+            )
+            else if ( $nav eq 'parents') then
+            (: requested the parent collection of a document :)
+              local:child-readable-collection-with-parent-by-id($id)
+            else
+                (: display as a readable collection :)
+                local:child-readable-collection-by-id($id)
     else
         (: evaluate $id – check if collection with "id" exists :)
         let $corpus := dutil:get-corpus($id)
@@ -291,4 +306,25 @@ declare function local:child-readable-collection-by-id($id as xs:string) {
                     </rest:response>,
                     "Resource '" || $id || "' does not exist!"
         )
+};
+
+(:~
+ : Display single resource and add parent collection as member
+ :)
+declare function local:child-readable-collection-with-parent-by-id($id as xs:string) {
+    let $self := local:child-readable-collection-by-id($id)
+    (: must change map and add totalItems == 1 because of parent collection will be added as a member :)
+    let $self-without-totalItems := map:remove($self, "totalItems")
+    let $self-with-new-totalItems := map:merge( ( $self-without-totalItems, map{"totalItems" : 1})  )
+    (: get parent collection and remove the members :)
+    let $parent-collection-uri := util:collection-name(collection($config:data-root)//tei:idno[@type eq "dracor"][./text() eq $id])
+    let $parent-collection-id := tokenize($parent-collection-uri,'/')[last()]
+    (: get the parent by the function to generate a collection :)
+    let $parent := local:corpus-to-collection($parent-collection-id)
+    (: remove "members" and "@context" :)
+    let $parent-without-members := map:remove($parent,"member")
+    let $parent-withou-context := map:remove($parent-without-members, "@context")
+    let $members := map {"member" : array { $parent-withou-context }}
+    return
+        map:merge(($self-with-new-totalItems, $members))
 };
