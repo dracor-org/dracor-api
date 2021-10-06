@@ -415,3 +415,147 @@ as map() {
 
     return $result
 };
+
+(:
+ : --------------------
+ : Document Endpoint
+ : --------------------
+ :
+ : see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html
+ : could be /api/dts/documents (the specification uses "document", but mixes singular an plural; entry point will return "documents" in plural form, but this might change)
+ :
+ : MUST return "application/tei+xml"
+ : will implement only GET
+ :
+ : Params:
+ : $id	(Required) Identifier for a document. Where possible this should be a URI
+ : $ref	Passage identifier (used together with id; can’t be used with start and end)
+ : $start (For range) Start of a range of passages (can’t be used with ref)
+ : $end (For range) End of a range of passages (requires start and no ref)
+ : $format (Optional) Specifies a data format for response/request body other than the default
+ :
+ : Params used in POST, PUT, DELETE requests are not availiable
+
+ :)
+
+(:~
+ : DTS Document Endpoint
+ :
+ : Get a document according to the specification: https://distributed-text-services.github.io/specifications/Documents-Endpoint.html
+ :
+ : @param $id Identifier for a document
+ : @param $ref Passage identifier (used together with id; can’t be used with start and end)
+ : @param $start (For range) Start of a range of passages (can’t be used with ref)
+ : @param $end (For range) End of a range of passages (requires start and no ref)
+ : @param $format (Optional) Specifies a data format for response/request body other than the default
+ :
+ : @result TEI
+ :)
+declare
+  %rest:GET
+  %rest:path("/dts/documents")
+  %rest:query-param("id", "{$id}")
+  %rest:query-param("ref", "{$ref}")
+  %rest:query-param("start", "{$start}")
+  %rest:query-param("end", "{$end}")
+  %rest:query-param("format", "{$format}")
+  %rest:produces("application/tei+xml")
+  %output:media-type("application/xml")
+  %output:method("xml")
+function ddts:documents($id, $ref, $start, $end, $format) {
+    (: check, if valid request :)
+
+    (: In GET requests one may either provide a ref parameter or a pair of start and end parameters. A request cannot combine ref with the other two. If, say, a ref and a start are both provided this should cause the request to fail. :)
+    if ( $ref and ( $start or $end ) ) then
+        (
+        <rest:response>
+            <http:response status="400"/>
+        </rest:response>,
+        <error statusCode="400" xmlns="https://w3id.org/dts/api#">
+            <title>Bad Request</title>
+            <description>GET requests may either have a 'ref' parameter or a pair of 'start' and 'end' parameters. A request cannot combine 'ref' with the other two.</description>
+        </error>
+        )
+    else if ( ($start and not($end) ) or ( $end and not($start) ) ) then
+        (: requesting a range, should check, if start and end is present :)
+        (
+        <rest:response>
+            <http:response status="400"/>
+        </rest:response>,
+        <error statusCode="400" xmlns="https://w3id.org/dts/api#">
+            <title>Bad Request</title>
+            <description>If a range is requested, parameters 'start' and 'end' are mandatory.</description>
+        </error>
+        )
+    else if ( $format ) then
+        (: requesting other format than TEI is not implemented :)
+        (
+        <rest:response>
+            <http:response status="501"/>
+        </rest:response>,
+        <error statusCode="501" xmlns="https://w3id.org/dts/api#">
+            <title>Not implemented</title>
+            <description>Requesting other format than 'application/tei+xml' is not supported.</description>
+        </error>
+        )
+        (: handled common errors, should check, if document with a certain $id exists :)
+
+    else
+        (: valid request :)
+        let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][. eq $id]/root()/tei:TEI
+
+        return
+            (: check, if document exists! :)
+            if ( $tei/name() eq "TEI" ) then
+                (: here are valid requests handled :)
+
+                (: requested complete document, just return the TEI File:)
+                (: must include the link header as well :)
+                (: see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html#get-responses :)
+                (: see https://datatracker.ietf.org/doc/html/rfc5988 :)
+                (: </navigation?id={$id}>; rel="contents", </collections?id={$id}>; rel="collection" :)
+                let $links := '</navigation?id=' || $id || '>; rel="contents", </collections?id=' || $id || '>; rel="collection"'
+
+                let $link-header :=  <http:header name='Link' value='{$links}'/>
+
+                return
+                (
+                <rest:response>
+                    <http:response status="200">
+                       {$link-header}
+                    </http:response>
+                </rest:response>,
+                $tei
+                )
+
+            else
+                if ( not($id) or $id eq "" ) then
+                    (: return the URI template/self description :)
+                    local:collections-self-describe()
+                else
+                (: document does not exist, return the error :)
+                (
+        <rest:response>
+            <http:response status="404"/>
+        </rest:response>,
+        <error statusCode="404" xmlns="https://w3id.org/dts/api#">
+            <title>Not Found</title>
+            <description>Document with the id '{$id}' does not exist!</description>
+        </error>
+        )
+
+};
+
+(: The URI template, that would be the self description of the endpoint – unclear, how this should be implemented :)
+(: should include a link to a machine readable documentation :)
+declare function local:collections-self-describe() {
+    (
+        <rest:response>
+            <http:response status="400"/>
+        </rest:response>,
+        <error statusCode="400" xmlns="https://w3id.org/dts/api#">
+            <title>Bad Request</title>
+            <description>Should at least use the required parameter 'id'. Automatic self description is not availiable.</description>
+        </error>
+        )
+};
