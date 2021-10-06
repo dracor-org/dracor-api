@@ -35,6 +35,7 @@ declare namespace dc = "http://purl.org/dc/terms/";
 declare variable $ddts:api-base := "https://staging.dracor.org/api"; (: change for production :)
 declare variable $ddts:collections-base := "/dts/collections" ;
 declare variable $ddts:documents-base := "/dts/documents" ;
+declare variable $ddts:navigation-base := "/dts/navigation" ;
 
 declare variable $ddts:ns-dts := "https://w3id.org/dts/api#";
 declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#";
@@ -77,8 +78,8 @@ function ddts:entry-point() {
     "@id": "/dts",
     "@type": "EntryPoint",
     "collections": "/dts/collections",
-    "documents": "/dts/documents"
-    (: "navigation" : "/dts/navigation" :)
+    "documents": "/dts/documents",
+    "navigation" : "/dts/navigation"
   }
 };
 
@@ -509,24 +510,35 @@ function ddts:documents($id, $ref, $start, $end, $format) {
             if ( $tei/name() eq "TEI" ) then
                 (: here are valid requests handled :)
 
-                (: requested complete document, just return the TEI File:)
-                (: must include the link header as well :)
-                (: see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html#get-responses :)
-                (: see https://datatracker.ietf.org/doc/html/rfc5988 :)
-                (: </navigation?id={$id}>; rel="contents", </collections?id={$id}>; rel="collection" :)
-                let $links := '</navigation?id=' || $id || '>; rel="contents", </collections?id=' || $id || '>; rel="collection"'
+                if ( $ref ) then
+                    (: requested a segment :)
+                    (: todo: implement :)
 
-                let $link-header :=  <http:header name='Link' value='{$links}'/>
+                    (
+                    <rest:response>
+                        <http:response status="501"/>
+                        </rest:response>,
+                    <error statusCode="501" xmlns="https://w3id.org/dts/api#">
+                        <title>Not implemented</title>
+                        <description>Requesting a document fragment is not supported.</description>
+                    </error>
+                    )
 
-                return
-                (
-                <rest:response>
-                    <http:response status="200">
-                       {$link-header}
-                    </http:response>
-                </rest:response>,
-                $tei
-                )
+                else if ( $start and $end ) then
+                    (: requested a range; could be implemented, but not sure, if I will manage in time :)
+                    (
+                    <rest:response>
+                        <http:response status="501"/>
+                        </rest:response>,
+                    <error statusCode="501" xmlns="https://w3id.org/dts/api#">
+                        <title>Not implemented</title>
+                        <description>Requesting a range is not supported.</description>
+                    </error>
+                    )
+
+                else
+                (: requested full document :)
+                    local:get-full-doc($tei)
 
             else
                 if ( not($id) or $id eq "" ) then
@@ -559,3 +571,150 @@ declare function local:collections-self-describe() {
         </error>
         )
 };
+
+(:
+ : Return full document requested via the documents endpoint :)
+declare function local:get-full-doc($tei as element(tei:TEI)) {
+    let $id := $tei//tei:idno[@type eq "dracor"]/string()
+    (: requested complete document, just return the TEI File:)
+                (: must include the link header as well :)
+                (: see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html#get-responses :)
+                (: see https://datatracker.ietf.org/doc/html/rfc5988 :)
+                (: </navigation?id={$id}>; rel="contents", </collections?id={$id}>; rel="collection" :)
+                let $links := '</navigation?id=' || $id || '>; rel="contents", </collections?id=' || $id || '>; rel="collection"'
+
+                let $link-header :=  <http:header name='Link' value='{$links}'/>
+
+                return
+                (
+                <rest:response>
+                    <http:response status="200">
+                       {$link-header}
+                    </http:response>
+                </rest:response>,
+                $tei
+                )
+};
+
+
+(:
+ : --------------------
+ : Navigation Endpoint
+ : --------------------
+ :
+ : see https://distributed-text-services.github.io/specifications/Navigation-Endpoint.html
+ : could be /api/dts/navigation
+ :)
+
+
+ (:~
+ : DTS Navigation Endpoint
+ :
+ : @param $id Identifier of the resource being navigated
+ :
+ : @result JSON Object
+ :)
+ declare
+  %rest:GET
+  %rest:path("/dts/navigation")
+  %rest:query-param("id", "{$id}")
+  %rest:produces("application/ld+json")
+  %output:media-type("application/json")
+  %output:method("json")
+ function ddts:navigation($id) {
+    (: parameter $id is mandatory :)
+    if ( not($id) ) then
+        (
+        <rest:response>
+            <http:response status="400"/>
+        </rest:response>,
+        "Mandatory parameter 'id' is missing."
+        )
+    else
+        (: check, if there is a resource with this identifier :)
+        let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][. eq $id]/root()/tei:TEI
+
+        return
+            (: check, if document exists! :)
+            if ( $tei/name() eq "TEI" ) then
+                (: here are valid requests handled :)
+
+                (:
+                in the case of DraCor, it makes sense to be able to request a TEI representation of the tei:castList,
+                this could be the first level, e.g. the division of tei:front and tei:body – which contains the text proper;
+                so first level (of structural division) would contain only tei:front, tei:body, tei:back; fragment ids would be {dracorID}.1.front, {dracorID}.1.body, {dracorID}.1.back
+                :)
+
+                (: function goes here :)
+                local:navigation-level1($tei)
+
+                (: Level 2 :)
+                (: in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
+                (: in the case of tei:body, it would be the top-level divisions of the body, normally "acts" – could also be "scenes" if there are no "acts"... but this case must be handled separately :)
+
+                (: Level 3 :)
+                (: don't care about tei:front here, but in the case of a drama with acts and scenes in the tei:body, this would normally list the "scenes" :)
+
+                (: Level 4 :)
+                (: in the boilerplate play front/body - acts - scenes, this would return the structural divisions like speeches and stage directions :)
+
+                (: we will have to see, if this will work out like this; I might implement it for this case and return only level zero, e.g. the whole document, if it doesn't fit this pattern :)
+
+                (: there is also a conflicting hierarchy, e.g. Pages! which would be a second cite structure :)
+
+
+                (: valid requests end above :)
+
+            else
+                (: not a valid id :)
+                (
+                <rest:response>
+                    <http:response status="404"/>
+                </rest:response>,
+                "Document with the id '" ||  $id || "' does not exist."
+                )
+ };
+
+ (: Generate such a Object that is used in the navigation endpoint and we will see, what are the challenges  :)
+ declare function local:navigation-level1($tei as element(tei:TEI)) {
+     (: see https://distributed-text-services.github.io/specifications/Navigation-Endpoint.html#example-1-requesting-top-level-children-of-a-textual-resource :)
+     (: So the id parameter supplied in the query is the identifier of the Resource as a whole. :)
+
+     (:
+                in the case of DraCor, it makes sense to be able to request a TEI representation of the tei:castList,
+                this could be the first level, e.g. the division of tei:front and tei:body – which contains the text proper;
+                so first level (of structural division) would contain only tei:front, tei:body, tei:back; fragment ids would be {dracorID}.1.front, {dracorID}.1.body, {dracorID}.1.back
+                :)
+     let $doc-id := $tei//tei:idno[@type eq "dracor"]/string()
+     let $request-id := $ddts:navigation-base || "?id=" || $doc-id
+     let $citeDepth := 1 (: needs to be generated by a function, evaluating structural information – a number defining the maximum depth of the document’s citation tree. E.g., if the a document has up to three levels, dts:citeDepth should be the number 3. :)
+     let $level := 1 (: a number identifying the hierarchical level of the references listed in member, counted relative to the top of the document’s citation tree. E.g., if a the returned references are at the second hierarchical level (like {"dts:ref": "1.1"}) then the dts:level in the response should be the number 2. (The Resource as a whole is considered level 0.) :)
+     let $parent := ()
+
+
+
+     let $passage := $ddts:navigation-base || "?id=" || $doc-id || "{&amp;ref}{&amp;start}{&amp;end}" (: the URI template to the Documents endpoint at which the text of passages corresponding to these references can be retrieved.:)
+
+     (: ok, it's hardcoded, but tryin' ... :)
+     let $member :=
+        (
+        if ($tei//tei:front) then map {"dts:ref": "front"} else () ,
+        if ($tei//tei:body) then map {"dts:ref" : "body"} else (),
+        if ($tei//tei:back) then map {"dts:ref" : "back"} else ()
+        )
+
+
+     return
+
+     map{
+         "@context" : $ddts:context ,
+         "@id" : $request-id ,
+         "dts:citeDepth" : $citeDepth ,
+         "dts:level": $level ,
+         "dts:passage":  $passage ,
+         "dts:parent" : $parent ,
+         "member" : array{$member}
+
+
+     }
+ };
