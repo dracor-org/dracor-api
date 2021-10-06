@@ -6,6 +6,14 @@ xquery version "3.1";
  : developed for the DTS Hackathon https://distributed-text-services.github.io/workshops/events/2021-hackathon/ by Ingo Börner
  :)
 
+(: todo:
+ : * Paginated Child Collection; Paginantion not implemented, will return Status code 501
+ : * add dublin core metadata; only added language so far
+ : * add navigation endpoint
+ : :)
+
+
+
 (: ddts – DraCor-Implementation of DTS follows naming conventions, e.g. dutil :)
 module namespace ddts = "http://dracor.org/ns/exist/dts";
 
@@ -69,8 +77,8 @@ function ddts:entry-point() {
     "@id": "/dts",
     "@type": "EntryPoint",
     "collections": "/dts/collections",
-    "documents": "/dts/documents",
-    "navigation" : "/dts/navigation"
+    "documents": "/dts/documents"
+    (: "navigation" : "/dts/navigation" :)
   }
 };
 
@@ -84,7 +92,17 @@ function ddts:entry-point() {
  : could be /api/dts/collections
  :)
 
-(: add function description here! :)
+(:~
+ : DTS Collections Endpoint
+ :
+ : Get a collection according to the specification: https://distributed-text-services.github.io/specifications/Collections-Endpoint.html
+ :
+ : @param $id Identifier for a collection or document, e.g. "ger" for GerDraCor. Root collection can be requested by leaving the parameter out or explicitly requesting it with "corpora"
+ : @param $page Page of the current collection’s members. Functionality is not implemented, will return 501 status code.
+ : @param $nav Use value "parents" to request the parent collection in "members" of the returned JSON object. Default behaviour is to return children in "member"; explicitly requesting "children" will work, but is not explicitly implemented
+ :
+ : @result JSON object
+ :)
 declare
   %rest:GET
   %rest:path("/dts/collections")
@@ -94,7 +112,8 @@ declare
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function ddts:collections($id, $page, $nav) {
+function ddts:collections($id, $page, $nav)
+as map() {
 
   (: check, if param $id is set -- request a certain collection :)
   if ( $id ) then
@@ -162,9 +181,11 @@ function ddts:collections($id, $page, $nav) {
 (:~
  : Root Collection "corpora"
  :
- : returns the root collection "corpora"
+ : Helper function that returns the root collection "corpora"
+ :
  :)
-declare function local:root-collection() {
+declare function local:root-collection()
+as map() {
     (: Get the corpora, get info needed for the member-array :)
   let $corpora := collection($config:data-root)//tei:teiCorpus
   (: get all the ids – these has to evaluate the teiCorpus files, unfortunately :)
@@ -175,7 +196,6 @@ declare function local:root-collection() {
     }
 
   (: response :)
-
 
   let $title := "DraCor Corpora"
   let $dublincore := map {}
@@ -198,9 +218,13 @@ declare function local:root-collection() {
 (:~
  : Collection Member
  :
- : Get a member of a collection
+ : Helper function to generate the collection members to put into the "member" array, e.g. of the root collection
+ :
+ : @param $id Identifier
+ :
  :)
-declare function local:collection-member-by-id($id as xs:string) {
+declare function local:collection-member-by-id($id as xs:string)
+as map() {
     (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($id)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
@@ -210,7 +234,6 @@ declare function local:collection-member-by-id($id as xs:string) {
     (:for the collection info in the dts, we only need a number to put into  "dts:totalItems" and "dts:totalChildren" :)
     let $file-count := count($teis)
     let $name := $info?name
-    (: would have to get more data, e.g. number of plays in the collection. important! :)
     order by $name
       return
         map {
@@ -226,9 +249,15 @@ declare function local:collection-member-by-id($id as xs:string) {
 
 
 (:~
- : Transform a DraCor-Corpus to a DTS-Collection – https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-collection-containing-a-single-work
+ : Corpus to Collection
+ :
+ : Helper function to transform a DraCor-Corpus to a DTS-Collection – https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-collection-containing-a-single-work
+ :
+ : @param $id Identifier of the corpus, e.g. "ger"
+ :
  :)
-declare function local:corpus-to-collection($id as xs:string) {
+declare function local:corpus-to-collection($id as xs:string)
+as map() {
     (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($id)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
@@ -238,10 +267,9 @@ declare function local:corpus-to-collection($id as xs:string) {
     return
         (: response :)
 
-
   let $title := $info?title
   let $description := $info?description
-  let $dublincore := map {}
+  let $dublincore := map {} (: still need to add information here, e.g. the title? :)
   (: assumes that it's a corpus one level below root-collection  :)
   let $totalParents := 1
   let $totalChildren := count( $teis )
@@ -262,14 +290,18 @@ declare function local:corpus-to-collection($id as xs:string) {
       "description" : $description ,
       "member" : array {$members}
     }
-
-
 };
 
 (:~
- : Transform a DraCor-TEI-Document to a member in a DTS-Collection
+ : Document to collection member
+ :
+ : Helper function to transform a DraCor-TEI-Document to a member in a DTS-Collection.
+ :
+ : @param $tei TEI representation of a play
+ :
  :)
-declare function local:teidoc-to-collection-member($tei) {
+declare function local:teidoc-to-collection-member($tei as element(tei:TEI) )
+as map() {
     let $id := dutil:get-dracor-id($tei)
     let $titles := dutil:get-titles($tei)
     let $lang := $tei/@xml:lang/string()
@@ -309,9 +341,15 @@ declare function local:teidoc-to-collection-member($tei) {
 };
 
 (:~
- : Return a Document, that has been requested via the collections endpoint – see Child Readable Collection (i.e. a textual Resource)
+ : Document as child readable collection (resource)
+ :
+ : Helper function to return a single document, that has been requested via the collections endpoint – see Child Readable Collection (i.e. a textual Resource)
+ :
+ : @param $id Identifier of the document, e.g. "ger000278"
+ :
  :)
-declare function local:child-readable-collection-by-id($id as xs:string) {
+declare function local:child-readable-collection-by-id($id as xs:string)
+as map() {
   let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][./text() eq $id]/root()/tei:TEI
   return
       if ( $tei ) then
@@ -348,9 +386,15 @@ declare function local:child-readable-collection-with-parent-by-id($id as xs:str
 
 
 (:~
- : Get a corpus with information on parent collection
- :  :)
-declare function local:corpus-to-collection-with-parent-as-member($id as xs:string) {
+ : Parent Collection of a corpus
+ :
+ : Helper function to get a corpus with information on parent collection (will always be the root collection)
+ :
+ : @param $id Identifier of the collection, e.g. "ger"
+ :
+ :)
+declare function local:corpus-to-collection-with-parent-as-member($id as xs:string)
+as map() {
     let $self := local:corpus-to-collection($id)
     (: remove the members and the totalItems; set value of totalItems to one because there is only one root-collection  :)
     let $self-without-members := map:remove($self, "member")
