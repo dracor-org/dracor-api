@@ -334,7 +334,7 @@ as map() {
 
     let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/play/" || $playname || "/tei"
     let $dts-passage := $ddts:documents-base || "?id=" || $id
-    (: todo: add navigation endpoint! :)
+    let $dts-navigation := $ddts:navigation-base || "?id=" || $id
 
     (: todo: do something here! :)
     let $dts-citeDepth := local:get-citeDepth($tei)
@@ -349,6 +349,7 @@ as map() {
             "dts:totalParents": 1 ,
             "dts:totalChildren": 0 ,
             "dts:passage": $dts-passage ,
+            "dts:references": $dts-navigation ,
             "dts:download": $dts-download ,
             "dts:citeDepth" : $dts-citeDepth
 
