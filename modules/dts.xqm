@@ -83,6 +83,20 @@ function ddts:entry-point() {
   }
 };
 
+(:~
+ : Calculate citeDepth
+ :
+ : Helper function to get citeDepth of a document
+ : Can currently cite maximum structure of tei:body/tei:div/tei:div --> 3 levels, but not all dramas have the structure text proper - act - scene
+ :
+ :   :)
+declare function local:get-citeDepth($tei as element(tei:TEI))
+as xs:integer {
+    if ( $tei//tei:body/tei:div/tei:div ) then 3
+    else if ( $tei//tei:body/tei:div ) then 2
+    else if ( $tei//tei:body ) then 1
+    else 0
+};
 
 (:
  : --------------------
@@ -323,7 +337,7 @@ as map() {
     (: todo: add navigation endpoint! :)
 
     (: todo: do something here! :)
-    let $dts-citeDepth := 1
+    let $dts-citeDepth := local:get-citeDepth($tei)
 
     return
         map {
@@ -511,18 +525,9 @@ function ddts:documents($id, $ref, $start, $end, $format) {
                 (: here are valid requests handled :)
 
                 if ( $ref ) then
-                    (: requested a segment :)
-                    (: todo: implement :)
+                    (: requested a fragment :)
+                    local:get-fragment-of-doc($tei, $ref)
 
-                    (
-                    <rest:response>
-                        <http:response status="501"/>
-                        </rest:response>,
-                    <error statusCode="501" xmlns="https://w3id.org/dts/api#">
-                        <title>Not implemented</title>
-                        <description>Requesting a document fragment is not supported.</description>
-                    </error>
-                    )
 
                 else if ( $start and $end ) then
                     (: requested a range; could be implemented, but not sure, if I will manage in time :)
@@ -596,6 +601,92 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
                 )
 };
 
+(:~
+ : Return a document fragment
+ :
+ : @param $tei TEI of the Document
+ : @param $ref identifier of the fragment requested
+ : :)
+declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:string) {
+    let $id := $tei//tei:idno[@type eq "dracor"]/string()
+
+    let $fragment :=
+        switch($ref)
+        (: structures on level 1 :)
+        case "front" return $tei//tei:front
+        case "body" return $tei//tei:body
+        case "back" return $tei//tei:back
+        default return
+            (: sorry for that, maybe use else if :)
+            (: structures on level 2 :)
+
+            (: front structures level 2 :)
+            (: div:)
+            if ( matches($ref, '^front.div.\d+$') ) then
+                let $pos := xs:integer(tokenize($ref,'\.')[last()])
+                return
+                $tei//tei:front/tei:div[$pos]
+            (: tei:set in tei:front :)
+            else if ( matches($ref, '^front.set.\d+$') ) then
+                let $pos := xs:integer(tokenize($ref,'\.')[last()])
+                return
+                    $tei//tei:front/tei:set[$pos]
+
+            (: body structures level 2 :)
+            else if ( matches($ref, "^body.div.\d+$") ) then
+                let $pos := xs:integer(tokenize($ref,'\.')[last()])
+                return
+                    $tei//tei:body/tei:div[$pos]
+
+            (: back structures level 2 :)
+            else if ( matches($ref, "^back.div.\d+$") ) then
+                let $pos := xs:integer(tokenize($ref,'\.')[last()])
+                return
+                    $tei//tei:back/tei:div[$pos]
+
+            (: structures on level 3:)
+            else if ( matches($ref, "body.div.\d+.div.\d+$") ) then
+                let $div1-pos := xs:integer(tokenize($ref, "\.")[3])
+                let $div2-pos := xs:integer(tokenize($ref, "\.")[last()])
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]
+
+            (: not matched by any rule :)
+            else()
+
+    let $link-header := () (: todo implement the link header :)
+
+    (: end of link-header :)
+
+    return
+        if ( not($fragment) ) then
+            (
+                <rest:response>
+                    <http:response status="404"/>
+                </rest:response>,
+                <error statusCode="404" xmlns="https://w3id.org/dts/api#">
+                    <title>Not found</title>
+                    <description>Fragment with the identifier '{$ref}' does not exist.</description>
+                </error>
+            )
+        else
+
+            (
+                <rest:response>
+                    <http:response status="200">
+                       {$link-header}
+                    </http:response>
+                </rest:response>,
+
+                <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                    <dts:fragment xmlns:dts="https://w3id.org/dts/api#">
+                        {$fragment}
+                    </dts:fragment>
+                </TEI>
+            )
+
+
+};
 
 (:
  : --------------------
@@ -611,6 +702,8 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
  : DTS Navigation Endpoint
  :
  : @param $id Identifier of the resource being navigated
+ : @param $ref ... todo: add from spec
+ : @param $level ... todo: add from spec
  :
  : @result JSON Object
  :)
@@ -618,10 +711,12 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
   %rest:GET
   %rest:path("/dts/navigation")
   %rest:query-param("id", "{$id}")
+  %rest:query-param("ref", "{$ref}")
+  %rest:query-param("level", "{$level}")
   %rest:produces("application/ld+json")
   %output:media-type("application/json")
   %output:method("json")
- function ddts:navigation($id) {
+ function ddts:navigation($id, $ref, $level) {
     (: parameter $id is mandatory :)
     if ( not($id) ) then
         (
@@ -642,15 +737,17 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
                 (:
                 in the case of DraCor, it makes sense to be able to request a TEI representation of the tei:castList,
                 this could be the first level, e.g. the division of tei:front and tei:body – which contains the text proper;
-                so first level (of structural division) would contain only tei:front, tei:body, tei:back; fragment ids would be {dracorID}.1.front, {dracorID}.1.body, {dracorID}.1.back
+                so first level (of structural division) would contain only tei:front, tei:body, tei:back; fragment ids would be {dracorID}.front, {dracorID}.body, {dracorID}.back
                 :)
-
-                (: function goes here :)
-                local:navigation-level1($tei)
+                (: Level 1 :)
+                if ( not($ref) and not($level) ) then
+                    local:navigation-level1($tei)
 
                 (: Level 2 :)
                 (: in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
                 (: in the case of tei:body, it would be the top-level divisions of the body, normally "acts" – could also be "scenes" if there are no "acts"... but this case must be handled separately :)
+                else if ( $level and not($ref) ) then
+                    local:navigation-level-n($tei, $level)
 
                 (: Level 3 :)
                 (: don't care about tei:front here, but in the case of a drama with acts and scenes in the tei:body, this would normally list the "scenes" :)
@@ -659,11 +756,24 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
                 (: in the boilerplate play front/body - acts - scenes, this would return the structural divisions like speeches and stage directions :)
 
                 (: we will have to see, if this will work out like this; I might implement it for this case and return only level zero, e.g. the whole document, if it doesn't fit this pattern :)
+                (: special case, that is implemented: ref is a level 1 division of body, e.g. an act, will return the scenes of this act. :)
+                else if ( $ref and (not($level) or ($level eq "1")) ) then
+                    local:children-of-subdivision($tei, $ref)
+
 
                 (: there is also a conflicting hierarchy, e.g. Pages! which would be a second cite structure :)
 
 
                 (: valid requests end above :)
+
+                (: don't really know, when this could become true :)
+                else (: maybe return invalid request? or 404 :)
+                (
+                <rest:response>
+                    <http:response status="404"/>
+                </rest:response>,
+                "Requested cite structure does not exist or can't be resolved."
+                )
 
             else
                 (: not a valid id :)
@@ -687,13 +797,13 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
                 :)
      let $doc-id := $tei//tei:idno[@type eq "dracor"]/string()
      let $request-id := $ddts:navigation-base || "?id=" || $doc-id
-     let $citeDepth := 1 (: needs to be generated by a function, evaluating structural information – a number defining the maximum depth of the document’s citation tree. E.g., if the a document has up to three levels, dts:citeDepth should be the number 3. :)
+     let $citeDepth := local:get-citeDepth($tei) (: needs to be generated by a function, evaluating structural information – a number defining the maximum depth of the document’s citation tree. E.g., if the a document has up to three levels, dts:citeDepth should be the number 3. :)
      let $level := 1 (: a number identifying the hierarchical level of the references listed in member, counted relative to the top of the document’s citation tree. E.g., if a the returned references are at the second hierarchical level (like {"dts:ref": "1.1"}) then the dts:level in the response should be the number 2. (The Resource as a whole is considered level 0.) :)
      let $parent := ()
 
 
 
-     let $passage := $ddts:navigation-base || "?id=" || $doc-id || "{&amp;ref}{&amp;start}{&amp;end}" (: the URI template to the Documents endpoint at which the text of passages corresponding to these references can be retrieved.:)
+     let $passage := $ddts:documents-base || "?id=" || $doc-id || "{&amp;ref}{&amp;start}{&amp;end}" (: the URI template to the Documents endpoint at which the text of passages corresponding to these references can be retrieved.:)
 
      (: ok, it's hardcoded, but tryin' ... :)
      let $member :=
@@ -718,3 +828,152 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
 
      }
  };
+
+ declare function local:navigation-level-n($tei as element(tei:TEI), $level as xs:string) {
+     (: Example 2: Requesting all descendants of a textual Resource at a specified level - https://distributed-text-services.github.io/specifications/Navigation-Endpoint.html#example-2-requesting-all-descendants-of-a-textual-resource-at-a-specified-level :)
+     let $doc-id := $tei//tei:idno[@type eq "dracor"]/string()
+     let $request-id := $ddts:navigation-base || "?id=" || $doc-id || "&amp;" || "level=" || $level
+     let $citeDepth := local:get-citeDepth($tei) (: needs to be generated by a function, evaluating structural information – a number defining the maximum depth of the document’s citation tree. E.g., if the a document has up to three levels, dts:citeDepth should be the number 3. :)
+     let $passage := $ddts:documents-base || "?id=" || $doc-id || "{&amp;ref}{&amp;start}{&amp;end}" (: the URI template to the Documents endpoint at which the text of passages corresponding to these references can be retrieved.:)
+
+
+
+     return
+     if ($level eq "1") then
+         (: there is a designated function that handles level 1 :)
+         local:navigation-level1($tei)
+
+     (: Level 2 :)
+     else if ( $level eq "2" ) then
+
+        let $parent :=
+            map {
+                "@type": "Resource",
+                "@dts:ref": $ddts:navigation-base || "?id=" || $doc-id
+                }
+  (: the unique passage identifier for the hierarchical parent of the current node in the document structure, defined by the ref query parameter. If the query specifies a range rather than a single ref, no parent should be specified and dts:parent should have a value of “null”. :)
+
+        (: not sure, if front, body and back can be handled, using "union" :)
+        (: should be put into a function?! :)
+        (: tei:set is not wrapped in a div but should be on this level. Included it at the end, but this might 'destroy' the order of the segments in front; must be tackled at some other point :)
+        let $front-segments := $tei//tei:front/tei:div
+        let $front-members :=
+            for $front-segment at $front-segment-pos in $front-segments
+                let $front-segment-heading := $front-segment/tei:head[1]/string()
+                let $front-segment-type := $front-segment/@type/string()
+                let $front-segment-type-map := if ( $front-segment-type != '' ) then map{ "dts:citeType": lower-case($front-segment-type)  } else ()
+                let $front-segment-id := "front" || "." || "div" || "." || string($front-segment-pos)
+                let $front-segment-id-map := map { "dts:ref": $front-segment-id }
+                return
+                    map:merge( ($front-segment-id-map,$front-segment-type-map) )
+
+        let $settings :=
+            for $set at $set-pos in $tei//tei:front/tei:set
+                let $set-type-map := map{ "dts:citeType": "setting"  }
+                let $set-id := "front" || "." || "set" || "." || string($set-pos)
+                let $set-id-map := map { "dts:ref": $set-id }
+            return
+                map:merge( ($set-id-map,$set-type-map) )
+
+        let $body-segments := $tei//tei:body/tei:div
+        let $body-members :=
+            for $body-segment at $body-segment-pos in $body-segments
+                let $body-segment-heading := $body-segment/tei:head[1]/string() => normalize-space()
+                let $body-segment-title-map := map { "dc:title" : $body-segment-heading}
+                let $body-segment-type := $body-segment/@type/string()
+                let $body-segment-type-map := if ( $body-segment-type != '' ) then map{ "dts:citeType": lower-case($body-segment-type)  } else ()
+                let $body-segment-id := "body" || "." || "div" || "." || string($body-segment-pos)
+                let $body-segment-id-map := map { "dts:ref": $body-segment-id }
+                let $body-dublincore-map := map { "dts:dublincore": $body-segment-title-map }
+                return
+                    map:merge( ($body-segment-type-map, $body-segment-id-map, $body-dublincore-map) )
+
+        let $back-segments := $tei//tei:back/tei:div
+        let $back-members :=
+            for $back-segment at $back-segment-pos in $back-segments
+                let $back-segment-heading := $back-segment/tei:head[1]/string()
+                let $back-segment-type := $back-segment/@type/string()
+                let $back-segment-type-map := if ( $back-segment-type != '' ) then map{ "dts:citeType": lower-case($back-segment-type)  } else ()
+                let $back-segment-id := "back" || "." || "div" || "." || string($back-segment-pos)
+                let $back-segment-id-map := map { "dts:ref": $back-segment-id }
+                return
+                    map:merge( ($back-segment-id-map, $back-segment-type-map) )
+
+        return
+
+        map{
+         "@context" : $ddts:context ,
+         "@id" : $request-id ,
+         "dts:citeDepth" : $citeDepth ,
+         "dts:level": xs:integer($level) ,
+         "dts:passage":  $passage ,
+         "dts:parent" : $parent ,
+         "member" : array{$front-members, $settings, $body-members, $back-members}
+        }
+
+        (: end of level2 :)
+     else
+        (: this level is not implemented/not availiable :)
+        (
+            <rest:response>
+                <http:response status="400"/>
+            </rest:response>,
+            "Level '" || $level || "' is not available."
+        )
+ };
+
+(:~
+ :
+ : Can be used to retrieve children of an act; might not be too generic
+ : :)
+declare function local:children-of-subdivision($tei, $ref) {
+    let $level := 3
+    let $citeDepth := local:get-citeDepth($tei)
+    let $doc-id := $tei//tei:idno[@type eq "dracor"]/string()
+    let $passage := $ddts:documents-base || "?id=" || $doc-id || "{&amp;ref}{&amp;start}{&amp;end}"
+
+    return
+    if ( matches($ref, "^body.div.\d+$") ) then
+        let $parent := map {"@type": "CitableUnit", "dts:ref": "body" }
+        (: get scenes of an act :)
+        let $div-no := xs:integer(tokenize($ref,'\.')[last()])
+        let $segments := $tei//tei:body/tei:div[$div-no]/tei:div
+        let $members :=
+            for $segment at $segment-pos in $segments
+            let $segment-heading := $segment/tei:head[1]/string() => normalize-space()
+            let $segment-title-map := map { "dc:title" : $segment-heading}
+            let $segment-type := $segment/@type/string()
+            let $segment-type-map := if ( $segment-type != '' ) then map{ "dts:citeType": lower-case($segment-type)  } else ()
+            let $segment-id := $ref || "." || "div" || "." || xs:string($segment-pos)
+            let $segment-id-map := map { "dts:ref": $segment-id }
+            let $dublincore-map := map { "dts:dublincore": $segment-title-map }
+                return
+                    map:merge( ($segment-id-map, $dublincore-map, $segment-type-map) )
+
+        let $request-id := $ddts:navigation-base || "?id=" || $doc-id || "&amp;" || "ref=" || $ref
+
+        return
+            (<rest:response>
+                <http:response status="200"/>
+            </rest:response>,
+            map{
+                "@context" : $ddts:context ,
+                "@id" : $request-id ,
+                "dts:citeDepth" : $citeDepth ,
+                "dts:level": $level ,
+                "dts:passage":  $passage ,
+                "dts:parent" : $parent ,
+                "member" : array{$members}
+            }
+            )
+
+
+    else
+        (
+            <rest:response>
+                <http:response status="501"/>
+            </rest:response>,
+            "Requesting children of any none-body div is not implemented."
+        )
+
+};
