@@ -4,7 +4,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - FUSEKI_SERVER=fuseki:3030
+        - METRICS_SERVER=metrics:8030
     ports:
-      - "9099:8080"
+      - "8080:8080"
     volumes:
       - .:/tmp/export
+    depends_on:
+      - fuseki
+      - metrics
+  fuseki:
+    image: "stain/jena-fuseki"
+    environment:
+      - ADMIN_PASSWORD=qwerty
+      - FUSEKI_DATASET_1=dracor
+    ports:
+      - "3030:3030"
+    expose:
+      - "3030"
+  metrics:
+    build: https://github.com/dracor-org/dracor-metrics.git#main
+    ports:
+      - "8030:8030"
