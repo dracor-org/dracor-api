@@ -9,7 +9,10 @@ xquery version "3.1";
 (: todo:
  : * Paginated Child Collection; Paginantion not implemented, will return Status code 501
  : * add dublin core metadata; only added language so far
- : * add navigation endpoint
+ : * didn't manage to implement all fields in the link header on all levels when requesting a fragment
+ : * cite structure must be added to collection endpoint, when requesting child readable collection (I guess)
+ : * add machine readble endpoint documentation
+ : * code of navigation endpoint should be refactored, maybe also code of documents endpoint (fragments)
  : :)
 
 
@@ -587,7 +590,7 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
                 (: see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html#get-responses :)
                 (: see https://datatracker.ietf.org/doc/html/rfc5988 :)
                 (: </navigation?id={$id}>; rel="contents", </collections?id={$id}>; rel="collection" :)
-                let $links := '</navigation?id=' || $id || '>; rel="contents", </collections?id=' || $id || '>; rel="collection"'
+                let $links := '<' || $ddts:navigation-base || '?id=' || $id || '>; rel="contents", <' || $ddts:collections-base  ||'?id=' || $id || '>; rel="collection"'
 
                 let $link-header :=  <http:header name='Link' value='{$links}'/>
 
@@ -655,9 +658,10 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
             (: not matched by any rule :)
             else()
 
-    let $link-header := () (: todo implement the link header :)
+    (: Link Header – see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html#get-responses :)
 
-    (: end of link-header :)
+    let $link-header := local:link-header-of-fragment($tei,$ref)
+
 
     return
         if ( not($fragment) ) then
@@ -685,8 +689,135 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                     </dts:fragment>
                 </TEI>
             )
+};
+
+(:~
+ :
+ : Link Header
+ :
+ : Generates the Link Header needed for the response of the Document endpoint when requesting a fragment
+ : @param $tei TEI Document (full doc)
+ : @param $ref Identifier of the fragment
+ :
+ : :)
+declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as xs:string) {
+
+    (: need to generate:
+    * prev	Previous passage of the document in the Document endpoint
+    * next	Next passage of the document in the Document endpoint
+    * up	Parent passage of the document in the Document endpoint. If the current request is already for the entire document, no up link will be provided. If the only parent is the entire document, the up value will link to the document as a whole.
+    * first	First passage of the document in the Document endpoint
+    * last	The URL for the last passage of the document in the Document endpoint
+    * contents	The URL for the Navigation Endpoint for the current document
+    * collection	The URL for the Collection endpoint for the current document
+    :)
+
+    let $doc-id := $tei//tei:idno[@type eq "dracor"]/string()
+
+    let $collection-val := $ddts:collections-base || "?id=" || $doc-id
+    let $collection := '<' || $collection-val  || '>; rel="collection"'
+
+    let $contents-val := $ddts:navigation-base || "?id=" || $doc-id
+    let $contents := '<' || $contents-val || '>; rel="contents"'
+
+    (: some parts of the link header depend on the level of the structure :)
+    (: level1 structures tei:front, tei:body, tei:back :)
+
+    let $up :=
+        if ( matches($ref, "^((front)|(body)|(back))$" ) ) then
+            let $up-val := $ddts:documents-base || "?id=" || $doc-id
+            return '<' || $up-val || '>; rel="up"'
+        else if ( matches($ref, "^((front)|(body)|(back))\.((div)|(set)).\d+$") ) then
+            let $parent-id := tokenize($ref,"\.")[1]
+            let $up-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $parent-id
+            return '<' || $up-val || '>; rel="up"'
+        else if ( matches($ref, "^body\.div\.\d+\.div\.\d+$") ) then
+            let $parent-div-no := tokenize($ref,'\.')[last()-2]
+            let $parent-id := "body.div." || $parent-div-no
+            let $up-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $parent-id
+            return '<' || $up-val || '>; rel="up"'
+        else ()
+
+    let $first :=
+        if ( matches($ref, "^((front)|(body)|(back))$" ) ) then
+            let $first-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || "front"
+            return '<' || $first-val || '>; rel="first"'
+        else if ( matches($ref, "^((front)|(body)|(back))\.((div)|(set)).\d+$") ) then
+            let $parent-id := tokenize($ref,"\.")[1]
+            let $first-id := $parent-id || ".div.1"
+            let $first-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $first-id
+            return '<' || $first-val || '>; rel="first"'
+         else if ( matches($ref, "^body\.div\.\d+\.div\.\d+$") ) then
+            let $parent-div-no := tokenize($ref,'\.')[last()-2]
+            let $parent-id := "body.div." || $parent-div-no
+            let $first-id := $parent-id || ".div.1"
+            let $first-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $first-id
+            return '<' || $first-val || '>; rel="first"'
+    else ()
+
+    let $last :=
+        if ( matches($ref, "^((front)|(body)|(back))$" ) ) then
+            let $last-id := if ( $tei//tei:back) then "back" else "body"
+            let $last-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $last-id
+            return '<' || $last-val || '>; rel="last"'
+        else if ( matches($ref, "^body\.div.\d+$") ) then
+            (: only implemented this for body – last act/scene :)
+            let $last-no := count( $tei//tei:body/tei:div) => xs:string()
+            let $last-id := "body.div." || $last-no
+            let $last-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $last-id
+            return '<' || $last-val || '>; rel="last"'
+          (: following code doesn't work, somehow counts all scenes; todo: fixme! :)
+          (:
+        else if ( matches($ref, "^body\.div\.\d+\.div\.\d+$") ) then
+
+            let $parent-div-no := tokenize($ref,'\.')[last()-2]
+            let $last-no := count( $tei//tei:body/tei:div[$parent-div-no]/tei:div ) => xs:string()
+            let $last-id := "body.div." || xs:string($parent-div-no) || ".div." || $last-no
+            let $last-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $last-id
+            return '<' || $last-val || '>; rel="last"'
+            :)
+        else ()
+
+    let $prev :=
+        if ( matches($ref, "^front$") ) then
+            ()
+        else if ( matches($ref, "^body$") ) then
+            let $prev-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || "front"
+            return '<' || $prev-val || '>; rel="prev"'
+        else if ( matches($ref, "^back$") ) then
+            let $prev-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || "body"
+            return '<' || $prev-val || '>; rel="prev"'
+        (: only implemented this for body :)
+        else if ( matches($ref, "^body\.div.\d+$") ) then
+            let $this-no := tokenize($ref, '\.')[last()] => xs:integer()
+            let $prev-no := $this-no - 1
+            return
+            if ( $prev-no > 0 ) then
+                let $prev-id := "body.div." || $prev-no
+                let $prev-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $prev-id
+                 return '<' || $prev-val || '>; rel="prev"'
+            else ()
+        else if ( matches($ref, "^body\.div\.\d+\.div\.\d+$") ) then
+            let $parent-div-no := tokenize($ref,'\.')[last()-2]
+            let $this-div-no := tokenize($ref, '\.')[last()] => xs:integer()
+            let $prev-div-no := $this-div-no - 1
+                return
+            if ( $prev-div-no > 0 ) then
+                let $prev-id := "body.div." || $parent-div-no || ".div." || $prev-div-no
+                let $prev-val := $ddts:documents-base || "?id=" || $doc-id || "&amp;" || "ref=" || $prev-id
+                 return '<' || $prev-val || '>; rel="prev"'
+            else ()
+
+        else ()
 
 
+    (: todo: implement next :)
+    let $next := ()
+
+    let $link-header-value := string-join( ($contents,$collection, $up, $first, $last, $prev, $next), ", " )
+    let $link-header := <http:header name='Link' value='{$link-header-value}'/>
+    return
+        $link-header
 };
 
 (:
