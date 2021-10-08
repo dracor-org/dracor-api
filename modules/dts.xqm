@@ -370,9 +370,10 @@ as map() {
 declare function local:child-readable-collection-by-id($id as xs:string)
 as map() {
   let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][./text() eq $id]/root()/tei:TEI
+  let $cite-structure := local:generate-citeStructure($tei)
   return
       if ( $tei ) then
-      map:merge( (map {"@context" : $ddts:context } , local:teidoc-to-collection-member($tei)) )
+      map:merge( (map {"@context" : $ddts:context } , local:teidoc-to-collection-member($tei), $cite-structure ) )
       else
         (
                     <rest:response>
@@ -434,6 +435,92 @@ as map() {
 
     return $result
 };
+
+(:~
+ :
+ : Helper Function that generates dts:citeStructure to be included in the collection endpoint when requesting a resource
+ :
+ : @param $tei TEI file
+ :
+ : :)
+declare function local:generate-citeStructure($tei as element(tei:TEI) )
+as map() {
+    (: example https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-readable-collection-ie-a-textual-resource :)
+
+    (:
+    "dts:citeStructure": [
+        {
+            "dts:citeType": "front"
+        },
+        {
+            "dts:citeType": "poem",
+            "dts:citeStructure": [
+                {
+                    "dts:citeType": "line"
+                }
+            ]
+        }
+    ]
+    :)
+
+    let $set := if ($tei//tei:front/tei:set) then ("set") else ()
+    let $front-structure-types :=
+
+        if ($tei//tei:front) then
+            array {
+                for $front-sub-structure-type in (distinct-values($tei//tei:front/tei:div/@type/string() ), $set)
+                return
+                    map{ "dts:citeType": lower-case($front-sub-structure-type) }
+            }
+        else()
+
+    let $front-structure := map { "dts:citeType" : "front" , "dts:citeStructure" : $front-structure-types }
+
+    let $body-structure :=
+        (: structure body - act - scene :)
+        if ($tei//tei:body/tei:div[@type eq "act"] and $tei//tei:body/tei:div/tei:div[@type eq "scene"]) then
+            map { "dts:citeType" : "body" ,
+                "dts:citeStructure" : array{ map{ "dts:citeType" : "act" , "dts:citeStructure" : array { map {"dts:citeType" : "scene" }  }  } }
+                }
+        (: structure: body – scene :)
+        else if ( $tei//tei:body/tei:div[@type eq "scene"] ) then
+            map { "dts:citeType" : "body" ,
+                "dts:citeStructure" : array{ map{ "dts:citeType" : "scene" } } }
+        (: structure: body - act, no scene :)
+        else if ( $tei//tei:body/tei:div[@type eq "act"] and not($tei//tei:body/tei:div/tei:div) ) then
+            map { "dts:citeType" : "body" ,
+                "dts:citeStructure" : array{ map{ "dts:citeType" : "act"  } } }
+
+        (: other types than scenes and acts ... :)
+        else if ( $tei//tei:body/tei:div[@type]/tei:div[@type] ) then
+            let $types-1 := distinct-values($tei//tei:body/tei:div/@type/string() )
+            let $types-2 := distinct-values( $tei//tei:body/tei:div[@type]/tei:div/@type/string() )
+            return
+                (: structure, like act and scene, only with different type-values :)
+                if ( (count($types-1) = 1) and (count($types-2) = 1) ) then
+                    map { "dts:citeType" : "body" ,
+                "dts:citeStructure" : array{ map{ "dts:citeType" : lower-case($types-1) , "dts:citeStructure" : array { map {"dts:citeType" : lower-case($types-2) }  }  } }
+                }
+
+
+                else ()
+
+
+        (: structure: only body :)
+        else if ( $tei//tei:body  and not($tei//tei:body/tei:div[@type eq "act"]) and not($tei//tei:body/tei:div[@type eq "scene"]) ) then
+            map { "dts:citeType" : "body" }
+        else ()
+
+    let $back-structure :=
+        if ($tei//tei:back) then map{ "dts:citeType": "back"} else ()
+
+    let $cite-structure := array {$front-structure, $body-structure,  $back-structure}
+
+    return
+
+    map {"dts:citeStructure" : $cite-structure }
+};
+
 
 (:
  : --------------------
