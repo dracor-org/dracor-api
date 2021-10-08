@@ -36,9 +36,9 @@ declare namespace dc = "http://purl.org/dc/terms/";
 
 (: Variables used in responses :)
 declare variable $ddts:api-base := "https://staging.dracor.org/api"; (: change for production :)
-declare variable $ddts:collections-base := "/dts/collections" ;
-declare variable $ddts:documents-base := "/dts/documents" ;
-declare variable $ddts:navigation-base := "/dts/navigation" ;
+declare variable $ddts:collections-base := "/api/dts/collections" ;
+declare variable $ddts:documents-base := "/api/dts/documents" ;
+declare variable $ddts:navigation-base := "/api/dts/navigation" ;
 
 declare variable $ddts:ns-dts := "https://w3id.org/dts/api#";
 declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#";
