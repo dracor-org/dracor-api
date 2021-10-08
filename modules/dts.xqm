@@ -10,7 +10,7 @@ xquery version "3.1";
  : * Paginated Child Collection; Paginantion not implemented, will return Status code 501
  : * add dublin core metadata; only added language so far
  : * didn't manage to implement all fields in the link header on all levels when requesting a fragment
- : * cite structure must be added to collection endpoint, when requesting child readable collection (I guess)
+ : * citeStructure: does it represent the structure, e.g. the types, or is it like a TOC, e.g. list all five acts in a five act play? needs to be refactored
  : * add machine readble endpoint documentation
  : * code of navigation endpoint should be refactored, maybe also code of documents endpoint (fragments)
  : :)
@@ -330,8 +330,11 @@ as map() {
     let $corpusname := tokenize($collection-name, '/')[last()]
 
     (: todo: add more metadata to dublin core :)
+    let $authors := dutil:get-authors($tei)
+    let $dc-creators := for $author in $authors return $author?name
     let $dublincore :=
         map {
+            "dc:creator" : $dc-creators ,
             "dc:language" : $lang
         }
 
