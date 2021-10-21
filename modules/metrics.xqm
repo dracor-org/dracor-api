@@ -27,7 +27,8 @@ declare function metrics:collect-sitelinks($corpus as xs:string) {
   let $sitelinks-col := xmldb:create-collection(
     "/", $config:sitelinks-root || '/' || $corpus
   )
-  let $idnos := collection($data-col)/tei:TEI//tei:idno[@type="wikidata"]/text()
+  let $idnos := collection($data-col)
+    /tei:TEI//tei:publicationStmt/tei:idno[@type="wikidata"]/text()
   for $id in $idnos
   let $resource := $id || '.xml'
   let $log := util:log('info', 'querying sitelinks for ' || $resource)
