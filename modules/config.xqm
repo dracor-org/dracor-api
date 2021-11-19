@@ -55,6 +55,9 @@ declare variable $config:webhook-secret :=
 declare variable $config:fuseki-pw :=
   doc('/db/data/dracor/config.xml')//fuseki-pw/normalize-space();
 
+(: add blazegraph :)
+declare variable $config:blazegraph-pw := "changeThis!" ;
+
 (: the directory path in corpus repos where the TEI files reside :)
 declare variable $config:corpus-repo-prefix := 'tei';
 
@@ -64,10 +67,10 @@ declare variable $config:repo-descriptor :=
 declare variable $config:expath-descriptor :=
   doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
-declare variable $config:fuseki-server := "http://localhost:3030/dracor/";
+declare variable $config:triplestore-server := "http://blazegraph:8889/dracor/";
 
 declare variable $config:metrics-server :=
-  xs:anyURI("http://localhost:8030/metrics/");
+  xs:anyURI("http://metrics:8030/metrics/");
 
 (:~
  : The Wikidata IDs for text classification currently recognized as text class
