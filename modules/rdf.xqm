@@ -494,7 +494,7 @@ declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
  : Clear graph in Blazegraph
  :)
 declare function drdf:blazegraph-clear-graph($corpusname as xs:string) {
-  let $url := $config:triplestore-server || "/bigdata/sparql"
+  let $url := $config:triplestore-server || "/bigdata/update"
   let $graph := "http://dracor.org/" || $corpusname
   let $log := util:log-system-out("clearing blazegraph graph: " || $graph)
   let $request :=
