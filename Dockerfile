@@ -3,7 +3,7 @@ ARG EXIST_VERSION=5.3.0
 # START STAGE 1
 FROM openjdk:8-jdk-slim as builder
 
-ARG FUSEKI_SERVER=localhost:8889
+ARG TRIPLESTORE_SERVER=localhost:8889
 ARG METRICS_SERVER=localhost:8030
 
 USER root
@@ -30,7 +30,7 @@ ENV PATH ${PATH}:${ANT_HOME}/bin
 
 WORKDIR /tmp/dracor-api
 COPY . .
-RUN sed -i "s/localhost:3030/${FUSEKI_SERVER}/" modules/config.xqm \
+RUN sed -i "s/localhost:3030/${TRIPLESTORE_SERVER}/" modules/config.xqm \
     && sed -i "s/localhost:8030/${METRICS_SERVER}/" modules/config.xqm \
     && ant \
     && curl -L -o /tmp/0-crypto.xar https://github.com/eXist-db/expath-crypto-module/releases/download/6.0.1/expath-crypto-module-6.0.1.xar \
