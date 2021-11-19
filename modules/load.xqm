@@ -105,7 +105,7 @@ as xs:string* {
             (: drdf:fuseki-clear-graph($name), :)
             
             (: clear blazegraph graph :)
-            drdf:blazegraph-clear-graph($name),
+            (: drdf:blazegraph-clear-graph($name), :)
 
             (: load files from ZIP archive :)
             compression:unzip(

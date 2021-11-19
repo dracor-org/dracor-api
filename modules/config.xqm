@@ -67,7 +67,7 @@ declare variable $config:repo-descriptor :=
 declare variable $config:expath-descriptor :=
   doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
-declare variable $config:triplestore-server := "http://blazegraph:8889/dracor/";
+declare variable $config:triplestore-server := "http://blazegraph:8080/bigdata/sparql";
 
 declare variable $config:metrics-server :=
   xs:anyURI("http://metrics:8030/metrics/");
