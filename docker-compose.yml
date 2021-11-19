@@ -14,6 +14,9 @@ services:
     depends_on:
       - blazegraph
       - metrics
+    links:
+      - metrics
+      - blazegraph
   blazegraph:
     image: "lyrasis/blazegraph:2.1.5"
     ports:
