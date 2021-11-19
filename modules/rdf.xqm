@@ -462,7 +462,7 @@ declare function drdf:update() as xs:string* {
 };
 
 declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
-  let $url := $config:fuseki-server || "update"
+  let $url := $config:triplestore-server || "update"
   let $graph := "http://dracor.org/" || $corpusname
   let $log := util:log-system-out("clearing fuseki graph: " || $graph)
   let $request :=
@@ -495,7 +495,7 @@ declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
  :)
 declare function drdf:fuseki($uri as xs:anyURI) {
   let $corpus := tokenize($uri, "/")[position() = last() - 1]
-  let $url := $config:fuseki-server || "data" || "?graph=" || encode-for-uri("http://dracor.org/" || $corpus)
+  let $url := $config:triplestore-server || "data" || "?graph=" || encode-for-uri("http://dracor.org/" || $corpus)
   let $rdf := doc($uri)
   let $request :=
     <hc:request method="post" href="{ $url }">
