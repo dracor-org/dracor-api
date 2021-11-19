@@ -490,6 +490,35 @@ declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
 };
 
 (:~
+ : Clear graph in Blazegraph
+ :)
+declare function drdf:blazegraph-clear-graph($corpusname as xs:string) {
+  let $url := $config:triplestore-server || "bigdata/sparql"
+  let $graph := "http://dracor.org/" || $corpusname
+  let $log := util:log-system-out("clearing blazegraph graph: " || $graph)
+  let $request :=
+    <hc:request
+      method="post"
+    >
+      <hc:body media-type="application/sparql-update" method="text">
+        CLEAR SILENT GRAPH &lt;{$graph}&gt;
+      </hc:body>
+    </hc:request>
+
+  let $response := hc:send-request($request, $url)
+
+  return if ($response/@status = "204") then (
+    util:log("info", "Cleared graph <" || $graph || ">"),
+    true()
+  ) else (
+    util:log("warn", "Failed to clear graph <" || $graph || ">: " || $response/message),
+    false()
+  )
+};
+
+
+
+(:~
  : Send RDF data to Fuseki
  https://github.com/dracor-org/dracor-api/issues/77
  :)
@@ -512,4 +541,29 @@ declare function drdf:fuseki($uri as xs:anyURI) {
               util:log("info", "unable to store to fuseki: " || $uri),
               util:log("info", "response header from fuseki: " || $response[1]),
               util:log("info", "response body from fuseki: " || $response[2]))
+};
+
+(:~
+ : Send RDF data to Blazegraph
+ https://github.com/dracor-org/dracor-api/issues/156
+ :)
+declare function drdf:blazegraph($uri as xs:anyURI) {
+  let $corpus := tokenize($uri, "/")[position() = last() - 1]
+  let $url := $config:triplestore-server || "bigdata/sparql" || "?context-uri=" || encode-for-uri("http://dracor.org/" || $corpus)
+  let $rdf := doc($uri)
+  let $request :=
+    <hc:request method="post" href="{ $url }">
+      <hc:body media-type="application/rdf+xml">{ $rdf }</hc:body>
+    </hc:request>
+  let $response :=
+      hc:send-request($request)
+  let $status := string($response[1]/@status)
+  return
+      switch ($status)
+          case "200" return true()
+          case "201" return true()
+          default return (
+              util:log("info", "unable to store to blazegraph: " || $uri),
+              util:log("info", "response header from blazegraph: " || $response[1]),
+              util:log("info", "response body from blazegraph: " || $response[2]))
 };
