@@ -494,7 +494,7 @@ declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
  : Clear graph in Blazegraph
  :)
 declare function drdf:blazegraph-clear-graph($corpusname as xs:string) {
-  let $url := $config:triplestore-server || "bigdata/sparql"
+  let $url := $config:triplestore-server || "/bigdata/sparql"
   let $graph := "http://dracor.org/" || $corpusname
   let $log := util:log-system-out("clearing blazegraph graph: " || $graph)
   let $request :=
@@ -550,7 +550,7 @@ declare function drdf:fuseki($uri as xs:anyURI) {
  :)
 declare function drdf:blazegraph($uri as xs:anyURI) {
   let $corpus := tokenize($uri, "/")[position() = last() - 1]
-  let $url := $config:triplestore-server || "?context-uri=" || encode-for-uri("http://dracor.org/" || $corpus)
+  let $url := $config:triplestore-server || "/bigdata/sparql" || "?context-uri=" || encode-for-uri("http://dracor.org/" || $corpus)
   let $rdf := doc($uri)
   let $request :=
     <hc:request method="post" href="{ $url }">

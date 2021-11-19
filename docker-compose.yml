@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - TRIPLESTORE_SERVER=blazegraph:8889
+        - TRIPLESTORE_SERVER=blazegraph:8080
         - METRICS_SERVER=metrics:8030
     ports:
       - "8080:8080"
