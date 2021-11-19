@@ -3,7 +3,7 @@ ARG EXIST_VERSION=5.3.0
 # START STAGE 1
 FROM openjdk:8-jdk-slim as builder
 
-ARG FUSEKI_SERVER=localhost:3030
+ARG FUSEKI_SERVER=localhost:8889
 ARG METRICS_SERVER=localhost:8030
 
 USER root
@@ -38,8 +38,8 @@ RUN sed -i "s/localhost:3030/${FUSEKI_SERVER}/" modules/config.xqm \
 
 FROM existdb/existdb:${EXIST_VERSION}
 
-COPY --from=builder /tmp/*.xar /exist/autodeploy
-COPY --from=builder /tmp/dracor-api/build/dracor-*.xar /exist/autodeploy
+COPY --from=builder /tmp/*.xar /exist/autodeploy/
+COPY --from=builder /tmp/dracor-api/build/dracor-*.xar /exist/autodeploy/
 
 ENV DATA_DIR /exist-data
 
