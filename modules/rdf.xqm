@@ -447,7 +447,8 @@ declare function drdf:update($url as xs:string) {
   let $resource := $paths?playname || ".rdf.xml"
   return (
     util:log('info', ('RDF update: ', $collection, "/", $resource)),
-    xmldb:store($collection, $resource, $rdf) => xs:anyURI() => drdf:fuseki()
+    (: xmldb:store($collection, $resource, $rdf) => xs:anyURI() => drdf:fuseki() :)
+    xmldb:store($collection, $resource, $rdf) => xs:anyURI() => drdf:blazegraph()
   )
 };
 

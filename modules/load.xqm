@@ -102,7 +102,10 @@ as xs:string* {
             xmldb:create-collection($config:rdf-root, $name),
 
             (: clear fuseki graph :)
-            drdf:fuseki-clear-graph($name),
+            (: drdf:fuseki-clear-graph($name), :)
+            
+            (: clear blazegraph graph :)
+            drdf:blazegraph-clear-graph($name),
 
             (: load files from ZIP archive :)
             compression:unzip(
