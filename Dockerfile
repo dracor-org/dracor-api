@@ -38,8 +38,8 @@ RUN sed -i "s/localhost:3030/${FUSEKI_SERVER}/" modules/config.xqm \
 
 FROM existdb/existdb:${EXIST_VERSION}
 
-COPY --from=builder /tmp/*.xar /exist/autodeploy
-COPY --from=builder /tmp/dracor-api/build/dracor-*.xar /exist/autodeploy
+COPY --from=builder /tmp/*.xar /exist/autodeploy/
+COPY --from=builder /tmp/dracor-api/build/dracor-*.xar /exist/autodeploy/
 
 ENV DATA_DIR /exist-data
 
