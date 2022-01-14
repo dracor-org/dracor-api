@@ -673,7 +673,12 @@ declare function dutil:get-short-name (
 };
 
 declare function local:build-sort-name ($name as element()) {
-  if ($name/tei:surname) then
+  (: 
+   : If there is a surname and it is not the first element in the name we
+   : rearrange the name to put it first. Otherwise we just return the normalized
+   : text as written in the document.
+   :)
+  if ($name/tei:surname and not($name/tei:*[1] = $name/tei:surname)) then
     let $start := if ($name/tei:surname[@sort="1"]) then
       $name/tei:surname[@sort="1"] else $name/tei:surname[1]
 
