@@ -5,24 +5,24 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - FUSEKI_SERVER=fuseki:3030
+        - TRIPLESTORE_SERVER=blazegraph:8080
         - METRICS_SERVER=metrics:8030
     ports:
       - "8080:8080"
     volumes:
       - .:/tmp/export
     depends_on:
-      - fuseki
+      - blazegraph
       - metrics
-  fuseki:
-    image: "stain/jena-fuseki"
-    environment:
-      - ADMIN_PASSWORD=qwerty
-      - FUSEKI_DATASET_1=dracor
+    links:
+      - metrics
+      - blazegraph
+  blazegraph:
+    image: "lyrasis/blazegraph:2.1.5"
     ports:
-      - "3030:3030"
+      - "8889:8080"
     expose:
-      - "3030"
+      - "8889"
   metrics:
     build: https://github.com/dracor-org/dracor-metrics.git#main
     ports:
