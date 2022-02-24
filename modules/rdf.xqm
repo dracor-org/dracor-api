@@ -1319,18 +1319,26 @@ declare function drdf:file-entites($play-uri as xs:string, $play-info as map()) 
     (: should ideally point to the representation in the github folder, raw; then we have an Machine Event (or software execution; see crmdig) that ingests this file and has the resulting Corpus Document :)
     let $tei-file-uri := $play-uri || "/file/" || "tei" || "/out"
     let $tei-api-endpoint-url := $drdf:sitebase || "api/corpora/" || $play-info?corpus || "/play/" || $play-info?name || "/tei"
+    let $expression-uri := $play-uri || "/expression/2" (: we use /2 for the expression that the file is derived from; this doesn't really indicate, any special sequence, though; but /1 can be easily remembered as first publication? :)
 
     let $tei-api-rdf :=
     <rdf:Description rdf:about="{$tei-file-uri}">
         <rdf:type rdf:resource="{$drdf:crmdig}D1_Digital_Object"/>
         <rdfs:label>{$play-info?title} [TEI; API Output]</rdfs:label>
+        <crm:P165_incorporates rdf:resource="{$expression-uri}"/>
         <crm:P190_has_symbolic_content rdf:resource="{$tei-api-endpoint-url}"/>
         <rdfs:seeAlso rdf:resource="{$tei-api-endpoint-url}"/>
     </rdf:Description>
 
+    let $expressions-incorporated-in-files :=
+        <rdf:Description rdf:about="{$expression-uri}">
+            <crm:P165i_is_incorporated_in rdf:resource="{$tei-file-uri}"/>
+        </rdf:Description>
+
     return
         (
-            $tei-api-rdf
+            $tei-api-rdf ,
+            $expressions-incorporated-in-files
         )
 
 
