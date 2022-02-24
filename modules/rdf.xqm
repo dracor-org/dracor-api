@@ -24,6 +24,8 @@ declare namespace schema="http://schema.org/" ;
 declare namespace frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/";
 (: crmdig http://www.ics.forth.gr/isl/CRMdig/; see http://www.cidoc-crm.org/crmdig/sites/default/files/CRMdig_v3.2.1.rdfs :)
 declare namespace crmdig="http://www.ics.forth.gr/isl/CRMdig/";
+(: clscor: clsinfra Ontology :)
+declare namespace crmcls="https://clsinfra.io/ontologies/CRMcls/";
 
 
 
@@ -46,6 +48,7 @@ declare variable $drdf:viaf := "http://viaf.org/viaf/" ;
 declare variable $drdf:frbroo := "http://iflastandards.info/ns/fr/frbr/frbroo/" ;
 declare variable $drdf:schema := "http://schema.org/" ;
 declare variable $drdf:crmdig := "http://www.ics.forth.gr/isl/CRMdig/";
+declare variable $drdf:crmcls := "https://clsinfra.io/ontologies/CRMcls/" ;
 
 
 (: Refactor drdf:play-to-rdf  :)
