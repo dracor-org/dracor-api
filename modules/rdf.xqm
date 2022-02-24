@@ -1023,6 +1023,13 @@ declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()
     let $creation-finishing-activity-ts-type := $drdf:typebaseuri || "date" || "/finishing" (: should mark the end of the timespan defined by Written Year :)
     let $expression-creation-ts-type := $drdf:typebaseuri || "date" || "/writing" (: Written Year :)
 
+    (: crmcls: HIER $sameAs-wikidata :)
+    (: reused from main rdf creation function :)
+     (: wikidata-id of the play: "wikidataId": "Q51370104", :)
+    let $sameAs-wikidata :=
+        if ( map:contains($play-info, "wikidataId") ) then
+            <owl:sameAs rdf:resource="{$drdf:wd || $play-info?wikidataId}"/>
+        else ()
 
     (: Work :)
     let $work-rdf :=
@@ -1033,6 +1040,9 @@ declare function drdf:frbroo-entites($play-uri as xs:string, $play-info as map()
             <frbroo:R9_is_realised_in rdf:resource="{$expression-uri}"/>
             <frbroo:R9_is_realised_in rdf:resource="{$text-first-publication-as-expression-uri}"/>
             <frbroo:R19i_was_realised_through rdf:resource="{$expression-creation-uri}"/>
+            {(: $sameAs-wikidata wd-should go here :)
+                $sameAs-wikidata
+            }
         </rdf:Description>
 
     (: this expression will be included/is the basis of in the dracor-play-document; but the document also exhibits features of the representative publication expression; so maybe this has also be linked to the corpus document :)
@@ -1678,7 +1688,11 @@ as element(rdf:RDF) {
       {$numOfSpeakerGroups}
       {$allInIndex}
       {$allInSegment}
-      {$sameAs-wikidata}
+      {
+          (: Move sameAs info to Work-entity crmcls :)
+          ()
+          (: $sameAs-wikidata :)
+      }
     </rdf:Description>
 
 
