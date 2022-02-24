@@ -1234,30 +1234,23 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
                 else ()
 
             (: preparation activity :)
-            (:
-
-            <https://dlina.clscor.io/entity/lina88/preparation/2> a crm:E11_Modification,
-        crm:E65_Creation ;
-    rdfs:label "Manuelle Annotation von 'Emilia Galotti'"@de,
-        "Manual annotation of 'Emilia Galotti'"@en ;
-    crm:P16_used_specific_object <https://dlina.clscor.io/entity/lina88/preparation/1/output> ;
-    crm:P2_has_type <https://dlina.clscor.io/entity/type/process/lina-enrichment> ;
-    crm:P32_used_general_technique <https://vocabs.dariah.eu/tadirah/enriching> ;
-    crm:P33_used_specific_technique <https://dlina.clscor.io/entity/annotation-guidelines/1> ;
-    crm:P94_has_created <https://dlina.clscor.io/entity/lina88/file/lina-xml> .
-
-
-            :)
+            (: todo: type this activity :)
 
             let $preparation-step-uri :=  $play-uri || "/file/" || "tei" || "/in/preparation/1"
+            let $preparation-step-type-uri := $drdf:typebaseuri || "activity/editing"
             let $preparation-activity :=
                 (
                 <rdf:Description rdf:about="{$preparation-step-uri}">
                     <rdf:type rdf:resource="{$drdf:crm}E11_Modification"/>
                     <rdf:type rdf:resource="{$drdf:crm}E65_Creation"/>
                     <rdfs:label>Preparation of TEI-File '{$play-info?title}'</rdfs:label>
+                    <crm:P2_has_type rdf:resource="{$preparation-step-type-uri}"/>
                     <crm:P16_used_specific_object rdf:resource="{$digital-source-uri}"/>
                     <crm:P94_has_created rdf:resource="{$ingested-tei-file-uri}"/>
+                </rdf:Description>
+                ,
+                <rdf:Description rdf:about="{$preparation-step-type-uri}">
+                    <crm:P2i_is_type_of rdf:resource="{$preparation-step-uri}"/>
                 </rdf:Description>
                 ,
                 <rdf:Description rdf:about="{$digital-source-uri}">
@@ -1380,12 +1373,20 @@ declare function drdf:file-entites($play-uri as xs:string, $play-info as map()) 
 
     (: the file, that served as input; could be find on github in the repo. This info has to be added later; this file underwent the whole editing process – which must be modeled :)
     let $ingested-tei-file-uri := $play-uri || "/file/" || "tei" || "/in"
+    let $ingested-tei-file-type-uri := $drdf:typebaseuri || "file/dracor-tei-source"
     let $ingested-tei-file-rdf :=
         <rdf:Description rdf:about="{$ingested-tei-file-uri}">
         <rdf:type rdf:resource="{$drdf:crmdig}D1_Digital_Object"/>
+        <crm:P2_has_type rdf:resource="{$ingested-tei-file-type-uri}"/>
         <rdfs:label>{$play-info?title} [TEI-File that was ingested into the DraCor-Platform]</rdfs:label>
         <crm:P165_incorporates rdf:resource="{$expression-uri}"/>
     </rdf:Description>
+
+    let $file_types_inverse := (
+        <rdf:Description rdf:about="{$ingested-tei-file-type-uri}">
+            <crm:P2i_is_type_of rdf:resource="{$ingested-tei-file-uri}"/>
+        </rdf:Description>
+        )
 
 
     let $expressions-incorporated-in-files :=
@@ -1398,7 +1399,8 @@ declare function drdf:file-entites($play-uri as xs:string, $play-info as map()) 
         (
             $tei-api-rdf ,
             $ingested-tei-file-rdf ,
-            $expressions-incorporated-in-files
+            $expressions-incorporated-in-files,
+            $file_types_inverse
         )
 
 
