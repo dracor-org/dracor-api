@@ -1631,12 +1631,17 @@ as element(rdf:RDF) {
     (: The services, API and endpoints ? :)
     (: TODO :)
 
+    (: crmcls Document Class :)
+    let $crmcls-doc-class-uri := $drdf:crmcls || "X2_Corpus_Document"
+    let $crmcls-doc-class := <rdf:type rdf:resource="{$crmcls-doc-class-uri}"/>
+
 
   (: build main RDF Chunk :)
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
       <rdf:type rdf:resource="{$drdf:crm}E73_Information_Object"/>
       <rdf:type rdf:resource="{$drdf:dracon}play"/>
+      {$crmcls-doc-class}
       {$default-rdfs-label}
       {$eng-rdfs-label}
       {$dc-titles}
@@ -1674,6 +1679,7 @@ as element(rdf:RDF) {
       xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
       xmlns:schema="http://schema.org/"
       xmlns:frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/"
+      xmlns:crmcls="https://clsinfra.io/ontologies/CRMcls/"
     >
     {$inner}
     {$default-crm-title-elements}
