@@ -171,8 +171,9 @@ as element()* {
         (
 
         (: Author related triples :)
+        (: crmcls change class from person to actor :)
         <rdf:Description rdf:about="{$authorURI}">
-            <rdf:type rdf:resource="{$drdf:crm}E21_Person"/>
+            <rdf:type rdf:resource="{$drdf:crm}E39_Actor"/>
             <rdf:type rdf:resource="{$drdf:dracon}author"/>
             {if ($main-rdfs-label) then $main-rdfs-label else ()}
             {if ($en-rdfs-label) then $en-rdfs-label else () }
