@@ -1330,14 +1330,26 @@ declare function drdf:file-entites($play-uri as xs:string, $play-info as map()) 
         <rdfs:seeAlso rdf:resource="{$tei-api-endpoint-url}"/>
     </rdf:Description>
 
+    (: the file, that served as input; could be find on github in the repo. This info has to be added later; this file underwent the whole editing process – which must be modeled :)
+    let $ingested-tei-file-uri := $play-uri || "/file/" || "tei" || "/in"
+    let $ingested-tei-file-rdf :=
+        <rdf:Description rdf:about="{$ingested-tei-file-uri}">
+        <rdf:type rdf:resource="{$drdf:crmdig}D1_Digital_Object"/>
+        <rdfs:label>{$play-info?title} [TEI-File that was ingested into the DraCor-Platform]</rdfs:label>
+        <crm:P165_incorporates rdf:resource="{$expression-uri}"/>
+    </rdf:Description>
+
+
     let $expressions-incorporated-in-files :=
         <rdf:Description rdf:about="{$expression-uri}">
             <crm:P165i_is_incorporated_in rdf:resource="{$tei-file-uri}"/>
+            <crm:P165i_is_incorporated_in rdf:resource="{$ingested-tei-file-uri}"/>
         </rdf:Description>
 
     return
         (
             $tei-api-rdf ,
+            $ingested-tei-file-rdf ,
             $expressions-incorporated-in-files
         )
 
