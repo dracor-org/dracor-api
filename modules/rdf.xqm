@@ -1316,7 +1316,6 @@ as element()* {
 };
 
 declare function drdf:file-entites($play-uri as xs:string, $play-info as map()) {
-    (: HIER :)
     (: should ideally point to the representation in the github folder, raw; then we have an Machine Event (or software execution; see crmdig) that ingests this file and has the resulting Corpus Document :)
     let $tei-file-uri := $play-uri || "/file/" || "tei" || "/out"
     let $tei-api-endpoint-url := $drdf:sitebase || "api/corpora/" || $play-info?corpus || "/play/" || $play-info?name || "/tei"
@@ -1327,6 +1326,8 @@ declare function drdf:file-entites($play-uri as xs:string, $play-info as map()) 
         <crm:P190_has_symbolic_content rdf:resource="{$tei-api-endpoint-url}"/>
         <rdfs:seeAlso rdf:resource="{$tei-api-endpoint-url}"/>
     </rdf:Description>
+
+
 };
 
 (:~
@@ -1731,10 +1732,83 @@ as element(rdf:RDF) {
 
 };
 
+(: Add function to generate RDF of a corpus here :)
+(:~
+ : Create an RDF representation of a corpus.
+ :
+ : @param $corpus TEI element
+ : @author Ingo Börner
+ :)
+declare function drdf:corpus-to-rdf ($corpusname as xs:string)
+as element(rdf:RDF) {
 
+(: get teiCorpus by name :)
+let $corpus := dutil:get-corpus($corpusname)
+let $corpusinfo := dutil:get-corpus-info($corpus) (:  will return something like
+map {
+    "licence": "Public Domain",
+    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "description": "This corpus is for testing purposes only. Features a handful of plays in different languages.",
+    "title": Test Drama Corpus,
+    "repository": https://github.com/dracor-org/testdracor,
+    "name": test
+} :)
+(: let $parent-corpus-uri := $drdf:corpusbaseuri || $paths?corpusname :)
+let $corpus-uri := $drdf:corpusbaseuri || $corpusname
 
+let $crmcls-corpus-class-uri := $drdf:crmcls || "X1_Corpus"
 
+let $parent-corpus-dracor-uri := $drdf:corpusbaseuri || "dracor"
+let $crmcls-subcorpus-of-dracor := <crmcls:Y1i_is_subcorpus_of rdf:resource="{$parent-corpus-dracor-uri}"/>
 
+let $dracor-has-subcorpus-rdf :=
+    <rdf:Description rdf:about="{$parent-corpus-dracor-uri}">
+        <crmcls:Y1_has_subcorpus rdf:resource="{$corpus-uri}"/>
+    </rdf:Description>
+
+let $corpus-labels := (
+    <rdfs:label>{$corpusinfo?title}</rdfs:label>
+    )
+
+let $corpusname-identifier-uri := $corpus-uri || "/id/corpusname"
+
+let $corpusname-identifier-rdf :=
+    <rdf:Description rdf:about="{$corpusname-identifier-uri}">
+        <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E42_Identifier"/>
+        <crm:P2_has_type rdf:resource="{$drdf:typebaseuri || 'id/corpusname'}"/>
+        <rdfs:label>DraCor Identifier 'corpusname' of corpus '{$corpusinfo?title}'</rdfs:label>
+        <crm:P1i_identifies rdf:resource="{$corpus-uri}"/>
+        <rdf:value>{$corpusinfo?name}</rdf:value>
+    </rdf:Description>
+
+let $inner :=
+    <rdf:Description rdf:about="{$corpus-uri}">
+        <rdf:type rdf:resource="{$drdf:dracon}corpus"/>
+        <rdf:type rdf:resource="{$crmcls-corpus-class-uri}"/>
+        {$corpus-labels}
+        {$crmcls-subcorpus-of-dracor}
+        <crm:P1_is_identified_by rdf:resource="{$corpusname-identifier-uri}"/>
+    </rdf:Description>
+
+return
+<rdf:RDF
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:owl="http://www.w3.org/2002/07/owl#"
+      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:dracon="http://dracor.org/ontology#"
+      xmlns:crm="http://www.cidoc-crm.org/cidoc-crm/"
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+      xmlns:schema="http://schema.org/"
+      xmlns:frbroo="http://iflastandards.info/ns/fr/frbr/frbroo/"
+      xmlns:crmcls="https://clsinfra.io/ontologies/CRMcls/"
+    >
+    {$inner}
+    {$corpusname-identifier-rdf}
+    {$dracor-has-subcorpus-rdf}
+    </rdf:RDF>
+
+};
 
 
 (:~
