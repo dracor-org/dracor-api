@@ -1642,7 +1642,11 @@ as element(rdf:RDF) {
   (: build main RDF Chunk :)
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
-      <rdf:type rdf:resource="{$drdf:crm}E73_Information_Object"/>
+      {
+          (: use crmcls main class instead [a subClassOf crm:E73_Information_Object] :)
+          ()
+          (: <rdf:type rdf:resource="{$drdf:crm}E73_Information_Object"/> :)
+      }
       <rdf:type rdf:resource="{$drdf:dracon}play"/>
       {$crmcls-doc-class}
       {$default-rdfs-label}
