@@ -1635,6 +1635,9 @@ as element(rdf:RDF) {
     let $crmcls-doc-class-uri := $drdf:crmcls || "X2_Corpus_Document"
     let $crmcls-doc-class := <rdf:type rdf:resource="{$crmcls-doc-class-uri}"/>
 
+    (: crmcls contained in corpus: crm:P148i_is_component_of :)
+    let $crmcls-doc-in-corpus := <crm:P148i_is_component_of rdf:resource="{$parent-corpus-uri}"/>
+
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -1649,6 +1652,7 @@ as element(rdf:RDF) {
       {$dc-source}
       {$dracor-link}
       {$in_corpus}
+      {$crmcls-doc-in-corpus}
       {$writtenYear}
       {$printYear}
       {$premiereYear}
