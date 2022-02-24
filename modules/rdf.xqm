@@ -1638,6 +1638,12 @@ as element(rdf:RDF) {
     (: crmcls contained in corpus: crm:P148i_is_component_of :)
     let $crmcls-doc-in-corpus := <crm:P148i_is_component_of rdf:resource="{$parent-corpus-uri}"/>
 
+    (: crmcls connect corpus to doc :)
+    let $crmcls-corpus-contains-doc :=
+        <rdf:Description rdf:about="{$parent-corpus-uri}">
+            <crm:P148_has_component rdf:resource="{$play-uri}"/>
+        </rdf:Description>
+
 
   (: build main RDF Chunk :)
   let $inner :=
@@ -1704,6 +1710,7 @@ as element(rdf:RDF) {
     {$rdf-first-performance}
     {$frbroo-rdf}
     {$files-rdf}
+    {$crmcls-corpus-contains-doc}
     </rdf:RDF>
 
 
