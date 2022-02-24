@@ -1319,13 +1319,19 @@ declare function drdf:file-entites($play-uri as xs:string, $play-info as map()) 
     (: should ideally point to the representation in the github folder, raw; then we have an Machine Event (or software execution; see crmdig) that ingests this file and has the resulting Corpus Document :)
     let $tei-file-uri := $play-uri || "/file/" || "tei" || "/out"
     let $tei-api-endpoint-url := $drdf:sitebase || "api/corpora/" || $play-info?corpus || "/play/" || $play-info?name || "/tei"
-    return
+
+    let $tei-api-rdf :=
     <rdf:Description rdf:about="{$tei-file-uri}">
         <rdf:type rdf:resource="{$drdf:crmdig}D1_Digital_Object"/>
         <rdfs:label>{$play-info?title} [TEI; API Output]</rdfs:label>
         <crm:P190_has_symbolic_content rdf:resource="{$tei-api-endpoint-url}"/>
         <rdfs:seeAlso rdf:resource="{$tei-api-endpoint-url}"/>
     </rdf:Description>
+
+    return
+        (
+            $tei-api-rdf
+        )
 
 
 };
