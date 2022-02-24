@@ -1222,6 +1222,8 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
     let $digital-source-uri := $play-uri || "/digitalsource/1"
     let $digital-source-rdf :=
         if ( map:contains($play-info,'source') ) then
+            (: the file, that was ingested into the system :)
+            let $ingested-tei-file-uri := $play-uri || "/file/" || "tei" || "/in"
             let $source-url := if ( map:contains($play-info?source,"url") ) then $play-info?source?url else ""
             let $source-name := if ( map:contains($play-info?source,"name") ) then $play-info?source?name else ""
             let $source-identifier := if ( map:contains($play-info?source,"url")) then
@@ -1231,23 +1233,69 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
                     drdf:cidoc-identifier($source-identifier-uri, "url", $source-identifier-label , $digital-source-uri, $source-url)
                 else ()
 
+            (: preparation activity :)
+            (:
+
+            <https://dlina.clscor.io/entity/lina88/preparation/2> a crm:E11_Modification,
+        crm:E65_Creation ;
+    rdfs:label "Manuelle Annotation von 'Emilia Galotti'"@de,
+        "Manual annotation of 'Emilia Galotti'"@en ;
+    crm:P16_used_specific_object <https://dlina.clscor.io/entity/lina88/preparation/1/output> ;
+    crm:P2_has_type <https://dlina.clscor.io/entity/type/process/lina-enrichment> ;
+    crm:P32_used_general_technique <https://vocabs.dariah.eu/tadirah/enriching> ;
+    crm:P33_used_specific_technique <https://dlina.clscor.io/entity/annotation-guidelines/1> ;
+    crm:P94_has_created <https://dlina.clscor.io/entity/lina88/file/lina-xml> .
+
+
+            :)
+
+            let $preparation-step-uri :=  $play-uri || "/file/" || "tei" || "/in/preparation/1"
+            let $preparation-activity :=
+                (
+                <rdf:Description rdf:about="{$preparation-step-uri}">
+                    <rdf:type rdf:resource="{$drdf:crm}E11_Modification"/>
+                    <rdf:type rdf:resource="{$drdf:crm}E65_Creation"/>
+                    <rdfs:label>Preparation of TEI-File '{$play-info?title}'</rdfs:label>
+                    <crm:P16_used_specific_object rdf:resource="{$digital-source-uri}"/>
+                    <crm:P94_has_created rdf:resource="{$ingested-tei-file-uri}"/>
+                </rdf:Description>
+                ,
+                <rdf:Description rdf:about="{$digital-source-uri}">
+                    <crm:P16i_was_used_for rdf:resource="{$preparation-step-uri}"/>
+                </rdf:Description> ,
+                <rdf:Description rdf:about="{$ingested-tei-file-uri}">
+                    <crm:P94i_was_created_by rdf:resource="{$preparation-step-uri}"/>
+                </rdf:Description>
+                )
+
+
             return
                 (
                     <rdf:Description rdf:about="{$digital-source-uri}">
                         <rdf:type rdf:resource="{$drdf:crm}E73_Information_Object"/>
                         <rdfs:label>Digital Source of '{$play-info?title}'</rdfs:label>
                         {if ( $source-name != "" ) then <crm:P3_has_note>Provenance of file: {$source-name}</crm:P3_has_note> else ()}
-                        <crm:P165i_is_incorporated_in rdf:resource="{$play-uri}"/>
+                        {
+                            ()
+                            (: won't connect it directly to the corpus document anymore, but to the ingested source file :)
+                            (: had triple :)
+                            (: <crm:P165i_is_incorporated_in rdf:resource="{$play-uri}"/> :)
+                        }
+
                         <crm:P165_incorporates rdf:resource="{$expression-uri}"/>
                         {if ($source-url != "") then <rdfs:seeAlso rdf:resource="{$source-url}"/> else () }
                     </rdf:Description> ,
-                    <rdf:Description rdf:about="{$play-uri}">
+                    (: removed this link between corpus doc and source :)
+                    (: <rdf:Description rdf:about="{$play-uri}">
                         <crm:P165_incorporates rdf:resource="{$digital-source-uri}"/>
-                    </rdf:Description> ,
+                    </rdf:Description> :)
+                    ()
+                    ,
                     <rdf:Description rdf:about="{$expression-uri}">
                         <crm:P165i_is_incorporated_in rdf:resource="{$digital-source-uri}"/>
                     </rdf:Description>,
-                    $source-identifier
+                    $source-identifier ,
+                    $preparation-activity
                 )
 
         else ()
