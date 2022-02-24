@@ -1635,7 +1635,7 @@ as element(rdf:RDF) {
   (: build main RDF Chunk :)
   let $inner :=
     <rdf:Description rdf:about="{$play-uri}">
-      <rdf:type rdf:resource="{$drdf:crm}E33_Linguistic_Object"/>
+      <rdf:type rdf:resource="{$drdf:crm}E73_Information_Object"/>
       <rdf:type rdf:resource="{$drdf:dracon}play"/>
       {$default-rdfs-label}
       {$eng-rdfs-label}
