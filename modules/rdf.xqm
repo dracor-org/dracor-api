@@ -264,7 +264,9 @@ as element()* {
         <rdf:value>{$value}</rdf:value>
     </rdf:Description>
 
-    let $link := <rdf:Description rdf:about="{$entityUri}">
+
+    let $link :=
+    <rdf:Description rdf:about="{$entityUri}">
             <crm:P102_has_title rdf:resource="{$title-uri}"/>
         </rdf:Description>
 
@@ -1127,7 +1129,8 @@ cover, spine of the publication {$play-info?originalSource}</crm:P3_has_note>
             <crm:P4i_is_time-span_of rdf:resource="{$publication-event-first-publication-uri}"/>
         </rdf:Description>
 
-    let $first-publication-year := drdf:generate-time-span-year($play-info?yearPrinted, $first-publication-ts-uri)
+    (: needs debugging, dutil:get-doc("greek", "aeschylus-agamemnon")/tei:TEI failed here w/o try/catch :)
+    let $first-publication-year := try { drdf:generate-time-span-year($play-info?yearPrinted, $first-publication-ts-uri) } catch * { () }
 
     (: first publication has a publication expression :)
     (: this should maybe get a type :)
@@ -1459,8 +1462,18 @@ as element(rdf:RDF) {
   (: uri-pattern https://dracor.org/entity/ger000165/title/main/ger, https://dracor.org/entity/ger000165/title/sub/ger, ...   :)
 
   let $titleTypes := ("main", "sub")
-  let $default-crm-title-elements := for $titleItem in $titleTypes return drdf:generate-crm-title($play-uri, $titleItem, map:get($defaultLanguageTitlesMap,$titleItem), $lang, false())
-  let $eng-crm-title-elements := if ( map:contains($engTitlesMap, "main" ) ) then  for $titleItem in $titleTypes return drdf:generate-crm-title($play-uri, $titleItem, map:get($engTitlesMap,$titleItem), "eng", false()) else ()
+
+  (: needs debugging: "greek", "aeschylus-agamemnon" failed here w/o try/catch :)
+  let $default-crm-title-elements :=
+    try {
+        for $titleItem in $titleTypes return drdf:generate-crm-title($play-uri, $titleItem, map:get($defaultLanguageTitlesMap,$titleItem), $lang, false())
+    }
+    catch * { () }
+  let $eng-crm-title-elements :=
+  try {
+  if ( map:contains($engTitlesMap, "main" ) ) then  for $titleItem in $titleTypes return drdf:generate-crm-title($play-uri, $titleItem, map:get($engTitlesMap,$titleItem), "eng", false()) else ()
+  }
+  catch * { () }
 
   (: dc:creators :)
   (: maybe include english creator-elements :)
@@ -1689,7 +1702,8 @@ as element(rdf:RDF) {
     let $cast := drdf:characters-to-rdf($corpusname, $playname, $play-info?title, $play-uri, false() , false()) (: use $play-info?title for playtitle, do not include metrics, do not wrap :)
 
     (: (social)relations of characters of a play :)
-    let $relations := drdf:relations-to-rdf($play-info?relations, $play-uri )
+    (: needs debugging: "greek", "aeschylus-agamemnon" failed here w/o try/catch :)
+    let $relations := try { drdf:relations-to-rdf($play-info?relations, $play-uri ) } catch * { () }
 
     (: genre :)
     (: in play-info: "genre": "Tragedy", :)
