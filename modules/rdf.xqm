@@ -1716,7 +1716,8 @@ as element(rdf:RDF) {
         if ( map:contains($play-info, "yearPremiered") ) then
                 let $first-performance-label := "Premiere of " || $default-rdfs-label-string
                 let $first-performance-ts-label := "Premiere of " || $default-rdfs-label-string || " [Time-span]"
-                return drdf:frbroo-performance($play-uri, $first-performance-label, $play-info?yearPremiered, $first-performance-ts-label)
+                (: needs debugging: "cal", "a-dios-por-razon-de-estado" failed here :)
+                return try { drdf:frbroo-performance($play-uri, $first-performance-label, $play-info?yearPremiered, $first-performance-ts-label) } catch * { () }
         else ()
 
     (: frbroo-Stuff :)
