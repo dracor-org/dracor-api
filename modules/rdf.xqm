@@ -1481,7 +1481,8 @@ as element(rdf:RDF) {
 
   (: author-nodes :)
   (: uses the tei:author elements, not the author-map :)
-  let $author-rdf := for $author in $play//tei:titleStmt//tei:author return drdf:author-to-rdf($author, $play-uri, $lang, false())
+  (: needs debugging: shake fails here w/o try/catch! :)
+  let $author-rdf :=  try { for $author in $play//tei:titleStmt//tei:author return drdf:author-to-rdf($author, $play-uri, $lang, false()) } catch * { () }
 
   (: creation-activity to connect author and play CIDOC like :)
   (: todo :)
