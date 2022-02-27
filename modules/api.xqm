@@ -7,6 +7,7 @@ import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
 import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
 import module namespace wd = "http://dracor.org/ns/exist/wikidata" at "wikidata.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
+import module namespace drdf = "http://dracor.org/ns/exist/rdf";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -1801,6 +1802,45 @@ function api:stage-directions-with-speakers($corpusname, $playname) {
       else normalize-space($stage)
       return $line || '&#10;'
 };
+
+(:~
+ : Get rdf of a play generated on the fly
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result rdf representation of a play
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/play/{$playname}/generate-rdf")
+  %rest:produces("application/rdf+xml")
+  %output:media-type("application/rdf+xml")
+function api:generate-rdf-on-the-fly($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)/tei:TEI
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+        try {
+            let $rdf-transformed := drdf:play-to-rdf($doc)
+            return
+                (
+                <rest:response>
+                    <http:response status="200"/>
+                </rest:response>,
+                $rdf-transformed
+                )
+        }
+        catch * {
+            <rest:response>
+                <http:response status="500"/>
+            </rest:response>
+        }
+
+};
+
 
 (:~
  : List author information from Wikidata
