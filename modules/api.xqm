@@ -95,6 +95,22 @@ function api:openapi() {
   openapi:main("/db/apps/dracor")
 };
 
+(:~
+ : OpenAPI info yaml
+ :
+ : @result YAML
+ :)
+declare
+  %rest:GET
+  %rest:path("/openapi.yaml")
+  %rest:produces("application/yaml")
+  %output:media-type("application/yaml")
+  %output:method("text")
+function api:openapi-yaml() {
+  let $path := $config:app-root || "/api.yaml"
+  return util:base64-decode(xs:string(util:binary-doc($path)))
+};
+
 declare
   %rest:GET
   %rest:path("/resources")
