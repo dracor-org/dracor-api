@@ -27,3 +27,12 @@ services:
     build: https://github.com/dracor-org/dracor-metrics.git#main
     ports:
       - "8030:8030"
+  frontend:
+    build:
+      context: https://github.com/dracor-org/dracor-frontend.git#main
+      args:
+        DRACOR_API: http://api:8080/exist/restxq
+    ports:
+      - "8088:80"
+    depends_on:
+      - api
