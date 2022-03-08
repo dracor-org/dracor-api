@@ -25,12 +25,17 @@ docker-compose up
 ```
 
 This builds the necessary images and starts the respective docker containers.
-The eXist database will become available under http://localhost:8080/. To check
-that the DraCor API is up run
+The **eXist database** will become available under http://localhost:8080/.
+To check that the DraCor API is up run
 
 ```sh
-curl http://localhost:8080/exist/restxq/info
+curl http://localhost:8088/api/info
 ```
+
+The docker-compose setup also includes a
+[DraCor frontend](https://github.com/dracor-org/dracor-frontend) connected to
+the local eXist instance. It can be accessed by opening http://localhost:8088/
+in a browser. 
 
 ### Load Data
 
@@ -43,7 +48,7 @@ curl -X POST \
   -u admin: \
   -d@- \
   -H 'Content-type: text/xml' \
-  http://localhost:8080/exist/restxq/corpora
+  http://localhost:8088/api/corpora
 ```
 
 Then
@@ -55,20 +60,20 @@ curl -X POST \
   -u admin: \
   -H 'Content-type: application/json' \
   -d '{"load":true}' \
-  http://localhost:8080/exist/restxq/corpora/test
+  http://localhost:8088/api/corpora/test
 ```
 
 This may take a while. Eventually the added plays can be listed with
 
 ```sh
-curl http://localhost:8080/exist/restxq/corpora/test
+curl http://localhost:8088/api/corpora/test
 ```
 
 With [jq](https://stedolan.github.io/jq/) installed you can pretty print the
 JSON output like this:
 
 ```sh
-curl http://localhost:8080/exist/restxq/corpora/test | jq
+curl http://localhost:8088/api/corpora/test | jq
 ```
 
 ## `ant` Workflow
