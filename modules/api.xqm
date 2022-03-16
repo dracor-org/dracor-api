@@ -1841,6 +1841,35 @@ function api:generate-rdf-on-the-fly($corpusname, $playname) {
 
 };
 
+(:~
+ : Get rdf of a corpus generated on the fly
+ :
+ : @param $corpusname Corpus name
+ : @result rdf representation of a corpus
+ :)
+declare
+  %rest:GET
+  %rest:path("/corpora/{$corpusname}/generate-rdf")
+  %rest:produces("application/rdf+xml")
+  %output:media-type("application/rdf+xml")
+function api:generate-corpus-rdf-on-the-fly($corpusname as xs:string) {
+    try {
+            let $corpus-rdf := drdf:corpus-to-rdf ($corpusname)
+            return
+                (
+                <rest:response>
+                    <http:response status="200"/>
+                </rest:response>,
+                $corpus-rdf
+                )
+        }
+    catch * {
+            <rest:response>
+                <http:response status="500"/>
+            </rest:response>
+        }
+};
+
 
 (:~
  : List author information from Wikidata
