@@ -49,6 +49,8 @@ declare variable $drdf:frbroo := "http://iflastandards.info/ns/fr/frbr/frbroo/" 
 declare variable $drdf:schema := "http://schema.org/" ;
 declare variable $drdf:crmdig := "http://www.ics.forth.gr/isl/CRMdig/";
 declare variable $drdf:crmcls := "https://clsinfra.io/ontologies/CRMcls/" ;
+declare variable $drdf:core_entity := "https://core.clscor.io/entity/" ;
+declare variable $drdf:core_type :=  $drdf:core_entity || "type/" ;
 
 
 (: Refactor drdf:play-to-rdf  :)
@@ -1873,6 +1875,37 @@ let $corpusname-identifier-rdf :=
         <rdf:value>{$corpusinfo?name}</rdf:value>
     </rdf:Description>
 
+(: clscor Acronym :)
+let $clscor-acronym-type-uri := $drdf:core_type || "acronym"
+let $clscor-acronym-uri := $corpus-uri || "/title/acronym"
+let $acronym_val := upper-case(substring($corpusinfo?name,1,1)) || substring($corpusinfo?name, 2)  || "DraCor"
+
+let $corpus-acronym-identifier-rdf :=
+    <rdf:Description rdf:about="{$clscor-acronym-uri}">
+        <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E41_Appellation"/>
+        <crm:P2_has_type rdf:resource="{$clscor-acronym-type-uri}"/>
+        <rdfs:label>clscor 'acronym' of DraCor corpus '{$corpusinfo?title}'</rdfs:label>
+        <crm:P1i_identifies rdf:resource="{$corpus-uri}"/>
+        <rdf:value>{$acronym_val}</rdf:value>
+    </rdf:Description>
+
+(: clscor Full Title :)
+let $clscor-fulltitle-type-uri := $drdf:core_type || "full_title"
+let $clscor-fulltitle-uri := $corpus-uri || "/title/full"
+let $fulltitle_val := $corpusinfo?title
+
+let $corpus-fulltitle-rdf :=
+    <rdf:Description rdf:about="{$clscor-fulltitle-uri}">
+        <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E41_Appellation"/>
+        <crm:P2_has_type rdf:resource="{$clscor-fulltitle-type-uri}"/>
+        <rdfs:label>clscor 'full title' of DraCor corpus '{$corpusinfo?title}'</rdfs:label>
+        <crm:P1i_identifies rdf:resource="{$corpus-uri}"/>
+        <rdf:value>{$fulltitle_val}</rdf:value>
+    </rdf:Description>
+
+
+(: inverse of type is missing :)
+
 let $inner :=
     <rdf:Description rdf:about="{$corpus-uri}">
         <rdf:type rdf:resource="{$drdf:dracon}corpus"/>
@@ -1880,6 +1913,8 @@ let $inner :=
         {$corpus-labels}
         {$crmcls-subcorpus-of-dracor}
         <crm:P1_is_identified_by rdf:resource="{$corpusname-identifier-uri}"/>
+        <crm:P1_is_identified_by rdf:resource="{$clscor-acronym-uri}"/>
+        <crm:P1_is_identified_by rdf:resource="{$clscor-fulltitle-uri}"/>
     </rdf:Description>
 
 return
@@ -1897,9 +1932,10 @@ return
     >
     {$inner}
     {$corpusname-identifier-rdf}
+    {$corpus-acronym-identifier-rdf}
+    {$corpus-fulltitle-rdf}
     {$dracor-has-subcorpus-rdf}
     </rdf:RDF>
-
 };
 
 
