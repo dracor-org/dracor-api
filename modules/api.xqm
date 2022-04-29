@@ -1819,6 +1819,29 @@ function api:stage-directions-with-speakers($corpusname, $playname) {
 };
 
 (:~
+ : List plays with character identified by Wikidata ID
+ :
+ : @param $id Wikidata ID
+ : @result Array of JSON objects
+ :)
+declare
+  %rest:GET
+  %rest:path("/character/{$id}")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:plays-with-character($id) {
+  if (not(matches($id, '^Q[0-9]+$'))) then
+    (
+      <rest:response>
+        <http:response status="400"/>
+      </rest:response>,
+      map {"error": "invalid character ID"}
+    )
+  else dutil:get-plays-with-character($id)
+};
+
+(:~
  : List author information from Wikidata
  :
  : @param $id Wikidata ID

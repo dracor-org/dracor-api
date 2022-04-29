@@ -1168,6 +1168,43 @@ paths:
         '404':
           description: No play found for this ID
 
+  /character/{id}:
+    get:
+      summary: List plays having a character identified by Wikidata ID
+      operationId: plays-with-character
+      tags: [public]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Q131412
+      responses:
+        '200':
+          description: List of plays.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    uri:
+                      type: string
+                    title:
+                      type: string
+                    authors:
+                      type: array
+                      items:
+                        type: string
+                    characterName:
+                      type: string
+        '400':
+          description: Invalid character ID.
+
   /webhook/github:
     post:
       summary: GitHub Webhook
