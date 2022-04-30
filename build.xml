@@ -59,15 +59,19 @@
       src="https://github.com/eXist-db/exist/releases/download/eXist-${project.processorversion}/exist-distribution-${project.processorversion}-unix.tar.bz2"
       dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
       skipexisting="true" />
+    <!-- clean up old dependecies -->
+    <delete>
+      <fileset dir="${dependencies.dir}" includes="*.xar"/>
+    </delete>
     <!-- get dependencies -->
     <get
-      src="http://exist-db.org/exist/apps/public-repo/public/expath-crypto-module-1.0.0.xar"
-      dest="${dependencies.dir}/crypto-1.0.0.xar"
+      src="https://github.com/eXist-db/expath-crypto-module/releases/download/6.0.1/expath-crypto-module-6.0.1.xar"
+      dest="${dependencies.dir}/expath-crypto-module-6.0.1.xar"
       skipexisting="true"
       ignoreerrors="true"/>
     <get
-      src="https://ci.de.dariah.eu/exist-repo/public/openapi-1.5.0.xar"
-      dest="${dependencies.dir}/openapi-1.5.0.xar"
+      src="https://ci.de.dariah.eu/exist-repo/public/openapi-1.7.0.xar"
+      dest="${dependencies.dir}/openapi-1.7.0.xar"
       skipexisting="true"
       ignoreerrors="true"/>
   </target>
