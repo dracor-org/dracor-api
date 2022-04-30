@@ -1,9 +1,9 @@
 openapi: "3.0.0"
 info:
-  version: 0.2.0
+  version: 0.83.1
   title: DraCor API
   contact:
-    email: "ffischer@hse.ru"
+    email: "fr.fischer@fu-berlin.de"
   termsOfService: "https://dracor.org"
   license:
     name: "Apache 2.0"
@@ -26,10 +26,10 @@ paths:
             application/json:
               example:
                 {
-                  "existdb": "4.1.0",
+                  "existdb": "6.0.1",
                   "name": "DraCor",
                   "status": "beta",
-                  "version": "0.20.1"
+                  "version": "0.83.0"
                 }
 
   /corpora:
