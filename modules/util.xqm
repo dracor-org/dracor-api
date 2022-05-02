@@ -1122,6 +1122,33 @@ declare function dutil:get-relations (
   return $relations
 };
 
+
+(:~
+ : Get info for plays having a character identified by Wikidata ID.
+ :
+ : @param $id Wikidata ID
+ :)
+declare function dutil:get-plays-with-character ($id as xs:string) {
+  let $wd-uri := "http://www.wikidata.org/entity/" || $id
+  let $plays := collection($config:data-root)
+    /tei:TEI[.//tei:person[@ana=$wd-uri]]
+  return array {
+    for $tei in $plays
+    let $id := dutil:get-dracor-id($tei)
+    let $titles := dutil:get-titles($tei)
+    let $authors := dutil:get-authors($tei)
+    return map {
+      "id": $id,
+      "uri": "https://dracor.org/id/" || $id,
+      "title": $titles?main,
+      "authors": array { for $author in $authors return $author?fullname },
+      "characterName": normalize-space(
+        $tei//tei:particDesc/tei:listPerson/tei:person[@ana=$wd-uri]/tei:persName[1]
+      )
+    }
+  }
+};
+
 (:~
  : Escape string for use in CSV
  :
