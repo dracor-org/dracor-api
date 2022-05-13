@@ -141,7 +141,7 @@ as element(rdf:RDF) {
     </dracon:has_author>
 
   let $wikidata-play-uri := "http://www.wikidata.org/entity/" ||
-    $play//tei:publicationStmt//tei:idno[@type="wikidata"]/text()
+    dutil:get-play-wikidata-id($play)
 
   let $collection-uri := "https://dracor.org/" || $corpusname
 
@@ -209,11 +209,11 @@ as element(rdf:RDF) {
 
   let $in_corpus := <dracon:in_corpus rdf:resource="{$collection-uri}"/>
   let $play-external-id := <owl:sameAs rdf:resource="{$wikidata-play-uri}"/>
-  
+
   (: CIDOC-Stuff :)
   let $creation-uri := $play-uri || "/creation"
   let $created-by :=  <crm:P94i_was_created_by rdf:resource="{$creation-uri}"/>
-  
+
   let $creation-activity :=
     <rdf:Description rdf:about="{$creation-uri}">
       <rdf:type rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E65_Creation"/>
@@ -224,12 +224,12 @@ as element(rdf:RDF) {
           <crm:P14_carried_out_by rdf:resource="{$author-idno?uri}"/>
       }
     </rdf:Description>
-    
+
     let $dracor-link :=
       <rdfs:seeAlso rdf:resource="https://dracor.org/{$corpusname}/{$playname}"/>
-    
+
     (: metrics :)
-    
+
     let $averageClustering :=
       if ($metrics/metrics/network/averageClustering/text() != "")
       then
@@ -237,7 +237,7 @@ as element(rdf:RDF) {
           {$metrics/metrics/network/averageClustering/text()}
         </dracon:averageClustering>
       else ()
-    
+
     let $averagePathLength :=
       if ( $metrics/metrics/network/averagePathLength/text() != "" )
       then
@@ -245,7 +245,7 @@ as element(rdf:RDF) {
           {$metrics/metrics/network/averagePathLength/text()}
         </dracon:averagePathLength>
       else ()
-    
+
     let $averageDegree :=
       if ( $metrics/metrics/network/averageDegree/text() != "" )
       then
@@ -253,7 +253,7 @@ as element(rdf:RDF) {
           {$metrics/metrics/network/averageDegree/text()}
         </dracon:averageDegree>
       else ()
-    
+
     let $density :=
       if ( $metrics/metrics/network/density/text() != "" )
       then
@@ -261,7 +261,7 @@ as element(rdf:RDF) {
           {$metrics/metrics/network/density/text()}
         </dracon:density>
       else ()
-    
+
     let $diameter :=
       if ( $metrics/metrics/network/diameter/text() != "" )
       then
@@ -269,7 +269,7 @@ as element(rdf:RDF) {
           {$metrics/metrics/network/diameter/text()}
         </dracon:diameter>
       else ()
-    
+
     let $maxDegree :=
       if ( $metrics/metrics/network/maxDegree/text() != "" )
       then
@@ -277,7 +277,7 @@ as element(rdf:RDF) {
           {$metrics/metrics/network/maxDegree/text()}
         </dracon:maxDegree>
       else ()
-    
+
     let $maxDegreeIds :=
       for $character in tokenize($metrics/metrics/network/maxDegreeIds/text(),' ')
       let $character-uri := $play-uri || '/character/' || $character
@@ -303,11 +303,11 @@ as element(rdf:RDF) {
           {count($play//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp))}
         </dracon:numOfSpeakers>
       else ()
-    
+
     (: Dates :)
     let $years := dutil:get-years-iso($play)
     let $yn := dutil:get-normalized-year($play)
-    
+
     let $normalisedYear :=
       if ($yn)
       then
@@ -315,7 +315,7 @@ as element(rdf:RDF) {
           {$yn}
         </dracon:normalisedYear>
       else ()
-    
+
     let $premiereYear :=
       if (matches($years?premiere, "^-?[0-9]{4}$"))
       then
@@ -323,7 +323,7 @@ as element(rdf:RDF) {
           {$years?premiere}
         </dracon:premiereYear>
       else ()
-    
+
     let $printYear :=
       if (matches($years?print, "^-?[0-9]{4}$"))
       then
@@ -331,7 +331,7 @@ as element(rdf:RDF) {
           {$years?print}
         </dracon:printYear>
       else ()
-    
+
     let $writtenYear :=
       if (matches($years?written, "^-?[0-9]{4}$"))
       then
@@ -339,18 +339,18 @@ as element(rdf:RDF) {
           {$years?written}
         </dracon:writtenYear>
       else ()
-    
+
     (: chatacters :)
     let $characters :=
       $play//tei:particDesc/tei:listPerson/tei:person
-    
+
     let $charactersindrama :=
       for $character in $characters
         let $character-uri :=
           $play-uri || "/character/" || $character/@xml:id/string()
       return
         <schema:character rdf:resource="{$character-uri}"/>
-    
+
     let $characterDescriptions :=
       for $character in $characters
       let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
@@ -416,7 +416,7 @@ as element(rdf:RDF) {
       {$writtenYear}
       {$charactersindrama}
     </rdf:Description>
-    
+
 
   return
     <rdf:RDF

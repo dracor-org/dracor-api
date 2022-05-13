@@ -530,7 +530,7 @@ declare function dutil:get-corpus-meta-data(
   let $years := dutil:get-years-iso($tei)
   let $authors := dutil:get-authors($tei)
   let $titles := dutil:get-titles($tei)
-  
+
   let $text-classes := dutil:get-text-classes($tei)
 
   let $num-speakers := count(dutil:distinct-speakers($tei))
@@ -546,8 +546,7 @@ declare function dutil:get-corpus-meta-data(
 
   let $stat := $metrics[@name=$name]
   let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
-  let $wikidata-id :=
-    $tei//tei:publicationStmt/tei:idno[@type="wikidata"]/text()[1]
+  let $wikidata-id := dutil:get-play-wikidata-id($tei)
   let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
 
   let $networkmetrics := map:merge(
@@ -673,7 +672,7 @@ declare function dutil:get-short-name (
 };
 
 declare function local:build-sort-name ($name as element()) {
-  (: 
+  (:
    : If there is a surname and it is not the first element in the name we
    : rearrange the name to put it first. Otherwise we just return the normalized
    : text as written in the document.
@@ -817,6 +816,32 @@ declare function dutil:get-titles(
 };
 
 (:~
+ : Extract Wikidata ID for play from standOff.
+ :
+ : @param $tei TEI element
+ :)
+declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
+  let $uri := $tei//tei:standOff/tei:link[@type="wikidata"][1]/@target/string()
+  return if (starts-with($uri, 'http://www.wikidata.org/entity/')) then
+    tokenize($uri, '/')[last()]
+  else ()
+};
+
+(:~
+ : Extract all Wikidata IDs for plays in a corpus.
+ :
+ : @param $corpus Corpus name
+ :)
+declare function dutil:get-play-wikidata-ids ($corpus as xs:string) {
+  let $data-col := $config:data-root || '/' || $corpus
+  for $uri in collection($data-col)
+    /tei:TEI//tei:standOff/tei:link[@type="wikidata"]/@target/string()
+  return if (starts-with($uri, 'http://www.wikidata.org/entity/')) then
+    tokenize($uri, '/')[last()]
+  else ()
+};
+
+(:~
  : Retrieve Wikidata ID from element with `ana` attribute.
  :
  : @param $e element with 'ana' attribute
@@ -886,9 +911,8 @@ declare function dutil:get-play-info(
 
     let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
     let $all-in-index := $all-in-segment div count($segments?*)
-    
-    let $wikidata-id := $tei//tei:publicationStmt/
-      tei:idno[@type="wikidata"]/string()
+
+    let $wikidata-id := dutil:get-play-wikidata-id($tei)
 
     let $relations := dutil:get-relations($corpusname, $playname)
 
@@ -974,8 +998,7 @@ declare function dutil:get-play-metrics(
     let $metrics := doc($paths?files?metrics)//metrics
 
     let $id := dutil:get-dracor-id($tei)
-    let $wikidata-id :=
-      $tei//tei:publicationStmt/tei:idno[@type="wikidata"]/text()[1]
+    let $wikidata-id := dutil:get-play-wikidata-id($tei)
     let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
 
     let $nodes := array {
@@ -1010,7 +1033,7 @@ declare function dutil:get-play-metrics(
         if(xs:string(number($v)) != "NaN") then number($v) else $v
       )
     )
-    
+
     return map:merge(($meta, $networkmetrics))
 };
 
@@ -1121,7 +1144,6 @@ declare function dutil:get-relations (
   )
   return $relations
 };
-
 
 (:~
  : Get info for plays having a character identified by Wikidata ID.
