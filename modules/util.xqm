@@ -292,7 +292,7 @@ declare function dutil:get-segments ($tei as element()*) as element()* {
  : @return Map of years
  :)
 declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
-  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+  let $dates := $tei//tei:standOff/tei:listEvent/tei:event
     [@type = ("print", "premiere", "written")]
     [@when or @notAfter or @notBefore]
 
@@ -320,7 +320,7 @@ declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
  : @return Map of years
  :)
 declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
-  let $dates := $tei//tei:bibl[@type="originalSource"]/tei:date
+  let $dates := $tei//tei:standOff/tei:listEvent/tei:event
     [@type = ("print", "premiere", "written")]
     [@when or @notAfter or @notBefore]
 
