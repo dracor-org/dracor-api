@@ -539,7 +539,7 @@ function api:index($corpusname) {
               <networkSize>{$network-size}</networkSize>
               <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
               <wikidataId>
-                {$tei//tei:publicationStmt/tei:idno[@type="wikidata"]/string()}
+                {dutil:get-play-wikidata-id($tei)}
               </wikidataId>
             </dramas>
         }
