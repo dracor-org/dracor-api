@@ -446,6 +446,7 @@ declare function dutil:get-corpus-info(
     @type="URI" and @xml:base="https://dracor.org/"
   ]/text()
   let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/text()
+  let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"]/text()
   let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"]/text()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:availability/tei:licence
@@ -456,6 +457,12 @@ declare function dutil:get-corpus-info(
     map:merge((
       map:entry("name", $name),
       map:entry("title", $title),
+      map:entry(
+        "acronym",
+        if ($acronym)
+          then $acronym
+          else (functx:capitalize-first($name) || "DraCor")
+      ),
       if ($repo) then map:entry("repository", $repo) else (),
       if ($description) then map:entry("description", $description) else (),
       if ($licence)

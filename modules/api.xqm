@@ -444,6 +444,7 @@ function api:index($corpusname) {
       <index>
         <name>{$corpus?name}</name>
         <title>{$corpus?title}</title>
+        <acronym>{$corpus?acronym}</acronym>
         {
           if ($corpus?repository)
           then <repository>{$corpus?repository}</repository>
