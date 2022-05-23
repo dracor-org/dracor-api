@@ -429,7 +429,7 @@ declare
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:index($corpusname) {
+function api:corpus-index($corpusname) {
   let $corpus := dutil:get-corpus-info-by-name($corpusname)
   let $title := $corpus?title
   let $description := $corpus?description
@@ -440,111 +440,52 @@ function api:index($corpusname) {
       <rest:response>
         <http:response status="404"/>
       </rest:response>
-    else
-      <index>
-        <name>{$corpus?name}</name>
-        <title>{$corpus?title}</title>
-        <acronym>{$corpus?acronym}</acronym>
-        {
-          if ($corpus?repository)
-          then <repository>{$corpus?repository}</repository>
-          else ()
-        }
-        {
-          if ($corpus?description)
-          then <description>{$corpus?description}</description>
-          else ()
-        }
-        {
-          if ($corpus?licence)
-          then <licence>{$corpus?licence}</licence>
-          else ()
-        }
-        {
-          if ($corpus?licenceUrl)
-          then <licenceUrl>{$corpus?licenceUrl}</licenceUrl>
-          else ()
-        }
-        {
-          for $tei in $col//tei:TEI
-          let $filename := tokenize(base-uri($tei), "/")[last()]
-          let $name := tokenize($filename, "\.")[1]
-          let $id := dutil:get-dracor-id($tei)
-          let $titles := dutil:get-titles($tei)
-          let $titlesEng := dutil:get-titles($tei, 'eng')
-          let $years := dutil:get-years-iso($tei)
-          let $authors := dutil:get-authors($tei)
-          let $play-uri :=
-            $config:api-base || "/corpora/" || $corpusname || "/play/" || $name
-          let $metrics-url :=
-            $config:metrics-root || "/" || $corpusname || "/" || $filename
-          let $network-size := doc($metrics-url)//network/size/text()
-          let $yearNormalized := dutil:get-normalized-year($tei)
-          order by $authors[1]?name
-          return
-            <dramas json:array="true">
-              <id>{$id}</id>
-              <name>{$name}</name>
-              <title>{$titles?main}</title>
-              {if ($titles?sub) then <subtitle>{$titles?sub}</subtitle> else ''}
-              {if ($titlesEng?main) then
-                <titleEn>{$titlesEng?main}</titleEn> else ''}
-              {if ($titlesEng?sub) then
-                <subtitleEn>{$titlesEng?sub}</subtitleEn> else ''}
-              <author key="{$authors[1]?key}">
-                <name>{$authors[1]?name}</name>
-              </author>
-              {
-                for $author in $authors
-                return
-                  <authors json:array="true">
-                    <name>{$author?name}</name>
-                    <fullname>{$author?fullname}</fullname>
-                    <shortname>{$author?shortname}</shortname>
-                    {if ($author?nameEn) then (
-                      <nameEn>{$author?nameEn}</nameEn>
-                    ) else ()}
-                    {if ($author?fullnameEn) then (
-                      <fullnameEn>{$author?fullnameEn}</fullnameEn>
-                    ) else ()}
-                    {if ($author?shortnameEn) then (
-                      <shortnameEn>{$author?shortnameEn}</shortnameEn>
-                    ) else ()}
-                    {
-                      for $name in $author?alsoKnownAs?*
-                      return <alsoKnownAs json:array="true">{$name}</alsoKnownAs>
-                    }
-                    {
-                      for $ref in $author?refs?*
-                      return
-                        <refs json:array="true">
-                          <ref>{$ref?ref}</ref>
-                          <type>{$ref?type}</type>
-                        </refs>
-                    }
-                  </authors>
-              }
-              <yearNormalized>{$yearNormalized}</yearNormalized>
-              <source>
-                {$tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()}
-              </source>
-              <sourceUrl>
-                {
-                  $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-                    /tei:idno[@type="URL"][1]/string()
-                }
-              </sourceUrl>
-              <printYear>{$years?print}</printYear>
-              <premiereYear>{$years?premiere}</premiereYear>
-              <writtenYear>{$years?written}</writtenYear>
-              <networkSize>{$network-size}</networkSize>
-              <networkdataCsvUrl>{$play-uri}/networkdata/csv</networkdataCsvUrl>
-              <wikidataId>
-                {dutil:get-play-wikidata-id($tei)}
-              </wikidataId>
-            </dramas>
-        }
-      </index>
+    else map:merge((
+      $corpus,
+      map:entry("dramas", array {
+        for $tei in $col//tei:TEI
+        let $filename := tokenize(base-uri($tei), "/")[last()]
+        let $name := tokenize($filename, "\.")[1]
+        let $id := dutil:get-dracor-id($tei)
+        let $titles := dutil:get-titles($tei)
+        let $titlesEng := dutil:get-titles($tei, 'eng')
+        let $years := dutil:get-years-iso($tei)
+        let $authors := dutil:get-authors($tei)
+        let $play-uri :=
+          $config:api-base || "/corpora/" || $corpusname || "/play/" || $name
+        let $metrics-url :=
+          $config:metrics-root || "/" || $corpusname || "/" || $filename
+        let $network-size := doc($metrics-url)//network/size/text()
+        let $yearNormalized := dutil:get-normalized-year($tei)
+        order by $authors[1]?name
+        return map:merge((
+          map:entry("id", $id),
+          map:entry("name", $name),
+          map:entry("title", $titles?main),
+          if ($titles?sub) then map:entry("subtitle", $titles?sub) else (),
+          if ($titlesEng?main) then map:entry("titleEn", $titlesEng?main) else (),
+          if ($titlesEng?sub) then map:entry("subtitleEn", $titlesEng?sub) else (),
+          map:entry("authors", array { $authors }),
+          map:entry("author", map { "name": $authors[1]?name }),
+          map:entry(
+            "source",
+            $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()
+          ),
+          map:entry(
+            "sourceUrl",
+            $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+              /tei:idno[@type="URL"][1]/string()
+          ),
+          map:entry("yearNormalized", $yearNormalized),
+          map:entry("printYear", $years?print),
+          map:entry("premiereYear", $years?premiere),
+          map:entry("writtenYear", $years?written),
+          map:entry("networkSize", $network-size),
+          map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),
+          map:entry("wikidataId", dutil:get-play-wikidata-id($tei))
+        ))
+      })
+    ))
 };
 
 (:~
