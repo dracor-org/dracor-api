@@ -95,8 +95,9 @@ declare function dutil:get-doc(
  :
  : @param $tei TEI document
  :)
-declare function dutil:get-dracor-id($tei as element()) as xs:string* {
-  $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text()
+declare function dutil:get-dracor-id($tei as element(tei:TEI)) as xs:string* {
+  (: FIXME: remove support for idno after transition period :)
+  ($tei/@xml:id | $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text())[1]
 };
 
 (:~

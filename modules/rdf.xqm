@@ -40,7 +40,7 @@ as element(rdf:RDF) {
   let $metrics := doc($metricspath)
 
   (: should get the id of the play <idno type='dracor' :)
-  let $play-id := $play//tei:publicationStmt//tei:idno[@type="dracor"]/text()
+  let $play-id := dutil:get-dracor-id($play)
 
   (: maybe /id/{id} could be used in the future :)
   let $play-uri :=
