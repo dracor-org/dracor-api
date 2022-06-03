@@ -829,7 +829,8 @@ declare function dutil:get-titles(
  : @param $tei TEI element
  :)
 declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
-  let $uri := $tei//tei:standOff/tei:link[@type="wikidata"][1]/@target/string()
+  let $uri := $tei//tei:standOff/tei:listRelation
+    /tei:relation[@name="wikidata"][1]/@passive/string()
   return if (starts-with($uri, 'http://www.wikidata.org/entity/')) then
     tokenize($uri, '/')[last()]
   else ()
@@ -843,7 +844,8 @@ declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
 declare function dutil:get-play-wikidata-ids ($corpus as xs:string) {
   let $data-col := $config:data-root || '/' || $corpus
   for $uri in collection($data-col)
-    /tei:TEI//tei:standOff/tei:link[@type="wikidata"]/@target/string()
+    /tei:TEI//tei:standOff/tei:listRelation
+      /tei:relation[@name="wikidata"]/@passive/string()
   return if (starts-with($uri, 'http://www.wikidata.org/entity/')) then
     tokenize($uri, '/')[last()]
   else ()
