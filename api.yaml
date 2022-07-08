@@ -1111,10 +1111,9 @@ components:
       name: corpusname
       in: path
       required: true
-      summary: Short name of the corpus
       description: >
-        Short name of the corpus (as given in the `name` property of results
-        from the [/corpora](#/corpora) endpoint)
+        Short name of the corpus as provided in the `name` property of the result
+        objects from the [/corpora](#/corpora) endpoint
       schema:
         type: string
       examples:
@@ -1143,6 +1142,9 @@ components:
       name: playname
       in: path
       required: true
+      description: >
+        Name parameter (or "slug") of the play as provided in the `name`
+        property of the result objects of the */corpora/{corpusname}* endpoint.
       schema:
         type: string
       examples:
