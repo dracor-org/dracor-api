@@ -1,4 +1,5 @@
 openapi: "3.0.0"
+
 info:
   version: 0.83.1
   title: DraCor API
@@ -8,8 +9,10 @@ info:
   license:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+
 servers:
   - url: https://dracor.org/api
+
 paths:
   /info:
     get:
@@ -211,11 +214,7 @@ paths:
       operationId: list-corpus-content
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
       responses:
         '200':
           description: Returns object representing corpus contents
@@ -247,11 +246,7 @@ paths:
       operationId: load-corpus
       tags: [admin]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
       requestBody:
         content:
           application/json:
@@ -287,11 +282,7 @@ paths:
       operationId: delete-corpus
       tags: [admin]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
       responses:
         '200':
           description: Corpus deleted
@@ -305,11 +296,7 @@ paths:
       operationId: corpus-metadata
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
       responses:
         '200':
           description: Returns a list of metadata for all plays
@@ -329,11 +316,7 @@ paths:
       operationId: corpus-metadata-csv-endpoint
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
       responses:
         '200':
           description: Returns a comma separated list of metadata for all plays
@@ -371,16 +354,8 @@ paths:
       operationId: play-info
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns an object with play meta data
@@ -393,16 +368,8 @@ paths:
       operationId: play-delete
       tags: [admin]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Play has been removed
@@ -415,16 +382,8 @@ paths:
       operationId: play-metrics
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns an object with metrics data
@@ -439,16 +398,8 @@ paths:
       operationId: play-tei
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns TEI document
@@ -469,11 +420,7 @@ paths:
       operationId: play-tei-put
       tags: [admin]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
         - name: playname
           in: path
           required: true
@@ -507,16 +454,8 @@ paths:
       operationId: play-rdf
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns RDF document
@@ -531,16 +470,8 @@ paths:
       operationId: get-cast
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns list of characters
@@ -605,16 +536,8 @@ paths:
       operationId: get-cast-csv
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns list of characters as CSV
@@ -635,16 +558,8 @@ paths:
       operationId: network-csv
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns CSV file
@@ -659,16 +574,8 @@ paths:
       operationId: network-gexf
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns GEXF file
@@ -683,16 +590,8 @@ paths:
       operationId: network-graphml
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns GraphML file
@@ -707,16 +606,8 @@ paths:
       operationId: relations-csv
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns CSV file
@@ -745,16 +636,8 @@ paths:
       operationId: relations-gexf
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns GEXF file
@@ -866,16 +749,8 @@ paths:
       operationId: relations-graphml
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns GraphML file
@@ -982,16 +857,8 @@ paths:
       deprecated: true
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns list of segments
@@ -1009,16 +876,8 @@ paths:
       operationId: play-spoken-text
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
         - name: gender
           in: query
           required: false
@@ -1061,16 +920,8 @@ paths:
       operationId: play-spoken-text-by-character
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns texts per character
@@ -1104,16 +955,8 @@ paths:
       operationId: play-stage-directions
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns plain text document
@@ -1261,3 +1104,66 @@ paths:
                   "result": "/db/data/dracor/webhook/20190121213010-xxx.xml",
                   "scheduled": true
                 }
+
+components:
+  parameters:
+    corpusname:
+      name: corpusname
+      in: path
+      required: true
+      summary: Short name of the corpus
+      description: >
+        Short name of the corpus (as given in the `name` property of results
+        from the [/corpora](#/corpora) endpoint)
+      schema:
+        type: string
+      examples:
+        GerDraCor:
+          value: ger
+          summary: German Drama Corpus
+        GreekDraCor:
+          value: greek
+          summary: Greek Drama Corpus
+        ItaDraCor:
+          value: ita
+          summary: Italian Drama Corpus
+        RomDraCor:
+          value: rom
+          summary: Roman Drama Corpus
+        RusDraCor:
+          value: rus
+          summary: Russian Drama Corpus
+        ShakeDraCor:
+          value: shake
+          summary: Shakespeare Drama Corpus
+        SpanDraCor:
+          value: span
+          summary: Spanish Drama Corpus
+    playname:
+      name: playname
+      in: path
+      required: true
+      schema:
+        type: string
+      examples:
+        lessing_galotti:
+          value: lessing-emilia-galotti
+          summary: "G.E. Lessing: Emilia Galotti (GerDraCor)"
+        aeschylus_persians:
+          value: aeschylus-persians
+          summary: "Aeschylus: Persians (GreekDraCor)"
+        goldoni_servitore:
+          value: goldoni-il-servitore-di-due-padroni
+          summary: "C. Goldoni: Il servitore di due padroni (ItaDraCor)"
+        seneca_medea:
+          value: seneca-medea
+          summary: "Seneca: Medea (RomDraCor)"
+        gogol_revizor:
+          value: gogol-revizor
+          summary: "N. Gogol: Revizor (RusDraCor)"
+        shakespeare_hamlet:
+          value: hamlet
+          summary: "W. Shakespeare: Hamlet (ShakeDraCor)"
+        munoz_refugio:
+          value: munoz-refugio
+          summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
