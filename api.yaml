@@ -1113,7 +1113,7 @@ components:
       required: true
       description: >
         Short name of the corpus as provided in the `name` property of the result
-        objects from the [/corpora](#/corpora) endpoint
+        objects from the [/corpora](#/public/list-corpora) endpoint
       schema:
         type: string
       examples:
@@ -1144,7 +1144,8 @@ components:
       required: true
       description: >
         Name parameter (or "slug") of the play as provided in the `name`
-        property of the result objects of the */corpora/{corpusname}* endpoint.
+        property of the result objects of the
+        [/corpora/{corpusname}](#/public/list-corpus-content) endpoint.
       schema:
         type: string
       examples:
