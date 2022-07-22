@@ -45,6 +45,7 @@ declare variable $api:metadata-columns := (
   "numOfSpeakersUnknown",
   "numPersonGroups",
   "numConnectedComponents",
+  "numEdges",
   "yearWritten",
   "numOfSegments",
   "wikipediaLinkCount",
