@@ -3,8 +3,8 @@ ARG EXIST_VERSION=6.0.1
 # START STAGE 1
 FROM openjdk:8-jdk-slim as builder
 
-ARG FUSEKI_SERVER=fuseki:3030
-ARG METRICS_SERVER=metrics:8030
+ARG FUSEKI_SERVER=localhost:3030
+ARG METRICS_SERVER=localhost:8030
 
 USER root
 
