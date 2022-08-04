@@ -37,6 +37,9 @@ jobs:
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
+          build-args: |
+            FUSEKI_SERVER=http://localhost:3030
+            METRICS_SERVER=http://localhost:8030
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
