@@ -38,8 +38,8 @@ jobs:
         with:
           context: .
           build-args: |
-            FUSEKI_SERVER=http://localhost:3030
-            METRICS_SERVER=http://localhost:8030
+            FUSEKI_SERVER=fuseki:3030
+            METRICS_SERVER=metrics:8030
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
