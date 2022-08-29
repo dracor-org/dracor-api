@@ -889,7 +889,7 @@ declare function dutil:get-play-info(
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-    let $orig-source := $tei//tei:bibl[@type="originalSource"]/tei:title[1]
+    let $orig-source := $tei//tei:bibl[@type="originalSource"][1]/normalize-space(.)
     let $cast := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $cast[last()]
 
@@ -975,7 +975,7 @@ declare function dutil:get-play-info(
         map:entry("wikidataId", $wikidata-id)
       else (),
       if($orig-source) then
-        map:entry("originalSource", normalize-space($orig-source))
+        map:entry("originalSource", $orig-source)
       else (),
       if($source) then
         map:entry("source", map {
