@@ -565,6 +565,20 @@ declare function dutil:get-corpus-meta-data(
       if(xs:string(number($v)) != "NaN") then number($v) else $v
     )
   )
+
+  let $digitalSource := $tei//tei:sourceDesc/
+    tei:bibl[@type="digitalSource"]/tei:idno[@type="URL"]/text()
+
+  let $origSource := $tei//tei:sourceDesc//
+    tei:bibl[@type="originalSource"]
+  let $origSourcePublisher := normalize-space($origSource/tei:publisher)
+  let $origSourcePubPlace := string-join($origSource/tei:pubPlace, ", ")
+  let $scope := $origSource/tei:biblScope[@unit="page" and @from and @to]
+  let $origSourceNumPages := if ($scope) then
+    number($scope/@to) - number($scope/@from) + 1
+  else ()
+
+
   let $meta := map {
     "id": $id,
     "name": $name,
@@ -595,7 +609,13 @@ declare function dutil:get-corpus-meta-data(
     "yearWritten": $years?written,
     "yearPremiered": $years?premiere,
     "yearPrinted": $years?print,
-    "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
+    "yearNormalized": xs:integer(dutil:get-normalized-year($tei)),
+    "digitalSource": $digitalSource,
+    "originalSourcePublisher": if ($origSourcePublisher) then
+      $origSourcePublisher else (),
+    "originalSourcePubPlace": if ($origSourcePubPlace) then
+      $origSourcePubPlace else (),
+    "originalSourceNumberOfPages": $origSourceNumPages
   }
   order by $filename
   return map:merge(($meta, $networkmetrics))
