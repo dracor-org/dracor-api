@@ -573,6 +573,8 @@ declare function dutil:get-corpus-meta-data(
     tei:bibl[@type="originalSource"]
   let $origSourcePublisher := normalize-space($origSource/tei:publisher)
   let $origSourcePubPlace := string-join($origSource/tei:pubPlace, ", ")
+  let $year := $origSource/tei:date
+  let $origSourceYear := if (number($year)) then xs:integer($year) else ()
   let $scope := $origSource/tei:biblScope[@unit="page" and @from and @to]
   let $origSourceNumPages := if ($scope) then
     number($scope/@to) - number($scope/@from) + 1
@@ -615,6 +617,7 @@ declare function dutil:get-corpus-meta-data(
       $origSourcePublisher else (),
     "originalSourcePubPlace": if ($origSourcePubPlace) then
       $origSourcePubPlace else (),
+    "originalSourceYear": $origSourceYear,
     "originalSourceNumberOfPages": $origSourceNumPages
   }
   order by $filename

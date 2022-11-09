@@ -30,6 +30,7 @@ declare variable $api:metadata-columns := (
   "digitalSource",
   "originalSourcePublisher",
   "originalSourcePubPlace",
+  "originalSourceYear",
   "originalSourceNumberOfPages",
   "yearNormalized",
   "size",
