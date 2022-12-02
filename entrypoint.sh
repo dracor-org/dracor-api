@@ -2,10 +2,7 @@
 
 SAXON="java ${JAVA_OPTIONS} -jar ${SAXON_JAR} env=${EXIST_ENV} context_path=${EXIST_CONTEXT_PATH} default_app_path=${EXIST_DEFAULT_APP_PATH} -xsl:${EXIST_HOME}/adjust-conf-files.xsl"
 
-##############################################
-# function for adjusting configuration files for eXist versions >= 5
-##############################################
-function adjust_config_files_eXist5 {
+function adjust_config_files {
 # remove DTD references since these were causing troubles
 sed -i '2,3d' ${EXIST_HOME}/etc/jetty/webapps/exist-webapp-context.xml
 sed -i '2d' ${EXIST_HOME}/etc/jetty/jetty.xml
@@ -24,29 +21,6 @@ mv /tmp/web.xml ${EXIST_HOME}/etc/webapp/WEB-INF/web.xml
 mv /tmp/jetty.xml ${EXIST_HOME}/etc/jetty/jetty.xml
 }
 
-##############################################
-# function for adjusting configuration files for eXist versions < 5
-##############################################
-function adjust_config_files_eXist4 {
-# remove DTD reference since the URL is broken
-sed -i 2d ${EXIST_HOME}/tools/jetty/webapps/exist-webapp-context.xml
-
-# adjusting configuration files
-${SAXON} -s:${EXIST_HOME}/conf.xml -o:/tmp/conf.xml
-${SAXON} -s:${EXIST_HOME}/tools/jetty/webapps/exist-webapp-context.xml -o:/tmp/exist-webapp-context.xml
-${SAXON} -s:${EXIST_HOME}/webapp/WEB-INF/controller-config.xml -o:/tmp/controller-config.xml
-${SAXON} -s:${EXIST_HOME}/webapp/WEB-INF/web.xml -o:/tmp/web.xml
-
-# copying modified configuration files from tmp folder to original destination
-mv /tmp/conf.xml ${EXIST_HOME}/conf.xml
-mv /tmp/exist-webapp-context.xml ${EXIST_HOME}/tools/jetty/webapps/exist-webapp-context.xml
-mv /tmp/controller-config.xml ${EXIST_HOME}/webapp/WEB-INF/controller-config.xml
-mv /tmp/web.xml ${EXIST_HOME}/webapp/WEB-INF/web.xml
-}
-
-##############################################
-# function for setting the exist password
-##############################################
 function set_passwd {
 ${EXIST_HOME}/bin/client.sh -l -s -u admin -P "" << EOF
 passwd admin
@@ -57,12 +31,7 @@ EOF
 echo "do not delete" > ${EXIST_DATA_DIR}/.docker_secret
 }
 
-if [[ ${VERSION} > 5 || ${VERSION} = 5 ]]
-then
-    adjust_config_files_eXist5
-else
-    adjust_config_files_eXist4
-fi
+adjust_config_files
 
 # now we are setting the admin password
 # if the magic file ${EXIST_DATA_DIR}/.docker_secret exists
