@@ -18,11 +18,27 @@ as item()? {
       "/db/data/dracor",
       "config.xml",
       <config></config>
-    ),
-    (: FIXME: find a better solution to protect the webhook secret :)
-    sm:chmod(xs:anyURI("/db/data/dracor/config.xml"), 'rw-------')
+    )
 };
 
+(: We create an empty secrets file that can be populated by XQuery updates
+ : from the deployment. :)
+declare function local:create-secrets-file ()
+as item()? {
+  if(doc("/db/data/dracor/secrets.xml")/secrets) then
+    ()
+  else
+    xmldb:store(
+      "/db/data/dracor",
+      "secrets.xml",
+      <secrets>
+        <fuseki/>
+        <gh-webhook/>
+      </secrets>
+    ),
+    (: FIXME: find a better solution to protect the webhook secret :)
+    sm:chmod(xs:anyURI("/db/data/dracor/secrets.xml"), 'rw-------')
+};
 
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || '/modules/webhook.xqm')
@@ -33,6 +49,7 @@ let $restxq-module := xs:anyURI('modules/api.xpm')
 
 return (
   local:create-config-file(),
+  local:create-secrets-file(),
   sm:chown($webhook, "admin"),
   sm:chgrp($webhook, "dba"),
   sm:chmod($webhook, 'rwsr-xr-x'),
