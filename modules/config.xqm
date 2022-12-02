@@ -37,7 +37,8 @@ declare variable $config:app-root :=
   FIXME: This should be determined dynamically using request:get-*() functions.
   However the request object doesn't seem to be available in a RESTXQ context.
 :)
-declare variable $config:api-base := "https://dracor.org/api";
+declare variable $config:api-base :=
+  doc('/db/data/dracor/config.xml')//api-base/normalize-space();
 
 declare variable $config:data-root := "/db/data/dracor/tei";
 

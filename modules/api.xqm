@@ -83,7 +83,8 @@ function api:info() {
     "name": $expath/expath:title/string(),
     "version": $expath/@version/string(),
     "status": $repo/repo:status/string(),
-    "existdb": system:get-version()
+    "existdb": system:get-version(),
+    "base": $config:api-base
   }
 };
 
