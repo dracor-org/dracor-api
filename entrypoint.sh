@@ -50,7 +50,6 @@ then
     echo "************************************"
     echo "setting password from Docker secrets"
     echo "************************************"
-    # setting the eXist admin password
     set_passwd ${SECRET}
 
 # next, look for the ${EXIST_PASSWORD} environment variable
@@ -62,8 +61,15 @@ then
     echo "setting password from Docker environment variable"
     echo "NB: this is less secure than via Docker secrets"
     echo "*************************************************"
-    # setting the eXist admin password
     set_passwd ${EXIST_PASSWORD}
+
+# in a development environment we allow to explicitly set an empty password
+elif [[ ${EXIST_PASSWORD} == "" ]] && [[ -n ${EXIST_PASSWORD+x} ]] && [[ ${EXIST_ENV} == "development" ]]
+then
+    echo "*************************************************"
+    echo "setting empty password in development environment"
+    echo "*************************************************"
+    set_passwd ""
 
 # finally fallback to generating a random password
 else
@@ -73,7 +79,6 @@ else
     echo "no admin password provided"
     echo "setting password to ${SECRET}"
     echo "********************************"
-    # setting the eXist admin password
     set_passwd ${SECRET}
 fi
 
