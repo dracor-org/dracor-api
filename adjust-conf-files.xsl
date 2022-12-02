@@ -159,20 +159,6 @@
 
     <!--
         +++++++++++++++++++++++++++++++++++++++++
-        $exist.home$/log4j2.xml
-        +++++++++++++++++++++++++++++++++++++++++
-    -->
-
-    <xsl:template match="Logger[@name='wega.webapp'][$env ne 'production']">
-        <xsl:copy>
-            <xsl:apply-templates select="@* except @level"/>
-            <xsl:attribute name="level">trace</xsl:attribute>
-            <xsl:apply-templates/>
-        </xsl:copy>
-    </xsl:template>
-
-    <!--
-        +++++++++++++++++++++++++++++++++++++++++
         $exist.home$/etc/jetty/jetty.xml
         +++++++++++++++++++++++++++++++++++++++++
 

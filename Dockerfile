@@ -74,7 +74,6 @@ COPY entrypoint.sh ${EXIST_HOME}/
 
 # adding some scripts/configuration files for fine tuning
 COPY adjust-conf-files.xsl ${EXIST_HOME}/
-COPY log4j2.xml ${EXIST_HOME}/
 
 # main installation put into one RUN to squeeze image size
 RUN apt-get update \
