@@ -1,9 +1,6 @@
 # START STAGE 1
 FROM openjdk:8-jdk-slim as builder
 
-ARG FUSEKI_SERVER=localhost:3030
-ARG METRICS_SERVER=localhost:8030
-
 USER root
 
 ENV ANT_VERSION 1.10.12
@@ -28,9 +25,7 @@ ENV PATH ${PATH}:${ANT_HOME}/bin
 
 WORKDIR /tmp/dracor-api
 COPY . .
-RUN sed -i "s/localhost:3030/${FUSEKI_SERVER}/" modules/config.xqm \
-    && sed -i "s/localhost:8030/${METRICS_SERVER}/" modules/config.xqm \
-    && ant \
+RUN ant \
     && curl -L -o /tmp/0-crypto.xar https://github.com/eXist-db/expath-crypto-module/releases/download/6.0.1/expath-crypto-module-6.0.1.xar \
     && curl -L -o /tmp/0-openapi.xar https://ci.de.dariah.eu/exist-repo/public/openapi-1.7.0.xar
 
@@ -44,6 +39,11 @@ ARG EXIST_VERSION
 ARG MAX_MEMORY
 ARG EXIST_URL
 ARG SAXON_JAR
+ARG DRACOR_API_BASE
+ARG FUSEKI_SERVER
+ARG METRICS_SERVER
+ARG FUSEKI_SECRET
+ARG GITHUB_WEBHOOK_SECRET
 
 ENV EXIST_VERSION ${EXIST_VERSION:-6.0.1}
 ENV EXIST_URL ${EXIST_URL:-https://github.com/eXist-db/exist/releases/download/eXist-${EXIST_VERSION}/exist-installer-${EXIST_VERSION}.jar}
@@ -54,6 +54,11 @@ ENV EXIST_CONTEXT_PATH ${EXIST_CONTEXT_PATH:-/exist}
 ENV EXIST_DATA_DIR ${EXIST_DATA_DIR:-/opt/exist/data}
 ENV SAXON_JAR ${SAXON_JAR:-/opt/exist/lib/Saxon-HE-9.9.1-8.jar}
 ENV LOG4J_FORMAT_MSG_NO_LOOKUPS true
+ENV DRACOR_API_BASE ${DRACOR_API_BASE:-http://localhost:8080/exist/restxq}
+ENV FUSEKI_SERVER ${FUSEKI_SERVER:-http://localhost:3030/dracor/}
+ENV METRICS_SERVER ${METRICS_SERVER:-http://localhost:8030/metrics/}
+ENV FUSEKI_SECRET ${FUSEKI_SECRET:-""}
+ENV GITHUB_WEBHOOK_SECRET ${GITHUB_WEBHOOK_SECRET:-""}
 
 RUN useradd dracor
 

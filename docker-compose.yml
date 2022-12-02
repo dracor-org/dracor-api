@@ -5,8 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - FUSEKI_SERVER=fuseki:3030
-        - METRICS_SERVER=metrics:8030
+        - FUSEKI_SERVER=http://fuseki:3030/dracor/
+        - METRICS_SERVER=http://metrics:8030/metrics/
+        - FUSEKI_SECRET=qwerty
+        - GITHUB_WEBHOOK_SECRET=qwerty
     ports:
       - "8080:8080"
     volumes:
