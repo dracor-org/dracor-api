@@ -17,7 +17,12 @@ as item()? {
     xmldb:store(
       "/db/data/dracor",
       "config.xml",
-      <config></config>
+      <config>
+        <services>
+          <fuseki>http://localhost:3030/dracor/</fuseki>
+          <metrics>http://localhost:8030/metrics/</metrics>
+        </services>
+      </config>
     )
 };
 
