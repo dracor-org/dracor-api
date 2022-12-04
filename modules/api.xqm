@@ -116,7 +116,13 @@ declare
   %output:method("text")
 function api:openapi-yaml() {
   let $path := $config:app-root || "/api.yaml"
-  return util:base64-decode(xs:string(util:binary-doc($path)))
+  let $expath := config:expath-descriptor()
+  let $yaml := util:base64-decode(xs:string(util:binary-doc($path)))
+  return replace(
+    replace($yaml, 'https://dracor.org/api', $config:api-base),
+    'version: [0-9.]+',
+    'version: ' || $expath/@version/string()
+  )
 };
 
 declare
