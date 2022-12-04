@@ -17,10 +17,10 @@ services:
       - fuseki
       - metrics
   fuseki:
-    image: "stain/jena-fuseki"
+    image: "dracor/fuseki"
+    build: https://github.com/dracor-org/dracor-fuseki.git#main
     environment:
       - ADMIN_PASSWORD=qwerty
-      - FUSEKI_DATASET_1=dracor
     ports:
       - "3030:3030"
     expose:
