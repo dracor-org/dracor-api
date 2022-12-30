@@ -576,9 +576,10 @@ declare function dutil:get-corpus-meta-data(
   let $year := $origSource/tei:date
   let $origSourceYear := if (number($year)) then xs:integer($year) else ()
   let $scope := $origSource/tei:biblScope[@unit="page" and @from and @to]
-  let $origSourceNumPages := if ($scope) then
-    number($scope/@to) - number($scope/@from) + 1
-  else ()
+  let $origSourceNumPages :=
+    if ($scope and number($scope/@to) and number($scope/@from))
+    then number($scope/@to) - number($scope/@from) + 1
+    else ()
 
 
   let $meta := map {
