@@ -22,13 +22,13 @@ mv /tmp/jetty.xml ${EXIST_HOME}/etc/jetty/jetty.xml
 }
 
 function set_passwd {
-${EXIST_HOME}/bin/client.sh -l -s -u admin -P "" << EOF
+  ${EXIST_HOME}/bin/client.sh -l -s -u admin -P "" << EOF
 passwd admin
 $1
 $1
 quit
 EOF
-echo "do not delete" > ${EXIST_DATA_DIR}/.docker_secret
+  echo "do not delete" > ${EXIST_DATA_DIR}/.docker_secret
 }
 
 adjust_config_files
@@ -38,48 +38,48 @@ adjust_config_files
 # we won't take any action because the password is already set
 if [[ -s ${EXIST_DATA_DIR}/.docker_secret ]]
 then
-    echo "********************"
-    echo "password already set"
-    echo "********************"
+  echo "********************"
+  echo "password already set"
+  echo "********************"
 
 # next, try to read the admin password from Docker secrets
 # if the ${EXIST_PASSWORD_FILE} environment variable is set.
 elif [[ -s ${EXIST_PASSWORD_FILE} ]]
 then
-    SECRET=`cat ${EXIST_PASSWORD_FILE}`
-    echo "************************************"
-    echo "setting password from Docker secrets"
-    echo "************************************"
-    set_passwd ${SECRET}
+  SECRET=`cat ${EXIST_PASSWORD_FILE}`
+  echo "************************************"
+  echo "setting password from Docker secrets"
+  echo "************************************"
+  set_passwd ${SECRET}
 
 # next, look for the ${EXIST_PASSWORD} environment variable
 # to set the password
 elif [[ ${EXIST_PASSWORD} ]] && ! [[ -s ${EXIST_DATA_DIR}/.docker_secret ]]
 then
-    # read the password from the environment variable ${EXIST_PASSWORD}
-    echo "*************************************************"
-    echo "setting password from Docker environment variable"
-    echo "NB: this is less secure than via Docker secrets"
-    echo "*************************************************"
-    set_passwd ${EXIST_PASSWORD}
+  # read the password from the environment variable ${EXIST_PASSWORD}
+  echo "*************************************************"
+  echo "setting password from Docker environment variable"
+  echo "NB: this is less secure than via Docker secrets"
+  echo "*************************************************"
+  set_passwd ${EXIST_PASSWORD}
 
 # in a development environment we allow to explicitly set an empty password
 elif [[ ${EXIST_PASSWORD} == "" ]] && [[ -n ${EXIST_PASSWORD+x} ]] && [[ ${EXIST_ENV} == "development" ]]
 then
-    echo "*************************************************"
-    echo "setting empty password in development environment"
-    echo "*************************************************"
-    set_passwd ""
+  echo "*************************************************"
+  echo "setting empty password in development environment"
+  echo "*************************************************"
+  set_passwd ""
 
 # finally fallback to generating a random password
 else
-    # generate a random password and output it to the logs
-    SECRET=`pwgen 24 -csn`
-    echo "********************************"
-    echo "no admin password provided"
-    echo "setting password to ${SECRET}"
-    echo "********************************"
-    set_passwd ${SECRET}
+  # generate a random password and output it to the logs
+  SECRET=`pwgen 24 -csn`
+  echo "********************************"
+  echo "no admin password provided"
+  echo "setting password to ${SECRET}"
+  echo "********************************"
+  set_passwd ${SECRET}
 fi
 
 # starting the database
