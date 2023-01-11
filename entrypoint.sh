@@ -3,22 +3,11 @@
 SAXON="java ${JAVA_OPTIONS} -jar ${SAXON_JAR} env=${EXIST_ENV} context_path=${EXIST_CONTEXT_PATH} default_app_path=${EXIST_DEFAULT_APP_PATH} -xsl:${EXIST_HOME}/adjust-conf-files.xsl"
 
 function adjust_config_files {
-# remove DTD references since these were causing troubles
-sed -i '2,3d' ${EXIST_HOME}/etc/jetty/webapps/exist-webapp-context.xml
-sed -i '2d' ${EXIST_HOME}/etc/jetty/jetty.xml
-
-${SAXON} -s:${EXIST_HOME}/etc/conf.xml -o:/tmp/conf.xml
-${SAXON} -s:${EXIST_HOME}/etc/jetty/webapps/exist-webapp-context.xml -o:/tmp/exist-webapp-context.xml
-${SAXON} -s:${EXIST_HOME}/etc/webapp/WEB-INF/controller-config.xml -o:/tmp/controller-config.xml
-${SAXON} -s:${EXIST_HOME}/etc/webapp/WEB-INF/web.xml -o:/tmp/web.xml
-${SAXON} -s:${EXIST_HOME}/etc/jetty/jetty.xml -o:/tmp/jetty.xml
-
-# copying modified configuration files from tmp folder to original destination
-mv /tmp/conf.xml ${EXIST_HOME}/etc/conf.xml
-mv /tmp/exist-webapp-context.xml ${EXIST_HOME}/etc/jetty/webapps/exist-webapp-context.xml
-mv /tmp/controller-config.xml ${EXIST_HOME}/etc/webapp/WEB-INF/controller-config.xml
-mv /tmp/web.xml ${EXIST_HOME}/etc/webapp/WEB-INF/web.xml
-mv /tmp/jetty.xml ${EXIST_HOME}/etc/jetty/jetty.xml
+  ${SAXON} -s:${EXIST_HOME}/orig/conf.xml -o:${EXIST_HOME}/etc/conf.xml
+  ${SAXON} -s:${EXIST_HOME}/orig/exist-webapp-context.xml -o:${EXIST_HOME}/etc/jetty/webapps/exist-webapp-context.xml
+  ${SAXON} -s:${EXIST_HOME}/orig/controller-config.xml -o:${EXIST_HOME}/etc/webapp/WEB-INF/controller-config.xml
+  ${SAXON} -s:${EXIST_HOME}/orig/web.xml -o:${EXIST_HOME}/etc/webapp/WEB-INF/web.xml
+  ${SAXON} -s:${EXIST_HOME}/orig/jetty.xml -o:${EXIST_HOME}/etc/jetty/jetty.xml
 }
 
 function set_passwd {

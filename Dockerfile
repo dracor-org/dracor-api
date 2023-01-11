@@ -88,6 +88,17 @@ RUN apt-get update \
     && rm -fr "/tmp/exist.jar" "/tmp/options.txt" ${EXIST_DATA_DIR}/* \
     # prefix java command with exec to force java being process 1 and receiving docker signals
     && sed -i 's/^${JAVA_RUN/exec ${JAVA_RUN/'  ${EXIST_HOME}/bin/startup.sh \
+    # copy original config files
+    && mkdir ${EXIST_HOME}/orig \
+    && cp ${EXIST_HOME}/etc/conf.xml \
+        ${EXIST_HOME}/etc/jetty/webapps/exist-webapp-context.xml \
+        ${EXIST_HOME}/etc/webapp/WEB-INF/controller-config.xml \
+        ${EXIST_HOME}/etc/webapp/WEB-INF/web.xml \
+        ${EXIST_HOME}/etc/jetty/jetty.xml \
+        ${EXIST_HOME}/orig/ \
+    # remove DTD references to prevent saxon from trying to handle them
+    && sed -i '2,3d' ${EXIST_HOME}/orig/exist-webapp-context.xml \
+    && sed -i '2d' ${EXIST_HOME}/orig/jetty.xml \
     # clean up apt cache
     && rm -rf /var/lib/apt/lists/* \
     # remove portal webapp
