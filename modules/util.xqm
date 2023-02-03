@@ -586,6 +586,7 @@ declare function dutil:get-corpus-meta-data(
     "id": $id,
     "name": $name,
     "playName": $name,
+    "wikidataId": $wikidata-id,
     "normalizedGenre": dutil:get-genre($text-classes),
     "libretto": $text-classes = 'Libretto',
     "firstAuthor": $authors[1]?shortname,
