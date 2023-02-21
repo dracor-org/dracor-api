@@ -285,6 +285,16 @@ declare function dutil:get-segments ($tei as element()*) as element()* {
     $tei//tei:body//tei:div[tei:sp or (@type="scene" and not(.//tei:sp))]
 };
 
+declare function local:get-year($iso-date as xs:string) as xs:string* {
+  let $parts := tokenize($iso-date, "-")
+  (:
+    When the first part after tokenizing is empty we have a negative, i.e. BCE,
+    year and prepend it with "-". Otherwise we consider the first part a CE
+    year.
+  :)
+  return if ($parts[1] eq "") then "-" || $parts[2] else $parts[1]
+};
+
 (:~
  : Retrieve `written`, `premiere` and `print` years as ISO 8601 strings for the
  : play passed in $tei.
@@ -301,13 +311,15 @@ declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
     for $d in $dates
     let $type := $d/@type/string()
     let $year := if ($d/@when) then
-      $d/@when/string()
+      local:get-year($d/@when/string())
     else if ($d/@notBefore and $d/@notAfter) then
-      $d/@notBefore/string() || '/' || $d/@notAfter/string()
+      local:get-year($d/@notBefore/string()) ||
+      '/' ||
+      local:get-year($d/@notAfter/string())
     else if ($d/@notAfter) then
-      '<' || $d/@notAfter/string()
+      '<' || local:get-year($d/@notAfter/string())
     else
-      '>' || $d/@notBefore/string()
+      '>' || local:get-year($d/@notBefore/string())
     return map:entry($type, $year)
   )
 
