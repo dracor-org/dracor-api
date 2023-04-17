@@ -140,9 +140,6 @@ as element(rdf:RDF) {
       </rdf:Description>
     </dracon:has_author>
 
-  let $wikidata-play-uri := "http://www.wikidata.org/entity/" ||
-    dutil:get-play-wikidata-id($play)
-
   let $collection-uri := "https://dracor.org/" || $corpusname
 
   (: construct rdfs:labels – Author : Title. Subtitle.
@@ -208,7 +205,11 @@ as element(rdf:RDF) {
       else ()
 
   let $in_corpus := <dracon:in_corpus rdf:resource="{$collection-uri}"/>
-  let $play-external-id := <owl:sameAs rdf:resource="{$wikidata-play-uri}"/>
+
+  let $wikidata-id := dutil:get-play-wikidata-id($play)
+  let $play-external-id := if ($wikidata-id)
+    then <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{$wikidata-id}"/>
+    else ()
 
   (: CIDOC-Stuff :)
   let $creation-uri := $play-uri || "/creation"
