@@ -3,12 +3,12 @@ xquery version "3.1";
 (:~
  : DraCor RDF module
  :)
-module namespace drdf = "http://dracor.org/ns/exist/rdf";
+module namespace drdf = "http://dracor.org/ns/exist/v0/rdf";
 
-import module namespace config = "http://dracor.org/ns/exist/config"
+import module namespace config = "http://dracor.org/ns/exist/v0/config"
   at "config.xqm";
 
-import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v0/util" at "util.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 

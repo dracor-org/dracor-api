@@ -1,11 +1,11 @@
 xquery version "3.1";
 
-module namespace api = "http://dracor.org/ns/exist/api";
+module namespace api = "http://dracor.org/ns/exist/v0/api";
 
-import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
-import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
-import module namespace wd = "http://dracor.org/ns/exist/wikidata" at "wikidata.xqm";
+import module namespace config = "http://dracor.org/ns/exist/v0/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v0/util" at "util.xqm";
+import module namespace load = "http://dracor.org/ns/exist/v0/load" at "load.xqm";
+import module namespace wd = "http://dracor.org/ns/exist/v0/wikidata" at "wikidata.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare namespace rest = "http://exquery.org/ns/restxq";

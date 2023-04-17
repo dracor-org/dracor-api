@@ -1,6 +1,6 @@
 xquery version "3.1";
 
-import module namespace config = "http://dracor.org/ns/exist/config"
+import module namespace config = "http://dracor.org/ns/exist/v0/config"
   at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)

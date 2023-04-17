@@ -4,7 +4,7 @@ xquery version "3.1";
  : A set of helper functions to access the application context from
  : within a module.
  :)
-module namespace config="http://dracor.org/ns/exist/config";
+module namespace config="http://dracor.org/ns/exist/v0/config";
 
 declare namespace templates="http://exist-db.org/xquery/templates";
 
