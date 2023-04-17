@@ -481,10 +481,12 @@ declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
   let $response := hc:send-request($request, $url)
 
   return if ($response/@status = "204") then (
-    util:log("info", "Cleared graph <" || $graph || ">"),
+    util:log-system-out("Cleared graph <" || $graph || ">"),
     true()
   ) else (
-    util:log("warn", "Failed to clear graph <" || $graph || ">: " || $response/message),
+    util:log-system-out(
+      "Failed to clear graph <" || $graph || ">: " || $response/message
+    ),
     false()
   )
 };
