@@ -7,7 +7,7 @@
   <license ref="https://spdx.org/licenses/">Apache-2.0</license>
   <copyright>true</copyright>
   <type>application</type>
-  <target>dracor</target>
+  <target>dracor-v0</target>
   <prepare>pre-install.xq</prepare>
   <finish>post-install.xq</finish>
 </meta>
