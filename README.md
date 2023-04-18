@@ -35,7 +35,7 @@ curl http://localhost:8088/api/info
 The docker-compose setup also includes a
 [DraCor frontend](https://github.com/dracor-org/dracor-frontend) connected to
 the local eXist instance. It can be accessed by opening http://localhost:8088/
-in a browser. 
+in a browser.
 
 ### Load Data
 
@@ -112,4 +112,4 @@ The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
 of the corpus data when the configured GitHub repository for the corpus changes.
 
 *Note:* For the webhook to work, the shared secret between DraCor and GitHub
-needs to be configured at `/db/data/dracor/config.xml` in the database.
+needs to be configured at `/db/data/dracor/secrets.xml` in the database.
