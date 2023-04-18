@@ -49,7 +49,7 @@ declare variable $api:metadata-columns := (
   "numOfSpeakersFemale",
   "numOfSpeakersMale",
   "numOfSpeakersUnknown",
-  "numPersonGroups",
+  "numOfPersonGroups",
   "numConnectedComponents",
   "numEdges",
   "yearWritten",
