@@ -72,7 +72,7 @@ declare variable $api:metadata-columns := (
  :)
 declare
   %rest:GET
-  %rest:path("/info")
+  %rest:path("/v0/info")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -95,7 +95,7 @@ function api:info() {
  :)
 declare
   %rest:GET
-  %rest:path("/openapi")
+  %rest:path("/v0/openapi")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -110,7 +110,7 @@ function api:openapi() {
  :)
 declare
   %rest:GET
-  %rest:path("/openapi.yaml")
+  %rest:path("/v0/openapi.yaml")
   %rest:produces("application/yaml")
   %output:media-type("application/yaml")
   %output:method("text")
@@ -127,7 +127,7 @@ function api:openapi-yaml() {
 
 declare
   %rest:GET
-  %rest:path("/resources")
+  %rest:path("/v0/resources")
   %rest:produces("application/xml", "text/xml")
 function api:resources() {
   rest:resource-functions()
@@ -181,7 +181,7 @@ declare function local:id-to-url ($id, $accept) {
  :)
 declare
   %rest:GET
-  %rest:path("/id/{$id}")
+  %rest:path("/v0/id/{$id}")
   %rest:header-param("Accept", "{$accept}")
 function api:id-to-url($id, $accept) {
   let $url := local:id-to-url($id, $accept)
@@ -234,7 +234,7 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora")
+  %rest:path("/v0/corpora")
   %rest:query-param("include", "{$include}")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -264,7 +264,7 @@ function api:corpora($include) {
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/corpora")
+  %rest:path("/v0/corpora")
   %rest:header-param("Authorization", "{$auth}")
   %rest:consumes("application/xml", "text/xml")
   %rest:produces("application/json")
@@ -350,7 +350,7 @@ function api:corpora-post-tei($data, $auth) {
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/corpora")
+  %rest:path("/v0/corpora")
   %rest:consumes("application/json")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -441,7 +441,7 @@ function api:corpora-post-json($data) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}")
+  %rest:path("/v0/corpora/{$corpusname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -525,7 +525,7 @@ function api:corpus-index($corpusname) {
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/corpora/{$corpusname}")
+  %rest:path("/v0/corpora/{$corpusname}")
   %rest:header-param("Authorization", "{$auth}")
   %rest:consumes("application/json")
   %rest:produces("application/json")
@@ -610,7 +610,7 @@ function api:post-corpus($corpusname, $data, $auth) {
  :)
 declare
   %rest:DELETE
-  %rest:path("/corpora/{$corpusname}")
+  %rest:path("/v0/corpora/{$corpusname}")
   %rest:header-param("Authorization", "{$auth}")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -663,7 +663,7 @@ function api:delete-corpus($corpusname, $auth) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata")
+  %rest:path("/v0/corpora/{$corpusname}/metadata")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -708,7 +708,7 @@ declare function api:get-corpus-meta-data-csv($corpusname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata")
+  %rest:path("/v0/corpora/{$corpusname}/metadata")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -724,7 +724,7 @@ function api:corpus-meta-data-csv($corpusname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata/csv")
+  %rest:path("/v0/corpora/{$corpusname}/metadata/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -745,7 +745,7 @@ function api:corpus-meta-data-csv-endpoint($corpusname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata.csv")
+  %rest:path("/v0/corpora/{$corpusname}/metadata.csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -755,7 +755,7 @@ function api:corpus-meta-data-dotcsv($corpusname) {
 
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/word-frequencies/{$elem}")
+  %rest:path("/v0/corpora/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
 function api:word-frequencies-xml($corpusname, $elem) {
   let $collection := concat($config:data-root, "/", $corpusname)
@@ -765,7 +765,7 @@ function api:word-frequencies-xml($corpusname, $elem) {
 
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/word-frequencies/{$elem}")
+  %rest:path("/v0/corpora/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -786,7 +786,7 @@ function api:word-frequencies-csv($corpusname, $elem) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -811,7 +811,7 @@ function api:play-info($corpusname, $playname) {
  :)
 declare
   %rest:DELETE
-  %rest:path("/corpora/{$corpusname}/play/{$playname}")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}")
   %rest:header-param("Authorization", "{$auth}")
   %output:method("json")
 function api:play-delete($corpusname, $playname, $data, $auth) {
@@ -843,7 +843,7 @@ function api:play-delete($corpusname, $playname, $data, $auth) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/metrics")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/metrics")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -867,7 +867,7 @@ function api:play-metrics($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/tei")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("application/xml")
 function api:play-tei($corpusname, $playname) {
@@ -906,7 +906,7 @@ function api:play-tei($corpusname, $playname) {
  :)
 declare
   %rest:PUT("{$data}")
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/tei")
   %rest:header-param("Authorization", "{$auth}")
   %rest:consumes("application/xml", "text/xml")
   %output:method("xml")
@@ -961,7 +961,7 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/rdf")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/rdf")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("application/xml")
 function api:play-rdf($corpusname, $playname) {
@@ -985,7 +985,7 @@ function api:play-rdf($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/csv")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/networkdata/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1059,7 +1059,7 @@ declare function local:make-gexf-nodes($cast, $doc) as element()* {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/gexf")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/networkdata/gexf")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:networkdata-gexf($corpusname, $playname) {
@@ -1134,7 +1134,7 @@ function api:networkdata-gexf($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/graphml")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/networkdata/graphml")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:networkdata-graphml($corpusname, $playname) {
@@ -1218,7 +1218,7 @@ function api:networkdata-graphml($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/csv")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/relations/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1269,7 +1269,7 @@ function api:relations-csv($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/gexf")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/relations/gexf")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:relations-gexf($corpusname, $playname) {
@@ -1342,7 +1342,7 @@ function api:relations-gexf($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/graphml")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/relations/graphml")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:relations-graphml($corpusname, $playname) {
@@ -1421,7 +1421,7 @@ function api:relations-graphml($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/cast")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -1445,7 +1445,7 @@ function api:cast-info($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/cast")
   %rest:produces("text/csv")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1472,7 +1472,7 @@ function api:cast-info-csv($corpusname, $playname) {
 
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast/csv")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/cast/csv")
   %output:media-type("text/csv")
   %output:method("text")
 function api:cast-info-csv-ext($corpusname, $playname) {
@@ -1492,7 +1492,7 @@ function api:cast-info-csv-ext($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/segmentation")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("text/xml")
 function api:segmentation($corpusname, $playname) {
@@ -1553,7 +1553,7 @@ function api:segmentation($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/segmentation")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1593,7 +1593,7 @@ function api:segmentation-csv($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/spoken-text")
   %rest:query-param("gender", "{$gender}")
   %rest:query-param("relation", "{$relation}")
   %rest:query-param("role", "{$role}")
@@ -1671,7 +1671,7 @@ declare function api:get-spoken-text-by-character($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -1707,7 +1707,7 @@ function api:spoken-text-by-character-json($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1740,7 +1740,7 @@ function api:spoken-text-by-character-csv($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/stage-directions")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:stage-directions($corpusname, $playname) {
@@ -1765,7 +1765,7 @@ function api:stage-directions($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions-with-speakers")
+  %rest:path("/v0/corpora/{$corpusname}/play/{$playname}/stage-directions-with-speakers")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:stage-directions-with-speakers($corpusname, $playname) {
@@ -1792,7 +1792,7 @@ function api:stage-directions-with-speakers($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/character/{$id}")
+  %rest:path("/v0/character/{$id}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -1815,7 +1815,7 @@ function api:plays-with-character($id) {
  :)
 declare
   %rest:GET
-  %rest:path("/author/{$id}")
+  %rest:path("/v0/author/{$id}")
   %rest:query-param("lang", "{$lang}")
   %rest:produces("application/json")
   %output:media-type("application/json")
