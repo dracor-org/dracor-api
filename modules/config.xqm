@@ -32,7 +32,7 @@ declare variable $config:app-root :=
 ;
 
 declare variable $config:file := "/db/data/dracor/config-v0.xml";
-declare variable $config:secrets-file := "/db/data/dracor/secrets-v0.xml";
+declare variable $config:secrets-file := "/db/data/dracor/secrets.xml";
 
 (:
   The base URL under which the REST API is hosted.
