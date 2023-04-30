@@ -186,7 +186,7 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
           "message": "Delivery accepted.",
           "result": $result,
           "scheduled": scheduler:schedule-xquery-periodic-job(
-            "/db/apps/dracor/jobs/process-webhook-delivery.xq",
+            $config:app-root ||  "/jobs/process-webhook-delivery.xq",
             1000,
             "webhook-update-" || $delivery,
             (

@@ -100,7 +100,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:openapi() {
-  openapi:main("/db/apps/dracor")
+  openapi:main($config:app-root)
 };
 
 (:~
@@ -580,7 +580,7 @@ function api:post-corpus($corpusname, $data, $auth) {
       ) else ()
 
       let $result := scheduler:schedule-xquery-periodic-job(
-        "/db/apps/dracor/jobs/load-corpus.xq",
+        $config:app-root || "/jobs/load-corpus.xq",
         1, $job-name, $params, 0, 0
       )
 
