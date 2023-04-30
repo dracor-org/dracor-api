@@ -4,7 +4,7 @@ xquery version "3.1";
  : A set of helper functions to access the application context from
  : within a module.
  :)
-module namespace config="http://dracor.org/ns/exist/v0/config";
+module namespace config="http://dracor.org/ns/exist/v1/config";
 
 declare namespace templates="http://exist-db.org/xquery/templates";
 
@@ -31,7 +31,7 @@ declare variable $config:app-root :=
         substring-before($modulePath, "/modules")
 ;
 
-declare variable $config:file := "/db/data/dracor/config-v0.xml";
+declare variable $config:file := "/db/data/dracor/config-v1.xml";
 declare variable $config:secrets-file := "/db/data/dracor/secrets.xml";
 
 (:

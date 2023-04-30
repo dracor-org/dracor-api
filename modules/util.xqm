@@ -3,10 +3,10 @@ xquery version "3.1";
 (:~
  : Module proving utility functions for dracor.
  :)
-module namespace dutil = "http://dracor.org/ns/exist/v0/util";
+module namespace dutil = "http://dracor.org/ns/exist/v1/util";
 
 import module namespace functx="http://www.functx.com";
-import module namespace config = "http://dracor.org/ns/exist/v0/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "config.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";

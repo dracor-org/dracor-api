@@ -35,7 +35,7 @@ services:
     build:
       context: https://github.com/dracor-org/dracor-frontend.git#main
     environment:
-      DRACOR_API: http://api:8080/exist/restxq/v0
+      DRACOR_API: http://api:8080/exist/restxq/v1
     ports:
       - "8088:80"
     depends_on:

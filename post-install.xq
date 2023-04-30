@@ -1,6 +1,6 @@
 xquery version "3.1";
 
-import module namespace config = "http://dracor.org/ns/exist/v0/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)
@@ -34,7 +34,7 @@ as item()? {
         {
           if (environment-variable("DRACOR_API_BASE")) then
             environment-variable("DRACOR_API_BASE")
-          else "https://dracor.org/api/v0"
+          else "https://dracor.org/api/v1"
         }
         </api-base>
         <services>
