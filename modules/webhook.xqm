@@ -1,9 +1,9 @@
 xquery version "3.1";
 
-module namespace webhook = "http://dracor.org/ns/exist/v0/webhook";
+module namespace webhook = "http://dracor.org/ns/exist/v1/webhook";
 
 import module namespace crypto="http://expath.org/ns/crypto";
-import module namespace config = "http://dracor.org/ns/exist/v0/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "config.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
