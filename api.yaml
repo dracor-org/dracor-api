@@ -1010,20 +1010,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    uri:
-                      type: string
-                    title:
-                      type: string
-                    authors:
-                      type: array
-                      items:
-                        type: string
-                    characterName:
-                      type: string
+                  $ref: '#/components/schemas/PlayWithWikidataCharacter'
         '400':
           description: Invalid character ID.
 
@@ -1153,68 +1140,68 @@ components:
     Info:
       type: object
       properties:
-        name:
-          type: string
         status:
           type: string
-        version:
-          type: string
         existdb:
+          type: string
+        name:
+          type: string
+        version:
           type: string
     WordCounts:
       type: object
       properties:
-        stage:
-          type: integer
         text:
           type: integer
         sp:
+          type: integer
+        stage:
           type: integer
     CorpusMetrics:
       type: object
       properties:
-        stage:
-          type: integer
-        text:
-          type: integer
         updated:
           type: string
-        sp:
+        female:
           type: integer
-        plays:
+        stage:
           type: integer
         male:
+          type: integer
+        plays:
           type: integer
         characters:
           type: integer
         wordcount:
           $ref: '#/components/schemas/WordCounts'
-        female:
+        text:
+          type: integer
+        sp:
           type: integer
     CorpusInCorpora:
       type: object
       properties:
-        licence:
-          type: string
-        acronym:
+        description:
           type: string
         name:
+          type: string
+        repository:
+          type: string
+          format: url
+        licenceUrl:
+          type: string
+          format: url
+        metrics:
+          $ref: '#/components/schemas/CorpusMetrics'
+        licence:
           type: string
         title:
           type: string
         uri:
           type: string
           format: url
-        metrics:
-          $ref: '#/components/schemas/CorpusMetrics'
-        repository:
+        acronym:
           type: string
-          format: url
-        description:
-          type: string
-        licenceUrl:
-          type: string
-          format: url
     ExternalReferenceResourceId:
       type: object
       properties:
@@ -1225,25 +1212,25 @@ components:
     AuthorInPlayInCorpus:
       type: object
       properties:
+        refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalReferenceResourceId'
         nameEn:
           type: string
-        shortnameEn:
-          type: string
-        name:
-          type: string
-        fullname:
+        shortname:
           type: string
         alsoKnownAs:
           type: array
           items:
             type: string
-        refs:
-          type: array
-          items:
-            $ref: '#/components/schemas/ExternalReferenceResourceId'
-        fullnameEn:
+        name:
           type: string
-        shortname:
+        shortnameEn:
+          type: string
+        fullname:
+          type: string
+        fullnameEn:
           type: string
     FirstAuthorInPlayInCorpus:
       type: object
@@ -1253,65 +1240,63 @@ components:
     PlayInCorpus:
       type: object
       properties:
-        source:
+        wikidataId:
           type: string
           nullable: true
         yearWritten:
           type: string
           nullable: true
-        id:
+        yearPrinted:
           type: string
-        sourceUrl:
+          nullable: true
+        yearPremiered:
           type: string
           nullable: true
         networkdataCsvUrl:
           type: string
           format: url
-        yearPremiered:
+        name:
           type: string
-          nullable: true
-        titleEn:
-          type: string
-        printYear:
-          type: string
-          nullable: true
-        wikidataId:
-          type: string
-          nullable: true
         authors:
           type: array
           items:
             $ref: '#/components/schemas/AuthorInPlayInCorpus'
-        name:
-          type: string
-        premiereYear:
-          type: string
-          nullable: true
-        yearNormalized:
-          type: integer
-          nullable: true
-        title:
-          type: string
-        yearPrinted:
-          type: string
-          nullable: true
-        subtitleEn:
-          type: string
-        author:
-          $ref: '#/components/schemas/FirstAuthorInPlayInCorpus'
-        networkSize:
-          type: integer
-        writtenYear:
+        printYear:
           type: string
           nullable: true
         subtitle:
           type: string
+        yearNormalized:
+          type: integer
+          nullable: true
+        id:
+          type: string
+        writtenYear:
+          type: string
+          nullable: true
+        title:
+          type: string
+        subtitleEn:
+          type: string
+        author:
+          $ref: '#/components/schemas/FirstAuthorInPlayInCorpus'
+        source:
+          type: string
+          nullable: true
+        titleEn:
+          type: string
+        sourceUrl:
+          type: string
+          nullable: true
+        networkSize:
+          type: integer
+        premiereYear:
+          type: string
+          nullable: true
     Corpus:
       type: object
       properties:
-        licence:
-          type: string
-        acronym:
+        description:
           type: string
         dramas:
           type: array
@@ -1319,145 +1304,124 @@ components:
             $ref: '#/components/schemas/PlayInCorpus'
         name:
           type: string
-        title:
-          type: string
         repository:
           type: string
           format: url
-        description:
-          type: string
         licenceUrl:
           type: string
           format: url
+        licence:
+          type: string
+        title:
+          type: string
+        acronym:
+          type: string
     PlayMetadata:
       type: object
       properties:
-        wordCountText:
+        numOfSpeakersMale:
           type: integer
-        numOfPersonGroups:
-          type: integer
-        maxDegree:
-          type: integer
-        wordCountSp:
-          type: integer
+        wikidataId:
+          type: string
+          nullable: true
         originalSourcePublisher:
+          type: string
+          nullable: true
+        yearWritten:
+          type: string
+          nullable: true
+        diameter:
+          type: integer
+        numConnectedComponents:
+          type: integer
+        yearPrinted:
+          type: string
+          nullable: true
+        yearPremiered:
           type: string
           nullable: true
         numOfSpeakersFemale:
           type: integer
-        maxDegreeIds:
-          type: string
-        wikipediaLinkCount:
-          type: integer
+        digitalSource:
           nullable: true
-        numOfL:
-          type: integer
-        yearWritten:
-          type: string
-          nullable: true
-        density:
-          type: number
-        numEdges:
-          type: integer
-        id:
-          type: string
-        averagePathLength:
-          type: number
-        numOfSpeakers:
-          type: integer
-        firstAuthor:
-          type: string
-        numOfCoAuthors:
-          type: integer
         averageClustering:
           type: number
-        yearPremiered:
-          type: string
-          nullable: true
-        numOfSpeakersUnknown:
-          type: integer
-        diameter:
-          type: integer
-        wikidataId:
-          type: string
-          nullable: true
-        name:
-          type: string
-        playName:
-          type: string
-        originalSourceYear:
-          type: integer
-          nullable: true
         numOfP:
-          type: integer
-        averageDegree:
-          type: number
-        originalSourceNumberOfPages:
-          type: integer
-          nullable: true
-        numConnectedComponents:
           type: integer
         originalSourcePubPlace:
           type: string
           nullable: true
-        yearNormalized:
+        density:
+          type: number
+        wikipediaLinkCount:
           type: integer
           nullable: true
-        title:
+        name:
           type: string
-        yearPrinted:
-          type: string
-          nullable: true
-        libretto:
-          type: boolean
-        numOfSegments:
+        numOfSpeakers:
+          type: integer
+        wordCountText:
+          type: integer
+        numOfPersonGroups:
           type: integer
         size:
           type: integer
-        numOfActs:
-          type: integer
-        normalizedGenre:
-          type: string
-          nullable: true
-        digitalSource:
-          nullable: true
         wordCountStage:
           type: integer
-        numOfSpeakersMale:
-          type: integer
+        firstAuthor:
+          type: string
         subtitle:
           type: string
           nullable: true
-    CastItemInPlayMetadata:
-      type: object
-      properties:
-        wikidataId:
-          type: string
-        name:
-          type: string
+        numOfSegments:
+          type: integer
+        yearNormalized:
+          type: integer
           nullable: true
+        libretto:
+          type: boolean
+        playName:
+          type: string
+        maxDegree:
+          type: integer
+        wordCountSp:
+          type: integer
+        originalSourceYear:
+          type: integer
+          nullable: true
+        numOfL:
+          type: integer
         id:
           type: string
-        sex:
+        numOfActs:
+          type: integer
+        averagePathLength:
+          type: number
+        averageDegree:
+          type: number
+        title:
           type: string
-          enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
+        originalSourceNumberOfPages:
+          type: integer
           nullable: true
-        isGroup:
-          type: boolean
-    SourceInPlayMetadata:
-      type: object
-      properties:
-        name:
+        normalizedGenre:
           type: string
           nullable: true
-        url:
-          nullable: true
+        maxDegreeIds:
+          type: string
+        numEdges:
+          type: integer
+        numOfSpeakersUnknown:
+          type: integer
+        numOfCoAuthors:
+          type: integer
     RelationItemInPlayMetadata:
       type: object
       properties:
+        directed:
+          type: boolean
+        target:
+          type: string
         type:
           type: string
           enum:
@@ -1470,81 +1434,100 @@ components:
           - friends
         source:
           type: string
-        directed:
-          type: boolean
-        target:
-          type: string
     AuthorInPlayMetadata:
       type: object
       properties:
+        refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalReferenceResourceId'
         nameEn:
           type: string
-        shortnameEn:
-          type: string
-        name:
-          type: string
-        fullname:
+        shortname:
           type: string
         alsoKnownAs:
           type: array
           items:
             type: string
-        refs:
-          type: array
-          items:
-            $ref: '#/components/schemas/ExternalReferenceResourceId'
+        name:
+          type: string
+        shortnameEn:
+          type: string
+        fullname:
+          type: string
         fullnameEn:
           type: string
-        shortname:
+    CastItemInPlayMetadata:
+      type: object
+      properties:
+        wikidataId:
           type: string
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        isGroup:
+          type: boolean
+        sex:
+          type: string
+          enum:
+          - MALE
+          - FEMALE
+          - UNKNOWN
+          nullable: true
     SegmentItemInPlayMetadata:
       type: object
       properties:
         title:
           type: string
-        type:
-          type: string
-          nullable: true
         speakers:
           type: array
           items:
             type: string
+        type:
+          type: string
+          nullable: true
         number:
           type: integer
     FirstAuthorInPlayMetadata:
       type: object
       properties:
-        name:
-          type: string
         warning:
           type: string
           enum:
           - The single author property is deprecated. Use the array of 'authors' instead!
+        name:
+          type: string
+    SourceInPlayMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        url:
+          nullable: true
     Play:
       type: object
       properties:
-        cast:
-          type: array
-          items:
-            $ref: '#/components/schemas/CastItemInPlayMetadata'
-        source:
-          $ref: '#/components/schemas/SourceInPlayMetadata'
-        originalSource:
+        wikidataId:
           type: string
+          nullable: true
         yearWritten:
           type: string
           nullable: true
-        corpus:
+        originalSource:
           type: string
+        allInSegment:
+          type: integer
+          nullable: true
+        yearPrinted:
+          type: string
+          nullable: true
         relations:
           type: array
           items:
             $ref: '#/components/schemas/RelationItemInPlayMetadata'
-        allInSegment:
-          type: integer
-          nullable: true
-        id:
-          type: string
         yearPremiered:
           type: string
           nullable: true
@@ -1553,157 +1536,176 @@ components:
           nullable: true
           minimum: 0.0
           maximum: 1.0
-        titleEn:
+        name:
           type: string
-        wikidataId:
-          type: string
-          nullable: true
         authors:
           type: array
           items:
             $ref: '#/components/schemas/AuthorInPlayMetadata'
-        name:
-          type: string
-        genre:
+        cast:
+          type: array
+          items:
+            $ref: '#/components/schemas/CastItemInPlayMetadata'
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/SegmentItemInPlayMetadata'
+        subtitle:
           type: string
           nullable: true
         yearNormalized:
           type: integer
           nullable: true
-        title:
-          type: string
-        yearPrinted:
-          type: string
-          nullable: true
-        subtitleEn:
-          type: string
         libretto:
           type: boolean
-        segments:
-          type: array
-          items:
-            $ref: '#/components/schemas/SegmentItemInPlayMetadata'
-        author:
-          $ref: '#/components/schemas/FirstAuthorInPlayMetadata'
-        subtitle:
+        id:
+          type: string
+        corpus:
+          type: string
+        genre:
           type: string
           nullable: true
+        title:
+          type: string
+        subtitleEn:
+          type: string
+        author:
+          $ref: '#/components/schemas/FirstAuthorInPlayMetadata'
+        source:
+          $ref: '#/components/schemas/SourceInPlayMetadata'
+        titleEn:
+          type: string
     NodeInPlayMetrics:
       type: object
       properties:
-        degree:
-          type: integer
-        betweenness:
-          type: number
         eigenvector:
-          type: number
-        closeness:
           type: number
         weightedDegree:
           type: integer
         id:
           type: string
+        closeness:
+          type: number
+        degree:
+          type: integer
+        betweenness:
+          type: number
     PlayMetrics:
       type: object
       properties:
-        averagePathLength:
-          type: number
-        name:
-          type: string
-        diameter:
-          type: integer
-        size:
-          type: integer
-        maxDegree:
-          type: integer
         averageClustering:
           type: number
-        averageDegree:
-          type: number
-        wikipediaLinkCount:
-          type: integer
-          nullable: true
-        numConnectedComponents:
-          type: integer
-        maxDegreeIds:
-          type: array
-          items:
-            type: string
         nodes:
           type: array
           items:
             $ref: '#/components/schemas/NodeInPlayMetrics'
         density:
           type: number
-        corpus:
-          type: string
-        numEdges:
+        wikipediaLinkCount:
           type: integer
+          nullable: true
         id:
           type: string
+        corpus:
+          type: string
+        name:
+          type: string
+        size:
+          type: integer
+        diameter:
+          type: integer
+        maxDegreeIds:
+          type: array
+          items:
+            type: string
+        numEdges:
+          type: integer
+        averagePathLength:
+          type: number
+        numConnectedComponents:
+          type: integer
+        averageDegree:
+          type: number
+        maxDegree:
+          type: integer
     CastItem:
       type: object
       properties:
-        degree:
-          type: integer
-          nullable: true
-        wikidataId:
-          type: string
-        betweenness:
-          type: number
-          nullable: true
-        name:
-          type: string
-          nullable: true
         eigenvector:
           type: number
           nullable: true
-        id:
+        wikidataId:
           type: string
-        closeness:
-          type: number
-          nullable: true
-        numOfScenes:
-          type: integer
-        isGroup:
-          type: boolean
-        weightedDegree:
-          type: integer
-          nullable: true
-        numOfWords:
-          type: integer
-        numOfSpeechActs:
-          type: integer
         gender:
           type: string
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
+          nullable: true
+        numOfWords:
+          type: integer
+        weightedDegree:
+          type: integer
+          nullable: true
+        numOfScenes:
+          type: integer
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        closeness:
+          type: number
+          nullable: true
+        isGroup:
+          type: boolean
+        degree:
+          type: integer
+          nullable: true
+        numOfSpeechActs:
+          type: integer
+        betweenness:
+          type: number
           nullable: true
     SpokenTextByCharacter:
       type: object
       properties:
-        gender:
-          type: string
-          enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
-          nullable: true
-        text:
-          type: array
-          items:
-            type: string
-        id:
-          type: string
-        label:
-          type: string
         roles:
           type: array
           nullable: true
           items:
             type: string
+        gender:
+          type: string
+          enum:
+          - MALE
+          - FEMALE
+          - UNKNOWN
+          nullable: true
+        label:
+          type: string
+        id:
+          type: string
         isGroup:
           type: boolean
-
+        text:
+          type: array
+          items:
+            type: string
+    PlayWithWikidataCharacter:
+      type: object
+      properties:
+        characterName:
+          type: string
+        id:
+          type: string
+        authors:
+          type: array
+          items:
+            type: string
+        title:
+          type: string
+        uri:
+          type: string
+          format: url
