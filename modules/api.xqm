@@ -482,7 +482,6 @@ function api:corpus-index($corpusname) {
           if ($titlesEng?main) then map:entry("titleEn", $titlesEng?main) else (),
           if ($titlesEng?sub) then map:entry("subtitleEn", $titlesEng?sub) else (),
           map:entry("authors", array { $authors }),
-          map:entry("author", map { "name": $authors[1]?name }),
           map:entry(
             "source",
             $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()

@@ -970,11 +970,6 @@ declare function dutil:get-play-info(
         "name": $playname,
         "corpus": $corpusname,
         "title": $titles?main,
-        "author": map {
-          "name": $authors[1]?name,
-          "warning": "The single author property is deprecated. " ||
-          "Use the array of 'authors' instead!"
-        },
         "authors": array { for $author in $authors return $author },
         "normalizedGenre": dutil:get-genre($text-classes),
         "libretto": $text-classes = 'Libretto',
