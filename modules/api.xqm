@@ -496,14 +496,6 @@ function api:corpus-index($corpusname) {
           map:entry("yearPrinted", $years?print),
           map:entry("yearPremiered", $years?premiere),
           map:entry("yearWritten", $years?written),
-          (:
-            FIXME: the following year properties are deprecated and should be
-            removed in a future release
-           :)
-          map:entry("printYear", $years?print),
-          map:entry("premiereYear", $years?premiere),
-          map:entry("writtenYear", $years?written),
-
           map:entry("networkSize", $network-size),
           map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),
           map:entry("wikidataId", dutil:get-play-wikidata-id($tei))
