@@ -361,6 +361,21 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
 };
 
 (:~
+ : Retrieve premiere date for the play passed in $tei.
+ :
+ : This function only returns a value when the exact date of the premiere in ISO
+ : format (YYYY-MM-DD) is specified in tei:standOff.
+ :
+ : @param $tei The TEI root element of a play
+ : @return ISO date string
+ :)
+declare function dutil:get-premiere-date ($tei as element(tei:TEI)*) as xs:string* {
+  let $date := $tei//tei:standOff/tei:listEvent/tei:event
+    [@type = "premiere"]/@when
+  return if (matches($date, "^-?[0-9]{4}-[0-9]{2}-[0-9]{2}")) then $date else ()
+};
+
+(:~
  : Determine the most fitting year from `written`, `premiere` and `print` of
  : the play passed in $tei.
  :
@@ -956,6 +971,7 @@ declare function dutil:get-play-info(
     let $text-classes := dutil:get-text-classes($tei)
 
     let $years := dutil:get-years-iso($tei)
+    let $premiere-date := dutil:get-premiere-date($tei)
 
     let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
     let $all-in-index := $all-in-segment div count($segments?*)
@@ -1016,6 +1032,7 @@ declare function dutil:get-play-info(
           "url": $source/tei:idno[@type="URL"][1]/string()
         })
       else (),
+      if($premiere-date) then map:entry("premiereDate", $premiere-date) else (),
       if(count($relations)) then
         map:entry("relations", array{$relations})
       else ()

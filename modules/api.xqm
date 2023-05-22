@@ -473,6 +473,7 @@ function api:corpus-index($corpusname) {
           $config:metrics-root || "/" || $corpusname || "/" || $filename
         let $network-size := doc($metrics-url)//network/size/text()
         let $yearNormalized := dutil:get-normalized-year($tei)
+        let $premiere-date := dutil:get-premiere-date($tei)
         order by $authors[1]?name
         return map:merge((
           map:entry("id", $id),
@@ -494,6 +495,7 @@ function api:corpus-index($corpusname) {
           map:entry("yearNormalized", $yearNormalized),
           map:entry("yearPrinted", $years?print),
           map:entry("yearPremiered", $years?premiere),
+          if($premiere-date) then map:entry("premiereDate", $premiere-date) else (),
           map:entry("yearWritten", $years?written),
           map:entry("networkSize", $network-size),
           map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),
