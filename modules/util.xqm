@@ -976,7 +976,7 @@ declare function dutil:get-play-info(
           "Use the array of 'authors' instead!"
         },
         "authors": array { for $author in $authors return $author },
-        "genre": dutil:get-genre($text-classes),
+        "normalizedGenre": dutil:get-genre($text-classes),
         "libretto": $text-classes = 'Libretto',
         "allInSegment": $all-in-segment,
         "allInIndex": $all-in-index,
