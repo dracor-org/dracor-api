@@ -341,7 +341,7 @@ as element(rdf:RDF) {
         </dracon:writtenYear>
       else ()
 
-    (: chatacters :)
+    (: characters :)
     let $characters :=
       $play//tei:particDesc/tei:listPerson/tei:person
 
