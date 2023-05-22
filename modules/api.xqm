@@ -458,7 +458,7 @@ function api:corpus-index($corpusname) {
       </rest:response>
     else map:merge((
       $corpus,
-      map:entry("dramas", array {
+      map:entry("plays", array {
         for $tei in $col//tei:TEI
         let $filename := tokenize(base-uri($tei), "/")[last()]
         let $name := tokenize($filename, "\.")[1]

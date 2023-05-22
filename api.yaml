@@ -224,12 +224,12 @@ paths:
                 type: object
                 required:
                   - title
-                  - dramas
+                  - plays
                 properties:
                   title:
                     type: string
                     description: corpus title
-                  dramas:
+                  plays:
                     type: array
                     description: array of plays
                     items:
