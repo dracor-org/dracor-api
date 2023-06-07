@@ -19,7 +19,7 @@ services:
       - fuseki
       - metrics
   fuseki:
-    image: "dracor/fuseki"
+    image: "dracor/dracor-fuseki"
     build: https://github.com/dracor-org/dracor-fuseki.git#main
     environment:
       - ADMIN_PASSWORD=qwerty
@@ -28,10 +28,12 @@ services:
     expose:
       - "3030"
   metrics:
+    image: "dracor/dracor-metrics"
     build: https://github.com/dracor-org/dracor-metrics.git#main
     ports:
       - "8030:8030"
   frontend:
+    image: "dracor/dracor-frontend"
     build:
       context: https://github.com/dracor-org/dracor-frontend.git#main
     environment:
