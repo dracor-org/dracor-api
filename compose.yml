@@ -15,6 +15,7 @@ services:
       - "8080:8080"
     volumes:
       - .:/tmp/export
+      - dracor-api_exist-data-dir:/opt/exist/data
     depends_on:
       - fuseki
       - metrics
@@ -42,3 +43,5 @@ services:
       - "8088:80"
     depends_on:
       - api
+volumes:
+  dracor-api_exist-data-dir:
