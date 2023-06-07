@@ -22,11 +22,17 @@ declare namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 declare variable $api:metadata-columns := (
   "name",
   "id",
+  "wikidataId",
   "firstAuthor",
   "numOfCoAuthors",
   "title",
   "subtitle",
   "normalizedGenre",
+  "digitalSource",
+  "originalSourcePublisher",
+  "originalSourcePubPlace",
+  "originalSourceYear",
+  "originalSourceNumberOfPages",
   "yearNormalized",
   "size",
   "libretto",
@@ -43,7 +49,7 @@ declare variable $api:metadata-columns := (
   "numOfSpeakersFemale",
   "numOfSpeakersMale",
   "numOfSpeakersUnknown",
-  "numPersonGroups",
+  "numOfPersonGroups",
   "numConnectedComponents",
   "numEdges",
   "yearWritten",
@@ -77,7 +83,8 @@ function api:info() {
     "name": $expath/expath:title/string(),
     "version": $expath/@version/string(),
     "status": $repo/repo:status/string(),
-    "existdb": system:get-version()
+    "existdb": system:get-version(),
+    "base": $config:api-base
   }
 };
 
@@ -109,7 +116,13 @@ declare
   %output:method("text")
 function api:openapi-yaml() {
   let $path := $config:app-root || "/api.yaml"
-  return util:base64-decode(xs:string(util:binary-doc($path)))
+  let $expath := config:expath-descriptor()
+  let $yaml := util:base64-decode(xs:string(util:binary-doc($path)))
+  return replace(
+    replace($yaml, 'https://dracor.org/api', $config:api-base),
+    'version: [0-9.]+',
+    'version: ' || $expath/@version/string()
+  )
 };
 
 declare
@@ -480,9 +493,17 @@ function api:corpus-index($corpusname) {
               /tei:idno[@type="URL"][1]/string()
           ),
           map:entry("yearNormalized", $yearNormalized),
+          map:entry("yearPrinted", $years?print),
+          map:entry("yearPremiered", $years?premiere),
+          map:entry("yearWritten", $years?written),
+          (:
+            FIXME: the following year properties are deprecated and should be
+            removed in a future release
+           :)
           map:entry("printYear", $years?print),
           map:entry("premiereYear", $years?premiere),
           map:entry("writtenYear", $years?written),
+
           map:entry("networkSize", $network-size),
           map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),
           map:entry("wikidataId", dutil:get-play-wikidata-id($tei))
