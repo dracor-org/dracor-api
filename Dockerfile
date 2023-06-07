@@ -111,7 +111,7 @@ RUN apt-get update \
 
 USER dracor:dracor
 
-VOLUME ["${EXIST_DATA_DIR}"]
+#VOLUME ["${EXIST_DATA_DIR}"]
 
 HEALTHCHECK --interval=60s --timeout=5s \
   CMD curl -Lf http://localhost:8080${EXIST_CONTEXT_PATH} || exit 1
