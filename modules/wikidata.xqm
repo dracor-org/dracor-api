@@ -5,6 +5,10 @@ xquery version "3.1";
  :)
 module namespace wd = "http://dracor.org/ns/exist/v1/wikidata";
 
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+
+declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace sparqlres = "http://www.w3.org/2005/sparql-results#";
 declare variable $wd:sparql-endpoint := 'https://query.wikidata.org/sparql';
 
@@ -92,4 +96,19 @@ WHERE {
         if($img) then map:entry('imageUrl', $img) else ()
       ))
     )
+};
+
+(:~
+ : List all plays with ID, title, and Wikidata ID for Mix'n'match
+:)
+declare function wd:mixnmatch() {
+  (
+    "id,title,q&#10;",
+    for $tei in collection($config:data-root)/tei:TEI[@xml:id]
+    let $id := $tei/@xml:id/string()
+    let $titles := dutil:get-titles($tei)
+    let $q := dutil:get-play-wikidata-id($tei)
+    order by $id
+    return $id || ',"' || dutil:csv-escape($titles?main) || '",' ||  $q || "&#10;"
+  )
 };
