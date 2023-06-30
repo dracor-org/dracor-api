@@ -98,10 +98,5 @@ return (
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
   sm:chmod($sitelinks-job, 'rwsr-xr-x'),
-  exrest:register-module($restxq-module),
-
-  (: a note on using the RDF index :)
-  util:log-system-out(
-    "To use the RDF index the database needs to be restarted. "
-  )
+  exrest:register-module($restxq-module)
 )
