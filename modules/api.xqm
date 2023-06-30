@@ -1801,7 +1801,7 @@ function api:plays-with-character($id) {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/author/{$id}")
+  %rest:path("/v1/wikidata/author/{$id}")
   %rest:query-param("lang", "{$lang}")
   %rest:produces("application/json")
   %output:media-type("application/json")
