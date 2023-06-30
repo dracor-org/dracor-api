@@ -84,13 +84,6 @@ JSON output like this:
 curl http://localhost:8088/api/corpora/test | jq
 ```
 
-## `ant` Workflow
-
-If you prefer to run the eXist database directly without docker you can still
-use the old [`ant` based workflow](README-ant.md). However you will have to
-provision the metrics service and the triple store by yourself, which is why we
-recommend using docker compose instead.
-
 ## Atom Integration
 
 For the [Atom editor](https://atom.io) an [existdb
