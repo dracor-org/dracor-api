@@ -3,7 +3,7 @@ xquery version "3.1";
 (:~
  : Module bridging dracor and wikidata.
  :)
-module namespace wd = "http://dracor.org/ns/exist/wikidata";
+module namespace wd = "http://dracor.org/ns/exist/v0/wikidata";
 
 declare namespace sparqlres = "http://www.w3.org/2005/sparql-results#";
 declare variable $wd:sparql-endpoint := 'https://query.wikidata.org/sparql';

@@ -10,18 +10,26 @@ The API Documentation is available at https://dracor.org/doc/api/.
 ```sh
 git clone https://github.com/dracor-org/dracor-api.git
 cd dracor-api
-docker-compose up
+docker compose up
 # load data, see below
 ```
 
-We provide a [docker-compose.yml](docker-compose.yml) that allows to run an
+We provide a [compose.yml](compose.yml) that allows to run an
 eXist database with `dracor-api` locally, together with the supporting
 [dracor-metrics service](https://github.com/dracor-org/dracor-metrics) and a
 triple store. With [Docker installed](https://docs.docker.com/get-docker/)
 simply run:
 
 ```sh
-docker-compose up
+docker compose up
+```
+
+By default this sets up a password for the admin user of the eXist database
+which is printed to the console at the first start. If you want to use the
+database with an empty password run:
+
+```sh
+docker compose -f compose.yml -f compose.dev.yml up
 ```
 
 This builds the necessary images and starts the respective docker containers.
@@ -35,7 +43,7 @@ curl http://localhost:8088/api/info
 The docker-compose setup also includes a
 [DraCor frontend](https://github.com/dracor-org/dracor-frontend) connected to
 the local eXist instance. It can be accessed by opening http://localhost:8088/
-in a browser. 
+in a browser.
 
 ### Load Data
 
@@ -112,4 +120,4 @@ The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
 of the corpus data when the configured GitHub repository for the corpus changes.
 
 *Note:* For the webhook to work, the shared secret between DraCor and GitHub
-needs to be configured at `/db/data/dracor/config.xml` in the database.
+needs to be configured at `/db/data/dracor/secrets.xml` in the database.

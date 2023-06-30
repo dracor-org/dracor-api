@@ -3,10 +3,10 @@ xquery version "3.1";
 (:~
  : Module proving utility functions for dracor.
  :)
-module namespace dutil = "http://dracor.org/ns/exist/util";
+module namespace dutil = "http://dracor.org/ns/exist/v0/util";
 
 import module namespace functx="http://www.functx.com";
-import module namespace config = "http://dracor.org/ns/exist/config"
+import module namespace config = "http://dracor.org/ns/exist/v0/config"
   at "config.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
@@ -599,7 +599,6 @@ declare function dutil:get-corpus-meta-data(
   let $meta := map {
     "id": $id,
     "name": $name,
-    "playName": $name,
     "wikidataId": $wikidata-id,
     "normalizedGenre": dutil:get-genre($text-classes),
     "libretto": $text-classes = 'Libretto',

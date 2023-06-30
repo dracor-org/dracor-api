@@ -3,13 +3,13 @@ xquery version "3.1";
 (:~
  : Module for calculating and updating corpus metrics.
  :)
-module namespace metrics = "http://dracor.org/ns/exist/metrics";
+module namespace metrics = "http://dracor.org/ns/exist/v0/metrics";
 
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace util = "http://exist-db.org/xquery/util";
-import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
-import module namespace wd = "http://dracor.org/ns/exist/wikidata" at "wikidata.xqm";
+import module namespace config = "http://dracor.org/ns/exist/v0/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v0/util" at "util.xqm";
+import module namespace wd = "http://dracor.org/ns/exist/v0/wikidata" at "wikidata.xqm";
 
 declare namespace trigger = "http://exist-db.org/xquery/trigger";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";

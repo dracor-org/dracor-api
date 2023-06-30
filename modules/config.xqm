@@ -4,7 +4,7 @@ xquery version "3.1";
  : A set of helper functions to access the application context from
  : within a module.
  :)
-module namespace config="http://dracor.org/ns/exist/config";
+module namespace config="http://dracor.org/ns/exist/v0/config";
 
 declare namespace templates="http://exist-db.org/xquery/templates";
 
@@ -31,6 +31,9 @@ declare variable $config:app-root :=
         substring-before($modulePath, "/modules")
 ;
 
+declare variable $config:file := "/db/data/dracor/config-v0.xml";
+declare variable $config:secrets-file := "/db/data/dracor/secrets.xml";
+
 (:
   The base URL under which the REST API is hosted.
 
@@ -38,7 +41,7 @@ declare variable $config:app-root :=
   However the request object doesn't seem to be available in a RESTXQ context.
 :)
 declare variable $config:api-base :=
-  doc('/db/data/dracor/config.xml')//api-base/normalize-space();
+  doc($config:file)//api-base/normalize-space();
 
 declare variable $config:data-root := "/db/data/dracor/tei";
 
@@ -51,10 +54,10 @@ declare variable $config:sitelinks-root := "/db/data/dracor/sitelinks";
 declare variable $config:webhook-root := "/db/data/dracor/webhook";
 
 declare variable $config:webhook-secret :=
-  doc('/db/data/dracor/secrets.xml')//gh-webhook/normalize-space();
+  doc($config:secrets-file)//gh-webhook/normalize-space();
 
 declare variable $config:fuseki-pw :=
-  doc('/db/data/dracor/secrets.xml')//fuseki/normalize-space();
+  doc($config:secrets-file)//fuseki/normalize-space();
 
 (: the directory path in corpus repos where the TEI files reside :)
 declare variable $config:corpus-repo-prefix := 'tei';
@@ -66,11 +69,11 @@ declare variable $config:expath-descriptor :=
   doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
 declare variable $config:fuseki-server :=
-  doc('/db/data/dracor/config.xml')//services/fuseki/normalize-space();
+  doc($config:file)//services/fuseki/normalize-space();
 
 declare variable $config:metrics-server :=
   xs:anyURI(
-    doc('/db/data/dracor/config.xml')//services/metrics/normalize-space()
+    doc($config:file)//services/metrics/normalize-space()
   );
 
 (:~

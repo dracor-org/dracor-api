@@ -1,9 +1,9 @@
 xquery version "3.1";
 
-module namespace webhook = "http://dracor.org/ns/exist/webhook";
+module namespace webhook = "http://dracor.org/ns/exist/v0/webhook";
 
 import module namespace crypto="http://expath.org/ns/crypto";
-import module namespace config = "http://dracor.org/ns/exist/config"
+import module namespace config = "http://dracor.org/ns/exist/v0/config"
   at "config.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
@@ -186,7 +186,7 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
           "message": "Delivery accepted.",
           "result": $result,
           "scheduled": scheduler:schedule-xquery-periodic-job(
-            "/db/apps/dracor/jobs/process-webhook-delivery.xq",
+            $config:app-root ||  "/jobs/process-webhook-delivery.xq",
             1000,
             "webhook-update-" || $delivery,
             (
