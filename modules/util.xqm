@@ -1,7 +1,7 @@
 xquery version "3.1";
 
 (:~
- : Module proving utility functions for dracor.
+ : Module providing utility functions for dracor.
  :)
 module namespace dutil = "http://dracor.org/ns/exist/v1/util";
 
@@ -96,8 +96,7 @@ declare function dutil:get-doc(
  : @param $tei TEI document
  :)
 declare function dutil:get-dracor-id($tei as element(tei:TEI)) as xs:string* {
-  (: FIXME: remove support for idno after transition period :)
-  ($tei/@xml:id | $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text())[1]
+  $tei/@xml:id/text()
 };
 
 (:~
