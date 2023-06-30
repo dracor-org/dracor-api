@@ -1048,6 +1048,19 @@ paths:
         '400':
           description: Invalid character ID.
 
+  /wikidata/mixnmatch:
+    get:
+      summary: Endpoint for Wikidata Mix'n'match
+      operationId: wikidata-mixnmatch
+      tags: [wikidata]
+      responses:
+        '200':
+          description: List of plays (id, title, wikidata id).
+          content:
+            text/csv:
+              schema:
+                type: tring
+
   /webhook/github:
     post:
       summary: GitHub Webhook
