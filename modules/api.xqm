@@ -474,6 +474,7 @@ function api:corpus-index($corpusname) {
         let $network-size := doc($metrics-url)//network/size/text()
         let $yearNormalized := dutil:get-normalized-year($tei)
         let $premiere-date := dutil:get-premiere-date($tei)
+        let $source := dutil:get-source($tei)
         order by $authors[1]?name
         return map:merge((
           map:entry("id", $id),
@@ -483,15 +484,7 @@ function api:corpus-index($corpusname) {
           if ($titlesEng?main) then map:entry("titleEn", $titlesEng?main) else (),
           if ($titlesEng?sub) then map:entry("subtitleEn", $titlesEng?sub) else (),
           map:entry("authors", array { $authors }),
-          map:entry(
-            "source",
-            $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()
-          ),
-          map:entry(
-            "sourceUrl",
-            $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-              /tei:idno[@type="URL"][1]/string()
-          ),
+          if (count($source)) then map:entry("source", $source) else (),
           map:entry("yearNormalized", $yearNormalized),
           map:entry("yearPrinted", $years?print),
           map:entry("yearPremiered", $years?premiere),

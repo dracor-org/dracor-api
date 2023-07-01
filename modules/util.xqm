@@ -876,6 +876,23 @@ declare function dutil:get-titles(
 };
 
 (:~
+ : Retrieve digital source from TEI document.
+ :
+ : @param $tei
+ :)
+declare function dutil:get-source($tei as element(tei:TEI)) as map()? {
+  let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+  return if (count($source)) then map:merge((
+    if ($source/tei:name) then
+      map {'name': $source/tei:name[1]/normalize-space()}
+    else (),
+    if ($source/tei:idno[@type="URL"]) then
+      map {'url': $source/tei:idno[@type="URL"][1]/normalize-space()}
+    else ()
+  )) else ()
+};
+
+(:~
  : Extract Wikidata ID for play from standOff.
  :
  : @param $tei TEI element
@@ -940,7 +957,7 @@ declare function dutil:get-play-info(
     let $id := dutil:get-dracor-id($tei)
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, 'eng')
-    let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+    let $source := dutil:get-source($tei)
     let $orig-source := $tei//tei:bibl[@type="originalSource"][1]/normalize-space(.)
     let $cast := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $cast[last()]
@@ -1025,12 +1042,7 @@ declare function dutil:get-play-info(
       if($orig-source) then
         map:entry("originalSource", $orig-source)
       else (),
-      if($source) then
-        map:entry("source", map {
-          "name": $source/tei:name/string(),
-          "url": $source/tei:idno[@type="URL"][1]/string()
-        })
-      else (),
+      if(count($source)) then map:entry("source", $source) else (),
       if($premiere-date) then map:entry("premiereDate", $premiere-date) else (),
       if(count($relations)) then
         map:entry("relations", array{$relations})
