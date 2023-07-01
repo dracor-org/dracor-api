@@ -1801,7 +1801,7 @@ function api:plays-with-character($id) {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/author/{$id}")
+  %rest:path("/v1/wikidata/author/{$id}")
   %rest:query-param("lang", "{$lang}")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -1822,4 +1822,23 @@ function api:authorInfo($id, $lang) {
       map {"error": "invalid language code"}
     )
   else wd:get-author-info($id, $lang)
+};
+
+(:~
+ : Endpoint for Wikidata Mix'n'match
+ :
+ : Returns a list of DraCor ID, title and Wikidata ID for each play in the
+ : database. See https://meta.wikimedia.org/wiki/Mix'n'match/Import.
+ :
+ : @param $corpusname Corpus name
+ : @result CSV list
+ :)
+declare
+  %rest:GET
+  %rest:path("/v1/wikidata/mixnmatch")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:wikidata-mixnmatch() {
+  wd:mixnmatch()
 };
