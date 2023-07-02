@@ -96,7 +96,7 @@ declare function dutil:get-doc(
  : @param $tei TEI document
  :)
 declare function dutil:get-dracor-id($tei as element(tei:TEI)) as xs:string* {
-  $tei/@xml:id/text()
+  $tei/@xml:id/string()
 };
 
 (:~
