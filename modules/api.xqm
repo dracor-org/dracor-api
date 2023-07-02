@@ -149,22 +149,19 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
 };
 
 declare function local:id-to-url ($id, $accept) {
-  let $base := "https://dracor.org/"
-  (: FIXME: remove support for idno after transition period :)
-  let $tei := collection($config:data-root)/tei:TEI[
-    @xml:id = $id or
-    .//tei:publicationStmt/tei:idno[@type="dracor" and .= $id]][1]
+  let $tei := collection($config:data-root)/tei:TEI[@xml:id = $id][1]
   let $parts := tokenize(base-uri($tei), "[/.]")
   let $corpusname := $parts[last()-2]
   let $playname := $parts[last()-1]
 
   return if ($tei) then
     if ($accept = "application/rdf+xml") then
-      $base || "api/corpora/" || $corpusname || "/play/" || $playname || "/rdf"
+      $config:api-base || "/corpora/" || $corpusname || "/play/" || $playname || "/rdf"
     else if ($accept = "application/json") then
-      $base || "api/corpora/" || $corpusname || "/play/" || $playname
+      $config:api-base || "/corpora/" || $corpusname || "/play/" || $playname
     else
-      $base || $corpusname || "/" || $playname
+      let $p := tokenize($config:api-base, '/')
+      return $p[1] || '//' || $p[3] || '/' || $corpusname || "/" || $playname
   else ()
 };
 
