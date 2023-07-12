@@ -24,7 +24,7 @@ declare function local:store ($file-path, $content) {
 declare function local:create-config-file ()
 as item()? {
   if(doc($config:file)/config) then
-    ()
+    (util:log-system-out("Config file exists at " || $config:file))
   else (
     util:log-system-out("Creating " || $config:file),
     local:store(
@@ -67,7 +67,7 @@ as item()? {
 declare function local:create-secrets-file ()
 as item()? {
   if(doc($config:secrets-file)/secrets) then
-    ()
+    (util:log-system-out("Secrets file exists at " || $config:secrets-file))
   else (
     util:log-system-out("Creating " || $config:secrets-file),
     local:store(
