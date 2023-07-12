@@ -106,7 +106,7 @@ declare function local:handle-delivery (
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/webhook/github")
+  %rest:path("/v1/webhook/github")
   %rest:header-param("User-Agent", "{$agent}")
   %rest:header-param("X-GitHub-Event", "{$event}")
   %rest:header-param("X-GitHub-Delivery", "{$delivery}")
