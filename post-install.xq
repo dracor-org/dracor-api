@@ -24,8 +24,8 @@ declare function local:store ($file-path, $content) {
 declare function local:create-config-file ()
 as item()? {
   if(doc($config:file)/config) then
-    ()
-  else
+    (util:log-system-out("Config file exists at " || $config:file))
+  else (
     util:log-system-out("Creating " || $config:file),
     local:store(
       $config:file,
@@ -55,6 +55,7 @@ as item()? {
         </services>
       </config>
     )
+  )
 };
 
 (: We create an initial config file the values of which can be passed by the
@@ -66,8 +67,8 @@ as item()? {
 declare function local:create-secrets-file ()
 as item()? {
   if(doc($config:secrets-file)/secrets) then
-    ()
-  else
+    (util:log-system-out("Secrets file exists at " || $config:secrets-file))
+  else (
     util:log-system-out("Creating " || $config:secrets-file),
     local:store(
       $config:secrets-file,
@@ -78,6 +79,7 @@ as item()? {
     ),
     (: FIXME: find a better solution to protect the webhook secret :)
     sm:chmod(xs:anyURI($config:secrets-file), 'rw-------')
+  )
 };
 
 (: elevate privileges for github webhook :)
