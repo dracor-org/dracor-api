@@ -579,10 +579,10 @@ declare function dutil:get-corpus-meta-data(
   )
 
   let $digitalSource := $tei//tei:sourceDesc/
-    tei:bibl[@type="digitalSource"]/tei:idno[@type="URL"]/text()
+    tei:bibl[@type="digitalSource"]/tei:idno[@type="URL"][1]/text()
 
   let $origSource := $tei//tei:sourceDesc//
-    tei:bibl[@type="originalSource"]
+    tei:bibl[@type="originalSource"][1]
   let $origSourcePublisher := normalize-space($origSource/tei:publisher)
   let $origSourcePubPlace := string-join(
     $origSource/tei:pubPlace ! normalize-space(), ", "
