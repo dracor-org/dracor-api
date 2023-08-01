@@ -3,6 +3,5 @@ devel/
 .ant-targets-build.xml
 .existdb.json
 expath-pkg.xml
-dracor-latest.xar
-dracor-v0-latest.xar
 local.build.properties
+*.xar
