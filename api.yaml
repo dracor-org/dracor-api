@@ -1071,11 +1071,12 @@ paths:
   /wikidata/mixnmatch:
     get:
       summary: Endpoint for Wikidata Mix'n'match
+      description: See https://meta.wikimedia.org/wiki/Mix'n'match/Import.
       operationId: wikidata-mixnmatch
       tags: [wikidata]
       responses:
         '200':
-          description: List of plays (id, title, wikidata id).
+          description: List of plays (id, name, q [wikidata ID]).
           content:
             text/csv:
               schema:
