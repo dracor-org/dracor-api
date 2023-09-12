@@ -84,22 +84,27 @@ JSON output like this:
 curl http://localhost:8088/api/corpora/test | jq
 ```
 
-## Atom Integration
+## VS Code Integration
 
-For the [Atom editor](https://atom.io) an [existdb
-package](https://atom.io/packages/existdb) is available that allows syncing
-changes made in the local git repo to the `dracor-api` application stored in
-eXist.
+For the [Visual Studio Code](https://code.visualstudio.com) editor an [eXist-db
+extension](https://marketplace.visualstudio.com/items?itemName=eXist-db.existdb-vscode)
+is available that allows syncing a local working directory with an eXist
+database thus enabling comfortable development of XQuery code.
 
-After installing the package run the following command to create a
-`.existdb.json` configuration file that connects your working directory to the
-database:
+We provide a [configuration template](.existdb.json.tmpl) to connect your
+`dracor-api` working copy to the `dracor-v1` workspace in a local eXist database
+(e.g. the one started with `docker compose up`).
+
+After installing the VS Code extension copy the template to create an
+`.existdb.json` configuration file:
 
 ```sh
-sed 's/@jetty.http.port@/8080/' < .existdb.json.tmpl > .existdb.json
+cp .existdb.json.tmpl .existdb.json
 ```
 
-Then restart Atom.
+Adjust the settings if necessary and restart VS Code. You should now be able to
+start the synchronization from a button in the status bar at the bottom of the
+editor window.
 
 ## XAR Package
 
