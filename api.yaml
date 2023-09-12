@@ -1067,6 +1067,20 @@ paths:
             application/json:
               schema:
                 type: object
+        '404':
+          description: Invalid or non existing author ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: an error message
+              example: |
+                {
+                  "error": "invalid author ID"
+                }
 
   /wikidata/mixnmatch:
     get:
