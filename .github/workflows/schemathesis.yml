@@ -1,0 +1,41 @@
+name: Testing API
+
+on:
+  # maybe run on pull requests?
+  pull_request:
+    paths:
+      - 'api.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+    
+jobs:
+  api-tests:
+    runs-on: ubuntu-22.04
+    steps:
+
+      - name: Cache python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          # choose this file for now as the cache key
+          key: pip-${{ hashFiles('.github/workflows/schemathesis.yaml') }}
+          restore-keys: pip-
+
+      # https://github.com/marketplace/actions/schemathesis
+      - uses: schemathesis/action@v1
+        with: 
+          # test against the staging server
+          schema: https://staging.dracor.org/api/openapi.yaml
+          # do not upload report to schemathesis.io
+          report: false
+          max-examples: 10
+
+          # you can increase the number of parallel workers
+          # args: >
+          #   --workers 2
+
+          # you can choose to only test specific endpoints by providing CLI options
+          # args: >
+          # --endpoint api/info
