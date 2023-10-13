@@ -485,7 +485,7 @@ function api:corpus-index($corpusname) {
           map:entry("yearNormalized", $yearNormalized),
           map:entry("yearPrinted", $years?print),
           map:entry("yearPremiered", $years?premiere),
-          if($premiere-date) then map:entry("premiereDate", $premiere-date) else (),
+          if($premiere-date) then map:entry("datePremiered", $premiere-date) else (),
           map:entry("yearWritten", $years?written),
           map:entry("networkSize", $network-size),
           map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),

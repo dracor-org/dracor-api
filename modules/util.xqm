@@ -1043,7 +1043,7 @@ declare function dutil:get-play-info(
         map:entry("originalSource", $orig-source)
       else (),
       if(count($source)) then map:entry("source", $source) else (),
-      if($premiere-date) then map:entry("premiereDate", $premiere-date) else (),
+      if($premiere-date) then map:entry("datePremiered", $premiere-date) else (),
       if(count($relations)) then
         map:entry("relations", array{$relations})
       else ()
