@@ -660,7 +660,7 @@ function api:corpus-meta-data($corpusname) {
       )
     else
       let $meta := dutil:get-corpus-meta-data($corpusname)
-      return $meta
+      return array { $meta }
 };
 
 declare function api:get-corpus-meta-data-csv($corpusname) {
