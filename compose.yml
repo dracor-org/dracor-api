@@ -21,7 +21,7 @@ services:
       - metrics
   fuseki:
     image: "dracor/fuseki"
-    build: https://github.com/dracor-org/dracor-fuseki.git#main
+    build: https://github.com/dracor-org/dracor-fuseki.git#v1.0.0
     environment:
       - ADMIN_PASSWORD=qwerty
     ports:
@@ -31,12 +31,13 @@ services:
     volumes:
       - fusekidata:/fuseki
   metrics:
-    build: https://github.com/dracor-org/dracor-metrics.git#main
+    build: https://github.com/dracor-org/dracor-metrics.git#v1.2.0
     ports:
       - "8030:8030"
   frontend:
     build:
-      context: https://github.com/dracor-org/dracor-frontend.git#main
+      # TODO: change to #v2.0.0 before 1.0 release
+      context: https://github.com/dracor-org/dracor-frontend.git#api-v1
     environment:
       DRACOR_API: http://api:8080/exist/restxq/v1
     ports:
