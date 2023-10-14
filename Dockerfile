@@ -3,7 +3,7 @@ FROM eclipse-temurin:8-jre as builder
 
 USER root
 
-ENV ANT_VERSION 1.10.12
+ENV ANT_VERSION 1.10.14
 ENV ANT_HOME /etc/ant-${ANT_VERSION}
 
 WORKDIR /tmp
@@ -11,11 +11,9 @@ WORKDIR /tmp
 RUN apt update && apt install -y git curl
 
 RUN curl -L -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
-    && mkdir ant-${ANT_VERSION} \
     && tar -zxvf apache-ant-${ANT_VERSION}-bin.tar.gz \
     && mv apache-ant-${ANT_VERSION} ${ANT_HOME} \
     && rm apache-ant-${ANT_VERSION}-bin.tar.gz \
-    && rm -rf ant-${ANT_VERSION} \
     && rm -rf ${ANT_HOME}/manual \
     && unset ANT_VERSION
 
