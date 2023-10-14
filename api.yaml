@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 
 info:
-  version: 0.83.1
+  version: 1.0.0
   title: DraCor API
   contact:
     email: "fr.fischer@fu-berlin.de"
@@ -29,10 +29,10 @@ paths:
             application/json:
               example:
                 {
-                  "existdb": "6.0.1",
+                  "existdb": "6.2.0",
                   "name": "DraCor",
-                  "status": "beta",
-                  "version": "0.83.0"
+                  "status": "stable",
+                  "version": "1.0.0"
                 }
 
   /corpora:
