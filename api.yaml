@@ -348,7 +348,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}:
+  /corpora/{corpusname}/plays/{playname}:
     get:
       summary: Get metadata and network metrics for a single play
       operationId: play-info
@@ -376,7 +376,7 @@ paths:
         '404':
           description: No such play under this URI
 
-  /corpora/{corpusname}/play/{playname}/metrics:
+  /corpora/{corpusname}/plays/{playname}/metrics:
     get:
       summary: Get network metrics for a single play
       operationId: play-metrics
@@ -392,7 +392,7 @@ paths:
               schema:
                 type: object
 
-  /corpora/{corpusname}/play/{playname}/tei:
+  /corpora/{corpusname}/plays/{playname}/tei:
     get:
       summary: Get TEI document of a single play
       operationId: play-tei
@@ -448,7 +448,7 @@ paths:
           description: >-
             There is no corpus with the given `corpusname`.
 
-  /corpora/{corpusname}/play/{playname}/rdf:
+  /corpora/{corpusname}/plays/{playname}/rdf:
     get:
       summary: Get RDF document for a single play
       operationId: play-rdf
@@ -464,7 +464,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/cast:
+  /corpora/{corpusname}/plays/{playname}/cast:
     get:
       summary: Get a list of characters of a play
       operationId: get-cast
@@ -530,7 +530,7 @@ paths:
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
                 "luka_lukich","Лука Лукич","MALE","false","8","24","291"
 
-  /corpora/{corpusname}/play/{playname}/cast/csv:
+  /corpora/{corpusname}/plays/{playname}/cast/csv:
     get:
       summary: Get a list of characters of a play (CSV)
       operationId: get-cast-csv
@@ -552,7 +552,7 @@ paths:
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
                 "luka_lukich","Лука Лукич","MALE","false","8","24","291"
 
-  /corpora/{corpusname}/play/{playname}/networkdata/csv:
+  /corpora/{corpusname}/plays/{playname}/networkdata/csv:
     get:
       summary: Get network data of a play as CSV
       operationId: network-csv
@@ -568,7 +568,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/networkdata/gexf:
+  /corpora/{corpusname}/plays/{playname}/networkdata/gexf:
     get:
       summary: Get network data of a play as GEXF
       operationId: network-gexf
@@ -584,7 +584,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/networkdata/graphml:
+  /corpora/{corpusname}/plays/{playname}/networkdata/graphml:
     get:
       summary: Get network data of a play as GraphML
       operationId: network-graphml
@@ -600,7 +600,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/relations/csv:
+  /corpora/{corpusname}/plays/{playname}/relations/csv:
     get:
       summary: Get relation data of a play as CSV
       operationId: relations-csv
@@ -630,7 +630,7 @@ paths:
         '404':
           description: Unknown play or play does not provide relation data
 
-  /corpora/{corpusname}/play/{playname}/relations/gexf:
+  /corpora/{corpusname}/plays/{playname}/relations/gexf:
     get:
       summary: Get relation data of a play as GEXF
       operationId: relations-gexf
@@ -743,7 +743,7 @@ paths:
         '404':
           description: Unknown play or play does not provide relation data
 
-  /corpora/{corpusname}/play/{playname}/relations/graphml:
+  /corpora/{corpusname}/plays/{playname}/relations/graphml:
     get:
       summary: Get relation data of a play as GraphML
       operationId: relations-graphml
@@ -846,12 +846,12 @@ paths:
         '404':
           description: Unknown play or play does not provide relation data
 
-  /corpora/{corpusname}/play/{playname}/segmentation:
+  /corpora/{corpusname}/plays/{playname}/segmentation:
     get:
       summary: Get a list of segments and characters of a play
       description: |
         This endpoint is deprecated. All the information is now available as
-        JSON from `/corpora/{corpusname}/play/{playname}`. Please use that
+        JSON from `/corpora/{corpusname}/plays/{playname}`. Please use that
         endpoint instead.
       operationId: play-segments-xml
       deprecated: true
@@ -870,7 +870,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/spoken-text:
+  /corpora/{corpusname}/plays/{playname}/spoken-text:
     get:
       summary: Get spoken text of a play (excluding stage directions)
       operationId: play-spoken-text
@@ -914,7 +914,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/spoken-text-by-character:
+  /corpora/{corpusname}/plays/{playname}/spoken-text-by-character:
     get:
       summary: Get spoken text for each character of a play
       operationId: play-spoken-text-by-character
@@ -949,7 +949,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/stage-directions:
+  /corpora/{corpusname}/plays/{playname}/stage-directions:
     get:
       summary: Get all stage directions of a play
       operationId: play-stage-directions
@@ -965,7 +965,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/stage-directions-with-speakers:
+  /corpora/{corpusname}/plays/{playname}/stage-directions-with-speakers:
     get:
       summary: Get all stage directions of a play including speakers
       operationId: play-stage-directions-with-speakers
