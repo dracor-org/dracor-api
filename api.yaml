@@ -11,7 +11,7 @@ info:
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 
 servers:
-  - url: https://dracor.org/api
+  - url: https://dracor.org/api/v1
 
 paths:
   /info:
@@ -64,7 +64,7 @@ paths:
                     "name": "ger",
                     "title": "German Drama Corpus",
                     "repository": "https://github.com/dracor-org/gerdracor",
-                    "uri": "https://dracor.org/api/corpora/ger",
+                    "uri": "https://dracor.org/api/v1/corpora/ger",
                     "description": "Edited by Frank Fischer and Peer Trilcke. Features 501 German-language plays from the 1730s to the 1940s.",
                     "licence": "CC0",
                     "licenceUrl": "https://creativecommons.org/share-your-work/public-domain/cc0/",
@@ -88,7 +88,7 @@ paths:
                     "name": "rus",
                     "title": "Russian Drama Corpus",
                     "repository": "https://github.com/dracor-org/rusdracor",
-                    "uri": "https://dracor.org/api/corpora/rus",
+                    "uri": "https://dracor.org/api/v1/corpora/rus",
                     "metrics": {
                       "characters": 2440,
                       "female": 564,
@@ -109,7 +109,7 @@ paths:
                     "name": "shake",
                     "title": "Shakespeare Drama Corpus",
                     "repository": "https://github.com/dracor-org/shakedracor",
-                    "uri": "https://dracor.org/api/corpora/shake",
+                    "uri": "https://dracor.org/api/v1/corpora/shake",
                     "metrics": {
                       "characters": 1433,
                       "female": 0,

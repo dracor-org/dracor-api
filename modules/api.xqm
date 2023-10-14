@@ -119,7 +119,7 @@ function api:openapi-yaml() {
   let $expath := config:expath-descriptor()
   let $yaml := util:base64-decode(xs:string(util:binary-doc($path)))
   return replace(
-    replace($yaml, 'https://dracor.org/api', $config:api-base),
+    replace($yaml, 'https://dracor.org/api/v1', $config:api-base),
     'version: [0-9.]+',
     'version: ' || $expath/@version/string()
   )

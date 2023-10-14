@@ -10,7 +10,7 @@ services:
         - FUSEKI_SECRET=qwerty
         - GITHUB_WEBHOOK_SECRET=qwerty
     environment:
-      - DRACOR_API_BASE=http://localhost:8088/api
+      - DRACOR_API_BASE=http://localhost:8088/api/v1
     ports:
       - "8080:8080"
     volumes:
