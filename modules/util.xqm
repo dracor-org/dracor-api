@@ -955,6 +955,8 @@ declare function dutil:get-play-info(
   else
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
+    let $uri :=
+      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := dutil:get-source($tei)
@@ -999,6 +1001,7 @@ declare function dutil:get-play-info(
     return map:merge((
       map {
         "id": $id,
+        "uri": $uri,
         "name": $playname,
         "corpus": $corpusname,
         "title": $titles?main,

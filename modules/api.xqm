@@ -475,6 +475,7 @@ function api:corpus-index($corpusname) {
         order by $authors[1]?name
         return map:merge((
           map:entry("id", $id),
+          map:entry("uri", $play-uri),
           map:entry("name", $name),
           map:entry("title", $titles?main),
           if ($titles?sub) then map:entry("subtitle", $titles?sub) else (),
