@@ -1,14 +1,14 @@
 {
   "servers": {
     "localhost": {
-      "server": "http://localhost:@jetty.http.port@/exist",
+      "server": "http://localhost:8080/exist",
       "user": "admin",
       "password": ""
     }
   },
   "sync": {
     "server": "localhost",
-    "root": "/db/apps/dracor-v0",
+    "root": "/db/apps/dracor-v1",
     "active": true,
     "ignore": [
       ".existdb.json*",
@@ -17,6 +17,7 @@
       "build.properties",
       "build/**",
       "compose*.yml",
+      "Dockerfile",
       "devel/**",
       "*.xar"
     ]

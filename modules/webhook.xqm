@@ -1,9 +1,9 @@
 xquery version "3.1";
 
-module namespace webhook = "http://dracor.org/ns/exist/v0/webhook";
+module namespace webhook = "http://dracor.org/ns/exist/v1/webhook";
 
 import module namespace crypto="http://expath.org/ns/crypto";
-import module namespace config = "http://dracor.org/ns/exist/v0/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "config.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
@@ -106,7 +106,7 @@ declare function local:handle-delivery (
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/webhook/github")
+  %rest:path("/v1/webhook/github")
   %rest:header-param("User-Agent", "{$agent}")
   %rest:header-param("X-GitHub-Event", "{$event}")
   %rest:header-param("X-GitHub-Delivery", "{$delivery}")

@@ -1,12 +1,12 @@
 xquery version "3.1";
 
 (:~
- : Module proving utility functions for dracor.
+ : Module providing utility functions for dracor.
  :)
-module namespace dutil = "http://dracor.org/ns/exist/v0/util";
+module namespace dutil = "http://dracor.org/ns/exist/v1/util";
 
 import module namespace functx="http://www.functx.com";
-import module namespace config = "http://dracor.org/ns/exist/v0/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "config.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
@@ -96,8 +96,7 @@ declare function dutil:get-doc(
  : @param $tei TEI document
  :)
 declare function dutil:get-dracor-id($tei as element(tei:TEI)) as xs:string* {
-  (: FIXME: remove support for idno after transition period :)
-  ($tei/@xml:id | $tei//tei:publicationStmt/tei:idno[@type="dracor"]/text())[1]
+  $tei/@xml:id/string()
 };
 
 (:~
@@ -358,6 +357,21 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
   )
 
   return $years
+};
+
+(:~
+ : Retrieve premiere date for the play passed in $tei.
+ :
+ : This function only returns a value when the exact date of the premiere in ISO
+ : format (YYYY-MM-DD) is specified in tei:standOff.
+ :
+ : @param $tei The TEI root element of a play
+ : @return ISO date string
+ :)
+declare function dutil:get-premiere-date ($tei as element(tei:TEI)*) as xs:string* {
+  let $date := $tei//tei:standOff/tei:listEvent/tei:event
+    [@type = "premiere"]/@when
+  return if (matches($date, "^-?[0-9]{4}-[0-9]{2}-[0-9]{2}")) then $date else ()
 };
 
 (:~
@@ -862,6 +876,23 @@ declare function dutil:get-titles(
 };
 
 (:~
+ : Retrieve digital source from TEI document.
+ :
+ : @param $tei
+ :)
+declare function dutil:get-source($tei as element(tei:TEI)) as map()? {
+  let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+  return if (count($source)) then map:merge((
+    if ($source/tei:name) then
+      map {'name': $source/tei:name[1]/normalize-space()}
+    else (),
+    if ($source/tei:idno[@type="URL"]) then
+      map {'url': $source/tei:idno[@type="URL"][1]/normalize-space()}
+    else ()
+  )) else ()
+};
+
+(:~
  : Extract Wikidata ID for play from standOff.
  :
  : @param $tei TEI element
@@ -924,9 +955,11 @@ declare function dutil:get-play-info(
   else
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
+    let $uri :=
+      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, 'eng')
-    let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+    let $source := dutil:get-source($tei)
     let $orig-source := $tei//tei:bibl[@type="originalSource"][1]/normalize-space(.)
     let $cast := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $cast[last()]
@@ -956,6 +989,7 @@ declare function dutil:get-play-info(
     let $text-classes := dutil:get-text-classes($tei)
 
     let $years := dutil:get-years-iso($tei)
+    let $premiere-date := dutil:get-premiere-date($tei)
 
     let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
     let $all-in-index := $all-in-segment div count($segments?*)
@@ -967,16 +1001,12 @@ declare function dutil:get-play-info(
     return map:merge((
       map {
         "id": $id,
+        "uri": $uri,
         "name": $playname,
         "corpus": $corpusname,
         "title": $titles?main,
-        "author": map {
-          "name": $authors[1]?name,
-          "warning": "The single author property is deprecated. " ||
-          "Use the array of 'authors' instead!"
-        },
         "authors": array { for $author in $authors return $author },
-        "genre": dutil:get-genre($text-classes),
+        "normalizedGenre": dutil:get-genre($text-classes),
         "libretto": $text-classes = 'Libretto',
         "allInSegment": $all-in-segment,
         "allInIndex": $all-in-index,
@@ -1015,12 +1045,8 @@ declare function dutil:get-play-info(
       if($orig-source) then
         map:entry("originalSource", $orig-source)
       else (),
-      if($source) then
-        map:entry("source", map {
-          "name": $source/tei:name/string(),
-          "url": $source/tei:idno[@type="URL"][1]/string()
-        })
-      else (),
+      if(count($source)) then map:entry("source", $source) else (),
+      if($premiere-date) then map:entry("datePremiered", $premiere-date) else (),
       if(count($relations)) then
         map:entry("relations", array{$relations})
       else ()

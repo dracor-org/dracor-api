@@ -1,23 +1,19 @@
 # START STAGE 1
-FROM openjdk:8-jdk-slim as builder
+FROM eclipse-temurin:8-jre as builder
 
 USER root
 
-ENV ANT_VERSION 1.10.12
+ENV ANT_VERSION 1.10.14
 ENV ANT_HOME /etc/ant-${ANT_VERSION}
 
 WORKDIR /tmp
 
-RUN apt-get update && apt-get install -y \
-    git \
-    curl
+RUN apt update && apt install -y git curl
 
 RUN curl -L -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
-    && mkdir ant-${ANT_VERSION} \
     && tar -zxvf apache-ant-${ANT_VERSION}-bin.tar.gz \
     && mv apache-ant-${ANT_VERSION} ${ANT_HOME} \
     && rm apache-ant-${ANT_VERSION}-bin.tar.gz \
-    && rm -rf ant-${ANT_VERSION} \
     && rm -rf ${ANT_HOME}/manual \
     && unset ANT_VERSION
 
@@ -33,7 +29,7 @@ RUN ant \
 # The following has widely been copied from
 # https://github.com/peterstadler/existdb-docker/blob/28e90e782a383eb135e721fd0b846d5a6960d315/Dockerfile
 
-FROM openjdk:8-jre-slim
+FROM eclipse-temurin:8-jre
 
 ARG EXIST_VERSION
 ARG MAX_MEMORY
@@ -45,7 +41,7 @@ ARG METRICS_SERVER
 ARG FUSEKI_SECRET
 ARG GITHUB_WEBHOOK_SECRET
 
-ENV EXIST_VERSION ${EXIST_VERSION:-6.0.1}
+ENV EXIST_VERSION ${EXIST_VERSION:-6.2.0}
 ENV EXIST_URL ${EXIST_URL:-https://github.com/eXist-db/exist/releases/download/eXist-${EXIST_VERSION}/exist-installer-${EXIST_VERSION}.jar}
 ENV EXIST_HOME /opt/exist
 ENV MAX_MEMORY ${MAX_MEMORY:-2048}
@@ -77,7 +73,8 @@ COPY adjust-conf-files.xsl ${EXIST_HOME}/
 
 # main installation put into one RUN to squeeze image size
 RUN apt-get update \
-    && apt-get install -y curl pwgen zip \
+    && apt dist-upgrade -y \
+    && apt install -y curl pwgen zip \
     && echo "INSTALL_PATH=${EXIST_HOME}" > "/tmp/options.txt" \
     && echo "MAX_MEMORY=${MAX_MEMORY}" >> "/tmp/options.txt" \
     && echo "dataDir=${EXIST_DATA_DIR}" >> "/tmp/options.txt" \
@@ -110,8 +107,6 @@ RUN apt-get update \
     && find ${EXIST_HOME} -name log4j-core-*.jar -exec zip -q -d {} org/apache/logging/log4j/core/lookup/JndiLookup.class \;
 
 USER dracor:dracor
-
-VOLUME ["${EXIST_DATA_DIR}"]
 
 HEALTHCHECK --interval=60s --timeout=5s \
   CMD curl -Lf http://localhost:8080${EXIST_CONTEXT_PATH} || exit 1

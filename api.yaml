@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 
 info:
-  version: 0.83.1
+  version: 1.0.0
   title: DraCor API
   contact:
     email: "fr.fischer@fu-berlin.de"
@@ -11,7 +11,7 @@ info:
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 
 servers:
-  - url: https://dracor.org/api
+  - url: https://dracor.org/api/v1
 
 paths:
   /info:
@@ -29,10 +29,10 @@ paths:
             application/json:
               example:
                 {
-                  "existdb": "6.0.1",
+                  "existdb": "6.2.0",
                   "name": "DraCor",
-                  "status": "beta",
-                  "version": "0.83.0"
+                  "status": "stable",
+                  "version": "1.0.0"
                 }
 
   /corpora:
@@ -64,7 +64,7 @@ paths:
                     "name": "ger",
                     "title": "German Drama Corpus",
                     "repository": "https://github.com/dracor-org/gerdracor",
-                    "uri": "https://dracor.org/api/corpora/ger",
+                    "uri": "https://dracor.org/api/v1/corpora/ger",
                     "description": "Edited by Frank Fischer and Peer Trilcke. Features 501 German-language plays from the 1730s to the 1940s.",
                     "licence": "CC0",
                     "licenceUrl": "https://creativecommons.org/share-your-work/public-domain/cc0/",
@@ -88,7 +88,7 @@ paths:
                     "name": "rus",
                     "title": "Russian Drama Corpus",
                     "repository": "https://github.com/dracor-org/rusdracor",
-                    "uri": "https://dracor.org/api/corpora/rus",
+                    "uri": "https://dracor.org/api/v1/corpora/rus",
                     "metrics": {
                       "characters": 2440,
                       "female": 564,
@@ -109,7 +109,7 @@ paths:
                     "name": "shake",
                     "title": "Shakespeare Drama Corpus",
                     "repository": "https://github.com/dracor-org/shakedracor",
-                    "uri": "https://dracor.org/api/corpora/shake",
+                    "uri": "https://dracor.org/api/v1/corpora/shake",
                     "metrics": {
                       "characters": 1433,
                       "female": 0,
@@ -224,12 +224,12 @@ paths:
                 type: object
                 required:
                   - title
-                  - dramas
+                  - plays
                 properties:
                   title:
                     type: string
                     description: corpus title
-                  dramas:
+                  plays:
                     type: array
                     description: array of plays
                     items:
@@ -325,30 +325,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/metadata.csv:
-    get:
-      summary: List of metadata for all plays in a corpus
-      description: >-
-        This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata`
-        with an appropriate `Accept` header instead.
-      operationId: corpus-metadata-csv
-      tags: [public]
-      deprecated: true
-      parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Returns a comma separated list of metadata for all plays
-          content:
-            text/csv:
-              schema:
-                type: string
-
-  /corpora/{corpusname}/play/{playname}:
+  /corpora/{corpusname}/plays/{playname}:
     get:
       summary: Get metadata and network metrics for a single play
       operationId: play-info
@@ -376,7 +353,7 @@ paths:
         '404':
           description: No such play under this URI
 
-  /corpora/{corpusname}/play/{playname}/metrics:
+  /corpora/{corpusname}/plays/{playname}/metrics:
     get:
       summary: Get network metrics for a single play
       operationId: play-metrics
@@ -392,7 +369,7 @@ paths:
               schema:
                 type: object
 
-  /corpora/{corpusname}/play/{playname}/tei:
+  /corpora/{corpusname}/plays/{playname}/tei:
     get:
       summary: Get TEI document of a single play
       operationId: play-tei
@@ -448,7 +425,7 @@ paths:
           description: >-
             There is no corpus with the given `corpusname`.
 
-  /corpora/{corpusname}/play/{playname}/rdf:
+  /corpora/{corpusname}/plays/{playname}/rdf:
     get:
       summary: Get RDF document for a single play
       operationId: play-rdf
@@ -464,7 +441,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/cast:
+  /corpora/{corpusname}/plays/{playname}/cast:
     get:
       summary: Get a list of characters of a play
       operationId: get-cast
@@ -530,7 +507,7 @@ paths:
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
                 "luka_lukich","Лука Лукич","MALE","false","8","24","291"
 
-  /corpora/{corpusname}/play/{playname}/cast/csv:
+  /corpora/{corpusname}/plays/{playname}/cast/csv:
     get:
       summary: Get a list of characters of a play (CSV)
       operationId: get-cast-csv
@@ -552,7 +529,7 @@ paths:
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
                 "luka_lukich","Лука Лукич","MALE","false","8","24","291"
 
-  /corpora/{corpusname}/play/{playname}/networkdata/csv:
+  /corpora/{corpusname}/plays/{playname}/networkdata/csv:
     get:
       summary: Get network data of a play as CSV
       operationId: network-csv
@@ -568,7 +545,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/networkdata/gexf:
+  /corpora/{corpusname}/plays/{playname}/networkdata/gexf:
     get:
       summary: Get network data of a play as GEXF
       operationId: network-gexf
@@ -584,7 +561,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/networkdata/graphml:
+  /corpora/{corpusname}/plays/{playname}/networkdata/graphml:
     get:
       summary: Get network data of a play as GraphML
       operationId: network-graphml
@@ -600,7 +577,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/relations/csv:
+  /corpora/{corpusname}/plays/{playname}/relations/csv:
     get:
       summary: Get relation data of a play as CSV
       operationId: relations-csv
@@ -630,7 +607,7 @@ paths:
         '404':
           description: Unknown play or play does not provide relation data
 
-  /corpora/{corpusname}/play/{playname}/relations/gexf:
+  /corpora/{corpusname}/plays/{playname}/relations/gexf:
     get:
       summary: Get relation data of a play as GEXF
       operationId: relations-gexf
@@ -743,7 +720,7 @@ paths:
         '404':
           description: Unknown play or play does not provide relation data
 
-  /corpora/{corpusname}/play/{playname}/relations/graphml:
+  /corpora/{corpusname}/plays/{playname}/relations/graphml:
     get:
       summary: Get relation data of a play as GraphML
       operationId: relations-graphml
@@ -846,31 +823,7 @@ paths:
         '404':
           description: Unknown play or play does not provide relation data
 
-  /corpora/{corpusname}/play/{playname}/segmentation:
-    get:
-      summary: Get a list of segments and characters of a play
-      description: |
-        This endpoint is deprecated. All the information is now available as
-        JSON from `/corpora/{corpusname}/play/{playname}`. Please use that
-        endpoint instead.
-      operationId: play-segments-xml
-      deprecated: true
-      tags: [public]
-      parameters:
-        - $ref: "#/components/parameters/corpusname"
-        - $ref: "#/components/parameters/playname"
-      responses:
-        '200':
-          description: Returns list of segments
-          content:
-            application/xml:
-              schema:
-                type: string
-            text/csv:
-              schema:
-                type: string
-
-  /corpora/{corpusname}/play/{playname}/spoken-text:
+  /corpora/{corpusname}/plays/{playname}/spoken-text:
     get:
       summary: Get spoken text of a play (excluding stage directions)
       operationId: play-spoken-text
@@ -914,7 +867,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/spoken-text-by-character:
+  /corpora/{corpusname}/plays/{playname}/spoken-text-by-character:
     get:
       summary: Get spoken text for each character of a play
       operationId: play-spoken-text-by-character
@@ -949,7 +902,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/stage-directions:
+  /corpora/{corpusname}/plays/{playname}/stage-directions:
     get:
       summary: Get all stage directions of a play
       operationId: play-stage-directions
@@ -965,7 +918,7 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/play/{playname}/stage-directions-with-speakers:
+  /corpora/{corpusname}/plays/{playname}/stage-directions-with-speakers:
     get:
       summary: Get all stage directions of a play including speakers
       operationId: play-stage-directions-with-speakers
@@ -1047,6 +1000,54 @@ paths:
                       type: string
         '400':
           description: Invalid character ID.
+
+  /wikidata/author/{id}:
+    get:
+      summary: List author information from Wikidata
+      operationId: wikidata-author-info
+      tags: [wikidata]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Q34628
+      responses:
+        '200':
+          description: Author information
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Invalid or non existing author ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: an error message
+              example: |
+                {
+                  "error": "invalid author ID"
+                }
+
+  /wikidata/mixnmatch:
+    get:
+      summary: Endpoint for Wikidata Mix'n'match
+      description: See https://meta.wikimedia.org/wiki/Mix'n'match/Import.
+      operationId: wikidata-mixnmatch
+      tags: [wikidata]
+      responses:
+        '200':
+          description: List of plays (id, name, q [wikidata ID]).
+          content:
+            text/csv:
+              schema:
+                type: tring
 
   /webhook/github:
     post:

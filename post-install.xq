@@ -1,6 +1,6 @@
 xquery version "3.1";
 
-import module namespace config = "http://dracor.org/ns/exist/v0/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)
@@ -24,7 +24,7 @@ declare function local:store ($file-path, $content) {
 declare function local:create-config-file ()
 as item()? {
   if(doc($config:file)/config) then
-    ()
+    (util:log-system-out("Config file exists at " || $config:file))
   else (
     util:log-system-out("Creating " || $config:file),
     local:store(
@@ -34,7 +34,7 @@ as item()? {
         {
           if (environment-variable("DRACOR_API_BASE")) then
             environment-variable("DRACOR_API_BASE")
-          else "https://dracor.org/api/v0"
+          else "https://dracor.org/api/v1"
         }
         </api-base>
         <services>
@@ -67,7 +67,7 @@ as item()? {
 declare function local:create-secrets-file ()
 as item()? {
   if(doc($config:secrets-file)/secrets) then
-    ()
+    (util:log-system-out("Secrets file exists at " || $config:secrets-file))
   else (
     util:log-system-out("Creating " || $config:secrets-file),
     local:store(
@@ -98,10 +98,5 @@ return (
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
   sm:chmod($sitelinks-job, 'rwsr-xr-x'),
-  exrest:register-module($restxq-module),
-
-  (: a note on using the RDF index :)
-  util:log-system-out(
-    "To use the RDF index the database needs to be restarted. "
-  )
+  exrest:register-module($restxq-module)
 )
