@@ -325,29 +325,6 @@ paths:
               schema:
                 type: string
 
-  /corpora/{corpusname}/metadata.csv:
-    get:
-      summary: List of metadata for all plays in a corpus
-      description: >-
-        This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata`
-        with an appropriate `Accept` header instead.
-      operationId: corpus-metadata-csv
-      tags: [public]
-      deprecated: true
-      parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Returns a comma separated list of metadata for all plays
-          content:
-            text/csv:
-              schema:
-                type: string
-
   /corpora/{corpusname}/plays/{playname}:
     get:
       summary: Get metadata and network metrics for a single play
@@ -845,30 +822,6 @@ paths:
                 </graphml>
         '404':
           description: Unknown play or play does not provide relation data
-
-  /corpora/{corpusname}/plays/{playname}/segmentation:
-    get:
-      summary: Get a list of segments and characters of a play
-      description: |
-        This endpoint is deprecated. All the information is now available as
-        JSON from `/corpora/{corpusname}/plays/{playname}`. Please use that
-        endpoint instead.
-      operationId: play-segments-xml
-      deprecated: true
-      tags: [public]
-      parameters:
-        - $ref: "#/components/parameters/corpusname"
-        - $ref: "#/components/parameters/playname"
-      responses:
-        '200':
-          description: Returns list of segments
-          content:
-            application/xml:
-              schema:
-                type: string
-            text/csv:
-              schema:
-                type: string
 
   /corpora/{corpusname}/plays/{playname}/spoken-text:
     get:

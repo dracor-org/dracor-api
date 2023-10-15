@@ -716,27 +716,6 @@ function api:corpus-meta-data-csv-endpoint($corpusname) {
   api:get-corpus-meta-data-csv($corpusname)
 };
 
-(:~
- : List of metadata for all plays in a corpus
- :
- : This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata/csv`
- : or `/corpora/{corpusname}/metadata` with an appropriate `Accept` header
- : instead.
- :
- : @param $corpusname Corpus name
- : @result comma separated list of metadata for all plays
- : @deprecated
- :)
-declare
-  %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/metadata.csv")
-  %rest:produces("text/csv", "text/plain")
-  %output:media-type("text/csv")
-  %output:method("text")
-function api:corpus-meta-data-dotcsv($corpusname) {
-  api:get-corpus-meta-data-csv($corpusname)
-};
-
 declare
   %rest:GET
   %rest:path("/v1/corpora/{$corpusname}/word-frequencies/{$elem}")
@@ -1461,71 +1440,6 @@ declare
   %output:method("text")
 function api:cast-info-csv-ext($corpusname, $playname) {
   api:cast-info-csv($corpusname, $playname)
-};
-
-(:~
- : Get a list of segments and characters of a play
- :
- : This endpoint is deprecated. All the information is now available as JSON
- : from `/corpora/{corpusname}/plays/{playname}`.
- :
- : @param $corpusname Corpus name
- : @param $playname Play name
- : @result XML document
- : @deprecated
- :)
-declare
-  %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/segmentation")
-  %rest:produces("application/xml", "text/xml")
-  %output:media-type("text/xml")
-function api:segmentation($corpusname, $playname) {
-  let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      let $cast := dutil:distinct-speakers($doc//tei:body)
-      let $lastone := $cast[last()]
-      let $divs := dutil:get-segments($doc//tei:TEI)
-      let $segments :=
-        <segments count="{count($divs)}">
-          {
-            for $seg at $pos in $divs
-            let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
-            return
-            <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
-              {
-                for $id in dutil:distinct-speakers($seg)
-                return <spkr>{$id}</spkr>
-              }
-            </sgm>
-          }
-        </segments>
-
-      let $all-in-segment :=
-        count($segments//sgm[spkr=$lastone][1]/preceding-sibling::sgm) + 1
-      let $all-in-index := $all-in-segment div count($divs)
-
-      return
-      <segmentation
-        all-in-index="{$all-in-index}"
-        all-in-segment="{$all-in-segment}">
-        <cast>
-          {
-            for $id in $cast
-            let $name := $doc//tei:particDesc//(
-              tei:person[@xml:id=$id]/tei:persName[1] |
-              tei:personGrp[@xml:id=$id]/tei:name[1] |
-              tei:persName[@xml:id=$id]
-            )/text()
-            return <member id="{$id}">{$name}</member>
-          }
-        </cast>
-        {$segments}
-      </segmentation>
 };
 
 (:~
