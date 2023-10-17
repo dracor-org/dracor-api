@@ -285,6 +285,16 @@ declare function dutil:get-segments ($tei as element()*) as element()* {
     $tei//tei:body//tei:div[tei:sp or (@type="scene" and not(.//tei:sp))]
 };
 
+declare function local:get-year($iso-date as xs:string) as xs:string* {
+  let $parts := tokenize($iso-date, "-")
+  (:
+    When the first part after tokenizing is empty we have a negative, i.e. BCE,
+    year and prepend it with "-". Otherwise we consider the first part a CE
+    year.
+  :)
+  return if ($parts[1] eq "") then "-" || $parts[2] else $parts[1]
+};
+
 (:~
  : Retrieve `written`, `premiere` and `print` years as ISO 8601 strings for the
  : play passed in $tei.
@@ -301,13 +311,15 @@ declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
     for $d in $dates
     let $type := $d/@type/string()
     let $year := if ($d/@when) then
-      $d/@when/string()
+      local:get-year($d/@when/string())
     else if ($d/@notBefore and $d/@notAfter) then
-      $d/@notBefore/string() || '/' || $d/@notAfter/string()
+      local:get-year($d/@notBefore/string()) ||
+      '/' ||
+      local:get-year($d/@notAfter/string())
     else if ($d/@notAfter) then
-      '<' || $d/@notAfter/string()
+      '<' || local:get-year($d/@notAfter/string())
     else
-      '>' || $d/@notBefore/string()
+      '>' || local:get-year($d/@notBefore/string())
     return map:entry($type, $year)
   )
 
@@ -565,10 +577,30 @@ declare function dutil:get-corpus-meta-data(
       if(xs:string(number($v)) != "NaN") then number($v) else $v
     )
   )
+
+  let $digitalSource := $tei//tei:sourceDesc/
+    tei:bibl[@type="digitalSource"]/tei:idno[@type="URL"]/text()
+
+  let $origSource := $tei//tei:sourceDesc//
+    tei:bibl[@type="originalSource"]
+  let $origSourcePublisher := normalize-space($origSource/tei:publisher)
+  let $origSourcePubPlace := string-join(
+    $origSource/tei:pubPlace ! normalize-space(), ", "
+  )
+  let $year := $origSource/tei:date
+  let $origSourceYear := if (number($year)) then xs:integer($year) else ()
+  let $scope := $origSource/tei:biblScope[@unit="page" and @from and @to]
+  let $origSourceNumPages :=
+    if ($scope and number($scope/@to) and number($scope/@from))
+    then number($scope/@to) - number($scope/@from) + 1
+    else ()
+
+
   let $meta := map {
     "id": $id,
     "name": $name,
     "playName": $name,
+    "wikidataId": $wikidata-id,
     "normalizedGenre": dutil:get-genre($text-classes),
     "libretto": $text-classes = 'Libretto',
     "firstAuthor": $authors[1]?shortname,
@@ -595,7 +627,14 @@ declare function dutil:get-corpus-meta-data(
     "yearWritten": $years?written,
     "yearPremiered": $years?premiere,
     "yearPrinted": $years?print,
-    "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
+    "yearNormalized": xs:integer(dutil:get-normalized-year($tei)),
+    "digitalSource": $digitalSource,
+    "originalSourcePublisher": if ($origSourcePublisher) then
+      $origSourcePublisher else (),
+    "originalSourcePubPlace": if ($origSourcePubPlace) then
+      $origSourcePubPlace else (),
+    "originalSourceYear": $origSourceYear,
+    "originalSourceNumberOfPages": $origSourceNumPages
   }
   order by $filename
   return map:merge(($meta, $networkmetrics))
@@ -889,7 +928,7 @@ declare function dutil:get-play-info(
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-    let $orig-source := $tei//tei:bibl[@type="originalSource"]/tei:title[1]
+    let $orig-source := $tei//tei:bibl[@type="originalSource"][1]/normalize-space(.)
     let $cast := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $cast[last()]
 
@@ -975,7 +1014,7 @@ declare function dutil:get-play-info(
         map:entry("wikidataId", $wikidata-id)
       else (),
       if($orig-source) then
-        map:entry("originalSource", normalize-space($orig-source))
+        map:entry("originalSource", $orig-source)
       else (),
       if($source) then
         map:entry("source", map {

@@ -84,6 +84,8 @@
       name="xarfile"
       value="${build.dir}/${project.abbrev}-${package.version}.xar"
     />
+    <property name="symlink" value="${project.abbrev}-latest.xar"/>
+    <delete file="${symlink}"/>
     <copy
       file="expath-pkg.xml.tmpl"
       tofile="expath-pkg.xml"
@@ -104,7 +106,7 @@
       excludes="${build.dir}/ ${devel.dir}/ test/ .* *build.properties expath-pkg.xml.tmpl"/>
     <symlink
       resource="${build.dir}/${project.abbrev}-${package.version}.xar"
-      link="${project.abbrev}-latest.xar"
+      link="${symlink}"
       overwrite="true"
     />
   </target>
@@ -245,6 +247,8 @@
       Startup script not available. Run `ant devel` first.
     </fail>
     <exec executable="bash">
+      <env key="DRACOR_API_BASE" value="${devel.api.base}"/>
+      <env key="FUSEKI_SECRET" value="${devel.fuseki.secret}"/>
       <env key="GITHUB_WEBHOOK_SECRET" value="${devel.webhook.secret}"/>
       <arg value="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
     </exec>

@@ -5,8 +5,12 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - FUSEKI_SERVER=fuseki:3030
-        - METRICS_SERVER=metrics:8030
+        - FUSEKI_SERVER=http://fuseki:3030/dracor/
+        - METRICS_SERVER=http://metrics:8030/metrics/
+        - FUSEKI_SECRET=qwerty
+        - GITHUB_WEBHOOK_SECRET=qwerty
+    environment:
+      - DRACOR_API_BASE=http://localhost:8088/api
     ports:
       - "8080:8080"
     volumes:
@@ -15,10 +19,10 @@ services:
       - fuseki
       - metrics
   fuseki:
-    image: "stain/jena-fuseki"
+    image: "dracor/fuseki"
+    build: https://github.com/dracor-org/dracor-fuseki.git#main
     environment:
       - ADMIN_PASSWORD=qwerty
-      - FUSEKI_DATASET_1=dracor
     ports:
       - "3030:3030"
     expose:
@@ -30,8 +34,8 @@ services:
   frontend:
     build:
       context: https://github.com/dracor-org/dracor-frontend.git#main
-      args:
-        DRACOR_API: http://api:8080/exist/restxq
+    environment:
+      DRACOR_API: http://api:8080/exist/restxq
     ports:
       - "8088:80"
     depends_on:

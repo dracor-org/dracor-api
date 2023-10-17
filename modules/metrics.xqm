@@ -90,8 +90,7 @@ declare function metrics:get-network-metrics($url as xs:string) {
   let $metrics := if ($status = "200") then
     $response[2] => util:base64-decode() => parse-json()
   else (
-    util:log(
-      "warn",
+    util:log-system-out(
       "metrics service FAILED with status '"|| $status ||"' for " || $url
     ),
     map{}
@@ -147,7 +146,7 @@ declare function metrics:update($url as xs:string) {
   let $collection := $paths?collections?metrics
   let $resource := $paths?filename
   return (
-    util:log('info', ('Metrics update: ', $collection, "/", $resource)),
+    util:log-system-out('Metrics update: ' || $collection || '/' || $resource),
     xdb:store($collection, $resource, $metrics)
   )
 };

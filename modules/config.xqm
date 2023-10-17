@@ -37,7 +37,8 @@ declare variable $config:app-root :=
   FIXME: This should be determined dynamically using request:get-*() functions.
   However the request object doesn't seem to be available in a RESTXQ context.
 :)
-declare variable $config:api-base := "https://dracor.org/api";
+declare variable $config:api-base :=
+  doc('/db/data/dracor/config.xml')//api-base/normalize-space();
 
 declare variable $config:data-root := "/db/data/dracor/tei";
 
@@ -50,10 +51,10 @@ declare variable $config:sitelinks-root := "/db/data/dracor/sitelinks";
 declare variable $config:webhook-root := "/db/data/dracor/webhook";
 
 declare variable $config:webhook-secret :=
-  doc('/db/data/dracor/config.xml')//webhook-secret/normalize-space();
+  doc('/db/data/dracor/secrets.xml')//gh-webhook/normalize-space();
 
 declare variable $config:fuseki-pw :=
-  doc('/db/data/dracor/config.xml')//fuseki-pw/normalize-space();
+  doc('/db/data/dracor/secrets.xml')//fuseki/normalize-space();
 
 (: the directory path in corpus repos where the TEI files reside :)
 declare variable $config:corpus-repo-prefix := 'tei';
@@ -64,10 +65,13 @@ declare variable $config:repo-descriptor :=
 declare variable $config:expath-descriptor :=
   doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
-declare variable $config:fuseki-server := "http://localhost:3030/dracor/";
+declare variable $config:fuseki-server :=
+  doc('/db/data/dracor/config.xml')//services/fuseki/normalize-space();
 
 declare variable $config:metrics-server :=
-  xs:anyURI("http://localhost:8030/metrics/");
+  xs:anyURI(
+    doc('/db/data/dracor/config.xml')//services/metrics/normalize-space()
+  );
 
 (:~
  : The Wikidata IDs for text classification currently recognized as text class
@@ -77,6 +81,7 @@ declare variable $config:wd-text-classes := map {
   "Q40831": "Comedy",
   "Q80930": "Tragedy",
   "Q192881": "Tragicomedy",
+  "Q1050848": "Satyr play",
   "Q131084": "Libretto"
 };
 
