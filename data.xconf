@@ -12,7 +12,7 @@
   </index>
   <triggers>
     <trigger class="org.exist.collections.triggers.XQueryTrigger">
-      <parameter name="url" value="xmldb:exist:///db/apps/dracor/modules/trigger.xqm"/>
+      <parameter name="url" value="xmldb:exist:///db/apps/dracor-v1/modules/trigger.xqm"/>
     </trigger>
   </triggers>
 </collection>

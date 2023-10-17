@@ -3,12 +3,12 @@ xquery version "3.1";
 (:~
  : DraCor RDF module
  :)
-module namespace drdf = "http://dracor.org/ns/exist/rdf";
+module namespace drdf = "http://dracor.org/ns/exist/v1/rdf";
 
-import module namespace config = "http://dracor.org/ns/exist/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "config.xqm";
 
-import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
@@ -317,31 +317,31 @@ as element(rdf:RDF) {
         </dracon:normalisedYear>
       else ()
 
-    let $premiereYear :=
+    let $yearPremiered :=
       if (matches($years?premiere, "^-?[0-9]{4}$"))
       then
-        <dracon:premiereYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+        <dracon:yearPremiered rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
           {$years?premiere}
-        </dracon:premiereYear>
+        </dracon:yearPremiered>
       else ()
 
-    let $printYear :=
+    let $yearPrinted :=
       if (matches($years?print, "^-?[0-9]{4}$"))
       then
-        <dracon:printYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+        <dracon:yearPrinted rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
           {$years?print}
-        </dracon:printYear>
+        </dracon:yearPrinted>
       else ()
 
-    let $writtenYear :=
+    let $yearWritten :=
       if (matches($years?written, "^-?[0-9]{4}$"))
       then
-        <dracon:writtenYear rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
+        <dracon:yearWritten rdf:datatype="http://www.w3.org/2001/XMLSchema#gYear">
           {$years?written}
-        </dracon:writtenYear>
+        </dracon:yearWritten>
       else ()
 
-    (: chatacters :)
+    (: characters :)
     let $characters :=
       $play//tei:particDesc/tei:listPerson/tei:person
 
@@ -412,9 +412,9 @@ as element(rdf:RDF) {
       {$numOfActs}
       {$numOfSegments}
       {$numOfSpeakers}
-      {$premiereYear}
-      {$printYear}
-      {$writtenYear}
+      {$yearPremiered}
+      {$yearPrinted}
+      {$yearWritten}
       {$charactersindrama}
     </rdf:Description>
 

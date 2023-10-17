@@ -1,11 +1,11 @@
 xquery version "3.1";
 
-module namespace api = "http://dracor.org/ns/exist/api";
+module namespace api = "http://dracor.org/ns/exist/v1/api";
 
-import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
-import module namespace load = "http://dracor.org/ns/exist/load" at "load.xqm";
-import module namespace wd = "http://dracor.org/ns/exist/wikidata" at "wikidata.xqm";
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+import module namespace load = "http://dracor.org/ns/exist/v1/load" at "load.xqm";
+import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikidata.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
@@ -72,7 +72,7 @@ declare variable $api:metadata-columns := (
  :)
 declare
   %rest:GET
-  %rest:path("/info")
+  %rest:path("/v1/info")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -95,12 +95,12 @@ function api:info() {
  :)
 declare
   %rest:GET
-  %rest:path("/openapi")
+  %rest:path("/v1/openapi")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
 function api:openapi() {
-  openapi:main("/db/apps/dracor")
+  openapi:main($config:app-root)
 };
 
 (:~
@@ -110,7 +110,7 @@ function api:openapi() {
  :)
 declare
   %rest:GET
-  %rest:path("/openapi.yaml")
+  %rest:path("/v1/openapi.yaml")
   %rest:produces("application/yaml")
   %output:media-type("application/yaml")
   %output:method("text")
@@ -119,7 +119,7 @@ function api:openapi-yaml() {
   let $expath := config:expath-descriptor()
   let $yaml := util:base64-decode(xs:string(util:binary-doc($path)))
   return replace(
-    replace($yaml, 'https://dracor.org/api', $config:api-base),
+    replace($yaml, 'https://dracor.org/api/v1', $config:api-base),
     'version: [0-9.]+',
     'version: ' || $expath/@version/string()
   )
@@ -127,7 +127,7 @@ function api:openapi-yaml() {
 
 declare
   %rest:GET
-  %rest:path("/resources")
+  %rest:path("/v1/resources")
   %rest:produces("application/xml", "text/xml")
 function api:resources() {
   rest:resource-functions()
@@ -149,22 +149,19 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
 };
 
 declare function local:id-to-url ($id, $accept) {
-  let $base := "https://dracor.org/"
-  (: FIXME: remove support for idno after transition period :)
-  let $tei := collection($config:data-root)/tei:TEI[
-    @xml:id = $id or
-    .//tei:publicationStmt/tei:idno[@type="dracor" and .= $id]][1]
+  let $tei := collection($config:data-root)/tei:TEI[@xml:id = $id][1]
   let $parts := tokenize(base-uri($tei), "[/.]")
   let $corpusname := $parts[last()-2]
   let $playname := $parts[last()-1]
 
   return if ($tei) then
     if ($accept = "application/rdf+xml") then
-      $base || "api/corpora/" || $corpusname || "/play/" || $playname || "/rdf"
+      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/rdf"
     else if ($accept = "application/json") then
-      $base || "api/corpora/" || $corpusname || "/play/" || $playname
+      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
     else
-      $base || $corpusname || "/" || $playname
+      let $p := tokenize($config:api-base, '/')
+      return $p[1] || '//' || $p[3] || '/' || $corpusname || "/" || $playname
   else ()
 };
 
@@ -181,7 +178,7 @@ declare function local:id-to-url ($id, $accept) {
  :)
 declare
   %rest:GET
-  %rest:path("/id/{$id}")
+  %rest:path("/v1/id/{$id}")
   %rest:header-param("Accept", "{$accept}")
 function api:id-to-url($id, $accept) {
   let $url := local:id-to-url($id, $accept)
@@ -234,7 +231,7 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora")
+  %rest:path("/v1/corpora")
   %rest:query-param("include", "{$include}")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -264,7 +261,7 @@ function api:corpora($include) {
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/corpora")
+  %rest:path("/v1/corpora")
   %rest:header-param("Authorization", "{$auth}")
   %rest:consumes("application/xml", "text/xml")
   %rest:produces("application/json")
@@ -350,7 +347,7 @@ function api:corpora-post-tei($data, $auth) {
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/corpora")
+  %rest:path("/v1/corpora")
   %rest:consumes("application/json")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -441,7 +438,7 @@ function api:corpora-post-json($data) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}")
+  %rest:path("/v1/corpora/{$corpusname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -458,7 +455,7 @@ function api:corpus-index($corpusname) {
       </rest:response>
     else map:merge((
       $corpus,
-      map:entry("dramas", array {
+      map:entry("plays", array {
         for $tei in $col//tei:TEI
         let $filename := tokenize(base-uri($tei), "/")[last()]
         let $name := tokenize($filename, "\.")[1]
@@ -468,42 +465,29 @@ function api:corpus-index($corpusname) {
         let $years := dutil:get-years-iso($tei)
         let $authors := dutil:get-authors($tei)
         let $play-uri :=
-          $config:api-base || "/corpora/" || $corpusname || "/play/" || $name
+          $config:api-base || "/corpora/" || $corpusname || "/plays/" || $name
         let $metrics-url :=
           $config:metrics-root || "/" || $corpusname || "/" || $filename
         let $network-size := doc($metrics-url)//network/size/text()
         let $yearNormalized := dutil:get-normalized-year($tei)
+        let $premiere-date := dutil:get-premiere-date($tei)
+        let $source := dutil:get-source($tei)
         order by $authors[1]?name
         return map:merge((
           map:entry("id", $id),
+          map:entry("uri", $play-uri),
           map:entry("name", $name),
           map:entry("title", $titles?main),
           if ($titles?sub) then map:entry("subtitle", $titles?sub) else (),
           if ($titlesEng?main) then map:entry("titleEn", $titlesEng?main) else (),
           if ($titlesEng?sub) then map:entry("subtitleEn", $titlesEng?sub) else (),
           map:entry("authors", array { $authors }),
-          map:entry("author", map { "name": $authors[1]?name }),
-          map:entry(
-            "source",
-            $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]/tei:name/string()
-          ),
-          map:entry(
-            "sourceUrl",
-            $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
-              /tei:idno[@type="URL"][1]/string()
-          ),
+          if (count($source)) then map:entry("source", $source) else (),
           map:entry("yearNormalized", $yearNormalized),
           map:entry("yearPrinted", $years?print),
           map:entry("yearPremiered", $years?premiere),
+          if($premiere-date) then map:entry("datePremiered", $premiere-date) else (),
           map:entry("yearWritten", $years?written),
-          (:
-            FIXME: the following year properties are deprecated and should be
-            removed in a future release
-           :)
-          map:entry("printYear", $years?print),
-          map:entry("premiereYear", $years?premiere),
-          map:entry("writtenYear", $years?written),
-
           map:entry("networkSize", $network-size),
           map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),
           map:entry("wikidataId", dutil:get-play-wikidata-id($tei))
@@ -525,7 +509,7 @@ function api:corpus-index($corpusname) {
  :)
 declare
   %rest:POST("{$data}")
-  %rest:path("/corpora/{$corpusname}")
+  %rest:path("/v1/corpora/{$corpusname}")
   %rest:header-param("Authorization", "{$auth}")
   %rest:consumes("application/json")
   %rest:produces("application/json")
@@ -580,7 +564,7 @@ function api:post-corpus($corpusname, $data, $auth) {
       ) else ()
 
       let $result := scheduler:schedule-xquery-periodic-job(
-        "/db/apps/dracor/jobs/load-corpus.xq",
+        $config:app-root || "/jobs/load-corpus.xq",
         1, $job-name, $params, 0, 0
       )
 
@@ -610,7 +594,7 @@ function api:post-corpus($corpusname, $data, $auth) {
  :)
 declare
   %rest:DELETE
-  %rest:path("/corpora/{$corpusname}")
+  %rest:path("/v1/corpora/{$corpusname}")
   %rest:header-param("Authorization", "{$auth}")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -663,7 +647,7 @@ function api:delete-corpus($corpusname, $auth) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata")
+  %rest:path("/v1/corpora/{$corpusname}/metadata")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -677,7 +661,7 @@ function api:corpus-meta-data($corpusname) {
       )
     else
       let $meta := dutil:get-corpus-meta-data($corpusname)
-      return $meta
+      return array { $meta }
 };
 
 declare function api:get-corpus-meta-data-csv($corpusname) {
@@ -708,7 +692,7 @@ declare function api:get-corpus-meta-data-csv($corpusname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata")
+  %rest:path("/v1/corpora/{$corpusname}/metadata")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -724,7 +708,7 @@ function api:corpus-meta-data-csv($corpusname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata/csv")
+  %rest:path("/v1/corpora/{$corpusname}/metadata/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -732,30 +716,9 @@ function api:corpus-meta-data-csv-endpoint($corpusname) {
   api:get-corpus-meta-data-csv($corpusname)
 };
 
-(:~
- : List of metadata for all plays in a corpus
- :
- : This endpoint is deprecated. Please use `/corpora/{corpusname}/metadata/csv`
- : or `/corpora/{corpusname}/metadata` with an appropriate `Accept` header
- : instead.
- :
- : @param $corpusname Corpus name
- : @result comma separated list of metadata for all plays
- : @deprecated
- :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/metadata.csv")
-  %rest:produces("text/csv", "text/plain")
-  %output:media-type("text/csv")
-  %output:method("text")
-function api:corpus-meta-data-dotcsv($corpusname) {
-  api:get-corpus-meta-data-csv($corpusname)
-};
-
-declare
-  %rest:GET
-  %rest:path("/corpora/{$corpusname}/word-frequencies/{$elem}")
+  %rest:path("/v1/corpora/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
 function api:word-frequencies-xml($corpusname, $elem) {
   let $collection := concat($config:data-root, "/", $corpusname)
@@ -765,7 +728,7 @@ function api:word-frequencies-xml($corpusname, $elem) {
 
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/word-frequencies/{$elem}")
+  %rest:path("/v1/corpora/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -786,7 +749,7 @@ function api:word-frequencies-csv($corpusname, $elem) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -811,7 +774,7 @@ function api:play-info($corpusname, $playname) {
  :)
 declare
   %rest:DELETE
-  %rest:path("/corpora/{$corpusname}/play/{$playname}")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}")
   %rest:header-param("Authorization", "{$auth}")
   %output:method("json")
 function api:play-delete($corpusname, $playname, $data, $auth) {
@@ -843,7 +806,7 @@ function api:play-delete($corpusname, $playname, $data, $auth) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/metrics")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/metrics")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -867,7 +830,7 @@ function api:play-metrics($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/tei")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("application/xml")
 function api:play-tei($corpusname, $playname) {
@@ -906,7 +869,7 @@ function api:play-tei($corpusname, $playname) {
  :)
 declare
   %rest:PUT("{$data}")
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/tei")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/tei")
   %rest:header-param("Authorization", "{$auth}")
   %rest:consumes("application/xml", "text/xml")
   %output:method("xml")
@@ -961,7 +924,7 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/rdf")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/rdf")
   %rest:produces("application/xml", "text/xml")
   %output:media-type("application/xml")
 function api:play-rdf($corpusname, $playname) {
@@ -985,7 +948,7 @@ function api:play-rdf($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/csv")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/networkdata/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1059,7 +1022,7 @@ declare function local:make-gexf-nodes($cast, $doc) as element()* {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/gexf")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/networkdata/gexf")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:networkdata-gexf($corpusname, $playname) {
@@ -1134,7 +1097,7 @@ function api:networkdata-gexf($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/networkdata/graphml")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/networkdata/graphml")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:networkdata-graphml($corpusname, $playname) {
@@ -1218,7 +1181,7 @@ function api:networkdata-graphml($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/csv")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/relations/csv")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1269,7 +1232,7 @@ function api:relations-csv($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/gexf")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/relations/gexf")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:relations-gexf($corpusname, $playname) {
@@ -1342,7 +1305,7 @@ function api:relations-gexf($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/relations/graphml")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/relations/graphml")
   %output:method("xml")
   %output:omit-xml-declaration("no")
 function api:relations-graphml($corpusname, $playname) {
@@ -1421,7 +1384,7 @@ function api:relations-graphml($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/cast")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -1445,7 +1408,7 @@ function api:cast-info($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/cast")
   %rest:produces("text/csv")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1472,76 +1435,11 @@ function api:cast-info-csv($corpusname, $playname) {
 
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/cast/csv")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/cast/csv")
   %output:media-type("text/csv")
   %output:method("text")
 function api:cast-info-csv-ext($corpusname, $playname) {
   api:cast-info-csv($corpusname, $playname)
-};
-
-(:~
- : Get a list of segments and characters of a play
- :
- : This endpoint is deprecated. All the information is now available as JSON
- : from `/corpora/{corpusname}/play/{playname}`.
- :
- : @param $corpusname Corpus name
- : @param $playname Play name
- : @result XML document
- : @deprecated
- :)
-declare
-  %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
-  %rest:produces("application/xml", "text/xml")
-  %output:media-type("text/xml")
-function api:segmentation($corpusname, $playname) {
-  let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      let $cast := dutil:distinct-speakers($doc//tei:body)
-      let $lastone := $cast[last()]
-      let $divs := dutil:get-segments($doc//tei:TEI)
-      let $segments :=
-        <segments count="{count($divs)}">
-          {
-            for $seg at $pos in $divs
-            let $heads := $seg/(ancestor::tei:div/tei:head|tei:head)
-            return
-            <sgm n="{$pos}" type="{$seg/@type}" title="{string-join($heads, ' | ')}">
-              {
-                for $id in dutil:distinct-speakers($seg)
-                return <spkr>{$id}</spkr>
-              }
-            </sgm>
-          }
-        </segments>
-
-      let $all-in-segment :=
-        count($segments//sgm[spkr=$lastone][1]/preceding-sibling::sgm) + 1
-      let $all-in-index := $all-in-segment div count($divs)
-
-      return
-      <segmentation
-        all-in-index="{$all-in-index}"
-        all-in-segment="{$all-in-segment}">
-        <cast>
-          {
-            for $id in $cast
-            let $name := $doc//tei:particDesc//(
-              tei:person[@xml:id=$id]/tei:persName[1] |
-              tei:personGrp[@xml:id=$id]/tei:name[1] |
-              tei:persName[@xml:id=$id]
-            )/text()
-            return <member id="{$id}">{$name}</member>
-          }
-        </cast>
-        {$segments}
-      </segmentation>
 };
 
 (:~
@@ -1553,7 +1451,7 @@ function api:segmentation($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/segmentation")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/segmentation")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1593,7 +1491,7 @@ function api:segmentation-csv($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text")
   %rest:query-param("gender", "{$gender}")
   %rest:query-param("relation", "{$relation}")
   %rest:query-param("role", "{$role}")
@@ -1671,7 +1569,7 @@ declare function api:get-spoken-text-by-character($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text-by-character")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -1689,7 +1587,7 @@ function api:spoken-text-by-character($corpusname, $playname) {
 declare
   %rest:GET
   %rest:path(
-    "/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character.json"
+    "/corpora/{$corpusname}/plays/{$playname}/spoken-text-by-character.json"
   )
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -1707,7 +1605,7 @@ function api:spoken-text-by-character-json($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/spoken-text-by-character")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text-by-character")
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
@@ -1740,7 +1638,7 @@ function api:spoken-text-by-character-csv($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/stage-directions")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:stage-directions($corpusname, $playname) {
@@ -1765,7 +1663,7 @@ function api:stage-directions($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/corpora/{$corpusname}/play/{$playname}/stage-directions-with-speakers")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/stage-directions-with-speakers")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:stage-directions-with-speakers($corpusname, $playname) {
@@ -1792,7 +1690,7 @@ function api:stage-directions-with-speakers($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/character/{$id}")
+  %rest:path("/v1/character/{$id}")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -1815,7 +1713,7 @@ function api:plays-with-character($id) {
  :)
 declare
   %rest:GET
-  %rest:path("/author/{$id}")
+  %rest:path("/v1/wikidata/author/{$id}")
   %rest:query-param("lang", "{$lang}")
   %rest:produces("application/json")
   %output:media-type("application/json")
@@ -1836,4 +1734,23 @@ function api:authorInfo($id, $lang) {
       map {"error": "invalid language code"}
     )
   else wd:get-author-info($id, $lang)
+};
+
+(:~
+ : Endpoint for Wikidata Mix'n'match
+ :
+ : Returns a list of DraCor ID, title and Wikidata ID for each play in the
+ : database. See https://meta.wikimedia.org/wiki/Mix'n'match/Import.
+ :
+ : @param $corpusname Corpus name
+ : @result CSV list
+ :)
+declare
+  %rest:GET
+  %rest:path("/v1/wikidata/mixnmatch")
+  %rest:produces("text/csv", "text/plain")
+  %output:media-type("text/csv")
+  %output:method("text")
+function api:wikidata-mixnmatch() {
+  wd:mixnmatch()
 };

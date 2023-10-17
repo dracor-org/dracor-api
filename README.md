@@ -10,18 +10,26 @@ The API Documentation is available at https://dracor.org/doc/api/.
 ```sh
 git clone https://github.com/dracor-org/dracor-api.git
 cd dracor-api
-docker-compose up
+docker compose up
 # load data, see below
 ```
 
-We provide a [docker-compose.yml](docker-compose.yml) that allows to run an
+We provide a [compose.yml](compose.yml) that allows to run an
 eXist database with `dracor-api` locally, together with the supporting
 [dracor-metrics service](https://github.com/dracor-org/dracor-metrics) and a
 triple store. With [Docker installed](https://docs.docker.com/get-docker/)
 simply run:
 
 ```sh
-docker-compose up
+docker compose up
+```
+
+By default this sets up a password for the admin user of the eXist database
+which is printed to the console at the first start. If you want to use the
+database with an empty password run:
+
+```sh
+docker compose -f compose.yml -f compose.dev.yml up
 ```
 
 This builds the necessary images and starts the respective docker containers.
@@ -29,13 +37,13 @@ The **eXist database** will become available under http://localhost:8080/.
 To check that the DraCor API is up run
 
 ```sh
-curl http://localhost:8088/api/info
+curl http://localhost:8088/api/v1/info
 ```
 
 The docker-compose setup also includes a
 [DraCor frontend](https://github.com/dracor-org/dracor-frontend) connected to
 the local eXist instance. It can be accessed by opening http://localhost:8088/
-in a browser. 
+in a browser.
 
 ### Load Data
 
@@ -48,7 +56,7 @@ curl -X POST \
   -u admin: \
   -d@- \
   -H 'Content-type: text/xml' \
-  http://localhost:8088/api/corpora
+  http://localhost:8088/api/v1/corpora
 ```
 
 Then
@@ -60,45 +68,43 @@ curl -X POST \
   -u admin: \
   -H 'Content-type: application/json' \
   -d '{"load":true}' \
-  http://localhost:8088/api/corpora/test
+  http://localhost:8088/api/v1/corpora/test
 ```
 
 This may take a while. Eventually the added plays can be listed with
 
 ```sh
-curl http://localhost:8088/api/corpora/test
+curl http://localhost:8088/api/v1/corpora/test
 ```
 
 With [jq](https://stedolan.github.io/jq/) installed you can pretty print the
 JSON output like this:
 
 ```sh
-curl http://localhost:8088/api/corpora/test | jq
+curl http://localhost:8088/api/v1/corpora/test | jq
 ```
 
-## `ant` Workflow
+## VS Code Integration
 
-If you prefer to run the eXist database directly without docker you can still
-use the old [`ant` based workflow](README-ant.md). However you will have to
-provision the metrics service and the triple store by yourself, which is why we
-recommend using docker compose instead.
+For the [Visual Studio Code](https://code.visualstudio.com) editor an [eXist-db
+extension](https://marketplace.visualstudio.com/items?itemName=eXist-db.existdb-vscode)
+is available that allows syncing a local working directory with an eXist
+database thus enabling comfortable development of XQuery code.
 
-## Atom Integration
+We provide a [configuration template](.existdb.json.tmpl) to connect your
+`dracor-api` working copy to the `dracor-v1` workspace in a local eXist database
+(e.g. the one started with `docker compose up`).
 
-For the [Atom editor](https://atom.io) an [existdb
-package](https://atom.io/packages/existdb) is available that allows syncing
-changes made in the local git repo to the `dracor-api` application stored in
-eXist.
-
-After installing the package run the following command to create a
-`.existdb.json` configuration file that connects your working directory to the
-database:
+After installing the VS Code extension copy the template to create an
+`.existdb.json` configuration file:
 
 ```sh
-sed 's/@jetty.http.port@/8080/' < .existdb.json.tmpl > .existdb.json
+cp .existdb.json.tmpl .existdb.json
 ```
 
-Then restart Atom.
+Adjust the settings if necessary and restart VS Code. You should now be able to
+start the synchronization from a button in the status bar at the bottom of the
+editor window.
 
 ## XAR Package
 
@@ -112,4 +118,4 @@ The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
 of the corpus data when the configured GitHub repository for the corpus changes.
 
 *Note:* For the webhook to work, the shared secret between DraCor and GitHub
-needs to be configured at `/db/data/dracor/config.xml` in the database.
+needs to be configured at `/db/data/dracor/secrets.xml` in the database.

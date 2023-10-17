@@ -9,7 +9,7 @@ xquery version "3.1";
  :
  : Call it like this:
  :
- : curl http://localhost:8080/exist/rest/db/apps/dracor/speakers.xq?id=ep000148
+ : curl http://localhost:8080/exist/rest/db/apps/dracor-v1/speakers.xq?id=ep000148
  :)
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";

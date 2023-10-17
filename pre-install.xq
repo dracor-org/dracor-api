@@ -1,7 +1,7 @@
 xquery version "1.0";
 
 import module namespace xdb="http://exist-db.org/xquery/xmldb";
-import module namespace config="http://dracor.org/ns/exist/config"
+import module namespace config="http://dracor.org/ns/exist/v1/config"
   at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)

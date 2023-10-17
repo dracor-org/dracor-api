@@ -3,15 +3,15 @@ xquery version "3.1";
 (:~
  : Module providing function to load files from zip archives.
  :)
-module namespace load = "http://dracor.org/ns/exist/load";
+module namespace load = "http://dracor.org/ns/exist/v1/load";
 
-import module namespace config = "http://dracor.org/ns/exist/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "config.xqm";
-import module namespace metrics = "http://dracor.org/ns/exist/metrics"
+import module namespace metrics = "http://dracor.org/ns/exist/v1/metrics"
   at "metrics.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/util"
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util"
   at "util.xqm";
-import module namespace drdf = "http://dracor.org/ns/exist/rdf" at "rdf.xqm";
+import module namespace drdf = "http://dracor.org/ns/exist/v1/rdf" at "rdf.xqm";
 
 declare namespace compression = "http://exist-db.org/xquery/compression";
 declare namespace util = "http://exist-db.org/xquery/util";

@@ -1,11 +1,18 @@
 xquery version "3.1";
 
-import module namespace config = "http://dracor.org/ns/exist/config"
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)
 (: the target collection into which the app is deployed :)
 declare variable $target external;
+
+declare function local:store ($file-path, $content) {
+  let $segments := tokenize($file-path, '/')
+  let $name := $segments[last()]
+  let $col := substring($file-path, 1, string-length($file-path) - string-length($name) - 1)
+  return xmldb:store($col, $name, $content)
+};
 
 (: We create an initial config file the values of which can be passed by the
  : following environment variables:
@@ -16,19 +23,18 @@ declare variable $target external;
  :)
 declare function local:create-config-file ()
 as item()? {
-  if(doc("/db/data/dracor/config.xml")/config) then
-    ()
-  else
-    util:log-system-out("Creating config.xml"),
-    xmldb:store(
-      "/db/data/dracor",
-      "config.xml",
+  if(doc($config:file)/config) then
+    (util:log-system-out("Config file exists at " || $config:file))
+  else (
+    util:log-system-out("Creating " || $config:file),
+    local:store(
+      $config:file,
       <config>
         <api-base>
         {
           if (environment-variable("DRACOR_API_BASE")) then
             environment-variable("DRACOR_API_BASE")
-          else "https://dracor.org/api"
+          else "https://dracor.org/api/v1"
         }
         </api-base>
         <services>
@@ -49,6 +55,7 @@ as item()? {
         </services>
       </config>
     )
+  )
 };
 
 (: We create an initial config file the values of which can be passed by the
@@ -59,20 +66,20 @@ as item()? {
  :)
 declare function local:create-secrets-file ()
 as item()? {
-  if(doc("/db/data/dracor/secrets.xml")/secrets) then
-    ()
-  else
-    util:log-system-out("Creating secrets.xml"),
-    xmldb:store(
-      "/db/data/dracor",
-      "secrets.xml",
+  if(doc($config:secrets-file)/secrets) then
+    (util:log-system-out("Secrets file exists at " || $config:secrets-file))
+  else (
+    util:log-system-out("Creating " || $config:secrets-file),
+    local:store(
+      $config:secrets-file,
       <secrets>
         <fuseki>{environment-variable("FUSEKI_SECRET")}</fuseki>
         <gh-webhook>{environment-variable("GITHUB_WEBHOOK_SECRET")}</gh-webhook>
       </secrets>
     ),
     (: FIXME: find a better solution to protect the webhook secret :)
-    sm:chmod(xs:anyURI("/db/data/dracor/secrets.xml"), 'rw-------')
+    sm:chmod(xs:anyURI($config:secrets-file), 'rw-------')
+  )
 };
 
 (: elevate privileges for github webhook :)
@@ -91,10 +98,5 @@ return (
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
   sm:chmod($sitelinks-job, 'rwsr-xr-x'),
-  exrest:register-module($restxq-module),
-
-  (: a note on using the RDF index :)
-  util:log-system-out(
-    "To use the RDF index the database needs to be restarted. "
-  )
+  exrest:register-module($restxq-module)
 )
