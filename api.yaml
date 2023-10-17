@@ -32,8 +32,11 @@ paths:
                   "existdb": "6.2.0",
                   "name": "DraCor",
                   "status": "stable",
-                  "version": "1.0.0"
+                  "version": "1.0.0",
+                  "base": "https://dracor.org/api/v1"
                 }
+              schema:
+                $ref: '#/components/schemas/Info'
 
   /corpora:
     get:
@@ -56,7 +59,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
+                  $ref: '#/components/schemas/CorpusInCorpora'
 
               example:
                 [
@@ -221,19 +224,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - title
-                  - plays
-                properties:
-                  title:
-                    type: string
-                    description: corpus title
-                  plays:
-                    type: array
-                    description: array of plays
-                    items:
-                      type: object
+                $ref: '#/components/schemas/Corpus'
         '404':
           description: Corpus not found
     post:
@@ -305,7 +296,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
+                  $ref: '#/components/schemas/PlayMetadata'
             text/csv:
               schema:
                 type: string
@@ -322,6 +313,9 @@ paths:
           description: Returns a comma separated list of metadata for all plays
           content:
             text/csv:
+              example: |
+                name,id,wikidataId,firstAuthor,numOfCoAuthors,title,subtitle,normalizedGenre,digitalSource,originalSourcePublisher,originalSourcePubPlace,originalSourceYear,originalSourceNumberOfPages,yearNormalized,size,libretto,averageClustering,density,averagePathLength,maxDegreeIds,averageDegree,diameter,yearPremiered,yearPrinted,maxDegree,numOfSpeakers,numOfSpeakersFemale,numOfSpeakersMale,numOfSpeakersUnknown,numOfPersonGroups,numConnectedComponents,numEdges,yearWritten,numOfSegments,wikipediaLinkCount,numOfActs,wordCountText,wordCountSp,wordCountStage,numOfP,numOfL
+                "achat-ein-april-scherz","ger000637","Q121463020","Achat","0","Ein April-Scherz","Original-Lustspiel in einem Akt","Comedy","https://books.google.com/books?id=qHNIAQAAMAAJ&pg=PA45","Vereins-Buchhandlung","Berlin","1842","30","1842","6","false","0.8444444444444444","0.8","1.2","fraeulein|rittmeister","4","2","","1842","5","6","3","3","0","0","1","12","","22","0","0","6888","6681","411","518","0"
               schema:
                 type: string
 
@@ -339,7 +333,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/Play'
     delete:
       summary: Remove a single play from the corpus
       operationId: play-delete
@@ -367,7 +361,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/PlayMetrics'
 
   /corpora/{corpusname}/plays/{playname}/tei:
     get:
@@ -379,7 +373,7 @@ paths:
         - $ref: "#/components/parameters/playname"
       responses:
         '200':
-          description: Returns TEI document
+          description: Returns TEI document. See [Encoding Guidelines](https://github.com/dracor-org/dracor-schema/tree/main/odd).
           content:
             application/xml:
               schema:
@@ -457,7 +451,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
+                  $ref: '#/components/schemas/CastItem'
               example: |
                 [
                   {
@@ -544,6 +538,14 @@ paths:
             text/csv:
               schema:
                 type: string
+              example: |
+                Source,Type,Target,Weight
+                choros,Undirected,atossa,4
+                choros,Undirected,angelos,3
+                choros,Undirected,dareios,2
+                choros,Undirected,xerxes,2
+                atossa,Undirected,angelos,2
+                atossa,Undirected,dareios,1
 
   /corpora/{corpusname}/plays/{playname}/networkdata/gexf:
     get:
@@ -555,7 +557,7 @@ paths:
         - $ref: "#/components/parameters/playname"
       responses:
         '200':
-          description: Returns GEXF file
+          description: Returns GEXF file. See [Specification](https://gexf.net).
           content:
             application/xml:
               schema:
@@ -617,7 +619,7 @@ paths:
         - $ref: "#/components/parameters/playname"
       responses:
         '200':
-          description: Returns GEXF file
+          description: Returns GEXF file. See [Specification](https://gexf.net).
           content:
             application/xml:
               schema:
@@ -883,21 +885,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    label:
-                      type: string
-                    isGroup:
-                      type: boolean
-                    gender:
-                      type: string
-                      enum: [FEMALE, MALE, UNKNOWN]
-                    text:
-                      type: array
-                      items:
-                        type: string
+                  $ref: '#/components/schemas/SpokenTextByCharacter'
             text/csv:
               schema:
                 type: string
@@ -984,20 +972,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    uri:
-                      type: string
-                    title:
-                      type: string
-                    authors:
-                      type: array
-                      items:
-                        type: string
-                    characterName:
-                      type: string
+                  $ref: '#/components/schemas/PlayWithWikidataCharacter'
         '400':
           description: Invalid character ID.
 
@@ -1047,7 +1022,7 @@ paths:
           content:
             text/csv:
               schema:
-                type: tring
+                type: string
 
   /webhook/github:
     post:
@@ -1171,3 +1146,554 @@ components:
         munoz_refugio:
           value: munoz-refugio
           summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
+  schemas:
+    Info:
+      type: object
+      properties:
+        status:
+          type: string
+        existdb:
+          type: string
+        base:
+          type: string
+          format: url
+        name:
+          type: string
+        version:
+          type: string
+    WordCounts:
+      type: object
+      properties:
+        text:
+          type: integer
+        stage:
+          type: integer
+        sp:
+          type: integer
+    CorpusMetrics:
+      type: object
+      properties:
+        characters:
+          type: integer
+        stage:
+          type: integer
+        updated:
+          type: string
+        sp:
+          type: integer
+        text:
+          type: integer
+        plays:
+          type: integer
+        wordcount:
+          $ref: '#/components/schemas/WordCounts'
+        male:
+          type: integer
+        female:
+          type: integer
+    CorpusInCorpora:
+      type: object
+      properties:
+        acronym:
+          type: string
+        metrics:
+          $ref: '#/components/schemas/CorpusMetrics'
+        title:
+          type: string
+        licence:
+          type: string
+        licenceUrl:
+          type: string
+          format: url
+        uri:
+          type: string
+          format: url
+        description:
+          type: string
+        name:
+          type: string
+        repository:
+          type: string
+          format: url
+    SourceInPlayMetadata:
+      type: object
+      properties:
+        url:
+          nullable: true
+        name:
+          type: string
+          nullable: true
+    ExternalReferenceResourceId:
+      type: object
+      properties:
+        type:
+          type: string
+        ref:
+          type: string
+    AuthorInPlayInCorpus:
+      type: object
+      properties:
+        refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalReferenceResourceId'
+        alsoKnownAs:
+          type: array
+          items:
+            type: string
+        fullnameEn:
+          type: string
+        name:
+          type: string
+        shortnameEn:
+          type: string
+        nameEn:
+          type: string
+        fullname:
+          type: string
+        shortname:
+          type: string
+    PlayInCorpus:
+      type: object
+      properties:
+        wikidataId:
+          type: string
+          nullable: true
+        yearWritten:
+          type: string
+          nullable: true
+        source:
+          $ref: '#/components/schemas/SourceInPlayMetadata'
+        yearPremiered:
+          type: string
+          nullable: true
+        title:
+          type: string
+        networkdataCsvUrl:
+          type: string
+          format: url
+        id:
+          type: string
+        titleEn:
+          type: string
+        subtitle:
+          type: string
+        datePremiered:
+          type: string
+        yearPrinted:
+          type: string
+          nullable: true
+        yearNormalized:
+          type: integer
+          nullable: true
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorInPlayInCorpus'
+        name:
+          type: string
+        networkSize:
+          type: integer
+        subtitleEn:
+          type: string
+    Corpus:
+      type: object
+      properties:
+        acronym:
+          type: string
+        title:
+          type: string
+        licence:
+          type: string
+        licenceUrl:
+          type: string
+          format: url
+        description:
+          type: string
+        name:
+          type: string
+        plays:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayInCorpus'
+        repository:
+          type: string
+          format: url
+    PlayMetadata:
+      type: object
+      properties:
+        numOfSpeakersMale:
+          type: integer
+        diameter:
+          type: integer
+        wikidataId:
+          type: string
+          nullable: true
+        numOfSpeakersFemale:
+          type: integer
+        averageClustering:
+          type: number
+        yearPremiered:
+          type: string
+          nullable: true
+        originalSourcePubPlace:
+          type: string
+          nullable: true
+        numOfSpeakers:
+          type: integer
+        name:
+          type: string
+        wordCountStage:
+          type: integer
+        normalizedGenre:
+          type: string
+          nullable: true
+        numOfL:
+          type: integer
+        wordCountSp:
+          type: integer
+        numOfSpeakersUnknown:
+          type: integer
+        averagePathLength:
+          type: number
+        originalSourceYear:
+          type: integer
+          nullable: true
+        maxDegree:
+          type: integer
+        numEdges:
+          type: integer
+        subtitle:
+          type: string
+          nullable: true
+        firstAuthor:
+          type: string
+        originalSourcePublisher:
+          type: string
+          nullable: true
+        libretto:
+          type: boolean
+        numConnectedComponents:
+          type: integer
+        yearWritten:
+          type: string
+          nullable: true
+        playName:
+          type: string
+        numOfP:
+          type: integer
+        id:
+          type: string
+        wordCountText:
+          type: integer
+        datePremiered:
+          type: string
+        size:
+          type: integer
+        averageDegree:
+          type: number
+        yearPrinted:
+          type: string
+          nullable: true
+        numOfSegments:
+          type: integer
+        numOfActs:
+          type: integer
+        title:
+          type: string
+        wikipediaLinkCount:
+          type: integer
+          nullable: true
+        digitalSource:
+          nullable: true
+        numOfPersonGroups:
+          type: integer
+        yearNormalized:
+          type: integer
+          nullable: true
+        numOfCoAuthors:
+          type: integer
+        maxDegreeIds:
+          type: string
+        originalSourceNumberOfPages:
+          type: integer
+          nullable: true
+        density:
+          type: number
+    SegmentItemInPlayMetadata:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        speakers:
+          type: array
+          items:
+            type: string
+        number:
+          type: integer
+        title:
+          type: string
+    AuthorInPlayMetadata:
+      type: object
+      properties:
+        refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalReferenceResourceId'
+        alsoKnownAs:
+          type: array
+          items:
+            type: string
+        fullnameEn:
+          type: string
+        name:
+          type: string
+        shortnameEn:
+          type: string
+        nameEn:
+          type: string
+        fullname:
+          type: string
+        shortname:
+          type: string
+    CastItemInPlayMetadata:
+      type: object
+      properties:
+        wikidataId:
+          type: string
+        id:
+          type: string
+        isGroup:
+          type: boolean
+        name:
+          type: string
+          nullable: true
+        sex:
+          type: string
+          enum:
+          - MALE
+          - FEMALE
+          - UNKNOWN
+          nullable: true
+    RelationItemInPlayMetadata:
+      type: object
+      properties:
+        directed:
+          type: boolean
+        type:
+          type: string
+          enum:
+          - parent_of
+          - lover_of
+          - related_with
+          - associated_with
+          - siblings
+          - spouses
+          - friends
+        source:
+          type: string
+        target:
+          type: string
+    Play:
+      type: object
+      properties:
+        wikidataId:
+          type: string
+          nullable: true
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/SegmentItemInPlayMetadata'
+        corpus:
+          type: string
+        yearPremiered:
+          type: string
+          nullable: true
+        allInIndex:
+          type: number
+          nullable: true
+          minimum: 0.0
+          maximum: 1.0
+        titleEn:
+          type: string
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorInPlayMetadata'
+        name:
+          type: string
+        normalizedGenre:
+          type: string
+          nullable: true
+        subtitleEn:
+          type: string
+        cast:
+          type: array
+          items:
+            $ref: '#/components/schemas/CastItemInPlayMetadata'
+        source:
+          $ref: '#/components/schemas/SourceInPlayMetadata'
+        subtitle:
+          type: string
+          nullable: true
+        libretto:
+          type: boolean
+        allInSegment:
+          type: integer
+          nullable: true
+        yearWritten:
+          type: string
+          nullable: true
+        id:
+          type: string
+        datePremiered:
+          type: string
+        yearPrinted:
+          type: string
+          nullable: true
+        relations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelationItemInPlayMetadata'
+        title:
+          type: string
+        yearNormalized:
+          type: integer
+          nullable: true
+        originalSource:
+          type: string
+    NodeInPlayMetrics:
+      type: object
+      properties:
+        closeness:
+          type: number
+        betweenness:
+          type: number
+        degree:
+          type: integer
+        weightedDegree:
+          type: integer
+        id:
+          type: string
+        eigenvector:
+          type: number
+    PlayMetrics:
+      type: object
+      properties:
+        averagePathLength:
+          type: number
+        diameter:
+          type: integer
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeInPlayMetrics'
+        corpus:
+          type: string
+        averageClustering:
+          type: number
+        maxDegree:
+          type: integer
+        wikipediaLinkCount:
+          type: integer
+          nullable: true
+        id:
+          type: string
+        numEdges:
+          type: integer
+        size:
+          type: integer
+        averageDegree:
+          type: number
+        name:
+          type: string
+        maxDegreeIds:
+          type: array
+          items:
+            type: string
+        numConnectedComponents:
+          type: integer
+        density:
+          type: number
+    CastItem:
+      type: object
+      properties:
+        closeness:
+          type: number
+          nullable: true
+        wikidataId:
+          type: string
+        betweenness:
+          type: number
+          nullable: true
+        degree:
+          type: integer
+          nullable: true
+        weightedDegree:
+          type: integer
+          nullable: true
+        numOfSpeechActs:
+          type: integer
+        id:
+          type: string
+        eigenvector:
+          type: number
+          nullable: true
+        numOfScenes:
+          type: integer
+        numOfWords:
+          type: integer
+        isGroup:
+          type: boolean
+        name:
+          type: string
+          nullable: true
+        gender:
+          type: string
+          enum:
+          - MALE
+          - FEMALE
+          - UNKNOWN
+          nullable: true
+    SpokenTextByCharacter:
+      type: object
+      properties:
+        roles:
+          type: array
+          nullable: true
+          items:
+            type: string
+        id:
+          type: string
+        isGroup:
+          type: boolean
+        gender:
+          type: string
+          enum:
+          - MALE
+          - FEMALE
+          - UNKNOWN
+          nullable: true
+        label:
+          type: string
+        text:
+          type: array
+          items:
+            type: string
+    PlayWithWikidataCharacter:
+      type: object
+      properties:
+        characterName:
+          type: string
+        title:
+          type: string
+        id:
+          type: string
+        uri:
+          type: string
+          format: url
+        authors:
+          type: array
+          items:
+            type: string
