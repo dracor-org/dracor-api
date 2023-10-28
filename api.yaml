@@ -7,8 +7,8 @@ info:
     email: "fr.fischer@fu-berlin.de"
   termsOfService: "https://dracor.org"
   license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+    name: "MIT"
+    url: "https://github.com/dracor-org/dracor-api/blob/main/LICENSE"
 
 servers:
   - url: https://dracor.org/api/v1
