@@ -912,16 +912,8 @@ paths:
       operationId: play-stage-directions-with-speakers
       tags: [public]
       parameters:
-        - name: corpusname
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: playname
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Returns plain text document
