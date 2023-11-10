@@ -419,22 +419,6 @@ paths:
           description: >-
             There is no corpus with the given `corpusname`.
 
-  /corpora/{corpusname}/plays/{playname}/rdf:
-    get:
-      summary: Get RDF document for a single play
-      operationId: play-rdf
-      tags: [public]
-      parameters:
-        - $ref: "#/components/parameters/corpusname"
-        - $ref: "#/components/parameters/playname"
-      responses:
-        '200':
-          description: Returns RDF document
-          content:
-            application/xml:
-              schema:
-                type: string
-
   /corpora/{corpusname}/plays/{playname}/cast:
     get:
       summary: Get a list of characters of a play
