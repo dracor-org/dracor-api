@@ -478,7 +478,8 @@ declare function dutil:get-corpus-info(
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:availability/tei:licence
   let $description := if ($projectDesc) then (
-    for $p in $projectDesc/tei:p return local:markdown($p)
+    let $paras := for $p in $projectDesc/tei:p return local:markdown($p)
+    return string-join($paras, "&#10;&#10;")
   ) else ()
   return if ($header) then (
     map:merge((
