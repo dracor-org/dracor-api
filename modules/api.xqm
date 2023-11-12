@@ -960,7 +960,7 @@ function api:networkdata-csv($corpusname, $playname) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $cast := dutil:distinct-speakers($doc//tei:body)
+      let $speakers := dutil:distinct-speakers($doc//tei:body)
       let $segments :=
         <segments>
           {
@@ -976,23 +976,23 @@ function api:networkdata-csv($corpusname, $playname) {
         </segments>
 
       let $links := map:merge(
-        for $spkr in $cast
+        for $spkr in $speakers
         let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
         return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
       )
 
       let $rows :=
-        for $spkr at $pos in $cast
+        for $spkr at $pos in $speakers
           for $cooc in $links($spkr)
-          where index-of($cast, $cooc)[1] gt $pos
+          where index-of($speakers, $cooc)[1] gt $pos
           let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
           return string-join(($spkr, 'Undirected',$cooc, $weight), ",")
 
       return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
 };
 
-declare function local:make-gexf-nodes($cast, $doc) as element()* {
-  for $n in $cast?*
+declare function local:make-gexf-nodes($speakers, $doc) as element()* {
+  for $n in $speakers?*
   let $id := $n?id
   let $label := $n?name
   let $sex := $n?sex
@@ -1033,7 +1033,7 @@ function api:networkdata-gexf($corpusname, $playname) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $cast := dutil:distinct-speakers($doc//tei:body)
+      let $speakers := dutil:distinct-speakers($doc//tei:body)
       let $segments :=
         <segments>
           {
@@ -1053,17 +1053,17 @@ function api:networkdata-gexf($corpusname, $playname) {
       let $title := $info?title
 
       let $links := map:merge(
-        for $spkr in $cast
+        for $spkr in $speakers
         let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
         return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
       )
 
-      let $nodes := local:make-gexf-nodes($info?cast, $doc)
+      let $nodes := local:make-gexf-nodes($info?characters, $doc)
 
       let $edges :=
-        for $spkr at $pos in $cast
+        for $spkr at $pos in $speakers
           for $cooc in $links($spkr)
-          where index-of($cast, $cooc)[1] gt $pos
+          where index-of($speakers, $cooc)[1] gt $pos
           let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
           return
             <edge xmlns="http://www.gexf.net/1.2draft"
@@ -1108,7 +1108,7 @@ function api:networkdata-graphml($corpusname, $playname) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $cast := dutil:distinct-speakers($doc//tei:body)
+      let $speakers := dutil:distinct-speakers($doc//tei:body)
       let $segments :=
         <segments>
           {
@@ -1126,15 +1126,15 @@ function api:networkdata-graphml($corpusname, $playname) {
       let $info := dutil:get-play-info($corpusname, $playname)
 
       let $links := map:merge(
-        for $spkr in $cast
+        for $spkr in $speakers
         let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
         return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
       )
 
       let $edges :=
-        for $spkr at $pos in $cast
+        for $spkr at $pos in $speakers
           for $cooc in $links($spkr)
-          where index-of($cast, $cooc)[1] gt $pos
+          where index-of($speakers, $cooc)[1] gt $pos
           let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
           return
             <edge xmlns="http://graphml.graphdrawing.org/xmlns"
@@ -1152,7 +1152,7 @@ function api:networkdata-graphml($corpusname, $playname) {
           <key attr.name="Number of spoken words" attr.type="int" for="node" id="number-of-words"/>
           <graph edgedefault="undirected">
             {
-              for $n in $info?cast?*
+              for $n in $info?characters?*
               let $id := $n?id
               let $label := $n?name
               let $sex := $n?sex
@@ -1254,7 +1254,7 @@ function api:relations-gexf($corpusname, $playname) {
       let $authors := string-join($info?authors?*?name, ' · ')
       let $title := $info?title
 
-      let $nodes := local:make-gexf-nodes($info?cast, $doc)
+      let $nodes := local:make-gexf-nodes($info?characters, $doc)
 
       let $edges :=
         for $rel at $pos in $info?relations?*
@@ -1356,7 +1356,7 @@ function api:relations-graphml($corpusname, $playname) {
           <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
           <graph edgedefault="undirected">
             {
-              for $n in $info?cast?*
+              for $n in $info?characters?*
               let $id := $n?id
               let $label := $n?name
               let $sex := $n?sex
@@ -1384,12 +1384,12 @@ function api:relations-graphml($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/cast")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/characters")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:cast-info($corpusname, $playname) {
-  let $info := dutil:cast-info($corpusname, $playname)
+function api:characters-info($corpusname, $playname) {
+  let $info := dutil:characters-info($corpusname, $playname)
   return
     if (count($info) > 0) then
       $info
@@ -1408,12 +1408,12 @@ function api:cast-info($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/cast")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/characters")
   %rest:produces("text/csv")
   %output:media-type("text/csv")
   %output:method("text")
-function api:cast-info-csv($corpusname, $playname) {
-  let $info := dutil:cast-info($corpusname, $playname)
+function api:characters-info-csv($corpusname, $playname) {
+  let $info := dutil:characters-info($corpusname, $playname)
   let $keys := (
     "id", "name", "gender", "isGroup",
     "numOfScenes", "numOfSpeechActs", "numOfWords", "wikidataId",
@@ -1435,11 +1435,11 @@ function api:cast-info-csv($corpusname, $playname) {
 
 declare
   %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/cast/csv")
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/characters/csv")
   %output:media-type("text/csv")
   %output:method("text")
-function api:cast-info-csv-ext($corpusname, $playname) {
-  api:cast-info-csv($corpusname, $playname)
+function api:characters-info-csv-ext($corpusname, $playname) {
+  api:characters-info-csv($corpusname, $playname)
 };
 
 (:~
@@ -1464,10 +1464,10 @@ function api:segmentation-csv($corpusname, $playname) {
   else
   let $authors := string-join($info?authors?*?name, " | ")
   return (
-    "segmentNumber,segmentTitle,castId,castName,gender,title,authors&#10;",
+    "segmentNumber,segmentTitle,characterId,characterName,gender,title,authors&#10;",
     for $seg in $info?segments?*
       for $id in $seg?speakers?*
-      let $speaker := $info?cast?*[?id=$id]
+      let $speaker := $info?characters?*[?id=$id]
       let $row := (
         $seg?number, $seg?title, $id, $speaker?name, $speaker?sex,
         $info?title, $authors
