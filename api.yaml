@@ -419,10 +419,10 @@ paths:
           description: >-
             There is no corpus with the given `corpusname`.
 
-  /corpora/{corpusname}/plays/{playname}/cast:
+  /corpora/{corpusname}/plays/{playname}/characters:
     get:
       summary: Get a list of characters of a play
-      operationId: get-cast
+      operationId: get-characters
       tags: [public]
       parameters:
         - $ref: "#/components/parameters/corpusname"
@@ -435,7 +435,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CastItem'
+                  $ref: '#/components/schemas/Character'
               example: |
                 [
                   {
@@ -485,10 +485,10 @@ paths:
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
                 "luka_lukich","Лука Лукич","MALE","false","8","24","291"
 
-  /corpora/{corpusname}/plays/{playname}/cast/csv:
+  /corpora/{corpusname}/plays/{playname}/characters/csv:
     get:
       summary: Get a list of characters of a play (CSV)
-      operationId: get-cast-csv
+      operationId: get-characters-csv
       tags: [public]
       parameters:
         - $ref: "#/components/parameters/corpusname"
@@ -1433,7 +1433,7 @@ components:
           type: string
         shortname:
           type: string
-    CastItemInPlayMetadata:
+    CharacterInPlayMetadata:
       type: object
       properties:
         wikidataId:
@@ -1504,10 +1504,10 @@ components:
           nullable: true
         subtitleEn:
           type: string
-        cast:
+        characters:
           type: array
           items:
-            $ref: '#/components/schemas/CastItemInPlayMetadata'
+            $ref: '#/components/schemas/CharacterInPlayMetadata'
         source:
           $ref: '#/components/schemas/SourceInPlayMetadata'
         subtitle:
@@ -1592,7 +1592,7 @@ components:
           type: integer
         density:
           type: number
-    CastItem:
+    Character:
       type: object
       properties:
         closeness:

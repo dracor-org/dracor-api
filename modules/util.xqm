@@ -570,11 +570,11 @@ declare function dutil:get-corpus-meta-data(
 
   let $num-speakers := count(dutil:distinct-speakers($tei))
 
-  let $cast := $tei//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)
-  let $num-male := count($cast[@sex="MALE"])
-  let $num-female := count($cast[@sex="FEMALE"])
-  let $num-unknown := count($cast[@sex="UNKNOWN"])
-  let $num-groups := count($cast[name()="personGrp"])
+  let $characters := $tei//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)
+  let $num-male := count($characters[@sex="MALE"])
+  let $num-female := count($characters[@sex="FEMALE"])
+  let $num-unknown := count($characters[@sex="UNKNOWN"])
+  let $num-groups := count($characters[name()="personGrp"])
 
   let $num-p := count($tei//tei:body//tei:sp//tei:p)
   let $num-l := count($tei//tei:body//tei:sp//tei:l)
@@ -962,8 +962,8 @@ declare function dutil:get-play-info(
     let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := dutil:get-source($tei)
     let $orig-source := $tei//tei:bibl[@type="originalSource"][1]/normalize-space(.)
-    let $cast := dutil:distinct-speakers($doc//tei:body)
-    let $lastone := $cast[last()]
+    let $speakers := dutil:distinct-speakers($doc//tei:body)
+    let $lastone := $speakers[last()]
 
     let $segments := array {
       for $segment at $pos in dutil:get-segments($tei)
@@ -1011,8 +1011,8 @@ declare function dutil:get-play-info(
         "libretto": $text-classes = 'Libretto',
         "allInSegment": $all-in-segment,
         "allInIndex": $all-in-index,
-        "cast": array {
-          for $id in $cast
+        "characters": array {
+          for $id in $speakers
           let $node := $doc//tei:particDesc//(
             tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
           )
@@ -1113,12 +1113,12 @@ declare function dutil:get-play-metrics(
 };
 
 (:~
- : Compile cast info for a play.
+ : Compile info about characters of a play.
  :
  : @param $corpusname
  : @param $playname
  :)
-declare function dutil:cast-info (
+declare function dutil:characters-info (
   $corpusname as xs:string,
   $playname as xs:string
 ) as item()? {
@@ -1127,7 +1127,7 @@ declare function dutil:cast-info (
     ()
   else
     let $tei := $doc//tei:TEI
-    let $cast := dutil:distinct-speakers($doc//tei:body)
+    let $speakers := dutil:distinct-speakers($doc//tei:body)
 
     let $segments := array {
       for $segment at $pos in dutil:get-segments($tei)
@@ -1142,7 +1142,7 @@ declare function dutil:cast-info (
     let $metrics := doc(dutil:filepaths($corpusname, $playname)?files?metrics)
 
     return array {
-      for $id in $cast
+      for $id in $speakers
       let $node := $doc//tei:particDesc//(
         tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
       )
