@@ -968,7 +968,9 @@ declare function dutil:get-play-info(
     let $segments := array {
       for $segment at $pos in dutil:get-segments($tei)
       let $heads :=
-        $segment/(ancestor::tei:div/tei:head,tei:head) ! normalize-space(.)
+        $segment/(ancestor::tei:div/tei:head,tei:head)
+          ! functx:remove-elements-deep(., ('*:note'))
+          ! normalize-space(.)
       let $speakers := dutil:distinct-speakers($segment)
       return map:merge((
         map {
