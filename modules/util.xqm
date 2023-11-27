@@ -638,6 +638,7 @@ declare function dutil:get-corpus-meta-data(
     "wordCountText": xs:integer($stat/text/string()),
     "wordCountSp": xs:integer($stat/sp/string()),
     "wordCountStage": xs:integer($stat/stage/string()),
+    "datePremiered": dutil:get-premiere-date($tei),
     "yearWritten": $years?written,
     "yearPremiered": $years?premiere,
     "yearPrinted": $years?print,

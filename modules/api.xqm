@@ -42,6 +42,7 @@ declare variable $api:metadata-columns := (
   "maxDegreeIds",
   "averageDegree",
   "diameter",
+  "datePremiered",
   "yearPremiered",
   "yearPrinted",
   "maxDegree",
