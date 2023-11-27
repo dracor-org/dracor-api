@@ -1444,40 +1444,6 @@ function api:characters-info-csv-ext($corpusname, $playname) {
 };
 
 (:~
- : Get a list of segments and characters of a play
- :
- : @param $corpusname Corpus name
- : @param $playname Play name
- : @result list of comma separated segment data
- :)
-declare
-  %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/segmentation")
-  %rest:produces("text/csv", "text/plain")
-  %output:media-type("text/csv")
-  %output:method("text")
-function api:segmentation-csv($corpusname, $playname) {
-  let $info := dutil:get-play-info($corpusname, $playname)
-  return if (count($info) = 0) then
-    <rest:response>
-      <http:response status="404"/>
-    </rest:response>
-  else
-  let $authors := string-join($info?authors?*?name, " | ")
-  return (
-    "segmentNumber,segmentTitle,characterId,characterName,gender,title,authors&#10;",
-    for $seg in $info?segments?*
-      for $id in $seg?speakers?*
-      let $speaker := $info?characters?*[?id=$id]
-      let $row := (
-        $seg?number, $seg?title, $id, $speaker?name, $speaker?sex,
-        $info?title, $authors
-      ) ! dutil:csv-escape(.)
-      return '"' || string-join($row, '","') || '"&#10;'
-  )
-};
-
-(:~
  : Get spoken text of a play (excluding stage directions)
  :
  : @param $corpusname Corpus name
