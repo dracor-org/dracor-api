@@ -119,3 +119,7 @@ of the corpus data when the configured GitHub repository for the corpus changes.
 
 *Note:* For the webhook to work, the shared secret between DraCor and GitHub
 needs to be configured at `/db/data/dracor/secrets.xml` in the database.
+
+## License
+
+dracor-api is [MIT licensed](./LICENSE).
