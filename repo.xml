@@ -3,8 +3,8 @@
   <description>RESTful API for the Drama Corpora Project (DraCor)</description>
   <author>Carsten Milling</author>
   <website>https://github.com/dracor-org/dracor-api</website>
-  <status>beta</status>
-  <license ref="https://spdx.org/licenses/">Apache-2.0</license>
+  <status>stable</status>
+  <license ref="https://spdx.org/licenses/">MIT</license>
   <copyright>true</copyright>
   <type>application</type>
   <target>dracor-v1</target>
