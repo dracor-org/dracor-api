@@ -74,7 +74,9 @@ COPY adjust-conf-files.xsl ${EXIST_HOME}/
 # main installation put into one RUN to squeeze image size
 RUN apt-get update \
     && apt dist-upgrade -y \
-    && apt install -y curl pwgen zip \
+    && apt install -y curl pwgen zip less \
+    && echo 'export LESS=-RMS' >> /etc/bash.bashrc \
+    && echo 'alias ll="ls -l --color"' >> /etc/bash.bashrc \
     && echo "INSTALL_PATH=${EXIST_HOME}" > "/tmp/options.txt" \
     && echo "MAX_MEMORY=${MAX_MEMORY}" >> "/tmp/options.txt" \
     && echo "dataDir=${EXIST_DATA_DIR}" >> "/tmp/options.txt" \
