@@ -65,6 +65,22 @@ declare variable $api:metadata-columns := (
 );
 
 (:~
+ : API base
+ :
+ : Mirrors api:info
+ :
+ : @result JSON object
+ :)
+declare
+  %rest:GET
+  %rest:path("/v1")
+  %rest:produces("application/json")
+  %output:method("json")
+function api:base() {
+  api:info()
+};
+
+(:~
  : API info
  :
  : Shows version numbers of the dracor-api app and the underlying eXist-db.
