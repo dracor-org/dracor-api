@@ -24,20 +24,27 @@ simply run:
 docker compose up
 ```
 
-By default this sets up a password for the admin user of the eXist database
-which is printed to the console at the first start. If you want to use the
-database with an empty password run:
-
-```sh
-docker compose -f compose.yml -f compose.dev.yml up
-```
-
-This builds the necessary images and starts the respective docker containers.
-The **eXist database** will become available under http://localhost:8080/.
-To check that the DraCor API is up run
+This pulls the necessary images from Docker Hub and starts the respective
+containers. The **eXist database** will become available under
+http://localhost:8080/. To check that the DraCor API is up run
 
 ```sh
 curl http://localhost:8088/api/v1/info
+```
+
+By default, when you run `docker compose up` for the first time, a password for
+the admin user of the eXist database is generated and printed to the console. If
+you instead want to use a specific password use the `EXIST_PASSWORD` environment
+variable like this:
+
+```sh
+EXIST_PASSWORD=mysecret docker compose up
+```
+
+To use the database with an empty password, e.g. on a local machine, run:
+
+```sh
+EXIST_PASSWORD= docker compose up
 ```
 
 The docker-compose setup also includes a

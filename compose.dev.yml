@@ -1,4 +1,51 @@
+# Compose file for development setup
+# Usage: docker compose -f compose.dev.yml up
+#    or: docker compose -f compose.yml -f compose.dev.yml up
+name: dracor-dev
 services:
   api:
+    image: dracor/api-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - FUSEKI_SECRET=qwerty
+        - GITHUB_WEBHOOK_SECRET=qwerty
     environment:
+      # override default API base with frontend proxy
+      - DRACOR_API_BASE=http://localhost:8088/api/v1
+      # set an empty password
       - EXIST_PASSWORD=
+    ports:
+      - 8080:8080
+    volumes:
+      - existdata:/opt/exist/data
+    depends_on:
+      - fuseki
+      - metrics
+  fuseki:
+    image: dracor/fuseki
+    build: https://github.com/dracor-org/dracor-fuseki.git#main
+    environment:
+      - ADMIN_PASSWORD=qwerty
+    ports:
+      - 3030:3030
+    volumes:
+      - fusekidata:/fuseki
+  metrics:
+    image: dracor/metrics
+    build: https://github.com/dracor-org/dracor-metrics.git#main
+    ports:
+      - 8030:8030
+  frontend:
+    image: dracor/frontend
+    build: https://github.com/dracor-org/dracor-frontend.git#main
+    environment:
+      DRACOR_API: http://api:8080/exist/restxq/v1
+    ports:
+      - 8088:80
+    depends_on:
+      - api
+volumes:
+  existdata:
+  fusekidata:

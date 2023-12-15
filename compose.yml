@@ -1,50 +1,30 @@
+name: dracor
 services:
   api:
-    image: "dracor/dracor-api"
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - FUSEKI_SERVER=http://fuseki:3030/dracor/
-        - METRICS_SERVER=http://metrics:8030/metrics/
-        - FUSEKI_SECRET=qwerty
-        - GITHUB_WEBHOOK_SECRET=qwerty
+    image: dracor/api:1.0
     environment:
       - DRACOR_API_BASE=http://localhost:8088/api/v1
+      - EXIST_PASSWORD
     ports:
-      - "8080:8080"
-    volumes:
-      - existdata:/opt/exist/data
-      - .:/tmp/export
+      - 8080:8080
     depends_on:
       - fuseki
       - metrics
   fuseki:
-    image: "dracor/dracor-fuseki"
-    build: https://github.com/dracor-org/dracor-fuseki.git#v1.1.0
+    image: dracor/fuseki:1.1.2
     environment:
       - ADMIN_PASSWORD=qwerty
     ports:
-      - "3030:3030"
-    expose:
-      - "3030"
-    volumes:
-      - fusekidata:/fuseki
+      - 3030:3030
   metrics:
-    image: "dracor/dracor-metrics"
-    build: https://github.com/dracor-org/dracor-metrics.git#v1.3.1
+    image: dracor/metrics:1.3.3
     ports:
-      - "8030:8030"
+      - 8030:8030
   frontend:
-    image: "dracor/dracor-frontend"
-    build:
-      context: https://github.com/dracor-org/dracor-frontend.git#v2.0.0
+    image: dracor/frontend:2.0.2
     environment:
       DRACOR_API: http://api:8080/exist/restxq/v1
     ports:
-      - "8088:80"
+      - 8088:80
     depends_on:
       - api
-volumes:
-  existdata:
-  fusekidata:
