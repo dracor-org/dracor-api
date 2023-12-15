@@ -50,7 +50,7 @@ ENV EXIST_CONTEXT_PATH ${EXIST_CONTEXT_PATH:-/exist}
 ENV EXIST_DATA_DIR ${EXIST_DATA_DIR:-/opt/exist/data}
 ENV SAXON_JAR ${SAXON_JAR:-/opt/exist/lib/Saxon-HE-9.9.1-8.jar}
 ENV LOG4J_FORMAT_MSG_NO_LOOKUPS true
-ENV DRACOR_API_BASE ${DRACOR_API_BASE:-http://localhost:8080/exist/restxq}
+ENV DRACOR_API_BASE ${DRACOR_API_BASE:-http://localhost:8080/exist/restxq/v1}
 ENV FUSEKI_SERVER ${FUSEKI_SERVER:-http://localhost:3030/dracor/}
 ENV METRICS_SERVER ${METRICS_SERVER:-http://localhost:8030/metrics/}
 ENV FUSEKI_SECRET ${FUSEKI_SECRET:-""}
