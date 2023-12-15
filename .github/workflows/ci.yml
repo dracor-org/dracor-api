@@ -1,3 +1,5 @@
+# FIXME: This is going to be osolete and should be remove when we introduce the
+# schemathesis tests.
 name: CI
 
 on:
@@ -10,9 +12,9 @@ permissions:
   contents: read
 
 env:
-  COMPOSE_FILE: compose.yml:compose.dev.yml
+  COMPOSE_FILE: compose.yml
   DOCKER_BUILDKIT: 1
-  FORCE_COLOR: 1 
+  FORCE_COLOR: 1
 
 jobs:
   compose-up:
