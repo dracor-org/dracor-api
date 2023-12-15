@@ -101,7 +101,8 @@ function api:info() {
     "version": $expath/@version/string(),
     "status": $repo/repo:status/string(),
     "existdb": system:get-version(),
-    "base": $config:api-base
+    "base": $config:api-base,
+    "doc": $config:api-base || "/openapi.yaml"
   }
 };
 

@@ -29,11 +29,12 @@ paths:
             application/json:
               example:
                 {
-                  "existdb": "6.2.0",
                   "name": "DraCor",
-                  "status": "stable",
                   "version": "1.0.0",
-                  "base": "https://dracor.org/api/v1"
+                  "status": "stable",
+                  "existdb": "6.2.0",
+                  "base": "https://dracor.org/api/v1",
+                  "doc": "https://dracor.org/api/v1/openapi.yaml"
                 }
               schema:
                 $ref: '#/components/schemas/Info'
@@ -1126,6 +1127,10 @@ components:
     Info:
       type: object
       properties:
+        name:
+          type: string
+        version:
+          type: string
         status:
           type: string
         existdb:
@@ -1133,10 +1138,9 @@ components:
         base:
           type: string
           format: url
-        name:
+        doc:
           type: string
-        version:
-          type: string
+          format: url
     WordCounts:
       type: object
       properties:
