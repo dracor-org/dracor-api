@@ -1,0 +1,21 @@
+# Compose file for test setup
+# Usage: docker copmose -f compose.yml -f compose.t.yml up
+# This file is named compose.t.yml instead of compose.test.yml to work around
+# the VS Code quirk of association the wrong schema with the latter name.
+name: dracor-test
+services:
+  api:
+    image: dracor/api-test
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - FUSEKI_SECRET=qwerty
+        - GITHUB_WEBHOOK_SECRET=qwerty
+    environment:
+      # set back to default
+      - DRACOR_API_BASE=http://localhost:8080/exist/restxq/v1
+      - EXIST_PASSWORD=
+  frontend:
+    profiles:
+      - fulltest
