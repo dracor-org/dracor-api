@@ -30,6 +30,7 @@ declare function dutil:filepaths ($url as xs:string) as map() {
     "collections": map {
       "tei": $config:data-root || "/" || $corpusname,
       "metrics": $config:metrics-root || "/" || $corpusname,
+      "sitelinks": $config:sitelinks-root || "/" || $corpusname,
       "rdf": $config:rdf-root || "/" || $corpusname
     },
     "files": map {

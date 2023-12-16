@@ -16,6 +16,7 @@ declare function trigger:after-create-document($url as xs:anyURI) {
     (
       util:log-system-out("running CREATION TRIGGER for " || $url),
       metrics:update($url),
+      metrics:update-sitelinks($url),
       drdf:update($url)
     )
   else (
@@ -28,6 +29,7 @@ declare function trigger:after-update-document($url as xs:anyURI) {
     (
       util:log-system-out("running UPDATE TRIGGER for " || $url),
       metrics:update($url),
+      metrics:update-sitelinks($url),
       drdf:update($url)
     )
   else (
@@ -38,7 +40,9 @@ declare function trigger:after-update-document($url as xs:anyURI) {
 declare function trigger:before-delete-document($url as xs:anyURI) {
   if (doc($url)/tei:TEI) then
     let $paths := dutil:filepaths($url)
+    let $id := dutil:get-play-wikidata-id(doc($url)/tei:TEI)
     return try {
+      if ($id) then xmldb:remove($paths?collections?sitelinks, $id || '.xml') else (),
       xmldb:remove($paths?collections?metrics, $paths?filename),
       xmldb:remove($paths?collections?rdf, $paths?playname || ".rdf.xml")
     } catch * {

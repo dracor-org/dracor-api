@@ -422,6 +422,7 @@ function api:corpora-post-json($data) {
       util:log-system-out($corpus),
       xmldb:create-collection($config:data-root, $name),
       xmldb:create-collection($config:metrics-root, $name),
+      xmldb:create-collection($config:sitelinks-root, $name),
       xmldb:create-collection($config:rdf-root, $name),
       xmldb:store($tei-dir, "corpus.xml", $corpus),
       $json
@@ -626,6 +627,7 @@ function api:delete-corpus($corpusname, $auth) {
         (
           xmldb:remove($config:data-root || "/" || $corpusname),
           xmldb:remove($config:metrics-root || "/" || $corpusname),
+          xmldb:remove($config:sitelinks-root || "/" || $corpusname),
           xmldb:remove($config:rdf-root || "/" || $corpusname),
           map {
             "message": "corpus deleted",
