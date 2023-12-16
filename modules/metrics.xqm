@@ -16,24 +16,53 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 (:~
+ : Query sitelinks for given Wikidata ID and store them to the sitelinks
+ : collection.
+ :
+ : @param $id Wikidata ID
+ : @param $corpus Corpus name
+:)
+declare function metrics:update-sitelinks(
+  $id as xs:string,
+  $corpus as xs:string
+) {
+  if ($id) then
+    let $resource := $id || '.xml'
+    let $collection := $config:sitelinks-root || '/' || $corpus
+    let $log := util:log-system-out('querying sitelinks for ' || $resource)
+    let $sitelinks := <sitelinks id="{$id}" updated="{current-dateTime()}">{
+      for $uri in wd:get-sitelinks($id)
+      return <uri>{$uri}</uri>
+    }</sitelinks>
+    return (
+      $sitelinks,
+      xmldb:store($collection, $resource, $sitelinks)
+    )
+  else ()
+};
+
+(:~
+ : Update sitelinks for Wikidata ID of play with given url.
+ :
+ : @param $url Path to TEI file
+:)
+declare function metrics:update-sitelinks($url as xs:string) {
+  let $p := dutil:filepaths($url)
+  let $doc:= dutil:get-doc($p?corpusname, $p?playname)
+  let $id := dutil:get-play-wikidata-id($doc/tei:TEI)
+  return metrics:update-sitelinks($id, $p?corpusname)
+};
+
+(:~
  : Collect sitelinks for each play in a given corpus from wikidata and store
  : them to the sitelinks collection
  :
  : @param $corpus Corpus name
 :)
 declare function metrics:collect-sitelinks($corpus as xs:string) {
-  let $log := util:log('info', 'collecting sitelinks for corpus ' || $corpus)
-  let $sitelinks-col := xmldb:create-collection(
-    "/", $config:sitelinks-root || '/' || $corpus
-  )
+  util:log-system-out('collecting sitelinks for corpus ' || $corpus),
   for $id in dutil:get-play-wikidata-ids($corpus)
-  let $resource := $id || '.xml'
-  let $log := util:log('info', 'querying sitelinks for ' || $resource)
-  let $sitelinks := <sitelinks id="{$id}" updated="{current-dateTime()}">{
-    for $uri in wd:get-sitelinks($id)
-    return <uri>{$uri}</uri>
-  }</sitelinks>
-  return xmldb:store($sitelinks-col, $resource, $sitelinks)
+  return metrics:update-sitelinks($id, $corpus)
 };
 
 (:~
