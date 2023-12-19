@@ -12,3 +12,12 @@ updates:
     github-actions:
       patterns:
       - '*'
+- package-ecosystem: docker
+  directory: /
+  schedule:
+    interval: monthly
+  groups:
+    # open a single pull-request for all Docker image updates
+    docker:
+      patterns:
+      - '*'
