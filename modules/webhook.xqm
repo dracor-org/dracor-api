@@ -180,7 +180,7 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
       return if (not($result)) then
         (
           <rest:response><http:response status="500"/></rest:response>,
-          map {"message": "An error occured."}
+          map {"message": "An error occurred."}
         )
         else map {
           "message": "Delivery accepted.",
