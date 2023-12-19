@@ -1044,7 +1044,7 @@ paths:
       responses:
         '200':
           description: >-
-            Webhook delivery has been recieved, a status message is being
+            Webhook delivery has been received, a status message is being
             returned.
           content:
             application/json:

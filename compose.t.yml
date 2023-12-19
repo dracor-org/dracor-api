@@ -1,5 +1,5 @@
 # Compose file for test setup
-# Usage: docker copmose -f compose.yml -f compose.t.yml up
+# Usage: docker compose -f compose.yml -f compose.t.yml up
 # This file is named compose.t.yml instead of compose.test.yml to work around
 # the VS Code quirk of association the wrong schema with the latter name.
 name: dracor-test

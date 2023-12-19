@@ -59,7 +59,7 @@
       src="https://github.com/eXist-db/exist/releases/download/eXist-${project.processorversion}/exist-distribution-${project.processorversion}-unix.tar.bz2"
       dest="${dependencies.dir}/eXist-db-${project.processorversion}.tar.bz2"
       skipexisting="true" />
-    <!-- clean up old dependecies -->
+    <!-- clean up old dependencies -->
     <delete>
       <fileset dir="${dependencies.dir}" includes="*.xar"/>
     </delete>
@@ -217,7 +217,7 @@
       <move todir="${devel.dir}/eXist-db-${project.processorversion}">
         <fileset dir="${devel.dir}/exist-distribution-${project.processorversion}" />
       </move>
-      <!-- task setpermissions requries at least ant 1.10.0 -->
+      <!-- task setpermissions requires at least ant 1.10.0 -->
       <setpermissions mode="755">
         <file file="${devel.dir}/eXist-db-${project.processorversion}/bin/startup.sh"/>
       </setpermissions>

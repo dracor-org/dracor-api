@@ -53,7 +53,7 @@ as element(rdf:RDF) {
    :)
 
   (: handle multilingual titles "main"/"sub"... :)
-  (: maybe this part could be or is handled by a seperate function? :)
+  (: maybe this part could be or is handled by a separate function? :)
   let $titles := array {
     for $lang in distinct-values(
       $play//tei:titleStmt//tei:title/@xml:lang/string()

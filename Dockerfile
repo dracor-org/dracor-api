@@ -79,7 +79,7 @@ RUN apt-get update \
     && echo "MAX_MEMORY=${MAX_MEMORY}" >> "/tmp/options.txt" \
     && echo "dataDir=${EXIST_DATA_DIR}" >> "/tmp/options.txt" \
     # install eXist-db
-    # ending with true because java somehow returns with a non-zero after succesfull installing
+    # ending with true because java somehow returns with a non-zero after successful installing
     && curl -sL ${EXIST_URL} -o /tmp/exist.jar \
     && java -jar "/tmp/exist.jar" -options "/tmp/options.txt" || true \
     && rm -fr "/tmp/exist.jar" "/tmp/options.txt" ${EXIST_DATA_DIR}/* \
