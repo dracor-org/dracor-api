@@ -276,6 +276,9 @@ function api:corpora($include) {
  :
  : @param $data corpus.xml containing teiCorpus element.
  : @result XML document
+ :
+ : FIXME: create utility function that can be used both here and in
+ : api:corpora-post-json() below.
  :)
 declare
   %rest:POST("{$data}")
@@ -347,6 +350,7 @@ function api:corpora-post-tei($data, $auth) {
         util:log-system-out($data),
         xmldb:create-collection($config:data-root, $name),
         xmldb:create-collection($config:metrics-root, $name),
+        xmldb:create-collection($config:sitelinks-root, $name),
         xmldb:create-collection($config:rdf-root, $name),
         xmldb:store($tei-dir, "corpus.xml", $data),
         map {
@@ -362,6 +366,9 @@ function api:corpora-post-tei($data, $auth) {
  :
  : @param $data JSON object describing corpus meta data
  : @result JSON object
+ :
+ : FIXME: create utility function that can be used both here and in
+ : api:corpora-post-tei() above.
  :)
 declare
   %rest:POST("{$data}")
