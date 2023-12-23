@@ -465,7 +465,9 @@ declare function drdf:update() as xs:string* {
 declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
   let $url := $config:fuseki-server || "update"
   let $graph := "http://dracor.org/" || $corpusname
-  let $log := util:log-system-out("clearing fuseki graph: " || $graph)
+  let $log := util:log-system-out(
+    "Clearing fuseki graph <" || $graph || "> at " || $url
+  )
   let $request :=
     <hc:request
       method="post"
@@ -479,14 +481,19 @@ declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
       </hc:body>
     </hc:request>
 
-  let $response := hc:send-request($request, $url)
+  let $response := try {
+     hc:send-request($request, $url)
+  } catch * {
+    util:log-system-out($err:description)
+  }
 
   return if ($response/@status = "204") then (
-    util:log-system-out("Cleared graph <" || $graph || ">"),
     true()
   ) else (
     util:log-system-out(
-      "Failed to clear graph <" || $graph || ">: " || $response/message
+      "Failed to clear graph! " || (
+        if ($response/message) then $response/message else ""
+      )
     ),
     false()
   )
@@ -494,25 +501,41 @@ declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
 
 (:~
  : Send RDF data to Fuseki
- https://github.com/dracor-org/dracor-api/issues/77
+ : https://github.com/dracor-org/dracor-api/issues/77
  :)
 declare function drdf:fuseki($uri as xs:anyURI) {
   let $corpus := tokenize($uri, "/")[position() = last() - 1]
   let $url := $config:fuseki-server || "data" || "?graph=" || encode-for-uri("http://dracor.org/" || $corpus)
   let $rdf := doc($uri)
-  let $request :=
-    <hc:request method="post" href="{ $url }">
-      <hc:body media-type="application/rdf+xml">{ $rdf }</hc:body>
-    </hc:request>
-  let $response :=
-      hc:send-request($request)
-  let $status := string($response[1]/@status)
-  return
-      switch ($status)
+
+  return (
+    util:log-system-out(
+      "Posting " || $uri || " to " || $url
+    ),
+    if (not($rdf)) then (
+      util:log-system-out("Cannot find " || $uri),
+      false()
+    ) else (
+      let $request :=
+        <hc:request method="post" href="{ $url }">
+          <hc:body media-type="application/rdf+xml">{ $rdf }</hc:body>
+        </hc:request>
+
+      let $response := try {
+        hc:send-request($request)
+      } catch * {
+        util:log-system-out($err:description)
+      }
+
+      return if ($response) then
+        switch (string($response[1]/@status))
           case "200" return true()
           case "201" return true()
           default return (
-              util:log("info", "unable to store to fuseki: " || $uri),
-              util:log("info", "response header from fuseki: " || $response[1]),
-              util:log("info", "response body from fuseki: " || $response[2]))
+            util:log-system-out("response header from fuseki: " || $response[1]),
+            util:log-system-out("response body from fuseki: " || $response[2])
+          )
+      else false()
+    )
+  )
 };
