@@ -51,6 +51,7 @@ jobs:
         # https://schemathesis.readthedocs.io/en/stable/cli.html
         uses: schemathesis/action@cd782ab11a0ae6358e38b7adaaf942a53dbe9368 # v1.0.3
         with:
+          api-name: dracor-api
           schema: http://localhost:8080/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8080/exist/restxq/v1/
           # OPTIONAL. Your Schemathesis.io token
