@@ -18,8 +18,8 @@ services:
       - EXIST_PASSWORD=
     ports:
       - 8080:8080
-    volumes:
-      - existdata:/opt/exist/data
+    # volumes:
+    #   - existdata:/opt/exist/data
     depends_on:
       - fuseki
       - metrics
@@ -48,5 +48,5 @@ services:
     depends_on:
       - api
 volumes:
-  existdata:
+  # existdata:
   fusekidata:
