@@ -5,3 +5,4 @@ devel/
 expath-pkg.xml
 local.build.properties
 *.xar
+.hypothesis

@@ -1,0 +1,73 @@
+name: Test API
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_FILE: compose.yml:compose.t.yml
+  DOCKER_BUILDKIT: 1
+  FORCE_COLOR: 1
+
+jobs:
+  test_api:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker --version
+      - name: Start the docker-compose stack
+        run: docker compose up --detach --wait
+      - name: Test if /info returns a response
+        run: curl --verbose http://localhost:8080/exist/restxq/v1/info
+      - name: Add test corpus
+        run: |
+          curl \
+            --request POST \
+            --url http://localhost:8080/exist/restxq/v1/corpora \
+            --user admin: \
+            --header 'Content-Type: application/json' \
+            --data @./corpora/test.json
+      - name: Load data for test corpus
+        run: |
+          curl \
+            --request POST \
+            --url http://localhost:8080/exist/restxq/v1/corpora/test \
+            --user admin: \
+            --header 'Content-Type: application/json' \
+            --data '{"load": true}'
+      - name: Wait 10 seconds for corpus data loading to complete
+        run: sleep 10
+      - name: Test if corpus returns a response
+        run: curl --verbose http://localhost:8080/exist/restxq/v1/corpora/test
+
+      - name: Test API with schemathesis
+        # Refs:
+        # https://github.com/schemathesis/action#configuration
+        # https://schemathesis.readthedocs.io/en/stable/cli.html
+        uses: schemathesis/action@cd782ab11a0ae6358e38b7adaaf942a53dbe9368 # v1.0.3
+        with:
+          api-name: dracor-api
+          schema: http://localhost:8080/exist/restxq/v1/openapi.yaml
+          base-url: http://localhost:8080/exist/restxq/v1/
+          # OPTIONAL. Your Schemathesis.io token
+          token: ${{ secrets.SCHEMATHESIS_TOKEN }}
+          # OPTIONAL. List of Schemathesis checks to run. Defaults to `all`
+          # if multiple checks should be used, use a comma seperated string,
+          # e.g. "not_a_server_error,status_code_conformance"
+          checks: not_a_server_error
+          # OPTIONAL. Whether you'd like to see the results in a Web UI
+          # Defaults to `true`
+          report: true
+          # OPTIONAL. Maximum number of generated examples for each endpoint
+          max-examples: 100
+          # OPTIONAL. Extra arguments to pass to Schemathesis
+          args: '--auth=admin: --workers=2 --method=GET'
+
+      - name: Stop the docker-compose stack
+        run: docker compose down
+        if: always()
