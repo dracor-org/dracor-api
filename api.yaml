@@ -227,7 +227,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Corpus'
         '404':
-          description: Corpus not found
+          description: Unknown corpus
     post:
       summary: Load corpus data from its repository
       description: >-
@@ -263,7 +263,7 @@ paths:
                   "message": "corpus update scheduled"
                 }
         '404':
-          description: Corpus not found
+          description: Unknown corpus
         '409':
           description: >-
             Corpus update could not be scheduled.
@@ -279,7 +279,7 @@ paths:
         '200':
           description: Corpus deleted
         '404':
-          description: Corpus not found
+          description: Unknown corpus
 
 
   /corpora/{corpusname}/metadata:
@@ -301,6 +301,8 @@ paths:
             text/csv:
               schema:
                 type: string
+        '404':
+          description: Unknown corpus
 
   /corpora/{corpusname}/metadata/csv:
     get:
@@ -319,6 +321,8 @@ paths:
                 "achat-ein-april-scherz","ger000637","Q121463020","Achat","0","Ein April-Scherz","Original-Lustspiel in einem Akt","Comedy","https://books.google.com/books?id=qHNIAQAAMAAJ&pg=PA45","Vereins-Buchhandlung","Berlin","1842","30","1842","6","false","0.8444444444444444","0.8","1.2","fraeulein|rittmeister","4","2","","1842","5","6","3","3","0","0","1","12","","22","0","0","6888","6681","411","518","0"
               schema:
                 type: string
+        '404':
+          description: Unknown corpus
 
   /corpora/{corpusname}/plays/{playname}:
     get:
@@ -335,6 +339,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Play'
+        '404':
+          description: Unknown play (or corpus)
     delete:
       summary: Remove a single play from the corpus
       operationId: play-delete
@@ -346,7 +352,7 @@ paths:
         '200':
           description: Play has been removed
         '404':
-          description: No such play under this URI
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/metrics:
     get:
@@ -363,6 +369,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlayMetrics'
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/tei:
     get:
@@ -379,6 +387,8 @@ paths:
             application/xml:
               schema:
                 type: string
+        '404':
+          description: Unknown play (or corpus)
     put:
       summary: Add new or update existing TEI document
       description: |
@@ -485,6 +495,8 @@ paths:
                 "ammos_fedorovich_ljapkin_tjapkin","Аммос Федорович","MALE","false","8","49","748"
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
                 "luka_lukich","Лука Лукич","MALE","false","8","24","291"
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/characters/csv:
     get:
@@ -507,6 +519,8 @@ paths:
                 "ammos_fedorovich_ljapkin_tjapkin","Аммос Федорович","MALE","false","8","49","748"
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
                 "luka_lukich","Лука Лукич","MALE","false","8","24","291"
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/networkdata/csv:
     get:
@@ -531,6 +545,8 @@ paths:
                 choros,Undirected,xerxes,2
                 atossa,Undirected,angelos,2
                 atossa,Undirected,dareios,1
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/networkdata/gexf:
     get:
@@ -547,6 +563,8 @@ paths:
             application/xml:
               schema:
                 type: string
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/networkdata/graphml:
     get:
@@ -563,6 +581,8 @@ paths:
             application/xml:
               schema:
                 type: string
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/relations/csv:
     get:
@@ -853,6 +873,8 @@ paths:
             text/plain:
               schema:
                 type: string
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/spoken-text-by-character:
     get:
@@ -874,6 +896,8 @@ paths:
             text/csv:
               schema:
                 type: string
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/stage-directions:
     get:
@@ -890,6 +914,8 @@ paths:
             text/plain:
               schema:
                 type: string
+        '404':
+          description: Unknown play (or corpus)
 
   /corpora/{corpusname}/plays/{playname}/stage-directions-with-speakers:
     get:
@@ -906,6 +932,8 @@ paths:
             text/plain:
               schema:
                 type: string
+        '404':
+          description: Unknown play (or corpus)
 
   /id/{id}:
     get:
@@ -927,7 +955,7 @@ paths:
         '303':
           description: Redirect to RDF or JSON resource or dracor.org URL.
         '404':
-          description: No play found for this ID
+          description: No play found by this ID
 
   /character/{id}:
     get:
@@ -952,6 +980,8 @@ paths:
                   $ref: '#/components/schemas/PlayWithWikidataCharacter'
         '400':
           description: Invalid character ID.
+        '404':
+          description: Unknown character
 
   /wikidata/author/{id}:
     get:
@@ -973,7 +1003,7 @@ paths:
               schema:
                 type: object
         '404':
-          description: Invalid or non existing author ID
+          description: Invalid or unknown author ID
           content:
             application/json:
               schema:
