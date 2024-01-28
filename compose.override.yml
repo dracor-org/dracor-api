@@ -1,0 +1,13 @@
+services:
+  api:
+    ports:
+      - 8080:8080
+  fuseki:
+    ports:
+      - 3030:3030
+  metrics:
+    ports:
+      - 8030:8030
+  frontend:
+    ports:
+      - 8088:80
