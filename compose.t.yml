@@ -13,9 +13,12 @@ services:
         - FUSEKI_SECRET=qwerty
         - GITHUB_WEBHOOK_SECRET=qwerty
     environment:
-      # set back to default
-      - DRACOR_API_BASE=http://localhost:8080/exist/restxq/v1
+      - DRACOR_API_BASE=http://localhost:8081/exist/restxq/v1
       - EXIST_PASSWORD=
+    ports:
+      - 8081:8080
   frontend:
     profiles:
       - fulltest
+    ports:
+      - 8089:80

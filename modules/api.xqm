@@ -514,7 +514,7 @@ function api:corpus-index($corpusname) {
           map:entry("yearPremiered", $years?premiere),
           if($premiere-date) then map:entry("datePremiered", $premiere-date) else (),
           map:entry("yearWritten", $years?written),
-          map:entry("networkSize", $network-size),
+          map:entry("networkSize", xs:integer($network-size)),
           map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),
           map:entry("wikidataId", dutil:get-play-wikidata-id($tei))
         ))

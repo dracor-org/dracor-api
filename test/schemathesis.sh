@@ -1,7 +1,7 @@
 # This should reproduce the test in the GitHub workflow.
 
-schemathesis run http://localhost:8088/api/v1/openapi.yaml \
-  --checks not_a_server_error \
+schemathesis run http://localhost:8081/exist/restxq/v1/openapi.yaml \
+  --exclude-checks status_code_conformance \
   --report \
   --hypothesis-max-examples 50 \
   --auth admin: \
