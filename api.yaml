@@ -34,7 +34,7 @@ paths:
                   "status": "stable",
                   "existdb": "6.2.0",
                   "base": "https://dracor.org/api/v1",
-                  "doc": "https://dracor.org/api/v1/openapi.yaml"
+                  "openapi": "https://dracor.org/api/v1/openapi.yaml"
                 }
               schema:
                 $ref: '#/components/schemas/Info'
@@ -1168,7 +1168,7 @@ components:
         base:
           type: string
           format: url
-        doc:
+        openapi:
           type: string
           format: url
     WordCounts:

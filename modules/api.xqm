@@ -102,7 +102,7 @@ function api:info() {
     "status": $repo/repo:status/string(),
     "existdb": system:get-version(),
     "base": $config:api-base,
-    "doc": $config:api-base || "/openapi.yaml"
+    "openapi": $config:api-base || "/openapi.yaml"
   }
 };
 
