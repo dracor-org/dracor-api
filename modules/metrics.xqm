@@ -16,27 +16,25 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 (:~
- : Query sitelinks for given Wikidata ID and store them to the sitelinks
+ : Query sitelinks for given Wikidata ID and store them to the play
  : collection.
  :
  : @param $id Wikidata ID
- : @param $corpus Corpus name
+ : @param $collection Path to play collection
 :)
 declare function metrics:update-sitelinks(
   $id as xs:string,
-  $corpus as xs:string
+  $collection as xs:string
 ) {
   if ($id) then
-    let $resource := $id || '.xml'
-    let $collection := $config:sitelinks-root || '/' || $corpus
-    let $log := util:log-system-out('querying sitelinks for ' || $resource)
+    let $log := util:log-system-out('querying sitelinks for ' || $collection)
     let $sitelinks := <sitelinks id="{$id}" updated="{current-dateTime()}">{
       for $uri in wd:get-sitelinks($id)
       return <uri>{$uri}</uri>
     }</sitelinks>
     return (
       $sitelinks,
-      xmldb:store($collection, $resource, $sitelinks)
+      xmldb:store($collection, "sitelinks.xml", $sitelinks)
     )
   else ()
 };
@@ -50,19 +48,22 @@ declare function metrics:update-sitelinks($url as xs:string) {
   let $p := dutil:filepaths($url)
   let $doc:= dutil:get-doc($p?corpusname, $p?playname)
   let $id := dutil:get-play-wikidata-id($doc/tei:TEI)
-  return metrics:update-sitelinks($id, $p?corpusname)
+  return metrics:update-sitelinks($id, $p?collections?play)
 };
 
 (:~
  : Collect sitelinks for each play in a given corpus from wikidata and store
- : them to the sitelinks collection
+ : them to the respective play collections
  :
  : @param $corpus Corpus name
 :)
 declare function metrics:collect-sitelinks($corpus as xs:string) {
   util:log-system-out('collecting sitelinks for corpus ' || $corpus),
-  for $id in dutil:get-play-wikidata-ids($corpus)
-  return metrics:update-sitelinks($id, $corpus)
+  let $collection := $config:corpora-root || '/' || $corpus
+  for $tei in collection($collection)
+    /tei:TEI[.//tei:standOff/tei:listRelation
+      /tei:relation[@name="wikidata"]/@passive]
+  return metrics:update-sitelinks($tei/base-uri())
 };
 
 (:~
@@ -70,7 +71,7 @@ declare function metrics:collect-sitelinks($corpus as xs:string) {
  : sitelinks collection
 :)
 declare function metrics:collect-sitelinks() {
-  for $corpus in collection($config:data-root)//tei:teiCorpus
+  for $corpus in collection($config:corpora-root)//tei:teiCorpus
   let $info := dutil:get-corpus-info($corpus)
   return metrics:collect-sitelinks($info?name)
 };
@@ -172,11 +173,11 @@ declare function metrics:calculate($url as xs:string) {
 declare function metrics:update($url as xs:string) {
   let $metrics := metrics:calculate($url)
   let $paths := dutil:filepaths($url)
-  let $collection := $paths?collections?metrics
+  let $collection := $paths?collections?play
   let $resource := $paths?filename
   return (
-    util:log-system-out('Metrics update: ' || $collection || '/' || $resource),
-    xdb:store($collection, $resource, $metrics)
+    util:log-system-out('Metrics update: ' || $paths?files?metrics),
+    xdb:store($collection, "metrics.xml", $metrics)
   )
 };
 
@@ -185,7 +186,7 @@ declare function metrics:update($url as xs:string) {
 :)
 declare function metrics:update() as xs:string* {
   let $l := util:log-system-out("Updating metrics files")
-  for $tei in collection($config:data-root)//tei:TEI
+  for $tei in collection($config:corpora-root)//tei:TEI
   let $url := $tei/base-uri()
   return metrics:update($url)
 };

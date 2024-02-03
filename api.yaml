@@ -1084,7 +1084,7 @@ paths:
               example: |
                 {
                   "message": "Delivery accepted.",
-                  "result": "/db/data/dracor/webhook/20190121213010-xxx.xml",
+                  "result": "/db/dracor/webhook/20190121213010-xxx.xml",
                   "scheduled": true
                 }
 

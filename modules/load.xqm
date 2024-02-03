@@ -18,13 +18,21 @@ declare namespace util = "http://exist-db.org/xquery/util";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 declare function local:entry-data(
-  $path as xs:anyURI, $type as xs:string, $data as item()?, $param as item()*
+  $path as xs:anyURI,
+  $type as xs:string,
+  $data as item()?,
+  $param as item()*
 ) as item()? {
   if($data) then
     let $collection := $param[1]
-    let $name := tokenize($path, "/")[last()]
-    let $log := util:log-system-out($collection || " / " || $name)
-    let $res := xmldb:store($collection, $name, $data)
+    let $filename := tokenize($path, "/")[last()]
+    let $name := replace($filename, "\.xml$", "")
+    let $log := util:log-system-out("LOADING " || $path)
+    let $res := if ($name = "corpus") then
+      xmldb:store($collection, "corpus.xml", $data)
+    else
+      let $play-collection := xmldb:create-collection($collection, $name)
+      return xmldb:store($play-collection, "tei.xml", $data)
     return $res
   else
     ()
@@ -54,9 +62,7 @@ as xs:string* {
   let $info := dutil:get-corpus-info($corpus)
   let $name := $info?name
 
-  let $data-collection := $config:data-root || "/" || $name
-  let $metrics-collection := $config:metrics-root || "/" || $name
-  let $rdf-collection := $config:rdf-root || "/" || $name
+  let $corpus-collection := $config:corpora-root || "/" || $name
 
   let $archive :=
     if ($info?archive) then
@@ -78,28 +84,14 @@ as xs:string* {
           let $body := $response[2]
           let $zip := xs:base64Binary($body)
           return (
+            (: FIXME: just remove the corpus collection :)
             (: remove TEI documents :)
-            for $tei in collection($data-collection)/tei:TEI
+            for $tei in collection($corpus-collection)/tei:TEI
             let $resource := tokenize($tei/base-uri(), '/')[last()]
             return (
               util:log-system-out("removing " || $resource),
-              xmldb:remove($data-collection, $resource)
+              xmldb:remove($corpus-collection, $resource)
             ),
-            (: remove collections :)
-            if (xmldb:collection-available($metrics-collection))
-            then (
-              util:log-system-out("removing " || $metrics-collection),
-              xmldb:remove($metrics-collection)
-            ) else (),
-            if (xmldb:collection-available($rdf-collection))
-            then (
-              util:log-system-out("removing " || $rdf-collection),
-              xmldb:remove($rdf-collection)
-            ) else (),
-
-            (: (re)create collections :)
-            xmldb:create-collection($config:metrics-root, $name),
-            xmldb:create-collection($config:rdf-root, $name),
 
             (: clear fuseki graph :)
             drdf:fuseki-clear-graph($name),
@@ -110,7 +102,7 @@ as xs:string* {
               util:function(xs:QName("local:entry-filter"), 3),
               (),
               util:function(xs:QName("local:entry-data"), 4),
-              ($data-collection)
+              ($corpus-collection)
             )
           )
         else (

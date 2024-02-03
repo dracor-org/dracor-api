@@ -34,12 +34,9 @@ local:mkcol("/db/system/config", $target),
 xdb:store-files-from-pattern(
   concat("/db/system/config", $target), $dir, "collection.xconf"
 ),
-xdb:create-collection("/", $config:data-root),
-local:mkcol("/db/system/config", $config:data-root),
+xdb:create-collection("/", $config:corpora-root),
+xdb:create-collection("/", $config:webhook-root),
+local:mkcol("/db/system/config", $config:corpora-root),
 xdb:store-files-from-pattern(
-  concat("/db/system/config", $config:data-root), $dir, "data.xconf"
-),
-xdb:create-collection("/", $config:rdf-root),
-xdb:create-collection("/", $config:metrics-root),
-xdb:create-collection("/", $config:sitelinks-root),
-xdb:create-collection("/", $config:webhook-root)
+  concat("/db/system/config", $config:corpora-root), $dir, "data.xconf"
+)

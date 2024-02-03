@@ -166,23 +166,6 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
   </terms>
 };
 
-declare function local:id-to-url ($id, $accept) {
-  let $tei := collection($config:data-root)/tei:TEI[@xml:id = $id][1]
-  let $parts := tokenize(base-uri($tei), "[/.]")
-  let $corpusname := $parts[last()-2]
-  let $playname := $parts[last()-1]
-
-  return if ($tei) then
-    if ($accept = "application/rdf+xml") then
-      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/rdf"
-    else if ($accept = "application/json") then
-      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
-    else
-      let $p := tokenize($config:api-base, '/')
-      return $p[1] || '//' || $p[3] || '/' || $corpusname || "/" || $playname
-  else ()
-};
-
 (:~
  : Resolve DraCor ID of a play
  :
@@ -199,7 +182,7 @@ declare
   %rest:path("/v1/id/{$id}")
   %rest:header-param("Accept", "{$accept}")
 function api:id-to-url($id, $accept) {
-  let $url := local:id-to-url($id, $accept)
+  let $url := dutil:id-to-url($id, $accept)
   return if (not($url)) then
     <rest:response>
       <http:response status="404"/>
@@ -213,10 +196,8 @@ function api:id-to-url($id, $accept) {
 };
 
 declare function local:get-corpus-metrics ($corpus as xs:string) {
-  let $collection-uri := concat($config:data-root, "/", $corpus)
+  let $collection-uri := concat($config:corpora-root, "/", $corpus)
   let $col := collection($collection-uri)
-  let $metrics-uri := concat($config:metrics-root, "/", $corpus)
-  let $metrics := collection($metrics-uri)
   let $num-plays := count($col/tei:TEI)
   let $list := $col//tei:particDesc/tei:listPerson
   let $num-characters := count($list/(tei:person|tei:personGrp))
@@ -234,11 +215,11 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
     "sp": $num-sp,
     "stage": $num-stage,
     "wordcount": map {
-      "text": sum($metrics//text),
-      "sp": sum($metrics//sp),
-      "stage": sum($metrics//stage)
+      "text": sum($col/metrics/text),
+      "sp": sum($col/metrics/sp),
+      "stage": sum($col/metrics/stage)
     },
-    "updated": max($metrics//metrics/xs:dateTime(@updated))
+    "updated": max($col/metrics/xs:dateTime(@updated))
   }
 };
 
@@ -256,7 +237,7 @@ declare
   %output:method("json")
 function api:corpora($include) {
   array {
-    for $corpus in collection($config:data-root)//tei:teiCorpus
+    for $corpus in collection($config:corpora-root)//tei:teiCorpus
     let $info := dutil:get-corpus-info($corpus)
     let $name := $info?name
     order by $name
@@ -344,20 +325,11 @@ function api:corpora-post-tei($data, $auth) {
         "error": "corpus already exists"
       }
     ) else (
-      let $tei-dir := concat($config:data-root, '/', $name)
-      return (
-        util:log-system-out("creating corpus"),
-        util:log-system-out($data),
-        xmldb:create-collection($config:data-root, $name),
-        xmldb:create-collection($config:metrics-root, $name),
-        xmldb:create-collection($config:sitelinks-root, $name),
-        xmldb:create-collection($config:rdf-root, $name),
-        xmldb:store($tei-dir, "corpus.xml", $data),
-        map {
-          "name": $name,
-          "title": $title
-        }
-      )
+      dutil:create-corpus($name, $data/tei:teiCorpus),
+      map {
+        "name": $name,
+        "title": $title
+      }
     )
 };
 
@@ -411,46 +383,10 @@ function api:corpora-post-json($data) {
         "message": "Only lower case ASCII letters and digits are accepted."
       }
     )
-  else
-    let $corpus :=
-      <teiCorpus xmlns="http://www.tei-c.org/ns/1.0">
-        <teiHeader>
-          <fileDesc>
-            <titleStmt>
-              <title>{$json?title}</title>
-            </titleStmt>
-            <publicationStmt>
-              <idno type="URI" xml:base="https://dracor.org/">{$name}</idno>
-              {
-                if ($json?repository)
-                then <idno type="repo">{$json?repository}</idno>
-                else ()
-              }
-            </publicationStmt>
-          </fileDesc>
-          {if ($json?description) then (
-            <encodingDesc>
-              <projectDesc>
-                {
-                  for $p in tokenize($json?description, "&#10;&#10;")
-                  return <p>{$p}</p>
-                }
-              </projectDesc>
-            </encodingDesc>
-          ) else ()}
-        </teiHeader>
-      </teiCorpus>
-    let $tei-dir := concat($config:data-root, '/', $name)
-    return (
-      util:log-system-out("creating corpus"),
-      util:log-system-out($corpus),
-      xmldb:create-collection($config:data-root, $name),
-      xmldb:create-collection($config:metrics-root, $name),
-      xmldb:create-collection($config:sitelinks-root, $name),
-      xmldb:create-collection($config:rdf-root, $name),
-      xmldb:store($tei-dir, "corpus.xml", $corpus),
-      $json
-    )
+  else (
+    dutil:create-corpus($json),
+    $json
+  )
 };
 
 (:~
@@ -472,7 +408,7 @@ function api:corpus-index($corpusname) {
   let $corpus := dutil:get-corpus-info-by-name($corpusname)
   let $title := $corpus?title
   let $description := $corpus?description
-  let $collection := concat($config:data-root, "/", $corpusname)
+  let $collection := $config:corpora-root || "/" || $corpusname
   let $col := collection($collection)
   return
     if (not($corpus?name) or not(xmldb:collection-available($collection))) then
@@ -483,8 +419,8 @@ function api:corpus-index($corpusname) {
       $corpus,
       map:entry("plays", array {
         for $tei in $col//tei:TEI
-        let $filename := tokenize(base-uri($tei), "/")[last()]
-        let $name := tokenize($filename, "\.")[1]
+        let $paths := dutil:filepaths(base-uri($tei))
+        let $name := $paths?playname
         let $id := dutil:get-dracor-id($tei)
         let $titles := dutil:get-titles($tei)
         let $titlesEng := dutil:get-titles($tei, 'eng')
@@ -492,8 +428,7 @@ function api:corpus-index($corpusname) {
         let $authors := dutil:get-authors($tei)
         let $play-uri :=
           $config:api-base || "/corpora/" || $corpusname || "/plays/" || $name
-        let $metrics-url :=
-          $config:metrics-root || "/" || $corpusname || "/" || $filename
+        let $metrics-url := $paths?files?metrics
         let $network-size := doc($metrics-url)//network/size/text()
         let $yearNormalized := dutil:get-normalized-year($tei)
         let $premiere-date := dutil:get-premiere-date($tei)
@@ -645,14 +580,11 @@ function api:delete-corpus($corpusname, $auth) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $url := $config:data-root || "/" || $corpusname || "/corpus.xml"
+      let $url := $config:corpora-root || "/" || $corpusname || "/corpus.xml"
       return
         if ($url = $corpus/base-uri()) then
         (
-          xmldb:remove($config:data-root || "/" || $corpusname),
-          xmldb:remove($config:metrics-root || "/" || $corpusname),
-          xmldb:remove($config:sitelinks-root || "/" || $corpusname),
-          xmldb:remove($config:rdf-root || "/" || $corpusname),
+          xmldb:remove($config:corpora-root || "/" || $corpusname),
           map {
             "message": "corpus deleted",
             "uri": $url
@@ -748,7 +680,7 @@ declare
   %rest:path("/v1/corpora/{$corpusname}/word-frequencies/{$elem}")
   %rest:produces("application/xml", "text/xml")
 function api:word-frequencies-xml($corpusname, $elem) {
-  let $collection := concat($config:data-root, "/", $corpusname)
+  let $collection := concat($config:corpora-root, "/", $corpusname)
   let $terms := local:get-index-keys($collection, $elem)
   return $terms
 };
@@ -760,7 +692,7 @@ declare
   %output:media-type("text/csv")
   %output:method("text")
 function api:word-frequencies-csv($corpusname, $elem) {
-  let $collection := concat($config:data-root, "/", $corpusname)
+  let $collection := concat($config:corpora-root, "/", $corpusname)
   let $terms := local:get-index-keys($collection, $elem)
   for $t in $terms/term
   order by number($t/@count) descending
@@ -811,17 +743,15 @@ function api:play-delete($corpusname, $playname, $data, $auth) {
     </rest:response>
   else
 
-  let $doc := dutil:get-doc($corpusname, $playname)
+  let $paths := dutil:filepaths($corpusname, $playname)
 
   return
-    if (not($doc)) then
+    if (not(doc($paths?files?tei))) then
       <rest:response>
         <http:response status="404"/>
       </rest:response>
     else
-      let $filename := $playname || ".xml"
-      let $collection := $config:data-root || "/" || $corpusname
-      return (xmldb:remove($collection, $filename))
+      xmldb:remove($paths?collections?play)
 };
 
 (:~
@@ -937,9 +867,10 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
         <message>TEI document required</message>
       )
     else
-      let $filename := $playname || ".xml"
-      let $collection := $config:data-root || "/" || $corpusname
-      let $result := xmldb:store($collection, $filename, $data/tei:TEI)
+      let $collection := xmldb:create-collection(
+        $config:corpora-root || "/" || $corpusname, $playname
+      )
+      let $result := xmldb:store($collection, "tei.xml", $data/tei:TEI)
       return $data
 };
 
@@ -955,9 +886,8 @@ declare
   %rest:produces("application/xml", "text/xml")
   %output:media-type("application/xml")
 function api:play-rdf($corpusname, $playname) {
-  let $url := $config:rdf-root || "/" || $corpusname || "/" || $playname
-    || ".rdf.xml"
-  let $doc := doc($url)
+  let $paths := dutil:filepaths($corpusname, $playname)
+  let $doc := doc($paths?files?rdf)
   return
     if (not($doc)) then
       <rest:response>
