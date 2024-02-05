@@ -84,14 +84,12 @@ as xs:string* {
           let $body := $response[2]
           let $zip := xs:base64Binary($body)
           return (
-            (: FIXME: just remove the corpus collection :)
-            (: remove TEI documents :)
-            for $tei in collection($corpus-collection)/tei:TEI
-            let $resource := tokenize($tei/base-uri(), '/')[last()]
-            return (
-              util:log-system-out("removing " || $resource),
-              xmldb:remove($corpus-collection, $resource)
-            ),
+            util:log-system-out("removing " || $corpus-collection),
+            xmldb:remove($corpus-collection),
+
+            (: Re-create corpus :)
+            util:log-system-out("recreating " || $name),
+            dutil:create-corpus($info),
 
             (: clear fuseki graph :)
             drdf:fuseki-clear-graph($name),

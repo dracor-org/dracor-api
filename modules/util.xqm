@@ -468,10 +468,10 @@ declare function dutil:get-corpus-info(
   let $header := $corpus/tei:teiHeader
   let $name := $header//tei:publicationStmt/tei:idno[
     @type="URI" and @xml:base="https://dracor.org/"
-  ]/text()
-  let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/text()
-  let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"]/text()
-  let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"]/text()
+  ][1]/string()
+  let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/string()
+  let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"][1]/string()
+  let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"][1]/string()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:availability/tei:licence
   let $description := if ($projectDesc) then (
