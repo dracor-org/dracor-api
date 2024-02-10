@@ -42,7 +42,7 @@ declare function local:update (
   let $collection := substring(
     $target, 1, string-length($target) - string-length($filename) - 1
   )
-  let $l := util:log("info", "Fetching " || $source)
+  let $l := util:log-system-out("fetching " || $source)
   let $response := local:gh-request("get", $source)
   let $status := string($response[1]/@status)
 
@@ -60,17 +60,19 @@ declare function local:update (
     (: FIXME: make sure $data is valid TEI :)
 
     return if ($data) then
-      if (
-        util:log("info", "Updating " || $target),
-        xmldb:store(
-          $collection,
-          xmldb:encode-uri($filename),
-          $data
-        )
-      ) then true() else false()
+      try {
+        util:log-system-out("webhook update: " || $target),
+        xmldb:create-collection("/", $collection) and
+        xmldb:store($collection, xmldb:encode-uri($filename), $data)
+      } catch * {
+        util:log-system-out($err:description),
+        false()
+      }
     else false()
   else (
-    util:log("warn", "Fetching " || $source || " failed. Status: " || $status),
+    util:log-system-out(
+      "Failed to fetch " || $source || "; status: " || $status
+    ),
     false()
   )
 };
@@ -82,15 +84,30 @@ declare function local:remove ($file as xs:string) as xs:boolean {
   )
   return
     try {
-      (xmldb:remove($collection, $filename), true())
+      if ($filename = "tei.xml") then
+        (xmldb:remove($collection), true())
+      else
+        (xmldb:remove($collection, $filename), true())
     } catch * {
-      util:log("warn", $err:description), false()
+      util:log-system-out($err:description), false()
     }
 };
 
 declare function local:make-url ($template, $path) {
   let $url := replace($template, '\{\+path\}', $path)
   return $url
+};
+
+declare function local:make-target ($path, $corpusname) {
+  $config:corpora-root || '/' || $corpusname || '/' || (
+    if ($path = "corpus.xml")
+      then $path
+      else replace(
+        replace($path, '^' || $config:corpus-repo-prefix || '/', ''),
+        "\.xml$",
+        "/tei.xml"
+      )
+  )
 };
 
 declare function local:get-repo-contents ($url-template) {
@@ -104,7 +121,7 @@ declare function local:process-delivery () {
   let $delivery := collection($config:webhook-root)
     /delivery[@id = $local:delivery and not(@processed)]
   let $repo := $delivery/@repo/string()
-  let $corpus := collection($config:data-root)//tei:teiCorpus[
+  let $corpus := collection($config:corpora-root)//tei:teiCorpus[
     tei:teiHeader//tei:publicationStmt/tei:idno[@type="repo" and . = $repo]
   ]
 
@@ -127,9 +144,11 @@ declare function local:process-delivery () {
       let $source := if ($path = "corpus.xml")
         then local:make-url($contents-url, $path)
         else $contents?*[?type = "file" and ?path = $path]?git_url
-      let $target := $config:data-root || '/' || $corpusname || '/'
-        || replace($path, '^' || $config:corpus-repo-prefix || '/', '')
+      let $target := local:make-target($path, $corpusname)
       let $action := $file/@action
+      let $log := util:log-system-out(
+        "action: "||$action||"  target: "||$target||"  source: "||$source
+      )
 
       let $result := if ($action = "remove") then
         local:remove($target)
