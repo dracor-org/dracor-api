@@ -12,6 +12,9 @@ xquery version "3.1";
  : curl http://localhost:8080/exist/rest/db/apps/dracor-v1/speakers.xq?id=ep000148
  :)
 
+import module namespace config = "http://dracor.org/ns/exist/v1/config"
+  at "modules/config.xqm";
+
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace ep = "http://earlyprint.org/ns/1.0";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
@@ -19,7 +22,7 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare option output:method "json";
 declare option output:media-type "application/json";
 
-let $col := request:get-parameter("collection", "/db/data/dracor/tei")
+let $col := request:get-parameter("collection", $config:corpora-root)
 let $id := request:get-parameter("id", "")
 
 return if (not($id)) then (

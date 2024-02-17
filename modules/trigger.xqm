@@ -12,43 +12,29 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 
 declare function trigger:after-create-document($url as xs:anyURI) {
-  if (doc($url)/tei:TEI) then
+  if (ends-with($url, "/tei.xml") and doc($url)/tei:TEI) then
     (
       util:log-system-out("running CREATION TRIGGER for " || $url),
       metrics:update($url),
       metrics:update-sitelinks($url),
       drdf:update($url)
     )
-  else (
-    util:log-system-out("ignoring creation of " || $url)
-  )
+  else ()
 };
 
 declare function trigger:after-update-document($url as xs:anyURI) {
-  if (doc($url)/tei:TEI) then
+  if (ends-with($url, "/tei.xml") and doc($url)/tei:TEI) then
     (
       util:log-system-out("running UPDATE TRIGGER for " || $url),
       metrics:update($url),
       metrics:update-sitelinks($url),
       drdf:update($url)
     )
-  else (
-    util:log-system-out("ignoring update of " || $url)
-  )
+  else ()
 };
 
 declare function trigger:before-delete-document($url as xs:anyURI) {
-  if (doc($url)/tei:TEI) then
-    let $paths := dutil:filepaths($url)
-    let $id := dutil:get-play-wikidata-id(doc($url)/tei:TEI)
-    return try {
-      if ($id) then xmldb:remove($paths?collections?sitelinks, $id || '.xml') else (),
-      xmldb:remove($paths?collections?metrics, $paths?filename),
-      xmldb:remove($paths?collections?rdf, $paths?playname || ".rdf.xml")
-    } catch * {
-      util:log-system-out($err:description)
-    }
-  else (
-    util:log-system-out("ignoring deletion of " || $url)
-  )
+  if (ends-with($url, "/tei.xml")) then
+    util:log-system-out("about to DELETE " || $url)
+  else ()
 };

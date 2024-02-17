@@ -444,11 +444,10 @@ as element(rdf:RDF) {
 declare function drdf:update($url as xs:string) {
   let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
   let $paths := dutil:filepaths($url)
-  let $collection := $paths?collections?rdf
-  let $resource := $paths?playname || ".rdf.xml"
+  let $collection := $paths?collections?play
   return (
-    util:log('info', ('RDF update: ', $collection, "/", $resource)),
-    xmldb:store($collection, $resource, $rdf) => xs:anyURI() => drdf:fuseki()
+    util:log-system-out("RDF update: " || $paths?files?rdf),
+    xmldb:store($collection, "rdf.xml", $rdf) => xs:anyURI() => drdf:fuseki()
   )
 };
 
@@ -457,7 +456,7 @@ declare function drdf:update($url as xs:string) {
 :)
 declare function drdf:update() as xs:string* {
   let $l := util:log-system-out("Updating RDF files")
-  for $tei in collection($config:data-root)//tei:TEI
+  for $tei in collection($config:corpora-root)//tei:TEI
   let $url := $tei/base-uri()
   return drdf:update($url)
 };

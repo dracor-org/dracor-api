@@ -31,8 +31,12 @@ declare variable $config:app-root :=
         substring-before($modulePath, "/modules")
 ;
 
-declare variable $config:file := "/db/data/dracor/config-v1.xml";
-declare variable $config:secrets-file := "/db/data/dracor/secrets.xml";
+declare variable $config:dracor-root := "/db/dracor";
+declare variable $config:corpora-root := $config:dracor-root || "/corpora";
+declare variable $config:webhook-root := $config:dracor-root || "/webhook";
+
+declare variable $config:file := $config:dracor-root || "/config-v1.xml";
+declare variable $config:secrets-file := $config:dracor-root || "/secrets.xml";
 
 (:
   The base URL under which the REST API is hosted.
@@ -42,16 +46,6 @@ declare variable $config:secrets-file := "/db/data/dracor/secrets.xml";
 :)
 declare variable $config:api-base :=
   doc($config:file)//api-base/normalize-space();
-
-declare variable $config:data-root := "/db/data/dracor/tei";
-
-declare variable $config:rdf-root := "/db/data/dracor/rdf";
-
-declare variable $config:metrics-root := "/db/data/dracor/metrics";
-
-declare variable $config:sitelinks-root := "/db/data/dracor/sitelinks";
-
-declare variable $config:webhook-root := "/db/data/dracor/webhook";
 
 declare variable $config:webhook-secret :=
   doc($config:secrets-file)//gh-webhook/normalize-space();

@@ -104,7 +104,7 @@ WHERE {
 declare function wd:mixnmatch() {
   (
     "id,name,q&#10;",
-    for $tei in collection($config:data-root)/tei:TEI[@xml:id]
+    for $tei in collection($config:corpora-root)/tei:TEI[@xml:id]
     let $id := $tei/@xml:id/string()
     let $titles := dutil:get-titles($tei)
     let $q := dutil:get-play-wikidata-id($tei)

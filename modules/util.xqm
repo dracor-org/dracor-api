@@ -20,27 +20,10 @@ declare namespace json = "http://www.w3.org/2013/XSL/json";
  :)
 declare function dutil:filepaths ($url as xs:string) as map() {
   let $segments := tokenize($url, "/")
-  let $corpusname := $segments[last() - 1]
+  let $corpusname := $segments[last() - 2]
+  let $playname := $segments[last() - 1]
   let $filename := $segments[last()]
-  let $playname := substring-before($filename, ".xml")
-  return map {
-    "filename": $filename,
-    "playname": $playname,
-    "corpusname": $corpusname,
-    "collections": map {
-      "tei": $config:data-root || "/" || $corpusname,
-      "metrics": $config:metrics-root || "/" || $corpusname,
-      "sitelinks": $config:sitelinks-root || "/" || $corpusname,
-      "rdf": $config:rdf-root || "/" || $corpusname
-    },
-    "files": map {
-      "tei": $config:data-root || "/" || $corpusname || "/" || $filename,
-      "metrics": $config:metrics-root || "/" || $corpusname || "/" || $filename,
-      "rdf": $config:rdf-root || "/" || $corpusname || "/" || $playname
-        || ".rdf.xml"
-    },
-    "url": $url
-  }
+  return dutil:filepaths($corpusname, $playname, $filename)
 };
 
 (:~
@@ -54,24 +37,39 @@ declare function dutil:filepaths (
   $corpusname as xs:string,
   $playname as xs:string
 ) as map() {
-  let $filename := $playname || ".xml"
+  dutil:filepaths($corpusname, $playname, "tei.xml")
+};
+
+(:~
+ : Provide map of files and paths related to a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ : @param $filename
+ : @return map()
+ :)
+declare function dutil:filepaths (
+  $corpusname as xs:string,
+  $playname as xs:string,
+  $filename as xs:string
+) as map() {
+  let $playpath := $config:corpora-root || "/" || $corpusname || "/" || $playname
+  let $url := $playpath || "/" || $filename
   return map {
+    "url": $url,
     "filename": $filename,
     "playname": $playname,
     "corpusname": $corpusname,
     "collections": map {
-      "tei": $config:data-root || "/" || $corpusname,
-      "metrics": $config:metrics-root || "/" || $corpusname,
-      "rdf": $config:rdf-root || "/" || $corpusname,
-      "sitelinks": $config:sitelinks-root || "/" || $corpusname
+      "corpus": $config:corpora-root || "/" || $corpusname,
+      "play": $playpath
     },
     "files": map {
-      "tei": $config:data-root || "/" || $corpusname || "/" || $filename,
-      "metrics": $config:metrics-root || "/" || $corpusname || "/" || $filename,
-      "rdf": $config:rdf-root || "/" || $corpusname || "/" || $playname
-        || ".rdf.xml"
-    },
-    "url": $config:data-root || "/" || $corpusname || "/" || $filename
+      "tei": $playpath || "/tei.xml",
+      "metrics": $playpath || "/metrics.xml",
+      "rdf": $playpath || "/rdf.xml",
+      "sitelinks": $playpath || "/sitelinks.xml"
+    }
   }
 };
 
@@ -85,10 +83,8 @@ declare function dutil:get-doc(
   $corpusname as xs:string,
   $playname as xs:string
 ) as node()* {
-  let $doc := doc(
-    $config:data-root || "/" || $corpusname || "/" || $playname || ".xml"
-  )
-  return $doc
+  let $paths := dutil:filepaths($corpusname, $playname)
+  return doc($paths?files?tei)
 };
 
 (:~
@@ -419,7 +415,7 @@ declare function dutil:count-sitelinks(
   $wikidata-id as xs:string*,
   $corpusname as xs:string
 ) {
-  let $col := concat($config:sitelinks-root, "/", $corpusname)
+  let $col := concat($config:corpora-root, "/", $corpusname)
   return if($wikidata-id) then
     count(collection($col)/sitelinks[@id=$wikidata-id]/uri)
   else ()
@@ -434,7 +430,7 @@ declare function dutil:count-sitelinks(
 declare function dutil:get-corpus(
   $corpusname as xs:string
 ) as element()* {
-  collection($config:data-root)//tei:teiCorpus[
+  collection($config:corpora-root)//tei:teiCorpus[
     tei:teiHeader//tei:publicationStmt/tei:idno[
       @type="URI" and
       @xml:base="https://dracor.org/" and
@@ -472,10 +468,10 @@ declare function dutil:get-corpus-info(
   let $header := $corpus/tei:teiHeader
   let $name := $header//tei:publicationStmt/tei:idno[
     @type="URI" and @xml:base="https://dracor.org/"
-  ]/text()
-  let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/text()
-  let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"]/text()
-  let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"]/text()
+  ][1]/string()
+  let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/string()
+  let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"][1]/string()
+  let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"][1]/string()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:availability/tei:licence
   let $description := if ($projectDesc) then (
@@ -550,19 +546,12 @@ declare function dutil:get-genre($text-classes as xs:string*) as xs:string? {
 declare function dutil:get-corpus-meta-data(
   $corpusname as xs:string
 ) as map(*)* {
-  let $metrics-collection := concat($config:metrics-root, "/", $corpusname)
-  let $metrics := for $s in collection($metrics-collection)//metrics
-    let $uri := base-uri($s)
-    let $fname := tokenize($uri, "/")[last()]
-    let $name := tokenize($fname, "\.")[1]
-    return <metrics name="{$name}">{$s/*}</metrics>
-  (: return $metrics :)
-  let $collection := concat($config:data-root, "/", $corpusname)
+  let $collection := concat($config:corpora-root, "/", $corpusname)
 
   for $tei in collection($collection)//tei:TEI
-  let $filename := tokenize(base-uri($tei), "/")[last()]
   let $id := dutil:get-dracor-id($tei)
-  let $name := tokenize($filename, "\.")[1]
+  let $paths := dutil:filepaths(base-uri($tei))
+  let $name := $paths?playname
   let $years := dutil:get-years-iso($tei)
   let $authors := dutil:get-authors($tei)
   let $titles := dutil:get-titles($tei)
@@ -580,13 +569,13 @@ declare function dutil:get-corpus-meta-data(
   let $num-p := count($tei//tei:body//tei:sp//tei:p)
   let $num-l := count($tei//tei:body//tei:sp//tei:l)
 
-  let $stat := $metrics[@name=$name]
-  let $max-degree-ids := tokenize($stat/network/maxDegreeIds)
+  let $metrics := doc($paths?files?metrics)/metrics
+  let $max-degree-ids := tokenize($metrics/network/maxDegreeIds)
   let $wikidata-id := dutil:get-play-wikidata-id($tei)
   let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
 
   let $networkmetrics := map:merge(
-    for $s in $stat/network/*[not(name() = ("maxDegreeIds", "nodes"))]
+    for $s in $metrics/network/*[not(name() = ("maxDegreeIds", "nodes"))]
     let $v := $s/text()
     return map:entry(
       $s/name(),
@@ -610,7 +599,6 @@ declare function dutil:get-corpus-meta-data(
     if ($scope and number($scope/@to) and number($scope/@from))
     then number($scope/@to) - number($scope/@from) + 1
     else ()
-
 
   let $meta := map {
     "id": $id,
@@ -636,9 +624,9 @@ declare function dutil:get-corpus-meta-data(
     "numOfP": $num-p,
     "numOfL": $num-l,
     "wikipediaLinkCount": $sitelink-count,
-    "wordCountText": xs:integer($stat/text/string()),
-    "wordCountSp": xs:integer($stat/sp/string()),
-    "wordCountStage": xs:integer($stat/stage/string()),
+    "wordCountText": xs:integer($metrics/text/string()),
+    "wordCountSp": xs:integer($metrics/sp/string()),
+    "wordCountStage": xs:integer($metrics/stage/string()),
     "datePremiered": dutil:get-premiere-date($tei),
     "yearWritten": $years?written,
     "yearPremiered": $years?premiere,
@@ -652,7 +640,7 @@ declare function dutil:get-corpus-meta-data(
     "originalSourceYear": $origSourceYear,
     "originalSourceNumberOfPages": $origSourceNumPages
   }
-  order by $filename
+  order by $name
   return map:merge(($meta, $networkmetrics))
 };
 
@@ -914,8 +902,8 @@ declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
  : @param $corpus Corpus name
  :)
 declare function dutil:get-play-wikidata-ids ($corpus as xs:string) {
-  let $data-col := $config:data-root || '/' || $corpus
-  for $uri in collection($data-col)
+  let $collection := $config:corpora-root || '/' || $corpus
+  for $uri in collection($collection)
     /tei:TEI//tei:standOff/tei:listRelation
       /tei:relation[@name="wikidata"]/@passive/string()
   return if (starts-with($uri, 'http://www.wikidata.org/entity/')) then
@@ -1231,7 +1219,7 @@ declare function dutil:get-relations (
  :)
 declare function dutil:get-plays-with-character ($id as xs:string) {
   let $wd-uri := "http://www.wikidata.org/entity/" || $id
-  let $plays := collection($config:data-root)
+  let $plays := collection($config:corpora-root)
     /tei:TEI[.//tei:person[@ana=$wd-uri]]
   return array {
     for $tei in $plays
@@ -1258,4 +1246,89 @@ declare function dutil:get-plays-with-character ($id as xs:string) {
 declare function dutil:csv-escape($string as xs:string) as xs:string {
   replace($string, '"', '""')
   (: replace($string, '\(', '((') :)
+};
+
+(:~
+ : Translate DraCor ID to URL
+ :
+ : @param $id DraCor ID
+ : @param $accept MIME type
+ :)
+declare function dutil:id-to-url (
+  $id as xs:string,
+  $accept as xs:string*
+) {
+  let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $id][1]
+
+  return if ($tei) then
+    let $paths := dutil:filepaths(base-uri($tei))
+    let $corpus := $paths?corpusname
+    let $play := $paths?playname
+    let $url := $config:api-base || "/corpora/" || $corpus || "/plays/" || $play
+
+    return if ($accept = "application/json") then
+      $url
+    else if ($accept = "application/rdf+xml") then
+      $url || "/rdf"
+    else
+      let $p := tokenize($config:api-base, '/')
+      return $p[1] || '//' || $p[3] || '/' || $corpus || "/" || $play
+  else ()
+};
+
+(:~
+ : Create new corpus collection
+ :
+ : @param $corpus Map with corpus description
+ :)
+declare function dutil:create-corpus($corpus as map()) {
+  let $xml :=
+    <teiCorpus xmlns="http://www.tei-c.org/ns/1.0">
+      <teiHeader>
+        <fileDesc>
+          <titleStmt>
+            <title>{$corpus?title}</title>
+          </titleStmt>
+          <publicationStmt>
+            <idno type="URI" xml:base="https://dracor.org/">{$corpus?name}</idno>
+            {
+              if ($corpus?repository)
+              then <idno type="repo">{$corpus?repository}</idno>
+              else ()
+            }
+          </publicationStmt>
+        </fileDesc>
+        {if ($corpus?description) then (
+          <encodingDesc>
+            <projectDesc>
+              {
+                for $p in tokenize($corpus?description, "&#10;&#10;")
+                return <p>{$p}</p>
+              }
+            </projectDesc>
+          </encodingDesc>
+        ) else ()}
+      </teiHeader>
+    </teiCorpus>
+
+  return dutil:create-corpus($corpus?name, $xml)
+};
+
+(:~
+ : Create new corpus collection
+ :
+ : @param $name Corpus name
+ : @param $xml Corpus description
+ :)
+declare function dutil:create-corpus(
+  $name as xs:string,
+  $xml as element(tei:teiCorpus)
+) {
+  util:log-system-out("creating corpus"),
+  util:log-system-out($xml),
+  xmldb:store(
+    xmldb:create-collection($config:corpora-root, $name),
+    "corpus.xml",
+    $xml
+  )
 };
