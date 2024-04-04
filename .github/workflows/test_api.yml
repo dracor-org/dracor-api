@@ -49,7 +49,7 @@ jobs:
         # Refs:
         # https://github.com/schemathesis/action#configuration
         # https://schemathesis.readthedocs.io/en/stable/cli.html
-        uses: schemathesis/action@cd782ab11a0ae6358e38b7adaaf942a53dbe9368 # v1.0.3
+        uses: schemathesis/action@e8c36caf1285d9c955e282cf71793837f92308a4 # v1.0.4
         with:
           api-name: dracor-api
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
