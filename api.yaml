@@ -1011,12 +1011,42 @@ paths:
     get:
       summary: Collections
       description: >-
-        Collections endpoint: Lists the collections available. Documentation see https://distributed-text-services.github.io/specifications/Collections-Endpoint.html.
+        Collections endpoint: Lists the collections available. Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint.
       operationId: get-dts-collections
       tags: [DTS]
       responses:
         '200':
           description: Collections available.
+          content:
+            application/ld+json:
+              schema:
+                type: object
+
+  /dts/navigation:
+    get:
+      summary: Navigation
+      description: >-
+        Navigation endpoint: Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#navigation-endpoint.
+      operationId: get-dts-navigation
+      tags: [DTS]
+      responses:
+        '200':
+          description: Navigation.
+          content:
+            application/ld+json:
+              schema:
+                type: object
+  
+  /dts/documents:
+    get:
+      summary: Documents
+      description: >-
+        Documents endpoint: Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#document-endpoint.
+      operationId: get-dts-navigation
+      tags: [DTS]
+      responses:
+        '200':
+          description: Documents.
           content:
             application/ld+json:
               schema:
