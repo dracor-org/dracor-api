@@ -72,8 +72,8 @@ declare variable $ddts:context :=
 declare
   %rest:GET
   %rest:path("/v1/dts")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
+  %rest:produces("application/ld+json")
+  %output:media-type("application/ld+json")
   %output:method("json")
 function ddts:entry-point() {
   map {
@@ -127,8 +127,8 @@ declare
   %rest:query-param("id", "{$id}")
   %rest:query-param("page", "{$page}")
   %rest:query-param("nav", "{$nav}")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
+  %rest:produces("application/ld+json")
+  %output:media-type("application/ld+json")
   %output:method("json")
 function ddts:collections($id, $page, $nav)
 as map() {
@@ -937,7 +937,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
   %rest:query-param("ref", "{$ref}")
   %rest:query-param("level", "{$level}")
   %rest:produces("application/ld+json")
-  %output:media-type("application/json")
+  %output:media-type("application/ld+json")
   %output:method("json")
  function ddts:navigation($id, $ref, $level) {
     (: parameter $id is mandatory :)
