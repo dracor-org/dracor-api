@@ -18,10 +18,10 @@ xquery version "3.1";
 
 
 (: ddts – DraCor-Implementation of DTS follows naming conventions, e.g. dutil :)
-module namespace ddts = "http://dracor.org/ns/exist/dts";
+module namespace ddts = "http://dracor.org/ns/exist/v1/dts";
 
-import module namespace config = "http://dracor.org/ns/exist/config" at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/util" at "util.xqm";
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
@@ -35,10 +35,10 @@ declare namespace hydra = "https://www.w3.org/ns/hydra/core#";
 declare namespace dc = "http://purl.org/dc/terms/";
 
 (: Variables used in responses :)
-declare variable $ddts:api-base := "https://staging.dracor.org/api"; (: change for production :)
-declare variable $ddts:collections-base := "/api/dts/collections" ;
-declare variable $ddts:documents-base := "/api/dts/documents" ;
-declare variable $ddts:navigation-base := "/api/dts/navigation" ;
+declare variable $ddts:api-base := $config:api-base; 
+declare variable $ddts:collections-base := $ddts:api-base || "/dts/collections"  ;
+declare variable $ddts:documents-base := $ddts:api-base || "/dts/documents" ;
+declare variable $ddts:navigation-base := $ddts:api-base || "/dts/navigation" ;
 
 declare variable $ddts:ns-dts := "https://w3id.org/dts/api#";
 declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#";
@@ -71,7 +71,7 @@ declare variable $ddts:context :=
  :)
 declare
   %rest:GET
-  %rest:path("/dts")
+  %rest:path("/v1/dts")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -80,9 +80,9 @@ function ddts:entry-point() {
     "@context": "/dts/contexts/EntryPoint.jsonld",
     "@id": "/dts",
     "@type": "EntryPoint",
-    "collections": "/dts/collections",
-    "documents": "/dts/documents",
-    "navigation" : "/dts/navigation"
+    "collections": $ddts:collections-base,
+    "documents": $ddts:documents-base,
+    "navigation" : $ddts:navigation-base
   }
 };
 
@@ -123,7 +123,7 @@ as xs:integer {
  :)
 declare
   %rest:GET
-  %rest:path("/dts/collections")
+  %rest:path("/v1/dts/collections")
   %rest:query-param("id", "{$id}")
   %rest:query-param("page", "{$page}")
   %rest:query-param("nav", "{$nav}")
@@ -205,7 +205,7 @@ as map() {
 declare function local:root-collection()
 as map() {
     (: Get the corpora, get info needed for the member-array :)
-  let $corpora := collection($config:data-root)//tei:teiCorpus
+  let $corpora := collection($config:corpora-root)//tei:teiCorpus
   (: get all the ids – these has to evaluate the teiCorpus files, unfortunately :)
   let $corpus-ids := $corpora//tei:idno[@type eq "URI"][@xml:base eq "https://dracor.org/"]/string()
   let $members := array {
@@ -247,7 +247,7 @@ as map() {
     let $info :=  dutil:get-corpus-info-by-name($id)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
     (: this is basically what the dutil-function does before evaluating the files :)
-    let $corpus-collection := concat($config:data-root, "/", $id)
+    let $corpus-collection := concat($config:corpora-root, "/", $id)
     let $teis := collection($corpus-collection)//tei:TEI
     (:for the collection info in the dts, we only need a number to put into  "dts:totalItems" and "dts:totalChildren" :)
     let $file-count := count($teis)
@@ -280,7 +280,7 @@ as map() {
     let $info :=  dutil:get-corpus-info-by-name($id)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
     (: this is basically what the dutil-function does before evaluating the files :)
-    let $corpus-collection := concat($config:data-root, "/", $id)
+    let $corpus-collection := concat($config:corpora-root, "/", $id)
     let $teis := collection($corpus-collection)//tei:TEI
     return
         (: response :)
@@ -325,9 +325,10 @@ as map() {
     let $lang := $tei/@xml:lang/string()
 
     let $filename := util:document-name($tei)
-    let $playname := substring-before($filename, ".xml")
+    let $paths := dutil:filepaths(base-uri($tei))
+    let $playname := $paths?playname
     let $collection-name := util:collection-name($tei)
-    let $corpusname := tokenize($collection-name, '/')[last()]
+    let $corpusname := $paths?corpusname
 
     (: todo: add more metadata to dublin core :)
     let $authors := dutil:get-authors($tei)
@@ -338,7 +339,7 @@ as map() {
             "dc:language" : $lang
         }
 
-    let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/play/" || $playname || "/tei"
+    let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/tei"
     let $dts-passage := $ddts:documents-base || "?id=" || $id
     let $dts-navigation := $ddts:navigation-base || "?id=" || $id
 
@@ -372,7 +373,7 @@ as map() {
  :)
 declare function local:child-readable-collection-by-id($id as xs:string)
 as map() {
-  let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][./text() eq $id]/root()/tei:TEI
+  let $tei := collection($config:corpora-root)//tei:idno[@type eq "dracor"][./text() eq $id]/root()/tei:TEI
   let $cite-structure := local:generate-citeStructure($tei)
   return
       if ( $tei ) then
@@ -395,7 +396,7 @@ declare function local:child-readable-collection-with-parent-by-id($id as xs:str
     let $self-without-totalItems := map:remove($self, "totalItems")
     let $self-with-new-totalItems := map:merge( ( $self-without-totalItems, map{"totalItems" : 1})  )
     (: get parent collection and remove the members :)
-    let $parent-collection-uri := util:collection-name(collection($config:data-root)//tei:idno[@type eq "dracor"][./text() eq $id])
+    let $parent-collection-uri := util:collection-name(collection($config:corpora-root)//tei:idno[@type eq "dracor"][./text() eq $id])
     let $parent-collection-id := tokenize($parent-collection-uri,'/')[last()]
     (: get the parent by the function to generate a collection :)
     let $parent := local:corpus-to-collection($parent-collection-id)
@@ -562,7 +563,7 @@ as map() {
  :)
 declare
   %rest:GET
-  %rest:path("/dts/documents")
+  %rest:path("/v1/dts/documents")
   %rest:query-param("id", "{$id}")
   %rest:query-param("ref", "{$ref}")
   %rest:query-param("start", "{$start}")
@@ -611,7 +612,7 @@ function ddts:documents($id, $ref, $start, $end, $format) {
 
     else
         (: valid request :)
-        let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][. eq $id]/root()/tei:TEI
+        let $tei := collection($config:corpora-root)//tei:idno[@type eq "dracor"][. eq $id]/root()/tei:TEI
 
         return
             (: check, if document exists! :)
@@ -931,7 +932,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
  :)
  declare
   %rest:GET
-  %rest:path("/dts/navigation")
+  %rest:path("/v1/dts/navigation")
   %rest:query-param("id", "{$id}")
   %rest:query-param("ref", "{$ref}")
   %rest:query-param("level", "{$level}")
@@ -949,13 +950,13 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         )
     else
         (: check, if there is a resource with this identifier :)
-        let $tei := collection($config:data-root)//tei:idno[@type eq "dracor"][. eq $id]/root()/tei:TEI
+        let $tei := collection($config:corpora-root)//tei:idno[@type eq "dracor"][. eq $id]/root()/tei:TEI
 
         return
             (: check, if document exists! :)
             if ( $tei/name() eq "TEI" ) then
                 (: here are valid requests handled :)
-
+ 
                 (:
                 in the case of DraCor, it makes sense to be able to request a TEI representation of the tei:castList,
                 this could be the first level, e.g. the division of tei:front and tei:body – which contains the text proper;
