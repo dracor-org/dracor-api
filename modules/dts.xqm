@@ -35,16 +35,19 @@ declare namespace hydra = "https://www.w3.org/ns/hydra/core#";
 declare namespace dc = "http://purl.org/dc/terms/";
 
 (: Variables used in responses :)
-declare variable $ddts:api-base := $config:api-base; 
-declare variable $ddts:collections-base := $ddts:api-base || "/dts/collections"  ;
-declare variable $ddts:documents-base := $ddts:api-base || "/dts/documents" ;
-declare variable $ddts:navigation-base := $ddts:api-base || "/dts/navigation" ;
+declare variable $ddts:api-base := $config:api-base || "/dts"; 
+declare variable $ddts:collections-base := $ddts:api-base || "/collection"  ;
+declare variable $ddts:documents-base := $ddts:api-base || "/document" ;
+declare variable $ddts:navigation-base := $ddts:api-base || "/navigation" ;
 
-declare variable $ddts:ns-dts := "https://w3id.org/dts/api#";
-declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#";
-declare variable $ddts:ns-dc := "http://purl.org/dc/terms/";
+declare variable $ddts:ns-dts := "https://w3id.org/dts/api#" ;
+declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#" ;
+declare variable $ddts:ns-dc := "http://purl.org/dc/terms/" ;
+declare variable $ddts:dts-jsonld-context-url := "https://distributed-text-services.github.io/specifications/context/1-alpha1.json" ;
+declare variable $ddts:spec-version :=  "1-alpha" ; 
 
 (: fixed parts in response, e.g. namespaces :)
+(: TODO: check, maybe these need fixing for alpha!!:)
 declare variable $ddts:context :=
   map {
       "@vocab": $ddts:ns-hydra,
@@ -58,8 +61,8 @@ declare variable $ddts:context :=
  : Entry Point
  : --------------------
  :
- : see https://distributed-text-services.github.io/specifications/Entry.html
- : /api/dts
+ : see https://distributed-text-services.github.io/specifications/versions/1-alpha/#entry-endpoint
+ : /api//v1/dts
  :)
 
 (:~
@@ -76,14 +79,27 @@ declare
   %output:media-type("application/ld+json")
   %output:method("json")
 function ddts:entry-point() {
-  map {
-    "@context": "/dts/contexts/EntryPoint.jsonld",
-    "@id": "/dts",
-    "@type": "EntryPoint",
-    "collections": $ddts:collections-base,
-    "documents": $ddts:documents-base,
-    "navigation" : $ddts:navigation-base
-  }
+    (:  
+    Implemented it like the example response here: https://distributed-text-services.github.io/specifications/versions/1-alpha/#entry-endpoint
+    Can we use full URIs here or are these always relative paths?
+    TODO: need to check which params are available on the endpoints in the final implementation
+    and adapt the URI templates accordingly
+    What happend to param level in the navigation endpoint?
+    :)
+    let $collection-template := $ddts:collections-base || "{?id}"
+    let $document-template := $ddts:documents-base || "{?resource,ref}"
+    let $navigation-template := $ddts:navigation-base || "{?resource,ref}"
+    
+    return
+    map {
+        "@context": $ddts:dts-jsonld-context-url,
+        "@id": $ddts:api-base,
+        "@type": "EntryPoint",
+        "dtsVersion" : $ddts:spec-version,
+        "collection": $collection-template,
+        "document": $document-template,
+        "navigation" : $navigation-template
+    }
 };
 
 (:~

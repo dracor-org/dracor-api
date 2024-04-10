@@ -987,24 +987,25 @@ paths:
     get:
       summary: Distributed Text Services API Entrypoint
       description: >-
-        Entrypoint of the DraCor DTS implementation (see specification of DTS – https://distributed-text-services.github.io/specifications).
+        Entrypoint of the DraCor DTS implementation (see specification – https://distributed-text-services.github.io/specifications/versions/1-alpha/#entry-endpoint).
       operationId: dts-entrypoint
       tags: [DTS]
       responses:
         '200':
-          description: information about the DTS implementation containing links to the collections, navigation and documents endpoints.
+          description: information about the DTS implementation containing URI templates of the "collection", "navigation" and "document" endpoints.
           content:
             application/ld+json:
               schema:
-                type: object
+                $ref: '#/components/schemas/DtsEntrypoint'
               example: |
                 {
-                  "@context" : "/dts/contexts/EntryPoint.jsonld",
-                  "@id" : "/dts",
+                  "@context" : "https://distributed-text-services.github.io/specifications/context/1-alpha1.json",
+                  "@id" : "https://dracor.org/api/v1/dts",
                   "@type" : "EntryPoint",
-                  "collections" : "/dts/collections",
-                  "documents" : "/dts/documents",
-                  "navigation" : "/dts/navigation"
+                  "dtsVersion" : "1-alpha",
+                  "collection" : "https://dracor.org/api/v1/dts/collection{?id}",
+                  "document" : "https://dracor.org/api/v1/dts/document{?resource,ref}",
+                  "navigation" : "https://dracor.org/api/v1/dts/navigation{?resource,ref}"
                 }
 
   /dts/collections:
@@ -1012,7 +1013,7 @@ paths:
       summary: Collections
       description: >-
         Collections endpoint: Lists the collections available. Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint.
-      operationId: get-dts-collections
+      operationId: get-dts-collection
       tags: [DTS]
       responses:
         '200':
@@ -1042,7 +1043,7 @@ paths:
       summary: Documents
       description: >-
         Documents endpoint: Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#document-endpoint.
-      operationId: get-dts-navigation
+      operationId: get-dts-document
       tags: [DTS]
       responses:
         '200':
@@ -1776,3 +1777,20 @@ components:
           type: array
           items:
             type: string
+    DtsEntrypoint:
+      type: object
+      properties:
+        "@context":
+          type: string
+        "@id":
+          type: string
+        "@type":
+          type: string
+        dtsVersion:
+          type: string
+        collection:
+          type: string
+        document:
+          type: string
+        navigation:
+          type: string
