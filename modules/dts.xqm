@@ -173,6 +173,7 @@ but in case of an error it is a sequence! :)
               local:child-readable-collection-with-parent-by-id($id)
             else
                 (: display as a readable collection :)
+                (: This currently causes a server errror :)
                 local:child-readable-collection-by-id($id)
     else
         (: requesting a collection, but not the root-collection :)
@@ -365,10 +366,14 @@ as map() {
         }
 
     let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/tei"
+    
+    (: This actually need to be URI templates, not URLs, but to implement this, 
+    we need to know which params the endpoints are supporting :)
     let $dts-document := $ddts:documents-base || "?resource=" || $id
     let $dts-navigation := $ddts:navigation-base || "?resource=" || $id
 
     (: todo: do something here! :)
+    (: citeDepth seems to be deprecated; might to switch to citationTree or whatever :)
     let $dts-citeDepth := local:get-citeDepth($tei)
 
     return
@@ -383,8 +388,8 @@ as map() {
             (: the new things are called:)
             "document" : $dts-document, 
             "navigation" : $dts-navigation,
-            "download": $dts-download ,
-            "dts:citeDepth" : $dts-citeDepth
+            "download": $dts-download 
+            (:, "dts:citeDepth" : $dts-citeDepth :)
 
         }
 };
@@ -398,12 +403,25 @@ as map() {
  :
  :)
 declare function local:child-readable-collection-by-id($id as xs:string)
-as map() {
-  let $tei := collection($config:corpora-root)//tei:idno[@type eq "dracor"][./text() eq $id]/root()/tei:TEI
-  let $cite-structure := local:generate-citeStructure($tei)
+{
+    (: Need to remove the return type annotation b/c in case of an error this fails :)
+  
+  (: Retrieve the TEI file:)
+  let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $id]
+  
+  (: The line below causes problems if there this is not a valid ID :)
+  
+  
   return
-      if ( $tei ) then
-      map:merge( (map {"@context" : $ddts:context } , local:teidoc-to-collection-member($tei), $cite-structure ) )
+      if ( $tei/name() eq "TEI" ) then
+        
+        let $cite-structure := local:generate-citeStructure($tei) return
+
+            (: removed the citeStructure for now :)
+            map:merge( 
+                (map {"@context" : $ddts:dts-jsonld-context-url, "dtsVersion" : $ddts:spec-version } , 
+                local:teidoc-to-collection-member($tei) 
+                (: , $cite-structure :) ) )
       else
         (
                     <rest:response>
@@ -467,8 +485,16 @@ as map() {
 };
 
 (:~
+:)
+declare function local:generate-citationTree($tei as element(tei:TEI)) 
+as map() {
+ "Not implemented"
+};
+
+(:~
  :
  : Helper Function that generates dts:citeStructure to be included in the collection endpoint when requesting a resource
+ : Deprecated, maybe; alpha-1 introduced citation trees!
  :
  : @param $tei TEI file
  :
