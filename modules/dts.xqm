@@ -775,9 +775,9 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 </rest:response>,
 
                 <TEI xmlns="http://www.tei-c.org/ns/1.0">
-                    <dts:fragment xmlns:dts="https://w3id.org/dts/api#">
+                    <dts:wrapper xmlns:dts="https://w3id.org/dts/api#">
                         {$fragment}
-                    </dts:fragment>
+                    </dts:wrapper>
                 </TEI>
             )
 };
