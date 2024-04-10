@@ -119,17 +119,17 @@ as xs:integer {
 
 (:
  : --------------------
- : Collections Endpoint
+ : Collection Endpoint
  : --------------------
  :
- : see https://distributed-text-services.github.io/specifications/Collections-Endpoint.html
- : could be /api/dts/collections
+ : see https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
+ : could be /api/v1/dts/collection
  :)
 
 (:~
- : DTS Collections Endpoint
+ : DTS Collection Endpoint
  :
- : Get a collection according to the specification: https://distributed-text-services.github.io/specifications/Collections-Endpoint.html
+ : Get a collection according to the specification: https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
  :
  : @param $id Identifier for a collection or document, e.g. "ger" for GerDraCor. Root collection can be requested by leaving the parameter out or explicitly requesting it with "corpora"
  : @param $page Page of the current collection’s members. Functionality is not implemented, will return 501 status code.
@@ -139,7 +139,7 @@ as xs:integer {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/dts/collections")
+  %rest:path("/v1/dts/collection")
   %rest:query-param("id", "{$id}")
   %rest:query-param("page", "{$page}")
   %rest:query-param("nav", "{$nav}")
@@ -147,7 +147,9 @@ declare
   %output:media-type("application/ld+json")
   %output:method("json")
 function ddts:collections($id, $page, $nav)
-as map() {
+{
+(: had to remove the return type annotation because in case of an error it created a server error; was as map();
+but in case of an error it is a sequence! :)    
 
   (: check, if param $id is set -- request a certain collection :)
   if ( $id ) then
@@ -156,6 +158,7 @@ as map() {
     if ( $id eq "corpora" ) then
         local:root-collection()
     (: could also be a single document :)
+    (: this regex check might not be a good idea, e.g if if use ger1 a thing that does not exist it still tries to find it :)
     else if ( matches($id, "^[a-z]+[0-9]+$") ) then
           if ( $page ) then
             (: paging on readable collection = single document is not supported :)
@@ -177,6 +180,7 @@ as map() {
         let $corpus := dutil:get-corpus($id)
         return
             (: there is something, that's a teiCorpus :)
+            (: this is causing a problem because the check doesn't really check if the corpus exists :)
             if ( $corpus/name() eq "teiCorpus" ) then
                 (: should check for paging and nav :)
                 if ( $page ) then
@@ -196,17 +200,19 @@ as map() {
                         local:corpus-to-collection-with-parent-as-member($id)
                     else
                         (: return the collection by id :)
-                    local:corpus-to-collection($id)
+                        local:corpus-to-collection($id)
+                        
+                    
 
             else
                 (: if the corpus doesn't exist, return 404 Not found :)
+                (: Strangely, this does not trigger when using a non existent corpus id :)
                 (
                     <rest:response>
-                    <http:response status="404"/>
+                        <http:response status="404"/>
                     </rest:response>,
-                    "Corpus '" || $id || "' does not exist!"
+                    "The requested resource '" || $id ||  "' is not available."
                 )
-
 
   else (: id is not set, return root-collection "corpora" :)
     local:root-collection()
@@ -238,12 +244,13 @@ as map() {
 
   return
     map {
-      "@context" : $ddts:context ,
+      "@context": $ddts:dts-jsonld-context-url ,
       "@id": "corpora",
       "@type": "Collection" ,
-      "dts:totalParents": $totalParents ,
-      "dts:totalChildren": $totalChildren ,
+      "dtsVersion": $ddts:spec-version ,
       "totalItems": $totalChildren , (:! same as children:)
+      "totalParents": $totalParents ,
+      "totalChildren": $totalChildren ,
       "title": $title,
       "member" : $members
     }
@@ -272,12 +279,12 @@ as map() {
       return
         map {
           "@id" : $name ,
+          "@type" : "Collection" ,
           "title" : $info?title ,
           "description" : $info?description ,
-          "@type" : "Collection" ,
-          "dts:totalParents": 1 ,
           "totalItems" : $file-count ,
-          "dts:totalChildren" : $file-count
+          "totalParents": 1 ,
+          "totalChildren" : $file-count
         }
 };
 
@@ -314,12 +321,13 @@ as map() {
 
   return
     map {
-      "@context" : $ddts:context ,
+      "@context" : $ddts:dts-jsonld-context-url ,
       "@id": $id,
       "@type": "Collection" ,
-      "dts:totalParents": $totalParents ,
-      "dts:totalChildren": $totalChildren ,
+      "dtsVersion": $ddts:spec-version ,
       "totalItems" : $totalItems ,
+      "totalParents": $totalParents ,
+      "totalChildren": $totalChildren ,
       "title": $title,
       "description" : $description ,
       "member" : array {$members}
@@ -349,6 +357,7 @@ as map() {
     (: todo: add more metadata to dublin core :)
     let $authors := dutil:get-authors($tei)
     let $dc-creators := for $author in $authors return $author?name
+    (: TODO: need to rework this! Removed it from the output for now :)
     let $dublincore :=
         map {
             "dc:creator" : $dc-creators ,
@@ -356,8 +365,8 @@ as map() {
         }
 
     let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/tei"
-    let $dts-passage := $ddts:documents-base || "?id=" || $id
-    let $dts-navigation := $ddts:navigation-base || "?id=" || $id
+    let $dts-document := $ddts:documents-base || "?resource=" || $id
+    let $dts-navigation := $ddts:navigation-base || "?resource=" || $id
 
     (: todo: do something here! :)
     let $dts-citeDepth := local:get-citeDepth($tei)
@@ -367,13 +376,14 @@ as map() {
             "@id" : $id ,
             "@type": "Resource" ,
             "title" : $titles?main ,
-            "dts:dublincore" : $dublincore ,
             "totalItems": 0 ,
-            "dts:totalParents": 1 ,
-            "dts:totalChildren": 0 ,
-            "dts:passage": $dts-passage ,
-            "dts:references": $dts-navigation ,
-            "dts:download": $dts-download ,
+            "totalParents": 1 ,
+            "totalChildren": 0 ,
+            (: "dublinCore" : $dublincore , :)
+            (: the new things are called:)
+            "document" : $dts-document, 
+            "navigation" : $dts-navigation,
+            "download": $dts-download ,
             "dts:citeDepth" : $dts-citeDepth
 
         }
