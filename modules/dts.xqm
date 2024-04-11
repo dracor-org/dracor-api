@@ -256,7 +256,8 @@ but in case of an error it is a sequence! :)
             )
             else if ( $nav eq 'parents') then
             (: requested the parent collection of a document :)
-              local:child-readable-collection-with-parent-by-id($playname)
+            (: "DEBUG: This is called with playname: " || $playname :)
+            local:child-readable-collection-with-parent-by-id($playname)
             else
                 (: display as a readable collection :)
                 (: This currently causes a server errror :)
@@ -506,7 +507,6 @@ declare function local:child-readable-collection-by-id($id as xs:string)
   
   (: The line below causes problems if there this is not a valid ID :)
   
-  
   return
       if ( $tei/name() eq "TEI" ) then
         
@@ -528,21 +528,34 @@ declare function local:child-readable-collection-by-id($id as xs:string)
 
 (:~
  : Display single resource and add parent collection as member
+
+ : this implements the "Parent Collection Query" as described in the specification of the collections endpoint
+ : https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
  :)
 declare function local:child-readable-collection-with-parent-by-id($id as xs:string) {
     let $self := local:child-readable-collection-by-id($id)
+    
     (: must change map and add totalItems == 1 because of parent collection will be added as a member :)
     let $self-without-totalItems := map:remove($self, "totalItems")
     let $self-with-new-totalItems := map:merge( ( $self-without-totalItems, map{"totalItems" : 1})  )
+    
     (: get parent collection and remove the members :)
-    let $parent-collection-uri := util:collection-name(collection($config:corpora-root)//tei:idno[@type eq "dracor"][./text() eq $id])
-    let $parent-collection-id := tokenize($parent-collection-uri,'/')[last()]
+    (: TODO: maybe use a dutil:function instead; this is very custom; not sure how this will
+    work when something is changed in the general API code
+     :)
+    let $file-db-path := util:collection-name(collection($config:corpora-root)/tei:TEI[@xml:id eq $id])
+    let $corpusname := tokenize(replace($file-db-path, "/db/dracor/corpora/",""),"/")[1]
+    (: let $playname := tokenize(replace($file-db-path, "/db/dracor/corpora/",""),"/")[2] :) 
+    
     (: get the parent by the function to generate a collection :)
-    let $parent := local:corpus-to-collection($parent-collection-id)
+    let $parent := local:corpus-to-collection($corpusname)
+    
     (: remove "members" and "@context" :)
     let $parent-without-members := map:remove($parent,"member")
-    let $parent-withou-context := map:remove($parent-without-members, "@context")
-    let $members := map {"member" : array { $parent-withou-context }}
+    let $parent-without-context := map:remove($parent-without-members, "@context")
+    let $members := map {"member" : array { $parent-without-context }} 
+    
+
     return
         map:merge(($self-with-new-totalItems, $members))
 };
