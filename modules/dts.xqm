@@ -35,7 +35,8 @@ declare namespace hydra = "https://www.w3.org/ns/hydra/core#";
 declare namespace dc = "http://purl.org/dc/terms/";
 
 (: Variables used in responses :)
-declare variable $ddts:api-base := $config:api-base || "/dts"; 
+declare variable $ddts:base-uri := replace($config:api-base, "/api/v1","") ;
+declare variable $ddts:api-base := $config:api-base || "/dts";
 declare variable $ddts:collections-base := $ddts:api-base || "/collection"  ;
 declare variable $ddts:documents-base := $ddts:api-base || "/document" ;
 declare variable $ddts:navigation-base := $ddts:api-base || "/navigation" ;
@@ -117,6 +118,31 @@ as xs:integer {
     else 0
 };
 
+(:~ 
+ : Convert DraCor URIs to DraCor IDs
+ : 
+ : The DTS Spec seems to favor the use of real URIs as identifiers. DraCor already resolve URIs 
+ : of plays, https://dracor.org/id/gerXXXXXX; it would be logical to use them here as well
+:)
+declare function local:uri-to-id($uri as xs:string) 
+as xs:string {
+    (:this might not be the best option, hope it works for now:)
+    tokenize($uri,"/id/")[last()]
+};
+
+(:~ 
+ : Covert IDs to URIs
+ :
+ : see local:uri-to-id, this does the inverse, e.g. identifiers playname (and corpusname) are turned
+ : into URIs, e.g. gerXXXXXX becomes https://dracor.org/id/gerXXXXXX.
+:)
+declare function local:id-to-uri($id as xs:string)
+as xs:string {
+    (: might not be the ultimate best solution, hope it works for now :)
+    $ddts:base-uri || "/id/" || $id
+};
+
+
 (:
  : --------------------
  : Collection Endpoint
@@ -124,14 +150,19 @@ as xs:integer {
  :
  : see https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
  : could be /api/v1/dts/collection
+
+ : Question: There is a param "id" in the collection endpoint: Shall this be a full URI as well; this somehow maps to the
+ : values of param "resource" in the other two endpoints
+
  :)
 
 (:~
  : DTS Collection Endpoint
  :
  : Get a collection according to the specification: https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
+ : TODO: this must be changed to handle full URIs!
  :
- : @param $id Identifier for a collection or document, e.g. "ger" for GerDraCor. Root collection can be requested by leaving the parameter out or explicitly requesting it with "corpora"
+ : @param $id Identifier for a collection or document, Should be a URI, forget this for 1-alpha: e.g. "ger" for GerDraCor. Root collection can be requested by leaving the parameter out or explicitly requesting it with "corpora"
  : @param $page Page of the current collection’s members. Functionality is not implemented, will return 501 status code.
  : @param $nav Use value "parents" to request the parent collection in "members" of the returned JSON object. Default behaviour is to return children in "member"; explicitly requesting "children" will work, but is not explicitly implemented
  :
@@ -148,18 +179,53 @@ declare
   %output:method("json")
 function ddts:collections($id, $page, $nav)
 {
-(: had to remove the return type annotation because in case of an error it created a server error; was as map();
+(: FIXME: had to remove the return type annotation because in case of an error it created a server error; was as map();
 but in case of an error it is a sequence! :)    
 
   (: check, if param $id is set -- request a certain collection :)
   if ( $id ) then
 
     (: if root-collection "corpora is explicitly requested by id = 'corpora'" :)
-    if ( $id eq "corpora" ) then
+    (: this is somewhat a legacy behaviour before switching to 1-alpha and adressing everything by URIs :)
+    if ( $id eq "corpora") then
         local:root-collection()
+    else if ( $id eq $ddts:base-uri ) then
+        (: this would be the default to address the root collection :)
+        local:root-collection()
+
+    else if ( matches($id, "^[a-z]+$") ) then
+    (: this is a collection only, e.g. "ger" or "test" :)
+    (: TODO: check if this corpus really exists :)
+        let $corpus := dutil:get-corpus($id)
+        return
+            if ($corpus/name() eq "teiCorpus") then local:corpus-to-collection($id)
+            else
+            (
+                    <rest:response>
+                        <http:response status="404"/>
+                    </rest:response>,
+                    "The requested resource '" || $id ||  "' is not available."
+            )
+    else if ( matches($id, concat("^", $ddts:base-uri, "/id/","[a-z]+$" ) ) ) then
+        (: A corpus requested with URI :)
+        let $corpusname := local:uri-to-id($id)
+        let $corpus := dutil:get-corpus($corpusname)
+        return
+            if ($corpus/name() eq "teiCorpus") then local:corpus-to-collection($id)
+            else
+            (
+                    <rest:response>
+                        <http:response status="404"/>
+                    </rest:response>,
+                    "The requested resource '" || $id ||  "' is not available."
+            )
+
+    (: in pre-alpha we used normal DraCor playnames or so; now everything should be adressed with real uris 
+     : this is somewhat legacy behaviour, but will handle if someone request e.g. ger000001
+    :)
     (: could also be a single document :)
     (: this regex check might not be a good idea, e.g if if use ger1 a thing that does not exist it still tries to find it :)
-    else if ( matches($id, "^[a-z]+[0-9]+$") ) then
+    else if ( matches($id, "^[a-z]+[0-9]{6}$") ) then
           if ( $page ) then
             (: paging on readable collection = single document is not supported :)
             (
@@ -175,9 +241,35 @@ but in case of an error it is a sequence! :)
                 (: display as a readable collection :)
                 (: This currently causes a server errror :)
                 local:child-readable-collection-by-id($id)
+    
+    else if ( matches($id, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then
+    (: requested a single play with full URI – as it should be done :)
+        let $playname := local:uri-to-id($id)
+        return
+            if ( $page ) then
+            (: paging on readable collection = single document is not supported :)
+            (
+                    <rest:response>
+                    <http:response status="400"/>
+                    </rest:response>,
+                    "Paging is not possible on a single resource. Try without parameter 'page'!"
+            )
+            else if ( $nav eq 'parents') then
+            (: requested the parent collection of a document :)
+              local:child-readable-collection-with-parent-by-id($playname)
+            else
+                (: display as a readable collection :)
+                (: This currently causes a server errror :)
+                local:child-readable-collection-by-id($playname)
+    
+
+    (: Normally, this else would not be executed because all the other cases are already covered :)
     else
+        (: this might be deprecated :)
+        (: should check here if someone uses corpus name or a full uri :)
         (: requesting a collection, but not the root-collection :)
         (: evaluate $id – check if collection with "id" exists :)
+
         let $corpus := dutil:get-corpus($id)
         return
             (: there is something, that's a teiCorpus :)
@@ -246,7 +338,7 @@ as map() {
   return
     map {
       "@context": $ddts:dts-jsonld-context-url ,
-      "@id": "corpora",
+      "@id": $ddts:base-uri,
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
       "totalItems": $totalChildren , (:! same as children:)
@@ -262,13 +354,14 @@ as map() {
  :
  : Helper function to generate the collection members to put into the "member" array, e.g. of the root collection
  :
- : @param $id Identifier
+ : @param $id Identifier (This is actually a URI)
  :
  :)
 declare function local:collection-member-by-id($id as xs:string)
 as map() {
     (: get metadata on the corpus by util-function :)
-    let $info :=  dutil:get-corpus-info-by-name($id)
+    let $corpusname := local:uri-to-id($id)
+    let $info :=  dutil:get-corpus-info-by-name($corpusname)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
     (: this is basically what the dutil-function does before evaluating the files :)
     let $corpus-collection := concat($config:corpora-root, "/", $id)
@@ -279,7 +372,7 @@ as map() {
     order by $name
       return
         map {
-          "@id" : $name ,
+          "@id" : local:id-to-uri($id) , (: was name :)
           "@type" : "Collection" ,
           "title" : $info?title ,
           "description" : $info?description ,
@@ -301,10 +394,11 @@ as map() {
 declare function local:corpus-to-collection($id as xs:string)
 as map() {
     (: get metadata on the corpus by util-function :)
-    let $info :=  dutil:get-corpus-info-by-name($id)
+    let $corpusname := local:uri-to-id($id)
+    let $info :=  dutil:get-corpus-info-by-name($corpusname)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
     (: this is basically what the dutil-function does before evaluating the files :)
-    let $corpus-collection := concat($config:corpora-root, "/", $id)
+    let $corpus-collection := concat($config:corpora-root, "/", $corpusname)
     let $teis := collection($corpus-collection)//tei:TEI
     return
         (: response :)
@@ -323,7 +417,7 @@ as map() {
   return
     map {
       "@context" : $ddts:dts-jsonld-context-url ,
-      "@id": $id,
+      "@id": local:id-to-uri($corpusname), 
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
       "totalItems" : $totalItems ,
@@ -346,6 +440,7 @@ as map() {
 declare function local:teidoc-to-collection-member($tei as element(tei:TEI) )
 as map() {
     let $id := dutil:get-dracor-id($tei)
+    let $uri := local:id-to-uri($id)
     let $titles := dutil:get-titles($tei)
     let $lang := $tei/@xml:lang/string()
 
@@ -369,8 +464,8 @@ as map() {
     
     (: This actually need to be URI templates, not URLs, but to implement this, 
     we need to know which params the endpoints are supporting :)
-    let $dts-document := $ddts:documents-base || "?resource=" || $id
-    let $dts-navigation := $ddts:navigation-base || "?resource=" || $id
+    let $dts-document := $ddts:documents-base || "?resource=" || $uri
+    let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri
 
     (: todo: do something here! :)
     (: citeDepth seems to be deprecated; might to switch to citationTree or whatever :)
@@ -378,7 +473,7 @@ as map() {
 
     return
         map {
-            "@id" : $id ,
+            "@id" : $uri ,
             "@type": "Resource" ,
             "title" : $titles?main ,
             "totalItems": 0 ,
@@ -583,18 +678,19 @@ as map() {
  : Document Endpoint
  : --------------------
  :
- : see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html
- : could be /api/dts/documents (the specification uses "document", but mixes singular an plural; entry point will return "documents" in plural form, but this might change)
+ : see https://distributed-text-services.github.io/specifications/versions/1-alpha/#document-endpoint
+ : could be /api/dts/document 
  :
  : MUST return "application/tei+xml"
  : will implement only GET
  :
  : Params:
- : $id	(Required) Identifier for a document. Where possible this should be a URI
- : $ref	Passage identifier (used together with id; can’t be used with start and end)
+ : $resource(Required) Identifier for a document. Where possible this should be a URI)
+ : $ref	Passage identifier (used together with resource; can’t be used with start and end)
  : $start (For range) Start of a range of passages (can’t be used with ref)
  : $end (For range) End of a range of passages (requires start and no ref)
- : $format (Optional) Specifies a data format for response/request body other than the default
+ : $tree 
+ : $mediaType
  :
  : Params used in POST, PUT, DELETE requests are not availiable
 
@@ -603,20 +699,21 @@ as map() {
 (:~
  : DTS Document Endpoint
  :
- : Get a document according to the specification: https://distributed-text-services.github.io/specifications/Documents-Endpoint.html
+ : Get a document according to the specification: https://distributed-text-services.github.io/specifications/versions/1-alpha/#document-endpoint
  :
- : @param $id Identifier for a document
+ : @param $resource Identifier for a document
  : @param $ref Passage identifier (used together with id; can’t be used with start and end)
  : @param $start (For range) Start of a range of passages (can’t be used with ref)
  : @param $end (For range) End of a range of passages (requires start and no ref)
- : @param $format (Optional) Specifies a data format for response/request body other than the default
+ : @param $tree
+ : @param $mediaType
  :
  : @result TEI
  :)
 declare
   %rest:GET
-  %rest:path("/v1/dts/documents")
-  %rest:query-param("id", "{$id}")
+  %rest:path("/v1/dts/document")
+  %rest:query-param("resource", "{$resource}")
   %rest:query-param("ref", "{$ref}")
   %rest:query-param("start", "{$start}")
   %rest:query-param("end", "{$end}")
@@ -624,7 +721,7 @@ declare
   %rest:produces("application/tei+xml")
   %output:media-type("application/xml")
   %output:method("xml")
-function ddts:documents($id, $ref, $start, $end, $format) {
+function ddts:documents($resource, $ref, $start, $end, $format) {
     (: check, if valid request :)
 
     (: In GET requests one may either provide a ref parameter or a pair of start and end parameters. A request cannot combine ref with the other two. If, say, a ref and a start are both provided this should cause the request to fail. :)
@@ -664,7 +761,7 @@ function ddts:documents($id, $ref, $start, $end, $format) {
 
     else
         (: valid request :)
-        let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $id]
+        let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $resource]
 
         return
             (: check, if document exists! :)
@@ -693,7 +790,7 @@ function ddts:documents($id, $ref, $start, $end, $format) {
                     local:get-full-doc($tei)
 
             else
-                if ( not($id) or $id eq "" ) then
+                if ( not($resource) or $resource eq "" ) then
                     (: return the URI template/self description :)
                     local:collections-self-describe()
                 else
@@ -704,7 +801,7 @@ function ddts:documents($id, $ref, $start, $end, $format) {
         </rest:response>,
         <error statusCode="404" xmlns="https://w3id.org/dts/api#">
             <title>Not Found</title>
-            <description>Document with the id '{$id}' does not exist!</description>
+            <description>Document with the id '{$resource}' does not exist!</description>
         </error>
         )
 
@@ -1092,7 +1189,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
      return
 
      map{
-         "@context" : $ddts:context ,
+         "@context" : $ddts:context , (: remove this vor alpha-1:)
          "@id" : $request-id ,
          "dts:citeDepth" : $citeDepth ,
          "dts:level": $level ,
@@ -1177,7 +1274,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         return
 
         map{
-         "@context" : $ddts:context ,
+         "@context" : $ddts:context , (: TODO: change this for alpha-1 :)
          "@id" : $request-id ,
          "dts:citeDepth" : $citeDepth ,
          "dts:level": xs:integer($level) ,
@@ -1232,7 +1329,7 @@ declare function local:children-of-subdivision($tei, $ref) {
                 <http:response status="200"/>
             </rest:response>,
             map{
-                "@context" : $ddts:context ,
+                "@context" : $ddts:context , (: TODO: change this for alpha-1 :)
                 "@id" : $request-id ,
                 "dts:citeDepth" : $citeDepth ,
                 "dts:level": $level ,
