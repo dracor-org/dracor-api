@@ -477,10 +477,6 @@ as map() {
     let $dts-document := $ddts:documents-base || "?resource=" || $uri
     let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri
 
-    (: todo: do something here! :)
-    (: citeDepth seems to be deprecated; might to switch to citationTree or whatever :)
-    let $dts-citeDepth := local:get-citeDepth($tei)
-
     return
         map {
             "@id" : $uri ,
@@ -493,9 +489,7 @@ as map() {
             (: the new things are called:)
             "document" : $dts-document, 
             "navigation" : $dts-navigation,
-            "download": $dts-download 
-            (:, "dts:citeDepth" : $dts-citeDepth :)
-
+            "download": $dts-download
         }
 };
 
@@ -509,7 +503,7 @@ as map() {
  :)
 declare function local:child-readable-collection-by-id($id as xs:string)
 {
-    (: Need to remove the return type annotation b/c in case of an error this fails :)
+    (: FIXME: Need to remove the return type annotation b/c in case of an error this fails :)
   
   (: Retrieve the TEI file:)
   let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $id]
@@ -519,13 +513,13 @@ declare function local:child-readable-collection-by-id($id as xs:string)
   return
       if ( $tei/name() eq "TEI" ) then
         
-        let $cite-structure := local:generate-citeStructure($tei) return
+        let $citationTrees := map { "citationTrees" : local:generate-citationTrees($tei) } return
 
-            (: removed the citeStructure for now :)
+            
             map:merge( 
                 (map {"@context" : $ddts:dts-jsonld-context-url, "dtsVersion" : $ddts:spec-version } , 
                 local:teidoc-to-collection-member($tei) 
-                (: , $cite-structure :) ) )
+                , $citationTrees ) )
       else
         (
                     <rest:response>
@@ -601,12 +595,38 @@ as map() {
     return $result
 };
 
+
 (:~
+ : Citation Trees
+ 
+ : Maybe at some point there will be multiple citation trees, but for now there is only one
 :)
-declare function local:generate-citationTree($tei as element(tei:TEI)) 
-as map() {
- "Not implemented"
+declare function local:generate-citationTrees($tei as element(tei:TEI)) {
+    (: returns the defaul citation tree as a sequence to be converted to an array:)
+    array{
+        local:generate-citationTree($tei,"default")
+    }
 };
+
+(:~
+ : Citation Trees
+ 
+ : Maybe at some point there will be multiple citation trees, but for now there is only one
+:)
+declare function local:generate-citationTree($tei as element(tei:TEI), $type as xs:string) {
+    if ( $type eq "default" ) then 
+        let $citeStructure := local:generate-citeStructure($tei) return
+        let $maxCiteDepth := local:get-citeDepth($tei)
+        return
+        map {
+            "@type": "CitationTree",
+            "maxCiteDepth" : $maxCiteDepth,
+            "citeStructure" : $citeStructure
+            }
+    else ()
+};
+
+
 
 (:~
  :
@@ -616,25 +636,8 @@ as map() {
  : @param $tei TEI file
  :
  : :)
-declare function local:generate-citeStructure($tei as element(tei:TEI) )
-as map() {
-    (: example https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-readable-collection-ie-a-textual-resource :)
-
-    (:
-    "dts:citeStructure": [
-        {
-            "dts:citeType": "front"
-        },
-        {
-            "dts:citeType": "poem",
-            "dts:citeStructure": [
-                {
-                    "dts:citeType": "line"
-                }
-            ]
-        }
-    ]
-    :)
+declare function local:generate-citeStructure($tei as element(tei:TEI) ) {
+    (: Generate citeStructure to be used in citationTree :)
 
     let $set := if ($tei//tei:front/tei:set) then ("set") else ()
     let $front-structure-types :=
@@ -643,26 +646,26 @@ as map() {
             array {
                 for $front-sub-structure-type in (distinct-values($tei//tei:front/tei:div/@type/string() ), $set)
                 return
-                    map{ "dts:citeType": lower-case($front-sub-structure-type) }
+                    map{ "citeType": lower-case($front-sub-structure-type) }
             }
         else()
 
-    let $front-structure := map { "dts:citeType" : "front" , "dts:citeStructure" : $front-structure-types }
+    let $front-structure := map { "citeType" : "front" , "citeStructure" : $front-structure-types }
 
     let $body-structure :=
         (: structure body - act - scene :)
         if ($tei//tei:body/tei:div[@type eq "act"] and $tei//tei:body/tei:div/tei:div[@type eq "scene"]) then
-            map { "dts:citeType" : "body" ,
-                "dts:citeStructure" : array{ map{ "dts:citeType" : "act" , "dts:citeStructure" : array { map {"dts:citeType" : "scene" }  }  } }
+            map { "citeType" : "body" ,
+                "citeStructure" : array{ map{ "citeType" : "act" , "citeStructure" : array { map {"citeType" : "scene" }  }  } }
                 }
         (: structure: body – scene :)
         else if ( $tei//tei:body/tei:div[@type eq "scene"] ) then
-            map { "dts:citeType" : "body" ,
-                "dts:citeStructure" : array{ map{ "dts:citeType" : "scene" } } }
+            map { "citeType" : "body" ,
+                "citeStructure" : array{ map{ "citeType" : "scene" } } }
         (: structure: body - act, no scene :)
         else if ( $tei//tei:body/tei:div[@type eq "act"] and not($tei//tei:body/tei:div/tei:div) ) then
-            map { "dts:citeType" : "body" ,
-                "dts:citeStructure" : array{ map{ "dts:citeType" : "act"  } } }
+            map { "citeType" : "body" ,
+                "citeStructure" : array{ map{ "citeType" : "act"  } } }
 
         (: other types than scenes and acts ... :)
         else if ( $tei//tei:body/tei:div[@type]/tei:div[@type] ) then
@@ -671,8 +674,8 @@ as map() {
             return
                 (: structure, like act and scene, only with different type-values :)
                 if ( (count($types-1) = 1) and (count($types-2) = 1) ) then
-                    map { "dts:citeType" : "body" ,
-                "dts:citeStructure" : array{ map{ "dts:citeType" : lower-case($types-1) , "dts:citeStructure" : array { map {"dts:citeType" : lower-case($types-2) }  }  } }
+                    map { "citeType" : "body" ,
+                "citeStructure" : array{ map{ "citeType" : lower-case($types-1) , "citeStructure" : array { map {"citeType" : lower-case($types-2) }  }  } }
                 }
 
 
@@ -681,17 +684,17 @@ as map() {
 
         (: structure: only body :)
         else if ( $tei//tei:body  and not($tei//tei:body/tei:div[@type eq "act"]) and not($tei//tei:body/tei:div[@type eq "scene"]) ) then
-            map { "dts:citeType" : "body" }
+            map { "citeType" : "body" }
         else ()
 
     let $back-structure :=
-        if ($tei//tei:back) then map{ "dts:citeType": "back"} else ()
+        if ($tei//tei:back) then map{ "citeType": "back"} else ()
 
     let $cite-structure := array {$front-structure, $body-structure,  $back-structure}
 
-    return
+    return $cite-structure
 
-    map {"dts:citeStructure" : $cite-structure }
+   (: map {"dts:citeStructure" : $cite-structure } :)
 };
 
 
