@@ -452,7 +452,6 @@ as map() {
     let $id := dutil:get-dracor-id($tei)
     let $uri := local:id-to-uri($id)
     let $titles := dutil:get-titles($tei)
-    let $lang := $tei/@xml:lang/string()
 
     let $filename := util:document-name($tei)
     let $paths := dutil:filepaths(base-uri($tei))
@@ -460,15 +459,7 @@ as map() {
     let $collection-name := util:collection-name($tei)
     let $corpusname := $paths?corpusname
 
-    (: todo: add more metadata to dublin core :)
-    let $authors := dutil:get-authors($tei)
-    let $dc-creators := for $author in $authors return $author?name
-    (: TODO: need to rework this! Removed it from the output for now :)
-    let $dublincore :=
-        map {
-            "dc:creator" : $dc-creators ,
-            "dc:language" : $lang
-        }
+    let $dublincore := local:play_metadata_to_dc($tei)
 
     let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/tei"
     
@@ -485,12 +476,40 @@ as map() {
             "totalItems": 0 ,
             "totalParents": 1 ,
             "totalChildren": 0 ,
-            (: "dublinCore" : $dublincore , :)
-            (: the new things are called:)
+            "dublinCore" : $dublincore ,
             "document" : $dts-document, 
             "navigation" : $dts-navigation,
             "download": $dts-download
         }
+};
+
+(:~ 
+: Metadata on a play in Dublin Core to be included with the response of the collection endpoint
+: "dublinCore": {
+      "@id": "dts:dublinCore",
+      "@context": {
+        "@vocab": "http://purl.org/dc/terms/"
+      }
+: this is the dublin core terms namespace
+: Currently only literals are used, but probably a better rendering of metadata in rdf using dcterms is needed
+
+:)
+declare function local:play_metadata_to_dc($tei as element(tei:TEI))
+as map() {
+
+    let $titles := dutil:get-titles($tei)
+    let $lang := $tei/@xml:lang/string()
+    let $authors := dutil:get-authors($tei)
+    let $creators := for $author in $authors return 
+        $author?name
+
+    return
+
+    map {
+            "language" : $lang,
+            "creator" : $creators
+        }
+
 };
 
 (:~
