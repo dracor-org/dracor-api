@@ -87,7 +87,7 @@ function ddts:entry-point() {
     and adapt the URI templates accordingly
     What happend to param level in the navigation endpoint?
     :)
-    let $collection-template := $ddts:collections-base || "{?id}"
+    let $collection-template := $ddts:collections-base || "{?id,nav}"
     let $document-template := $ddts:documents-base || "{?resource,ref}"
     let $navigation-template := $ddts:navigation-base || "{?resource,ref}"
     
@@ -198,7 +198,11 @@ but in case of an error it is a sequence! :)
     (: TODO: check if this corpus really exists :)
         let $corpus := dutil:get-corpus($id)
         return
-            if ($corpus/name() eq "teiCorpus") then local:corpus-to-collection($id)
+            if ($corpus/name() eq "teiCorpus") then 
+                if ( $nav eq 'parents') then 
+                    local:corpus-to-collection-with-parent-as-member($id)
+                else    
+                    local:corpus-to-collection($id)
             else
             (
                     <rest:response>
@@ -207,11 +211,16 @@ but in case of an error it is a sequence! :)
                     "The requested resource '" || $id ||  "' is not available."
             )
     else if ( matches($id, concat("^", $ddts:base-uri, "/id/","[a-z]+$" ) ) ) then
-        (: A corpus requested with URI :)
+        (: A corpus = collection requested with URI as value of the id param :)
         let $corpusname := local:uri-to-id($id)
         let $corpus := dutil:get-corpus($corpusname)
         return
-            if ($corpus/name() eq "teiCorpus") then local:corpus-to-collection($id)
+            if ($corpus/name() eq "teiCorpus") then 
+                
+                if ( $nav eq 'parents') then 
+                    local:corpus-to-collection-with-parent-as-member($id)
+                else
+                    local:corpus-to-collection($id)
             else
             (
                     <rest:response>
