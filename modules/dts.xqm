@@ -693,8 +693,6 @@ declare function local:generate-citeStructure($tei as element(tei:TEI) ) {
     let $cite-structure := array {$front-structure, $body-structure,  $back-structure}
 
     return $cite-structure
-
-   (: map {"dts:citeStructure" : $cite-structure } :)
 };
 
 
