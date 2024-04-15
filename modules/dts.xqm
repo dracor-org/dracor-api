@@ -759,12 +759,15 @@ declare
   %rest:query-param("ref", "{$ref}")
   %rest:query-param("start", "{$start}")
   %rest:query-param("end", "{$end}")
+  %rest:query-param("tree", "{$tree}")
+  %rest:query-param("mediaType", "{$media-type}")
   %rest:query-param("format", "{$format}")
   %rest:produces("application/tei+xml")
   %output:media-type("application/xml")
   %output:method("xml")
-function ddts:documents($resource, $ref, $start, $end, $format) {
+function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $format) {
     (: check, if valid request :)
+    (: param format is DEPRECTED :)
 
     (: In GET requests one may either provide a ref parameter or a pair of start and end parameters. A request cannot combine ref with the other two. If, say, a ref and a start are both provided this should cause the request to fail. :)
     if ( $ref and ( $start or $end ) ) then
@@ -790,20 +793,26 @@ function ddts:documents($resource, $ref, $start, $end, $format) {
         )
     else if ( $format ) then
         (: requesting other format than TEI is not implemented :)
+        (: This param is deprecated. Should be removed. Maybe mediaType will be added here :)
         (
         <rest:response>
             <http:response status="501"/>
         </rest:response>,
         <error statusCode="501" xmlns="https://w3id.org/dts/api#">
             <title>Not implemented</title>
-            <description>Requesting other format than 'application/tei+xml' is not supported.</description>
+            <description>Requesting other format than 'application/tei+xml' is not supported. The parameter 'format' is deprecated.</description>
         </error>
         )
         (: handled common errors, should check, if document with a certain $id exists :)
 
     else
         (: valid request :)
-        let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $resource]
+        (: need to check here if "short ID"/playname or full URI :)
+        let $tei :=
+            if ( matches($resource, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then 
+                collection($config:corpora-root)/tei:TEI[@xml:id = local:uri-to-id($resource)]
+            else 
+                collection($config:corpora-root)/tei:TEI[@xml:id = $resource]
 
         return
             (: check, if document exists! :)
