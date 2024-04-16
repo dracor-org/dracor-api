@@ -88,7 +88,7 @@ function ddts:entry-point() {
     What happend to param level in the navigation endpoint?
     :)
     let $collection-template := $ddts:collections-base || "{?id,nav}"
-    let $document-template := $ddts:documents-base || "{?resource,ref}"
+    let $document-template := $ddts:documents-base || "{?resource,ref,start,end}"
     let $navigation-template := $ddts:navigation-base || "{?resource,ref}"
     
     return
@@ -793,7 +793,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $forma
         )
     else if ( $format ) then
         (: requesting other format than TEI is not implemented :)
-        (: This param is deprecated. Should be removed. Maybe mediaType will be added here :)
+        (: This param is DEPRECATED in 1-alpha. Should be removed. Maybe mediaType will be added here :)
         (
         <rest:response>
             <http:response status="501"/>
@@ -825,16 +825,8 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $forma
 
 
                 else if ( $start and $end ) then
-                    (: requested a range; could be implemented, but not sure, if I will manage in time :)
-                    (
-                    <rest:response>
-                        <http:response status="501"/>
-                        </rest:response>,
-                    <error statusCode="501" xmlns="https://w3id.org/dts/api#">
-                        <title>Not implemented</title>
-                        <description>Requesting a range is not supported.</description>
-                    </error>
-                    )
+                    (: requested a range; could be implemented, but not sure, if I will manage in time – at the Hackathon then :)
+                    local:get-fragment-range($tei, $start, $end)
 
                 else
                 (: requested full document :)
@@ -856,6 +848,133 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $forma
             <description>Document with the id '{$resource}' does not exist!</description>
         </error>
         )
+
+};
+
+
+(:~ 
+:
+: Get a range of fragments from start to end
+: EXPERIMENTAL: This currently works only for segments on the same level that are part of a overarching structure, e.g. 
+: scene 2 to scene 4 of the second act. It is not possible to query the segments across the boundaries of an act
+:
+:)
+declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
+
+    let $id := $tei/@xml:id/string()
+    let $uri := local:id-to-uri($id)
+
+    let $links := '<' || $ddts:collections-base  ||'?id=' || $uri || '>; rel="collection"'
+    (: 1-alpha suggests that the Content-Type SHOULD be application/tei+xml . This could be implemented, but at least Chrome downloads the file and does not 
+                display it if this content header is set; therefore it is not included at the moment :)
+
+    (: let $link-header :=  (<http:header name='Link' value='{$links}'/>,  <http:header name='Content-Type' value='application/tei+xml'/>) :)
+    let $link-header :=  <http:header name='Link' value='{$links}'/>
+    
+
+    (: A solution to getting the range of fragments on the same level, e.g. the first two acts, the 3rd to the 6th scene of the fourth act..
+    would be to retrieve two sets of nodes and then subtracting the latter from the first (OK, have to subtract everything that is coming after the end)
+     :)
+
+    (: node set one:)
+    (: this include the range and everything following after :)
+    (: should not work for front, body, back on level one:)
+    let $start_set :=
+            (: structures on level 2 :)
+
+            (: front structures level 2 :)
+            (: div:)
+            if ( matches($start, '^front.div.\d+$') ) then
+                let $pos := xs:integer(tokenize($start,'\.')[last()])
+                return
+                ($tei//tei:front/tei:div[$pos], $tei//tei:front/tei:div[$pos]/following-sibling::node())
+            (: tei:set in tei:front :)
+            else if ( matches($start, '^front.set.\d+$') ) then
+                let $pos := xs:integer(tokenize($start,'\.')[last()])
+                return
+                    ( $tei//tei:front/tei:set[$pos], $tei//tei:front/tei:set[$pos]/following-sibling::node() )
+
+            (: body structures level 2 :)
+            else if ( matches($start, "^body.div.\d+$") ) then
+                let $pos := xs:integer(tokenize($start,'\.')[last()])
+                return
+                    ( $tei//tei:body/tei:div[$pos] , $tei//tei:body/tei:div[$pos]/following-sibling::node() )
+
+            (: back structures level 2 :)
+            else if ( matches($start, "^back.div.\d+$") ) then
+                let $pos := xs:integer(tokenize($start,'\.')[last()])
+                return
+                    ( $tei//tei:back/tei:div[$pos], $tei//tei:back/tei:div[$pos]/following-sibling::node()) 
+
+            (: structures on level 3:)
+            else if ( matches($start, "body.div.\d+.div.\d+$") ) then
+                let $div1-pos := xs:integer(tokenize($start, "\.")[3])
+                let $div2-pos := xs:integer(tokenize($start, "\.")[last()])
+                return
+                    ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() )
+
+            (: not matched by any rule :)
+            else()
+
+
+    (:  node set two :)
+    (: all sibling nodes following the end node :)
+    let $end_set :=
+            (: structures on level 2 :)
+
+            (: front structures level 2 :)
+            (: div:)
+            if ( matches($end, '^front.div.\d+$') ) then
+                let $pos := xs:integer(tokenize($end,'\.')[last()])
+                return
+                $tei//tei:front/tei:div[$pos]/following-sibling::node()
+            (: tei:set in tei:front :)
+            else if ( matches($end, '^front.set.\d+$') ) then
+                let $pos := xs:integer(tokenize($end,'\.')[last()])
+                return
+                    $tei//tei:front/tei:set[$pos]/following-sibling::node() 
+
+            (: body structures level 2 :)
+            else if ( matches($end, "^body.div.\d+$") ) then
+                let $pos := xs:integer(tokenize($end,'\.')[last()])
+                return
+                    $tei//tei:body/tei:div[$pos]/following-sibling::node() 
+
+            (: back structures level 2 :)
+            else if ( matches($end, "^back.div.\d+$") ) then
+                let $pos := xs:integer(tokenize($end,'\.')[last()])
+                return
+                     $tei//tei:back/tei:div[$pos]/following-sibling::node()
+
+            (: structures on level 3:)
+            else if ( matches($end, "body.div.\d+.div.\d+$") ) then
+                let $div1-pos := xs:integer(tokenize($end, "\.")[3])
+                let $div2-pos := xs:integer(tokenize($end, "\.")[last()])
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() 
+
+            (: not matched by any rule :)
+            else()
+
+    (: retrieving a fragment should go into a separate function :)
+    
+    let $fragment := $start_set except $end_set
+    
+
+    return
+    (
+                <rest:response>
+                    <http:response status="200">
+                       {$link-header}
+                    </http:response>
+                </rest:response>,
+
+                <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                    <dts:wrapper xmlns:dts="https://w3id.org/dts/api#">
+                        {$fragment}
+                    </dts:wrapper>
+                </TEI>
+            )
 
 };
 
