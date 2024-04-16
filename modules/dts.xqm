@@ -841,6 +841,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $forma
                     local:get-full-doc($tei)
 
             else
+                (: this might be DEPRECATED!! :)
                 if ( not($resource) or $resource eq "" ) then
                     (: return the URI template/self description :)
                     local:collections-self-describe()
@@ -860,6 +861,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $forma
 
 (: The URI template, that would be the self description of the endpoint – unclear, how this should be implemented :)
 (: should include a link to a machine readable documentation :)
+(: Probably, this is DEPRECATED in 1-alpha! :)
 declare function local:collections-self-describe() {
     (
         <rest:response>
@@ -876,13 +878,23 @@ declare function local:collections-self-describe() {
  : Return full document requested via the documents endpoint :)
 declare function local:get-full-doc($tei as element(tei:TEI)) {
     let $id := $tei/@xml:id/string()
+    let $uri := local:id-to-uri($id)
     (: requested complete document, just return the TEI File:)
                 (: must include the link header as well :)
-                (: see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html#get-responses :)
+                (: The link header is smaller since the 1-alpha :)
+                (: It is now not required but SHOULD :)
+                (: "Link SHOULD contain a URI that links back to the Collection endpoint for the requested Resource, e.g. as Link: </dts/api/collection/?id=https://en.wikisource.org/wiki/Dracula; rel="collection"  :)
                 (: see https://datatracker.ietf.org/doc/html/rfc5988 :)
-                (: </navigation?id={$id}>; rel="contents", </collections?id={$id}>; rel="collection" :)
-                let $links := '<' || $ddts:navigation-base || '?id=' || $id || '>; rel="contents", <' || $ddts:collections-base  ||'?id=' || $id || '>; rel="collection"'
+                
+                (: pre-alpha was: :)
+                (: let $links := '<' || $ddts:navigation-base || '?id=' || $id || '>; rel="contents", <' || $ddts:collections-base  ||'?id=' || $id || '>; rel="collection"' :)
+                (: 1-alpha only contains link to the collection endpoint :)
+                let $links := '<' || $ddts:collections-base  ||'?id=' || $uri || '>; rel="collection"'
 
+                (: 1-alpha suggests that the Content-Type SHOULD be application/tei+xml . This could be implemented, but at least Chrome downloads the file and does not 
+                display it if this content header is set; therefore it is not included at the moment :)
+
+                (: let $link-header :=  (<http:header name='Link' value='{$links}'/>,  <http:header name='Content-Type' value='application/tei+xml'/>) :)
                 let $link-header :=  <http:header name='Link' value='{$links}'/>
 
                 return
@@ -897,13 +909,14 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
 };
 
 (:~
- : Return a document fragment
+ : Return a document fragment via the document endpoint
  :
  : @param $tei TEI of the Document
  : @param $ref identifier of the fragment requested
  : :)
 declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:string) {
     let $id := $tei/@xml:id/string()
+    let $uri := local:id-to-uri($id)
 
     let $fragment :=
         switch($ref)
@@ -949,11 +962,18 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
             (: not matched by any rule :)
             else()
 
-    (: Link Header – see https://distributed-text-services.github.io/specifications/Documents-Endpoint.html#get-responses :)
+    (: The Link header in pre-alpha contained more links, in 1-alpha it is only a link to the collection endpoint:)
+    (: pre-alpha used a dedicated function, which is deprecated now :)
+    (: let $link-header := local:link-header-of-fragment($tei,$ref) :)
+    (: 1-alpha use the same code as in the function that returns the whole doc:)
+    
+    let $links := '<' || $ddts:collections-base  ||'?id=' || $uri || '>; rel="collection"'
+    (: 1-alpha suggests that the Content-Type SHOULD be application/tei+xml . This could be implemented, but at least Chrome downloads the file and does not 
+                display it if this content header is set; therefore it is not included at the moment :)
 
-    let $link-header := local:link-header-of-fragment($tei,$ref)
-
-
+    (: let $link-header :=  (<http:header name='Link' value='{$links}'/>,  <http:header name='Content-Type' value='application/tei+xml'/>) :)
+    let $link-header :=  <http:header name='Link' value='{$links}'/>
+    
     return
         if ( not($fragment) ) then
             (
@@ -985,13 +1005,16 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
 (:~
  :
  : Link Header
- :
- : Generates the Link Header needed for the response of the Document endpoint when requesting a fragment
+ : DEPRECATED!! Reason: 1-alpha only includes a link to the collection (and the Content-Type)
+
+ : Pre-alpha: Generates the Link Header needed for the response of the Document endpoint when requesting a fragment
  : @param $tei TEI Document (full doc)
  : @param $ref Identifier of the fragment
  :
  : :)
 declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as xs:string) {
+    (: This function is DEPRECATED. I keep it here in case a later version of the DTS adds the
+    other links again :)
 
     (: need to generate:
     * prev	Previous passage of the document in the Document endpoint
