@@ -1015,6 +1015,34 @@ paths:
         Collection endpoint: Lists the collections available. Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint.
       operationId: get-dts-collection
       tags: [DTS]
+      parameters:
+        - name: id
+          in: query
+          required: false
+          description: Identifier for a collection or document. Preferably the full URI of a corpus or a play, but shorter DraCor IDs are also supported.
+          schema:
+            type: string
+          examples:
+              corpus_via_dts_collection_uri:
+                value: https://dracor.org/id/ger
+                summary: German Drama Corpus (URI)
+              corpus_via_dts_collection_corpusname:
+                value: rus
+                summary: Russian Drama Corpus (DraCor ID)
+              single_play_via_dts_collection_uri:
+                value: https://dracor.org/id/ger000088
+                summary: G.E. Lessing – Emilia Galotti (URI)
+              single_play_via_dts_collection_playname:
+                value: ger000088
+                summary: G.E. Lessing – Emilia Galotti (DraCor ID)
+        - name: nav
+          in: query
+          required: false
+          description: Determines whether the content of the member property represents parent or child items.
+          schema:
+            type: string
+            enum:
+              - parents
       responses:
         '200':
           description: Collections available.
@@ -1022,6 +1050,42 @@ paths:
             application/ld+json:
               schema:
                 type: object
+              example: |
+                {
+                  "@context" : "https://distributed-text-services.github.io/specifications/context/1-alpha1.json",
+                  "@id" : "http://localhost:8088/id/test",
+                  "@type" : "Collection",
+                  "dtsVersion" : "1-alpha",
+                  "totalItems" : 1,
+                  "totalParents" : 1,
+                  "totalChildren" : 1,
+                  "title" : "Test Drama Corpus",
+                  "description" : "This corpus is for testing purposes only. It features a handful of plays in different languages.",
+                  "members" : [ 
+                  {
+                    "@id" : "http://localhost:8088/id/test000001",
+                    "@type" : "Resource",
+                    "title" : "Ревизор",
+                    "totalItems" : 0,
+                    "totalParents" : 1,
+                    "totalChildren" : 0,
+                    "dublinCore" : 
+                      { 
+                        "language" : "rus",
+                        "creator" : "Гоголь, Николай Васильевич"
+                      },
+                      "document" : "http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/test000001",
+                      "navigation" : "http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/test000001",
+                      "download" : "http://localhost:8088/api/v1/dts/corpora/test/plays/gogol-revizor/tei"
+                  }
+                  ]
+                }
+        '400':
+          description: Bad request. Using the parameter `page` with a document is not possible. (Paging functionality has not been implemented yet.)
+        '404':
+          description: The requested resource is not available.
+        '501': 
+          description: Not implemented. Using the undocumented parameter `page` will result in this status code. The paging functionality has not been implemented yet.
 
   /dts/navigation:
     get:
@@ -1049,7 +1113,7 @@ paths:
         - name: resource
           in: query
           required: true
-          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the identifier `playname`. 
+          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID. 
           schema:
             type: string
           example: https://dracor.org/id/ger000088
