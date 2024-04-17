@@ -1290,15 +1290,17 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
  declare
   %rest:GET
   %rest:path("/v1/dts/navigation")
-  %rest:query-param("id", "{$id}")
+  %rest:query-param("resource", "{$resource}")
   %rest:query-param("ref", "{$ref}")
+  %rest:query-param("start", "{$start}")
+  %rest:query-param("end", "{$end}")
   %rest:query-param("level", "{$level}")
   %rest:produces("application/ld+json")
   %output:media-type("application/ld+json")
   %output:method("json")
- function ddts:navigation($id, $ref, $level) {
+ function ddts:navigation($resource, $ref, $start, $end, $level) {
     (: parameter $id is mandatory :)
-    if ( not($id) ) then
+    if ( not($resource) ) then
         (
         <rest:response>
             <http:response status="400"/>
@@ -1307,7 +1309,10 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         )
     else
         (: check, if there is a resource with this identifier :)
-        let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $id]
+        let $tei := if ( matches($resource, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then
+            collection($config:corpora-root)/tei:TEI[@xml:id = local:uri-to-id($resource)]
+        else
+            collection($config:corpora-root)/tei:TEI[@xml:id = $resource]
 
         return
             (: check, if document exists! :)
@@ -1361,7 +1366,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 <rest:response>
                     <http:response status="404"/>
                 </rest:response>,
-                "Document with the id '" ||  $id || "' does not exist."
+                "Document with the id '" ||  $resource || "' does not exist."
                 )
  };
 
