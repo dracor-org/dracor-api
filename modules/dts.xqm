@@ -893,6 +893,11 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $pos := xs:integer(tokenize($start,'\.')[last()])
                 return
                     ( $tei//tei:front/tei:set[$pos], $tei//tei:front/tei:set[$pos]/following-sibling::node() )
+            (: tei:castList in tei:front :)
+            else if ( matches($start, '^front.castList.\d+$') ) then
+                let $pos := xs:integer(tokenize($start,'\.')[last()])
+                return
+                    ( $tei//tei:front/tei:castList[$pos], $tei//tei:front/tei:castList[$pos]/following-sibling::node() )
 
             (: body structures level 2 :)
             else if ( matches($start, "^body.div.\d+$") ) then
@@ -932,7 +937,12 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
             else if ( matches($end, '^front.set.\d+$') ) then
                 let $pos := xs:integer(tokenize($end,'\.')[last()])
                 return
-                    $tei//tei:front/tei:set[$pos]/following-sibling::node() 
+                    $tei//tei:front/tei:set[$pos]/following-sibling::node()
+            (: tei:castList in tei:front :)
+            else if ( matches($end, '^front.castList.\d+$') ) then
+                let $pos := xs:integer(tokenize($end,'\.')[last()])
+                return
+                    $tei//tei:front/tei:castList[$pos]/following-sibling::node() 
 
             (: body structures level 2 :)
             else if ( matches($end, "^body.div.\d+$") ) then
@@ -1058,6 +1068,11 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
                 return
                     $tei//tei:front/tei:set[$pos]
+            (: tei:castList in tei:front :)
+            else if ( matches($ref, '^front.castList.\d+$') ) then
+                let $pos := xs:integer(tokenize($ref,'\.')[last()])
+                return
+                    $tei//tei:front/tei:castList[$pos]
 
             (: body structures level 2 :)
             else if ( matches($ref, "^body.div.\d+$") ) then
