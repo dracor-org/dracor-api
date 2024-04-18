@@ -941,6 +941,26 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $div2-pos := xs:int(replace(replace(tokenize($start, "/")[3], "div\[",""),"\]",""))
                 return
                     ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() )
+            
+            (: structures on level 4 :)
+            (: body/act/scene/sp|stage :)
+            (: only xPath-ish ref values are supported here :)
+            else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]/sp\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($start,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($start, "/")[3], "div\[",""),"\]",""))
+                let $sp-pos := xs:int(replace(replace(tokenize($start, "/")[last()],"sp\[",""),"\]","")) 
+                return
+                    ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:sp[$sp-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:sp[$sp-pos]/following-sibling::node() )
+
+            (: stage on level 4 :)
+            (: tested with http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000001&start=body/div[1]/div[2]/stage[1]&end=body/div[1]/div[2]/sp[1]:)
+            else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]/stage\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($start,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($start, "/")[3], "div\[",""),"\]",""))
+                let $stage-pos := xs:int(replace(replace(tokenize($start, "/")[last()],"stage\[",""),"\]","")) 
+                return
+                    ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:stage[$stage-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:stage[$stage-pos]/following-sibling::node() )
+
             (: not matched by any rule :)
             else()
 
@@ -1002,6 +1022,23 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $div2-pos := xs:int(replace(replace(tokenize($end, "/")[3], "div\[",""),"\]",""))
                 return
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() 
+            
+            (: level4 structures :)
+            (: sp on level 4 :)
+            else if ( matches($end, "^body/div\[\d+\]/div\[\d+\]/sp\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($end,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($end, "/")[3], "div\[",""),"\]",""))
+                let $sp-pos := xs:int(replace(replace(tokenize($end, "/")[last()],"sp\[",""),"\]","")) 
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:sp[$sp-pos]/following-sibling::node() 
+
+            (: stage on level 4 :)
+            else if ( matches($end, "^body/div\[\d+\]/div\[\d+\]/stage\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($end,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($end, "/")[3], "div\[",""),"\]",""))
+                let $stage-pos := xs:int(replace(replace(tokenize($end, "/")[last()],"stage\[",""),"\]","")) 
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:stage[$stage-pos]/following-sibling::node()
 
             (: not matched by any rule :)
             else()
