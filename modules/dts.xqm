@@ -85,11 +85,10 @@ function ddts:entry-point() {
     Can we use full URIs here or are these always relative paths?
     TODO: need to check which params are available on the endpoints in the final implementation
     and adapt the URI templates accordingly
-    What happend to param level in the navigation endpoint?
     :)
     let $collection-template := $ddts:collections-base || "{?id,nav}"
     let $document-template := $ddts:documents-base || "{?resource,ref,start,end}"
-    let $navigation-template := $ddts:navigation-base || "{?resource,ref}"
+    let $navigation-template := $ddts:navigation-base || "{?resource,ref,start,end,down,tree}"
     
     return
     map {
@@ -1283,7 +1282,10 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
  :
  : @param $id Identifier of the resource being navigated
  : @param $ref ... todo: add from spec
- : @param $level ... todo: add from spec
+ : @param $start ... todo: add from spec
+ : @param $end ... todo: add from spec
+ : @param $level DEPRECATED
+ : @param $down
  :
  : @result JSON Object
  :)
@@ -1295,10 +1297,11 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
   %rest:query-param("start", "{$start}")
   %rest:query-param("end", "{$end}")
   %rest:query-param("level", "{$level}")
+  %rest:query-param("down", "{$down}")
   %rest:produces("application/ld+json")
   %output:media-type("application/ld+json")
   %output:method("json")
- function ddts:navigation($resource, $ref, $start, $end, $level) {
+ function ddts:navigation($resource, $ref, $start, $end, $level, $down) {
     (: parameter $id is mandatory :)
     if ( not($resource) ) then
         (
@@ -1306,6 +1309,22 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
             <http:response status="400"/>
         </rest:response>,
         "Mandatory parameter 'id' is missing."
+        )
+    (: both ref and either start or end is specified should return an error :)
+    else if ( $ref and ($start or $end) ) then
+        (
+        <rest:response>
+            <http:response status="400"/>
+        </rest:response>,
+        "Use of both param 'ref' and 'start' or 'end' is not allowed."
+        )
+    (: should not use start without end or vice versa :)
+    else if ( ($start and not($end)) or ($end and not($start)) ) then 
+        (
+        <rest:response>
+            <http:response status="400"/>
+        </rest:response>,
+        "Must provide both start and end."
         )
     else
         (: check, if there is a resource with this identifier :)
@@ -1319,20 +1338,28 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
             if ( $tei/name() eq "TEI" ) then
                 (: here are valid requests handled :)
  
-                (:
-                in the case of DraCor, it makes sense to be able to request a TEI representation of the tei:castList,
-                this could be the first level, e.g. the division of tei:front and tei:body – which contains the text proper;
-                so first level (of structural division) would contain only tei:front, tei:body, tei:back; fragment ids would be {dracorID}.front, {dracorID}.body, {dracorID}.back
-                :)
                 (: Level 1 :)
-                if ( not($ref) and not($level) ) then
+                (: Parameter level is deprecated; use param "down" insted 
+                This level is either identified by having no down param or param down equals 1
+                :)
+                if ( not($ref) and (not($down) or $down eq "1") ) then
+                    (: this function has been adapted to 1-alpha :)
                     local:navigation-level1($tei)
 
                 (: Level 2 :)
-                (: in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
+                (: Some in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
                 (: in the case of tei:body, it would be the top-level divisions of the body, normally "acts" – could also be "scenes" if there are no "acts"... but this case must be handled separately :)
                 else if ( $level and not($ref) ) then
-                    local:navigation-level-n($tei, $level)
+                    (: The following function is DEPRECATED; had to re-write most of it for 1-alpha :)
+                    (: local:navigation-level-n($tei, $level) :)
+                    (: Will return an error if someone uses this deprecated behaviour :)
+                    (
+                        <rest:response>
+                            <http:response status="400"/>
+                        </rest:response>,
+                    "The parameter 'level' is deprecated in version 1-alpha. This functionality is not supported anymore."
+                    )
+
 
                 (: Level 3 :)
                 (: don't care about tei:front here, but in the case of a drama with acts and scenes in the tei:body, this would normally list the "scenes" :)
@@ -1342,8 +1369,11 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: we will have to see, if this will work out like this; I might implement it for this case and return only level zero, e.g. the whole document, if it doesn't fit this pattern :)
                 (: special case, that is implemented: ref is a level 1 division of body, e.g. an act, will return the scenes of this act. :)
-                else if ( $ref and (not($level) or ($level eq "1")) ) then
+                else if ( $ref and (not($down) or ($down eq "1")) ) then
+                    (: this function used level, the parameter is called "down" now :)
+                    (: This function needs to be adapted to 1-alpha:)
                     local:children-of-subdivision($tei, $ref)
+                    
 
 
                 (: there is also a conflicting hierarchy, e.g. Pages! which would be a second cite structure :)
@@ -1370,50 +1400,85 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 )
  };
 
- (: Generate such a Object that is used in the navigation endpoint and we will see, what are the challenges  :)
+ (:~
+ : Navigate a resource on level 1
+ :)
  declare function local:navigation-level1($tei as element(tei:TEI)) {
-     (: see https://distributed-text-services.github.io/specifications/Navigation-Endpoint.html#example-1-requesting-top-level-children-of-a-textual-resource :)
-     (: So the id parameter supplied in the query is the identifier of the Resource as a whole. :)
 
-     (:
-                in the case of DraCor, it makes sense to be able to request a TEI representation of the tei:castList,
-                this could be the first level, e.g. the division of tei:front and tei:body – which contains the text proper;
-                so first level (of structural division) would contain only tei:front, tei:body, tei:back; fragment ids would be {dracorID}.1.front, {dracorID}.1.body, {dracorID}.1.back
-                :)
      let $doc-id := $tei/@xml:id/string()
-     let $request-id := $ddts:navigation-base || "?id=" || $doc-id
-     let $citeDepth := local:get-citeDepth($tei) (: needs to be generated by a function, evaluating structural information – a number defining the maximum depth of the document’s citation tree. E.g., if the a document has up to three levels, dts:citeDepth should be the number 3. :)
-     let $level := 1 (: a number identifying the hierarchical level of the references listed in member, counted relative to the top of the document’s citation tree. E.g., if a the returned references are at the second hierarchical level (like {"dts:ref": "1.1"}) then the dts:level in the response should be the number 2. (The Resource as a whole is considered level 0.) :)
-     let $parent := ()
+     let $doc-uri := local:id-to-uri($doc-id)
+     (:Will add down parameter here:)
+     let $request-id := $ddts:navigation-base || "?resource=" || $doc-id || "&amp;down=1"
+     
+     (: citeDepth may be deprecated; can delete if don't need:)
+     (: needs to be generated by a function, evaluating structural information – a number defining the maximum depth of the document’s citation tree. E.g., if the a document has up to three levels, dts:citeDepth should be the number 3. :)
+     (: let $citeDepth := local:get-citeDepth($tei) :)
+     
+     (: this is deprecated for sure :)
+     (: let $level := 1 :)
 
+    (: URI templates :)
+    let $passage := $ddts:documents-base || "?resource=" || $doc-uri || "{&amp;ref,start,end}"
+    let $collection := $ddts:collections-base || "?resource=" || $doc-uri || "{&amp;nav}"
+    let $navigation := $ddts:collections-base || "?resource=" || $doc-uri || "{&amp;ref,down,start,end,tree}" (: maybe add also page, althoug not plan to implement it now:)   
+    
+    let $citationTrees := local:generate-citationTrees($tei)
 
+    (: maybe this could also be delegated to the function that does this for the collection endpoint? :)
+    let $resource := map {
+        "@id" : $doc-uri,
+        "@type" : "Resource",
+        "citationTrees" : $citationTrees
 
-     let $passage := $ddts:documents-base || "?id=" || $doc-id || "{&amp;ref}{&amp;start}{&amp;end}" (: the URI template to the Documents endpoint at which the text of passages corresponding to these references can be retrieved.:)
+    }
 
-     (: ok, it's hardcoded, but tryin' ... :)
-     let $member :=
+    (: when requesting the resource include the level 1 divisions, e.g. front, body, back as members :)
+    let $member :=
         (
-        if ($tei//tei:front) then map {"dts:ref": "front"} else () ,
-        if ($tei//tei:body) then map {"dts:ref" : "body"} else (),
-        if ($tei//tei:back) then map {"dts:ref" : "back"} else ()
+        if ($tei//tei:front) then local:citable-unit("front", 1, (), "front", $tei//tei:front ) else () ,
+        if ($tei//tei:body) then local:citable-unit("body", 1, (), "body", $tei//tei:body ) else (),
+        if ($tei//tei:back) then local:citable-unit("back", 1, (), "back", $tei//tei:back ) else ()
         )
-
 
      return
 
      map{
-         "@context" : $ddts:context , (: remove this vor alpha-1:)
-         "@id" : $request-id ,
-         "dts:citeDepth" : $citeDepth ,
-         "dts:level": $level ,
-         "dts:passage":  $passage ,
-         "dts:parent" : $parent ,
-         "member" : array{$member}
-
-
+         "@context" : $ddts:dts-jsonld-context-url,
+         "@id" : $request-id,
+         "dtsVersion" : $ddts:spec-version,
+         "passage" : $passage,
+         "collection" : $collection,
+         "navigation" : $navigation,
+         "resource" : $resource,
+         "member" : $member
      }
  };
 
+(:~
+: Helper function to generate a CitableUnit
+:)
+ declare function local:citable-unit($identifier, $level, $parent, $cite-type, $tei-fragment as element() ) {
+    let $dublinCore := ()
+
+    let $citeable-unit-data := map {
+        "@type": "CitableUnit",
+        "identifier": $identifier,
+        "level" : $level,
+        "parent" : $parent,
+        "citeType": $cite-type
+    }
+    
+    return
+    
+    if ($dublinCore != () ) then map:merge( ($citeable-unit-data, map{"dublinCore": $dublinCore}) )
+    else $citeable-unit-data
+    
+ };
+
+(:~ 
+: This is the function to generate the response of the navigation endpoint in the original pre-alpha implementation
+: it is DEPRECATED. I keep it at the moment because I might want to re-use some code snippets
+:)
  declare function local:navigation-level-n($tei as element(tei:TEI), $level as xs:string) {
      (: Example 2: Requesting all descendants of a textual Resource at a specified level - https://distributed-text-services.github.io/specifications/Navigation-Endpoint.html#example-2-requesting-all-descendants-of-a-textual-resource-at-a-specified-level :)
      let $doc-id := $tei/@xml:id/string()
@@ -1509,7 +1574,10 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
 (:~
  :
- : Can be used to retrieve children of an act; might not be too generic
+ : Can be used to retrieve children of an act; might not be too generic.
+ : TODO: This is still the code of pre-alpha which I need to adapt to 1-alpha
+ : a request that returned some data: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000088&ref=body.div.1
+
  : :)
 declare function local:children-of-subdivision($tei, $ref) {
     let $level := 3
