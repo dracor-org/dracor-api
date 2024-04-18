@@ -660,32 +660,82 @@ declare function local:generate-citeStructure($tei as element(tei:TEI) ) {
     (: Generate citeStructure to be used in citationTree :)
 
     let $set := if ($tei//tei:front/tei:set) then ("set") else ()
+    
     let $front-structure-types :=
 
         if ($tei//tei:front) then
             array {
                 for $front-sub-structure-type in (distinct-values($tei//tei:front/tei:div/@type/string() ), $set)
                 return
-                    map{ "citeType": lower-case($front-sub-structure-type) }
+                    map{ 
+                        "@type" : "CiteStructure",
+                        "citeType": lower-case($front-sub-structure-type) }
             }
         else()
 
-    let $front-structure := map { "citeType" : "front" , "citeStructure" : $front-structure-types }
+    let $front-structure := map { 
+        "@type" : "CiteStructure",
+        "citeType" : "front" , 
+        "citeStructure" : $front-structure-types }
 
     let $body-structure :=
         (: structure body - act - scene :)
-        if ($tei//tei:body/tei:div[@type eq "act"] and $tei//tei:body/tei:div/tei:div[@type eq "scene"]) then
-            map { "citeType" : "body" ,
-                "citeStructure" : array{ map{ "citeType" : "act" , "citeStructure" : array { map {"citeType" : "scene" }  }  } }
+        (: this has speeches as well as stage directions :)
+        if ($tei//tei:body/tei:div[@type eq "act"] and $tei//tei:body/tei:div/tei:div[@type eq "scene"][tei:stage and tei:sp]) then
+            map { 
+                "@type" : "CiteStructure", 
+                "citeType" : "body" ,
+                "citeStructure" : array{ 
+                    map{ 
+                        "@type" : "CiteStructure" , 
+                        "citeType" : "act" , 
+                        "citeStructure" : array { 
+                            map {
+                                "@type" : "CiteStructure" ,
+                                "citeType" : "scene" ,
+                                "citeStructure" : array {
+                                    map {
+                                        "@type" : "CiteStructure" ,
+                                        "citeType" : "speech"
+                                    },
+                                    map {
+                                        "@type" : "CiteStructure" ,
+                                        "citeType" : "stage_direction"
+                                    }
+                                } 
+                            
+                            }  }  } }
                 }
         (: structure: body – scene :)
-        else if ( $tei//tei:body/tei:div[@type eq "scene"] ) then
-            map { "citeType" : "body" ,
-                "citeStructure" : array{ map{ "citeType" : "scene" } } }
+        (: this has speeches as well as stage directions :)
+        else if ( $tei//tei:body/tei:div[@type eq "scene"][tei:sp and tei:stage] ) then
+            map { 
+                "@type" : "CiteStructure",
+                "citeType" : "body" ,
+                "citeStructure" : array{ map{ 
+                    "@type" : "CiteStructure",
+                    "citeType" : "scene",
+                    "citeStructure" : array {
+                        map {
+                            "@type" : "CiteStructure",
+                            "citeType" : "speech"
+                        },
+                        map {
+                            "@type" : "CiteStructure",
+                            "citeType" : "stage_direction"
+                        }
+                    } 
+                    } } }
         (: structure: body - act, no scene :)
         else if ( $tei//tei:body/tei:div[@type eq "act"] and not($tei//tei:body/tei:div/tei:div) ) then
-            map { "citeType" : "body" ,
-                "citeStructure" : array{ map{ "citeType" : "act"  } } }
+            map { 
+                "@type" : "CiteStructure",
+                "citeType" : "body" ,
+                "citeStructure" : array{ 
+                    map{ 
+                        "@type" : "CiteStructure" ,
+                        "citeType" : "act"  } 
+                    } }
 
         (: other types than scenes and acts ... :)
         else if ( $tei//tei:body/tei:div[@type]/tei:div[@type] ) then
@@ -694,8 +744,17 @@ declare function local:generate-citeStructure($tei as element(tei:TEI) ) {
             return
                 (: structure, like act and scene, only with different type-values :)
                 if ( (count($types-1) = 1) and (count($types-2) = 1) ) then
-                    map { "citeType" : "body" ,
-                "citeStructure" : array{ map{ "citeType" : lower-case($types-1) , "citeStructure" : array { map {"citeType" : lower-case($types-2) }  }  } }
+                    map { 
+                        "@type" : "CiteStructure",
+                        "citeType" : "body" ,
+                        "citeStructure" : array{ 
+                            map{ 
+                                "@type" : "CiteStructure",
+                                "citeType" : lower-case($types-1) , 
+                                "citeStructure" : array { 
+                                    map {
+                                        "@type" : "CiteStructure" ,
+                                        "citeType" : lower-case($types-2) }  }  } }
                 }
 
 
