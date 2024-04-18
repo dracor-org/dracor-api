@@ -106,14 +106,14 @@ function ddts:entry-point() {
  : Calculate citeDepth
  :
  : Helper function to get citeDepth of a document
- : Can currently cite maximum structure of tei:body/tei:div/tei:div --> 3 levels, but not all dramas have the structure text proper - act - scene
+ : Can currently cite maximum structure of tei:body/tei:div/tei:div/tei:sp or tei:stage --> 4 levels, but not all dramas have the structure text proper - act - scene
  :
  :   :)
 declare function local:get-citeDepth($tei as element(tei:TEI))
 as xs:integer {
-    if ( $tei//tei:body/tei:div/tei:div ) then 3
-    else if ( $tei//tei:body/tei:div ) then 2
-    else if ( $tei//tei:body ) then 1
+    if ( $tei//tei:body/tei:div/tei:div[tei:stage or tei:sp] ) then 4
+    else if ( $tei//tei:body/tei:div[tei:stage or tei:sp] ) then 3
+    else if ( $tei//tei:body[tei:stage or tei:sp] ) then 2 (: this should not exist! :)
     else 0
 };
 
