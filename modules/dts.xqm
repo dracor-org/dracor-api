@@ -1064,14 +1064,29 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
                 return
                 $tei//tei:front/tei:div[$pos]
+            (: xPath-ish syntax of the ID :)
+            else if ( matches($ref, '^front/div\[\d+\]$') ) then
+                (: let $pos := xs:int(replace(replace(replace(tokenize($ref,'/')[last()],"\[",""),"\]",""),"div","")) :)
+                (: little bit more readable, but still... :)
+                let $pos := xs:int(replace(replace($ref, "front/div\[",""),"\]",""))
+                return $tei//tei:front/tei:div[$pos]
             (: tei:set in tei:front :)
             else if ( matches($ref, '^front.set.\d+$') ) then
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
                 return
                     $tei//tei:front/tei:set[$pos]
+            (: xpath-ish :)
+            else if ( matches($ref, '^front/set\[\d+\]$') ) then
+                let $pos := xs:int(replace(replace($ref, "front/set\[",""),"\]",""))
+                return
+                    $tei//tei:front/tei:set[$pos]
             (: tei:castList in tei:front :)
             else if ( matches($ref, '^front.castList.\d+$') ) then
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
+                return
+                    $tei//tei:front/tei:castList[$pos]
+            else if ( matches($ref, '^front/castList\[\d+\]$') ) then
+                let $pos := xs:int(replace(replace($ref, "front/castList\[",""),"\]",""))
                 return
                     $tei//tei:front/tei:castList[$pos]
 
@@ -1080,19 +1095,54 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
                 return
                     $tei//tei:body/tei:div[$pos]
+            (: xPath-ish :)
+            else if ( matches($ref, "^body/div\[\d+\]$") ) then
+                let $pos := xs:integer(replace(replace($ref,"body/div\[",""),"\]",""))
+                return $tei//tei:body/tei:div[$pos]
 
             (: back structures level 2 :)
             else if ( matches($ref, "^back.div.\d+$") ) then
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
                 return
                     $tei//tei:back/tei:div[$pos]
+            (: xPath-ish :)
+            else if ( matches($ref, '^back/div\[\d+\]$') ) then
+                let $pos := xs:int(replace(replace($ref, "back/div\[",""),"\]",""))
+                return $tei//tei:back/tei:div[$pos]
 
             (: structures on level 3:)
+            (: TODO: xPath-ish implement! :)
             else if ( matches($ref, "body.div.\d+.div.\d+$") ) then
                 let $div1-pos := xs:integer(tokenize($ref, "\.")[3])
                 let $div2-pos := xs:integer(tokenize($ref, "\.")[last()])
                 return
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]
+            
+            else if ( matches($ref, "body/div\[\d+\]/div\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($ref, "/")[last()], "div\[",""),"\]",""))
+                return 
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]
+
+            (: structures on level 4 :)
+            (: for these the dot-notation is not available :)
+            (: speeches on act/scene/ :)
+            (: this is currently not supported by the navigation endpoint:)
+            else if ( matches($ref, "body/div\[\d+\]/div\[\d+\]/sp\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($ref, "/")[3], "div\[",""),"\]",""))
+                let $sp-pos := xs:int(replace(replace(tokenize($ref, "/")[last()],"sp\[",""),"\]",""))
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:sp[$sp-pos]
+            (: stage directions in act/scene :)
+            else if ( matches($ref, "body/div\[\d+\]/div\[\d+\]/stage\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($ref, "/")[3], "div\[",""),"\]",""))
+                let $stage-pos := xs:int(replace(replace(tokenize($ref, "/")[last()],"stage\[",""),"\]",""))
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:stage[$stage-pos]
+
+
 
             (: not matched by any rule :)
             else()
