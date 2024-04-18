@@ -1123,6 +1123,22 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 let $div2-pos := xs:int(replace(replace(tokenize($ref, "/")[last()], "div\[",""),"\]",""))
                 return 
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]
+            
+            (: there could also be speeches and stage direction :)
+            (: this needs to be tested! Works with http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000003&ref=body/div[1]/sp[1]:)
+            (: sp right inside the first div :)
+            else if ( matches($ref, "body/div\[\d+\]/sp\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
+                let $sp-pos := xs:int(replace(replace(tokenize($ref, "/")[last()],"sp\[",""),"\]",""))
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:sp[$sp-pos]
+            (: stage right inside the first div :)
+            else if ( matches($ref, "body/div\[\d+\]/stage\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
+                let $stage-pos := xs:int(replace(replace(tokenize($ref, "/")[last()],"stage\[",""),"\]",""))
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:stage[$stage-pos]
+
 
             (: structures on level 4 :)
             (: for these the dot-notation is not available :)
