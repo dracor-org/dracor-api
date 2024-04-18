@@ -889,21 +889,36 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $pos := xs:integer(tokenize($start,'\.')[last()])
                 return
                 ($tei//tei:front/tei:div[$pos], $tei//tei:front/tei:div[$pos]/following-sibling::node())
+            (: xPath-ish 
+            : tested with http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000001&start=front/div[1]&end=front/div[2]
+            :)
+            else if ( matches($start, 'front/div\[\d+\]$')) then
+                let $pos := xs:int(replace(replace($start, "front/div\[",""),"\]",""))
+                return 
+                    ($tei//tei:front/tei:div[$pos], $tei//tei:front/tei:div[$pos]/following-sibling::node())
             (: tei:set in tei:front :)
             else if ( matches($start, '^front.set.\d+$') ) then
                 let $pos := xs:integer(tokenize($start,'\.')[last()])
                 return
                     ( $tei//tei:front/tei:set[$pos], $tei//tei:front/tei:set[$pos]/following-sibling::node() )
+            (: TODO: implement xPath-ish ref here :)
             (: tei:castList in tei:front :)
             else if ( matches($start, '^front.castList.\d+$') ) then
                 let $pos := xs:integer(tokenize($start,'\.')[last()])
                 return
                     ( $tei//tei:front/tei:castList[$pos], $tei//tei:front/tei:castList[$pos]/following-sibling::node() )
+            (: TODO: implement xPath-ish ref here :)
 
             (: body structures level 2 :)
             else if ( matches($start, "^body.div.\d+$") ) then
                 let $pos := xs:integer(tokenize($start,'\.')[last()])
                 return
+                    ( $tei//tei:body/tei:div[$pos] , $tei//tei:body/tei:div[$pos]/following-sibling::node() )
+            (: xPath-ish :)
+            (:tested with http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000001&start=body/div[1]&end=body/div[2]:)
+            else if ( matches($start, "^body/div\[\d+\]$") ) then
+                let $pos := xs:integer(replace(replace($start,"body/div\[",""),"\]",""))
+                return 
                     ( $tei//tei:body/tei:div[$pos] , $tei//tei:body/tei:div[$pos]/following-sibling::node() )
 
             (: back structures level 2 :)
@@ -913,12 +928,19 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                     ( $tei//tei:back/tei:div[$pos], $tei//tei:back/tei:div[$pos]/following-sibling::node()) 
 
             (: structures on level 3:)
-            else if ( matches($start, "body.div.\d+.div.\d+$") ) then
+            else if ( matches($start, "^body.div.\d+.div.\d+$") ) then
                 let $div1-pos := xs:integer(tokenize($start, "\.")[3])
                 let $div2-pos := xs:integer(tokenize($start, "\.")[last()])
                 return
                     ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() )
 
+            (: xPath-ish:)
+            (: tested with http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000001&start=body/div[1]/div[1]&end=body/div[1]/div[2] :)
+            else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($start,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($start, "/")[3], "div\[",""),"\]",""))
+                return
+                    ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() )
             (: not matched by any rule :)
             else()
 
@@ -934,6 +956,11 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $pos := xs:integer(tokenize($end,'\.')[last()])
                 return
                 $tei//tei:front/tei:div[$pos]/following-sibling::node()
+            (: xPath-ish :)
+            else if ( matches($end, 'front/div\[\d+\]$')) then
+                let $pos := xs:int(replace(replace($end, "front/div\[",""),"\]",""))
+                return 
+                    $tei//tei:front/tei:div[$pos]/following-sibling::node()
             (: tei:set in tei:front :)
             else if ( matches($end, '^front.set.\d+$') ) then
                 let $pos := xs:integer(tokenize($end,'\.')[last()])
@@ -950,6 +977,11 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $pos := xs:integer(tokenize($end,'\.')[last()])
                 return
                     $tei//tei:body/tei:div[$pos]/following-sibling::node() 
+            (:xPath-ish :)
+            else if ( matches($end, "^body/div\[\d+\]$") ) then
+                let $pos := xs:integer(replace(replace($end,"body/div\[",""),"\]",""))
+                return 
+                    $tei//tei:body/tei:div[$pos]/following-sibling::node() 
 
             (: back structures level 2 :)
             else if ( matches($end, "^back.div.\d+$") ) then
@@ -961,6 +993,13 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
             else if ( matches($end, "body.div.\d+.div.\d+$") ) then
                 let $div1-pos := xs:integer(tokenize($end, "\.")[3])
                 let $div2-pos := xs:integer(tokenize($end, "\.")[last()])
+                return
+                    $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() 
+
+            (: xPath-ish:)
+            else if ( matches($end, "^body/div\[\d+\]/div\[\d+\]$") ) then
+                let $div1-pos := xs:int(replace(replace(tokenize($end,"/")[2],"div\[",""),"\]",""))
+                let $div2-pos := xs:int(replace(replace(tokenize($end, "/")[3], "div\[",""),"\]",""))
                 return
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() 
 
@@ -1112,13 +1151,13 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
 
             (: structures on level 3:)
             (: TODO: xPath-ish implement! :)
-            else if ( matches($ref, "body.div.\d+.div.\d+$") ) then
+            else if ( matches($ref, "^body.div.\d+.div.\d+$") ) then
                 let $div1-pos := xs:integer(tokenize($ref, "\.")[3])
                 let $div2-pos := xs:integer(tokenize($ref, "\.")[last()])
                 return
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]
             
-            else if ( matches($ref, "body/div\[\d+\]/div\[\d+\]$") ) then
+            else if ( matches($ref, "^body/div\[\d+\]/div\[\d+\]$") ) then
                 let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
                 let $div2-pos := xs:int(replace(replace(tokenize($ref, "/")[last()], "div\[",""),"\]",""))
                 return 
@@ -1127,13 +1166,13 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
             (: there could also be speeches and stage direction :)
             (: this needs to be tested! Works with http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000003&ref=body/div[1]/sp[1]:)
             (: sp right inside the first div :)
-            else if ( matches($ref, "body/div\[\d+\]/sp\[\d+\]$") ) then
+            else if ( matches($ref, "^body/div\[\d+\]/sp\[\d+\]$") ) then
                 let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
                 let $sp-pos := xs:int(replace(replace(tokenize($ref, "/")[last()],"sp\[",""),"\]",""))
                 return
                     $tei//tei:body/tei:div[$div1-pos]/tei:sp[$sp-pos]
             (: stage right inside the first div :)
-            else if ( matches($ref, "body/div\[\d+\]/stage\[\d+\]$") ) then
+            else if ( matches($ref, "^body/div\[\d+\]/stage\[\d+\]$") ) then
                 let $div1-pos := xs:int(replace(replace(tokenize($ref,"/")[2],"div\[",""),"\]",""))
                 let $stage-pos := xs:int(replace(replace(tokenize($ref, "/")[last()],"stage\[",""),"\]",""))
                 return
