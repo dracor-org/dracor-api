@@ -463,9 +463,11 @@ as map() {
     let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/tei"
     
     (: This actually need to be URI templates, not URLs, but to implement this, 
-    we need to know which params the endpoints are supporting :)
-    let $dts-document := $ddts:documents-base || "?resource=" || $uri
-    let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri
+    we need to know which params the endpoints are supporting 
+    TODO: add the parameters to the templates
+    :)
+    let $dts-document := $ddts:documents-base || "?resource=" || $uri || "{&amp;ref,start,end}" (: URI template:)
+    let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri || "{&amp;ref,start,end,down}" (: URI template:)
 
     return
         map {
@@ -1420,7 +1422,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
     (: URI templates :)
     let $passage := $ddts:documents-base || "?resource=" || $doc-uri || "{&amp;ref,start,end}"
     let $collection := $ddts:collections-base || "?resource=" || $doc-uri || "{&amp;nav}"
-    let $navigation := $ddts:collections-base || "?resource=" || $doc-uri || "{&amp;ref,down,start,end,tree}" (: maybe add also page, althoug not plan to implement it now:)   
+    let $navigation := $ddts:collections-base || "?resource=" || $doc-uri || "{&amp;ref,start,end,down}" (: maybe add also page, althoug not plan to implement it now:)   
     
     let $citationTrees := local:generate-citationTrees($tei)
 
