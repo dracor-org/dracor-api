@@ -65,7 +65,8 @@ declare function local:record-corpus-sha($name) {
   let $sha := dutil:get-corpus-sha($name)
   return if ($sha) then
     dutil:record-sha($name, $sha)
-  else ()
+  else
+    dutil:remove-corpus-sha($name)
 };
 
 (:~

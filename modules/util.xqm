@@ -1393,13 +1393,37 @@ declare function dutil:record-sha(
   return local:record-sha($collection, $sha)
 };
 
+declare function local:remove-sha($collection as xs:string) {
+  if (doc-available($collection || "/git.xml")) then (
+    util:log-system-out("Removing git.xml for " || $collection),
+    xmldb:remove($collection, "git.xml")
+  ) else ()
+};
+
 (:~
  : Remove corpus git.xml file
  :
  : @param $corpusname Corpus name
  : @return string* Path to git.xml file
  :)
-declare function dutil:remove-sha($corpusname as xs:string) as xs:string* {
+declare function dutil:remove-corpus-sha(
+  $corpusname as xs:string
+) as xs:string* {
   let $collection := $config:corpora-root || "/" || $corpusname
-  return xmldb:remove($collection, "git.xml")
+  return local:remove-sha($collection)
+};
+
+(:~
+ : Remove play git.xml file
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ :)
+declare function dutil:remove-sha(
+  $corpusname as xs:string,
+  $playname as xs:string
+) {
+  let $collection :=
+    $config:corpora-root || "/" || $corpusname || "/" || $playname
+  return local:remove-sha($collection)
 };
