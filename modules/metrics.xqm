@@ -26,7 +26,7 @@ declare function metrics:update-sitelinks(
   $id as xs:string,
   $collection as xs:string
 ) {
-  if ($id) then
+  if ($id ne "") then
     let $log := util:log-system-out('querying sitelinks for ' || $collection)
     let $sitelinks := <sitelinks id="{$id}" updated="{current-dateTime()}">{
       for $uri in wd:get-sitelinks($id)
@@ -48,7 +48,9 @@ declare function metrics:update-sitelinks($url as xs:string) {
   let $p := dutil:filepaths($url)
   let $doc:= dutil:get-doc($p?corpusname, $p?playname)
   let $id := dutil:get-play-wikidata-id($doc/tei:TEI)
-  return metrics:update-sitelinks($id, $p?collections?play)
+  return if ($id) then
+    metrics:update-sitelinks($id, $p?collections?play)
+  else ()
 };
 
 (:~
