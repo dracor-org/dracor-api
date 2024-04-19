@@ -1617,6 +1617,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                         )
 
                         else 
+                            (:could check here if the functionality is already available:)
                             local:descendants-of-subdivision($tei, $ref, $down)
 
 
@@ -1828,10 +1829,31 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
     
     (: this only works for a single level down but testing:)
     
-    let $members :=
+    let $members := 
+        if ( $down eq "1" ) then 
+            local:members-down-1($tei-fragment, $ref, $level, $doc-uri)
         
+        else if ($down eq "2") then 
+            local:members-down-2($tei-fragment, $ref, $level, $doc-uri)
+        else ()
+        
+    
+    return 
+    map:merge((
+        $basic-navigation-object, 
+        map{"ref": $ref-object}, 
+        map{"member" : $members}
+        ))
 
-        for $item in $tei-fragment/element()
+};
+
+(:~ 
+: Retrieve substructures one level down
+: parameter down eq "1"
+: this is used by local:descendants-of-subdivision to retrieve the member items that are one level below
+:)
+declare function local:members-down-1($tei-fragment as element(), $ref as xs:string, $level as xs:int, $doc-uri as xs:string) {
+    for $item in $tei-fragment/element()
             return
                 (: only for elements that are CiteableUnits :)
                 if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
@@ -1852,15 +1874,43 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
                     
                     return local:citable-unit($item-identifier, $level + 1 , $ref, local:get-cite-type-from-tei-fragment($item) , $item, $doc-uri )
                 else ()
-    
-    return 
-    map:merge((
-        $basic-navigation-object, 
-        map{"ref": $ref-object}, 
-        map{"member" : $members}
-        ))
 
 };
+
+declare function local:members-down-2($tei-fragment, $ref, $level, $doc-uri) {
+    for $item in $tei-fragment/element()
+            return
+                
+                
+                (: only for elements that are CiteableUnits :)
+                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+
+                    (:need to construct an identifier for this element :)
+                    let $item-identifier :=
+                        
+                        if ($item/name() eq "div") then 
+                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
+                        
+                        else if ($item/name() eq "sp") then
+                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
+                        
+                        else if ($item/name() eq "stage") then
+                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
+
+                        else ""
+                    
+                    return
+                    (: this and all it's sub elements:) 
+                    (
+                        local:citable-unit($item-identifier, $level + 1 , $ref, local:get-cite-type-from-tei-fragment($item) , $item, $doc-uri ) ,
+                        local:members-down-1($item, $item-identifier, $level + 1, $doc-uri)
+                    )
+                else ()
+                
+                
+                
+};
+
 
 (:~
 : Navigation endpoint displays information about a CiteableUnit as pointed to in the spec 
