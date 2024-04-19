@@ -1601,6 +1601,21 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: we will have to see, if this will work out like this; I might implement it for this case and return only level zero, e.g. the whole document, if it doesn't fit this pattern :)
                 (: special case, that is implemented: ref is a level 1 division of body, e.g. an act, will return the scenes of this act. :)
+                (: need to test for invalid values of parameter down; until level 5 (which will be never reached) all possible values are checked :)
+                else if ( $down and not(
+                    $down eq "-1" or
+                    $down eq "0" or 
+                    $down eq "1" or 
+                    $down eq "2" or 
+                    $down eq "3" or 
+                    $down eq "4" or
+                    $down eq "5" ) ) then
+                    (
+                        <rest:response>
+                            <http:response status="400"/>
+                        </rest:response>,
+                    "Bad Request: The value of parameter 'down' is not supported. Try a value between -1 and 4."
+                    )
                 else if ( $ref and $down ) then
 
                     (: should check if requesting the layer makes sense :)
@@ -1618,7 +1633,16 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                         else 
                             (:could check here if the functionality is already available:)
-                            local:descendants-of-subdivision($tei, $ref, $down)
+                            if (starts-with($ref,"body")) then
+                                local:descendants-of-subdivision($tei, $ref, $down)
+                            else
+                                (
+                        <rest:response>
+                            <http:response status="501"/>
+                        </rest:response>,
+                        "Not implemented: This functionality is currently only available for the text proper, i.e. ref values starting with 'body'."
+                        )
+
 
 
                 (: there is also a conflicting hierarchy, e.g. Pages! which would be a second cite structure :)
@@ -1835,6 +1859,9 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
         
         else if ($down eq "2") then 
             local:members-down-2($tei-fragment, $ref, $level, $doc-uri)
+        
+        else if ($down eq "3") then
+            local:members-down-3($tei-fragment, $ref, $level, $doc-uri)
         else ()
         
     
@@ -1905,9 +1932,39 @@ declare function local:members-down-2($tei-fragment, $ref, $level, $doc-uri) {
                         local:citable-unit($item-identifier, $level + 1 , $ref, local:get-cite-type-from-tei-fragment($item) , $item, $doc-uri ) ,
                         local:members-down-1($item, $item-identifier, $level + 1, $doc-uri)
                     )
-                else ()
+                else ()            
+                
+};
+
+declare function local:members-down-3($tei-fragment, $ref, $level, $doc-uri) {
+    for $item in $tei-fragment/element()
+            return
                 
                 
+                (: only for elements that are CiteableUnits :)
+                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+
+                    (:need to construct an identifier for this element :)
+                    let $item-identifier :=
+                        
+                        if ($item/name() eq "div") then 
+                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
+                        
+                        else if ($item/name() eq "sp") then
+                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
+                        
+                        else if ($item/name() eq "stage") then
+                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
+
+                        else ""
+                    
+                    return
+                    (: this and all it's sub elements:) 
+                    (
+                        local:citable-unit($item-identifier, $level + 1 , $ref, local:get-cite-type-from-tei-fragment($item) , $item, $doc-uri ) ,
+                        local:members-down-2($item, $item-identifier, $level + 1, $doc-uri)
+                    )
+                else ()            
                 
 };
 
