@@ -55,7 +55,10 @@ declare function dutil:filepaths (
 ) as map() {
   let $playpath := $config:corpora-root || "/" || $corpusname || "/" || $playname
   let $url := $playpath || "/" || $filename
+  let $uri :=
+    $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
   return map {
+    "uri": $uri,
     "url": $url,
     "filename": $filename,
     "playname": $playname,
@@ -68,6 +71,7 @@ declare function dutil:filepaths (
       "tei": $playpath || "/tei.xml",
       "metrics": $playpath || "/metrics.xml",
       "rdf": $playpath || "/rdf.xml",
+      "git": $playpath || "/git.xml",
       "sitelinks": $playpath || "/sitelinks.xml"
     }
   }
@@ -948,10 +952,11 @@ declare function dutil:get-play-info(
   return if (not($doc)) then
     ()
   else
+    let $paths := dutil:filepaths($corpusname, $playname)
+    let $sha := doc($paths?files?git)/git/sha/text()
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
-    let $uri :=
-      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
+    let $uri := $paths?uri
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := dutil:get-source($tei)
@@ -1036,6 +1041,7 @@ declare function dutil:get-play-info(
       if($titlesEn?main) then map:entry("titleEn", $titlesEn?main) else (),
       if($titles?sub) then map:entry("subtitle", $titles?sub) else (),
       if($titlesEn?sub) then map:entry("subtitleEn", $titlesEn?sub) else (),
+      if($sha) then map:entry("commit", $sha) else (),
       if($wikidata-id) then
         map:entry("wikidataId", $wikidata-id)
       else (),
