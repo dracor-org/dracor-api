@@ -1601,11 +1601,23 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: we will have to see, if this will work out like this; I might implement it for this case and return only level zero, e.g. the whole document, if it doesn't fit this pattern :)
                 (: special case, that is implemented: ref is a level 1 division of body, e.g. an act, will return the scenes of this act. :)
-                else if ( $ref and $down eq "1" ) then
-                    (: maybe this condition is wrong, should not ask for or :)
-                    (: this function used level, the parameter is called "down" now :)
-                    (: This function needs to be adapted to 1-alpha:)
-                    local:children-of-subdivision($tei, $ref)
+                else if ( $ref and $down ) then
+
+                    (: should check if requesting the layer makes sense :)
+                    let $max-cite-depth := local:get-citeDepth($tei)
+                    let $level-of-fragment-identified-by-ref := local:get-level-from-ref($ref)
+                    return
+                        if ( (xs:int($down) + $level-of-fragment-identified-by-ref) > $max-cite-depth ) then
+                        (: could not go that deep, $down exceeds max depth of the citation tree :)
+                        (
+                        <rest:response>
+                            <http:response status="400"/>
+                        </rest:response>,
+                        "Bad Request: The value of parameter 'down' " || $down || " is too high. Maximum allowed is " || xs:string($max-cite-depth - $level-of-fragment-identified-by-ref)
+                        )
+
+                        else 
+                            local:descendants-of-subdivision($tei, $ref, $down)
 
 
                 (: there is also a conflicting hierarchy, e.g. Pages! which would be a second cite structure :)
@@ -1648,9 +1660,9 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
     (: when requesting the resource include the level 1 divisions, e.g. front, body, back as members :)
     let $member :=
         (
-        if ($tei//tei:front) then local:citable-unit("front", 1, (), "front", $tei//tei:front ) else () ,
-        if ($tei//tei:body) then local:citable-unit("body", 1, (), "body", $tei//tei:body ) else (),
-        if ($tei//tei:back) then local:citable-unit("back", 1, (), "back", $tei//tei:back ) else ()
+        if ($tei//tei:front) then local:citable-unit("front", 1, (), "front", $tei//tei:front, $doc-uri ) else () ,
+        if ($tei//tei:body) then local:citable-unit("body", 1, (), "body", $tei//tei:body, $doc-uri ) else (),
+        if ($tei//tei:back) then local:citable-unit("back", 1, (), "back", $tei//tei:back, $doc-uri ) else ()
         )
 
      return
@@ -1661,15 +1673,19 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 (:~
 : Helper function to generate a CitableUnit
 :)
- declare function local:citable-unit($identifier, $level, $parent, $cite-type, $tei-fragment as element() ) {
+ declare function local:citable-unit($identifier, $level, $parent, $cite-type, $tei-fragment as element(), $resource ) {
     let $dublinCore := local:extract-dc-from-tei-fragment($tei-fragment)
-
+    
+    (: This is not in the spec, but I would like to have a link to the document endpoint to easily request the passage :)
+    (: let $passage := $ddts:documents-base || "?resource=" || $resource || "&amp;ref=" || $identifier || "{&amp;mediaType}" :)
+    
     let $citeable-unit-data := map {
         "@type": "CitableUnit",
         "identifier": $identifier,
         "level" : $level,
         "parent" : $parent,
         "citeType": $cite-type
+        (: ,"passage" : $passage :)
     }
     
     return
@@ -1787,60 +1803,62 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
 (:~
  :
- : Can be used to retrieve children of an act; might not be too generic.
+ : Can be used to retrieve descendants of a subdivision
  : TODO: This is still the code of pre-alpha which I need to adapt to 1-alpha
  : a request that returned some data: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000088&ref=body.div.1
 
  : :)
-declare function local:children-of-subdivision($tei, $ref) {
-    let $level := 3
-    let $citeDepth := local:get-citeDepth($tei)
+declare function local:descendants-of-subdivision($tei, $ref, $down) {
+
     let $doc-id := $tei/@xml:id/string()
-    let $passage := $ddts:documents-base || "?id=" || $doc-id || "{&amp;ref}{&amp;start}{&amp;end}"
+    let $doc-uri := local:id-to-uri($doc-id)
 
-    return
-    if ( matches($ref, "^body.div.\d+$") ) then
-        let $parent := map {"@type": "CitableUnit", "dts:ref": "body" }
-        (: get scenes of an act :)
-        let $div-no := xs:integer(tokenize($ref,'\.')[last()])
-        let $segments := $tei//tei:body/tei:div[$div-no]/tei:div
-        let $members :=
-            for $segment at $segment-pos in $segments
-            let $segment-heading := $segment/tei:head[1]/string() => normalize-space()
-            let $segment-title-map := map { "dc:title" : $segment-heading}
-            let $segment-type := $segment/@type/string()
-            let $segment-type-map := if ( $segment-type != '' ) then map{ "dts:citeType": lower-case($segment-type)  } else ()
-            let $segment-id := $ref || "." || "div" || "." || xs:string($segment-pos)
-            let $segment-id-map := map { "dts:ref": $segment-id }
-            let $dublincore-map := map { "dts:dublincore": $segment-title-map }
-                return
-                    map:merge( ($segment-id-map, $dublincore-map, $segment-type-map) )
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref || "&amp;down=" || $down
 
-        let $request-id := $ddts:navigation-base || "?id=" || $doc-id || "&amp;" || "ref=" || $ref
+    let $basic-navigation-object := local:navigation-basic-response($tei, $request-id, "", "", "")
 
-        return
-            (<rest:response>
-                <http:response status="200"/>
-            </rest:response>,
-            map{
-                "@context" : $ddts:context , (: TODO: change this for alpha-1 :)
-                "@id" : $request-id ,
-                "dts:citeDepth" : $citeDepth ,
-                "dts:level": $level ,
-                "dts:passage":  $passage ,
-                "dts:parent" : $parent ,
-                "member" : array{$members}
-            }
-            )
+    (: need to include something in ref and member :)
+    (: first ref:)
+    let $tei-fragment := local:get-fragment-of-doc($tei, $ref)[2]/node()/node() (: this also returns a respone object somehow; the real fragment is in tei:TEI/dts:wrapper/..:)
+    let $cite-type := local:get-cite-type-from-tei-fragment($tei-fragment)
+    let $level := local:get-level-from-ref($ref)
+    let $parent-string :=  local:get-parent-from-ref($ref)
+    let $parent := if ($parent-string  eq "") then () else $parent-string
+    let $ref-object := local:citable-unit($ref, $level, $parent, $cite-type, $tei-fragment, $doc-uri )
+    
+    (: this only works for a single level down but testing:)
+    
+    let $members :=
+        
 
+        for $item in $tei-fragment/element()
+            return
+                (: only for elements that are CiteableUnits :)
+                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
 
-    else
-        (
-            <rest:response>
-                <http:response status="501"/>
-            </rest:response>,
-            "Requesting children of any none-body div is not implemented."
-        )
+                    (:need to construct an identifier for this element :)
+                    let $item-identifier :=
+                        
+                        if ($item/name() eq "div") then 
+                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
+                        
+                        else if ($item/name() eq "sp") then
+                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
+                        
+                        else if ($item/name() eq "stage") then
+                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
+
+                        else ""
+                    
+                    return local:citable-unit($item-identifier, $level + 1 , $ref, local:get-cite-type-from-tei-fragment($item) , $item, $doc-uri )
+                else ()
+    
+    return 
+    map:merge((
+        $basic-navigation-object, 
+        map{"ref": $ref-object}, 
+        map{"member" : $members}
+        ))
 
 };
 
@@ -1863,16 +1881,18 @@ declare function local:citeable-unit-by-ref($tei, $ref) {
     let $parent := if ($parent-string  eq "") then () else $parent-string
 
 
-    let $ref-object := local:citable-unit($ref, $level, $parent, $cite-type, $tei-fragment )
-    
     (:re-use some object returned by this endpoint already :)
     let $doc-id := $tei/@xml:id/string()
     let $doc-uri := local:id-to-uri($doc-id)
+
+    let $ref-object := local:citable-unit($ref, $level, $parent, $cite-type, $tei-fragment, $doc-uri )
+    
+    
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref
     (: passage-url, collecion-url, navigation-url to overwrite after $request-id :)
-    let $passage-url := $ddts:documents-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref
-    let $navigation-url := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref  || "{&amp;down}"
-    let $basic-response-object := local:navigation-basic-response($tei, $request-id, $passage-url,"",$navigation-url ) (:not overwriting the collection-url:)
+    (: let $passage-url := $ddts:documents-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref :)
+    (: let $navigation-url := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref  || "{&amp;down}" :)
+    let $basic-response-object := local:navigation-basic-response($tei, $request-id, "" ,"", "" ) (:could theoretically overwrite:)
 
     let $ref-map := map {
         "ref" : $ref-object
@@ -1895,7 +1915,7 @@ declare function local:get-cite-type-from-tei-fragment($tei-fragment as element(
         if ($tei-fragment/@type/string() eq "act") then "act"
         else if ($tei-fragment/@type/string() eq "scene") then "scene"
         else lower-case($tei-fragment/@type/string())
-    else "unknown"
+    else "unknown" || "[Debug: " || $tei-fragment/name() || "]"
 };
 
 (:~
