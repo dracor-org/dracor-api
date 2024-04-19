@@ -750,8 +750,10 @@ function api:play-delete($corpusname, $playname, $data, $auth) {
       <rest:response>
         <http:response status="404"/>
       </rest:response>
-    else
+    else (
+      dutil:remove-corpus-sha($corpusname),
       xmldb:remove($paths?collections?play)
+    )
 };
 
 (:~
@@ -871,6 +873,10 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
         $config:corpora-root || "/" || $corpusname, $playname
       )
       let $result := xmldb:store($collection, "tei.xml", $data/tei:TEI)
+      let $_ := (
+        dutil:remove-corpus-sha($corpusname),
+        dutil:remove-sha($corpusname, $playname)
+      )
       return $data
 };
 
