@@ -1203,8 +1203,14 @@ components:
           type: integer
     CorpusInCorpora:
       type: object
+      required:
+        - name
+        - title
+        - uri
       properties:
         acronym:
+          type: string
+        commit:
           type: string
         metrics:
           $ref: '#/components/schemas/CorpusMetrics'
@@ -1308,8 +1314,13 @@ components:
           type: string
     Corpus:
       type: object
+      required:
+        - name
+        - title
       properties:
         acronym:
+          type: string
+        commit:
           type: string
         title:
           type: string
