@@ -478,6 +478,9 @@ declare function dutil:get-corpus-info(
     let $paras := for $p in $projectDesc/tei:p return local:markdown($p)
     return string-join($paras, "&#10;&#10;")
   ) else ()
+  let $git-file := $config:corpora-root || "/" || $name || "/git.xml"
+  let $sha := doc($git-file)/git/sha/text()
+
   return if ($header) then (
     map:merge((
       map:entry("name", $name),
@@ -488,6 +491,7 @@ declare function dutil:get-corpus-info(
           then $acronym
           else (functx:capitalize-first($name) || "DraCor")
       ),
+      if ($sha) then map:entry("commit", $sha) else (),
       if ($repo) then map:entry("repository", $repo) else (),
       if ($description) then map:entry("description", $description) else (),
       if ($licence)
@@ -1331,4 +1335,71 @@ declare function dutil:create-corpus(
     "corpus.xml",
     $xml
   )
+};
+
+(:~
+ : Determine Git SHA for corpus recorded in git.xml files
+ :
+ : @param $name Corpus name
+ : @return string* Git SHA1 hash
+ :)
+declare function dutil:get-corpus-sha($name as xs:string) as xs:string* {
+  let $col := collection($config:corpora-root || "/" || $name)
+  let $num-plays := count($col/tei:TEI)
+  let $num-sha := count($col/git/sha)
+  let $shas := distinct-values($col/git/sha)
+
+  return if($num-plays = $num-sha and count($shas) = 1) then $shas[1] else ()
+};
+
+declare function local:record-sha(
+  $collection as xs:string,
+  $sha as xs:string
+) as xs:string* {
+  try {
+    xmldb:store( $collection, "git.xml", <git><sha>{$sha}</sha></git>)
+  } catch * {
+    util:log-system-out($err:description)
+  }
+};
+
+(:~
+ : Write commit SHA to git.xml file for play
+ :
+ : @param $corpusname Corpus name
+ : @param $play Play name
+ : @return string* Path to git.xml file
+ :)
+declare function dutil:record-sha(
+  $corpusname as xs:string,
+  $playname as xs:string,
+  $sha as xs:string
+) as xs:string* {
+  let $paths := dutil:filepaths($corpusname, $playname)
+  return local:record-sha($paths?collections?play, $sha)
+};
+
+(:~
+ : Write commit SHA to git.xml file for corpus
+ :
+ : @param $corpusname Corpus name
+ : @return string* Path to git.xml file
+ :)
+declare function dutil:record-sha(
+  $corpusname as xs:string,
+  $sha as xs:string
+) as xs:string* {
+  let $collection := $config:corpora-root || "/" || $corpusname
+  return local:record-sha($collection, $sha)
+};
+
+(:~
+ : Remove corpus git.xml file
+ :
+ : @param $corpusname Corpus name
+ : @return string* Path to git.xml file
+ :)
+declare function dutil:remove-sha($corpusname as xs:string) as xs:string* {
+  let $collection := $config:corpora-root || "/" || $corpusname
+  return xmldb:remove($collection, "git.xml")
 };

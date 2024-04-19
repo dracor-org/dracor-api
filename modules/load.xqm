@@ -11,6 +11,8 @@ import module namespace metrics = "http://dracor.org/ns/exist/v1/metrics"
   at "metrics.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util"
   at "util.xqm";
+import module namespace gh = "http://dracor.org/ns/exist/v1/github"
+  at "github.xqm";
 import module namespace drdf = "http://dracor.org/ns/exist/v1/rdf" at "rdf.xqm";
 
 declare namespace compression = "http://exist-db.org/xquery/compression";
@@ -22,9 +24,10 @@ declare function local:entry-data(
   $type as xs:string,
   $data as item()?,
   $param as item()*
-) as item()? {
+) as item()* {
   if($data) then
     let $collection := $param[1]
+    let $sha := $param[2]
     let $filename := tokenize($path, "/")[last()]
     let $name := replace($filename, "\.xml$", "")
     let $log := util:log-system-out("LOADING " || $path)
@@ -32,7 +35,14 @@ declare function local:entry-data(
       xmldb:store($collection, "corpus.xml", $data)
     else
       let $play-collection := xmldb:create-collection($collection, $name)
-      return xmldb:store($play-collection, "tei.xml", $data)
+      return try {
+        xmldb:store($play-collection, "tei.xml", $data),
+        if ($sha) then
+          xmldb:store($play-collection, "git.xml", <git><sha>{$sha}</sha></git>)
+        else ()
+      } catch * {
+        util:log-system-out($err:description)
+      }
     return $res
   else
     ()
@@ -51,6 +61,13 @@ declare function local:entry-filter(
     false()
 };
 
+declare function local:record-corpus-sha($name) {
+  let $sha := dutil:get-corpus-sha($name)
+  return if ($sha) then
+    dutil:record-sha($name, $sha)
+  else ()
+};
+
 (:~
  : Load corpus from ZIP archive
  :
@@ -65,19 +82,19 @@ as xs:string* {
   let $corpus-collection := $config:corpora-root || "/" || $name
 
   let $archive :=
-    if ($info?archive) then
-      $info?archive
-    else if (starts-with($info?repository, "https://github.com")) then
-      $info?repository || "/archive/main.zip"
+    if ($info?archive) then map {
+      "url": $info?archive
+    } else if ($info?repository) then
+      gh:get-archive($info?repository)
     else ()
 
   return
-    if (not($archive)) then (
+    if (not(count($archive)) or not($archive?url)) then (
       util:log-system-out("cannot determine archive URL")
     )
     else
-      let $log := util:log-system-out("loading " || $archive)
-      let $request := <hc:request method="get" href="{ $archive }" />
+      let $log := util:log-system-out("loading " || $archive?url)
+      let $request := <hc:request method="get" href="{ $archive?url }" />
       let $response := hc:send-request($request)
       return
         if ($response[1]/@status = "200") then
@@ -92,19 +109,23 @@ as xs:string* {
             dutil:create-corpus($info),
 
             (: clear fuseki graph :)
-            drdf:fuseki-clear-graph($name),
+            (: drdf:fuseki-clear-graph($name), :)
 
             (: load files from ZIP archive :)
+            (: TODO: try/catch :)
             compression:unzip(
               $zip,
               util:function(xs:QName("local:entry-filter"), 3),
               (),
               util:function(xs:QName("local:entry-data"), 4),
-              ($corpus-collection)
-            )
+              ($corpus-collection, $archive?sha)
+            ),
+
+            local:record-corpus-sha($name),
+            util:log-system-out($name || " LOADED")
           )
         else (
-          util:log("warn", ("cannot load archive ", $archive)),
+          util:log("warn", ("cannot load archive ", $archive?url)),
           util:log("info", $response)
         )
 };
