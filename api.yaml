@@ -1753,6 +1753,18 @@ components:
           type: string
     Play:
       type: object
+      required:
+        - id
+        - name
+        - corpus
+        - title
+        - authors
+        - characters
+        - segments
+        - yearNormalized
+        - allInSegment
+        - libretto
+        - uri
       properties:
         wikidataId:
           type: string
@@ -1819,6 +1831,9 @@ components:
           nullable: true
         originalSource:
           type: string
+        uri:
+          type: string
+          format: url
     NodeInPlayMetrics:
       type: object
       properties:

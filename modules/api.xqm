@@ -420,14 +420,14 @@ function api:corpus-index($corpusname) {
       map:entry("plays", array {
         for $tei in $col//tei:TEI
         let $paths := dutil:filepaths(base-uri($tei))
+        let $sha := doc($paths?files?git)/git/sha/text()
         let $name := $paths?playname
         let $id := dutil:get-dracor-id($tei)
         let $titles := dutil:get-titles($tei)
         let $titlesEng := dutil:get-titles($tei, 'eng')
         let $years := dutil:get-years-iso($tei)
         let $authors := dutil:get-authors($tei)
-        let $play-uri :=
-          $config:api-base || "/corpora/" || $corpusname || "/plays/" || $name
+        let $play-uri := $paths?uri
         let $metrics-url := $paths?files?metrics
         let $network-size := doc($metrics-url)//network/size/text()
         let $yearNormalized := dutil:get-normalized-year($tei)
@@ -437,6 +437,7 @@ function api:corpus-index($corpusname) {
         return map:merge((
           map:entry("id", $id),
           map:entry("uri", $play-uri),
+          if ($sha) then map:entry("commit", $sha) else (),
           map:entry("name", $name),
           map:entry("title", $titles?main),
           if ($titles?sub) then map:entry("subtitle", $titles?sub) else (),
