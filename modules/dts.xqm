@@ -1560,7 +1560,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: down=0	ref=present	start/end=absent -->	Information about the CitableUnit identified by ref along with a member property that is an array of CitableUnits that are siblings (sharing the same parent) including the current CitableUnit identified by ref. :)
                 else if ( $down eq "0" and $ref and not($start) and not($end)) then
-                "Information about the CitableUnit identified by ref along with a member property that is an array of CitableUnits that are siblings (sharing the same parent) including the current CitableUnit identified by ref"
+                local:siblings-of-citeable-unit-by-ref($tei, $ref)
 
                 (: Level 1 :)
                 (: Parameter level is deprecated; use param "down" insted 
@@ -2087,3 +2087,67 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
          "resource" : $resource
      }
  };
+
+(:~
+: "Information about the CitableUnit identified by ref along with a member property 
+: that is an array of CitableUnits that are siblings (sharing the same parent) including 
+: the current CitableUnit identified by ref"
+: This is very much spaghetti code, but it seems to work none the less.. 
+:)
+ declare function local:siblings-of-citeable-unit-by-ref($tei as element(tei:TEI), $ref as xs:string) {
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref || "&amp;down=0"
+
+    let $basic-navigation-object := local:navigation-basic-response($tei, $request-id, "", "", "")
+    
+    (: need to include something in ref and member :)
+    (: first ref:)
+    let $tei-fragment := local:get-fragment-of-doc($tei, $ref)[2]/node()/node() (: this also returns a respone object somehow; the real fragment is in tei:TEI/dts:wrapper/..:)
+    let $cite-type := local:get-cite-type-from-tei-fragment($tei-fragment)
+    let $level := local:get-level-from-ref($ref)
+    let $parent-string :=  local:get-parent-from-ref($ref)
+    let $parent := if ($parent-string  eq "") then () else $parent-string
+    let $ref-object := local:citable-unit($ref, $level, $parent, $cite-type, $tei-fragment, $doc-uri )
+    
+    (: this is not the best idea eval is evil.. :)
+    (: maybe should filter for some characters like (), @ ... :)
+    let $self-elem := util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:"))
+    let $pre-elems := util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:"))/preceding-sibling::element()
+    let $post-elems :=  util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:"))/following-sibling::element()
+
+    let $ref-items := tokenize($ref, "/")[position() != last()]
+    let $ref-base := string-join($ref-items, "/")
+
+    let $member-elems := ($pre-elems, $self-elem, $post-elems)
+    let $members := 
+        for $item in $member-elems return
+            (: TODO: check if these are all Citeable Units :)
+            if ( 
+                $item/name() eq "div" or 
+                $item/name() eq "sp" or 
+                $item/name() eq "stage" or 
+                $item/name() eq "body" or 
+                $item/name() eq "front" or 
+                $item/name() eq "back" ) then
+                let $pos := xs:string(count($item/preceding-sibling::element()[./name() eq $item/name()]) + 1)
+                let $identifier-candiate := $ref-base || "/" || $item/name() || "[" || $pos || "]"
+                let $identifier := 
+                    if ($identifier-candiate eq "/front[1]") then "front"
+                    else if ($identifier-candiate eq "/body[1]") then "body"
+                    else $identifier-candiate
+                let $cite-type := local:get-cite-type-from-tei-fragment($item) 
+            
+                return 
+                    local:citable-unit($identifier, $level, $parent, $cite-type, $item, $doc-uri )
+            else ()
+        
+
+
+    return
+    map:merge( ($basic-navigation-object, map{ "ref" : $ref-object}, map{ "member" : $members} ) )
+    
+    
+ };
+                
