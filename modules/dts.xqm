@@ -1556,7 +1556,8 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: down = absent ref = absent start/end = present --> Information about the CitableUnits identified by start and by end. No member property in the Navigation object. :)
                 else if ( not($down) and not($ref) and ($start and $end) ) then 
-                "Information about the CitableUnits identified by start and by end. No member property in the Navigation object."
+                    local:citeable-units-by-start-end($tei, $start, $end)
+                
 
                 (: down=0	ref=present	start/end=absent -->	Information about the CitableUnit identified by ref along with a member property that is an array of CitableUnits that are siblings (sharing the same parent) including the current CitableUnit identified by ref. :)
                 else if ( $down eq "0" and $ref and not($start) and not($end)) then
@@ -2148,6 +2149,40 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     return
     map:merge( ($basic-navigation-object, map{ "ref" : $ref-object}, map{ "member" : $members} ) )
     
-    
+ };
+
+ (:~
+ : "Information about the CitableUnits identified by start and by end. No member property in the Navigation object."
+ :)
+ declare function local:citeable-units-by-start-end($tei, $start, $end) {
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end
+
+    let $basic-navigation-object := local:navigation-basic-response($tei, $request-id, "", "", "")
+
+    (: include start and end :)
+    (: some copy pasting from how to create ref in other function :)
+
+    let $tei-fragment-start := local:get-fragment-of-doc($tei, $start)[2]/node()/node() (: this also returns a respone object somehow; the real fragment is in tei:TEI/dts:wrapper/..:)
+    let $cite-type-start := local:get-cite-type-from-tei-fragment($tei-fragment-start)
+    let $level-start := local:get-level-from-ref($start)
+    let $parent-string-start :=  local:get-parent-from-ref($start)
+    let $parent-start := if ($parent-string-start  eq "") then () else $parent-string-start
+    let $start-object := local:citable-unit($start, $level-start, $parent-start, $cite-type-start, $tei-fragment-start, $doc-uri )
+
+    (: same for end :)
+    (: TODO: this whole thing with generating ref needs to be refactored :)
+    let $tei-fragment-end := local:get-fragment-of-doc($tei, $end)[2]/node()/node() (: this also returns a respone object somehow; the real fragment is in tei:TEI/dts:wrapper/..:)
+    let $cite-type-end := local:get-cite-type-from-tei-fragment($tei-fragment-end)
+    let $level-end := local:get-level-from-ref($end)
+    let $parent-string-end :=  local:get-parent-from-ref($end)
+    let $parent-end := if ($parent-string-end  eq "") then () else $parent-string-end
+    let $end-object := local:citable-unit($end, $level-end, $parent-end, $cite-type-end, $tei-fragment-end, $doc-uri )
+
+    return 
+        map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}) )
+
  };
                 
