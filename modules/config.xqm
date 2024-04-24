@@ -79,8 +79,7 @@ declare variable $config:wd-text-classes := map {
   "Q80930": "Tragedy",
   "Q192881": "Tragicomedy",
   "Q1050848": "Satyr play",
-  "Q131084": "Libretto",
-  "Q1440453": "Fragment"
+  "Q131084": "Libretto"
 };
 
 (:~
