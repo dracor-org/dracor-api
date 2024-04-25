@@ -79,6 +79,8 @@ declare function local:handle-delivery (
   let $doc :=
     <delivery
       id="{$delivery-id}"
+      before="{$payload?before}"
+      after="{$payload?after}"
       pusher="{$payload?pusher?name}"
       repo="{$payload?repository?html_url}"
       contents-url="{$payload?repository?contents_url}"
