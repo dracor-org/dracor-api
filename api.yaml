@@ -1094,6 +1094,53 @@ paths:
         Navigation endpoint: Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#navigation-endpoint.
       operationId: get-dts-navigation
       tags: [DTS]
+      parameters:
+         - name: resource
+          in: query
+          required: true
+          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID. 
+          schema:
+            type: string
+          example: https://dracor.org/id/ger000088
+        - name: ref
+          in: query
+          required: false
+          description: The identifier of a single node in the CitationTree for the Resource, used as the root for the sub-tree to be reconstructed.
+          examples:
+              first_act:
+                value: body/div[1]
+                summary: first act
+              second_scene_thrid_act:
+                value: body/div[3]/div[2]
+                summary: 2nd scene of the 3rd act
+          schema:
+            type: string
+        - name: start
+          in: query
+          required: false
+          description: The string identifier of a node in the CitationTree for the Resource, used as the starting point for a range that serves as the reference point for the query. This parameter is inclusive, so the starting point is considered part of the sub-tree to be returned.
+          schema:
+            type: string
+            example: body/div[2]/div[1]
+        - name: end
+          in: query
+          required: false
+          description: The string identifier of a node in the CitationTree for the Resource, used as the ending point for a range that serves as the reference point for the query. This parameter is inclusive, so the supplied ending point is considered part of the specified range.
+          schema:
+            type: string
+            example: body/div[2]/div[3]
+        - name: down
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+            - "-1"
+            - "0"
+            - "1"
+            - "2"
+            - "3"
+            - "4"
       responses:
         '200':
           description: Navigation.
@@ -1123,14 +1170,11 @@ paths:
           description: The identifier of a single node in the CitationTree for the Resource, used as the root for the sub-tree to be reconstructed.
           examples:
               first_act:
-                value: body.div.1
+                value: body/div[1]
                 summary: first act
               second_scene_thrid_act:
-                value: body.div.3.div.2
+                value: body/div[3]/div[2]
                 summary: 2nd scene of the 3rd act
-              castList:
-                value: front.castList.1
-                summary: cast list
           schema:
             type: string
         - name: start
@@ -1139,14 +1183,14 @@ paths:
           description: The string identifier of a node in the CitationTree for the Resource, used as the starting point for a range that serves as the reference point for the query. This parameter is inclusive, so the starting point is considered part of the sub-tree to be returned.
           schema:
             type: string
-            example: body.div.2.div.1
+            example: body/div[2]/div[1]
         - name: end
           in: query
           required: false
           description: The string identifier of a node in the CitationTree for the Resource, used as the ending point for a range that serves as the reference point for the query. This parameter is inclusive, so the supplied ending point is considered part of the specified range.
           schema:
             type: string
-            example: body.div.2.div.3
+            example: body/div[2]/div[3]
       responses:
         '200':
           description: Returns either a whole TEI-XML document of a play or a fragment thereof. In case a fragment was requested it is contained in the element <dts:wrapper> inside the root <TEI> element.
