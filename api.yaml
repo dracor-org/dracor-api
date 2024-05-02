@@ -1143,11 +1143,13 @@ paths:
             - "4"
       responses:
         '200':
-          description: Navigation.
+          description: Successful.
           content:
             application/ld+json:
               schema:
                 type: object
+        '400':
+          description: Bad request. Check error message in the response.
   
   /dts/document:
     get:

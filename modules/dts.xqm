@@ -1511,7 +1511,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         <rest:response>
             <http:response status="400"/>
         </rest:response>,
-        "Mandatory parameter 'id' is missing."
+        "Mandatory parameter 'resource' is missing."
         )
     (: both ref and either start or end is specified should return an error :)
     else if ( $ref and ($start or $end) ) then
@@ -1519,7 +1519,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         <rest:response>
             <http:response status="400"/>
         </rest:response>,
-        "Use of both param 'ref' and 'start' or 'end' is not allowed."
+        "Bad Request: Use of both parameters 'ref' and 'start' or 'end' is not allowed."
         )
     (: should not use start without end or vice versa :)
     else if ( ($start and not($end)) or ($end and not($start)) ) then 
@@ -1527,7 +1527,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         <rest:response>
             <http:response status="400"/>
         </rest:response>,
-        "Must provide both start and end."
+        "Bad Request: Must provide both parameters 'start' and 'end'."
         )
     (: down=absent, ref=absent, start/end=absent --> 400 Bad Request Error :)
     else if ( not($down) and not($ref) and ( not($start) and not($end) ) ) then 
@@ -1537,7 +1537,6 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         </rest:response>,
         "Bad Request: Must provide at least one of the parameters 'down','ref' or both 'start' and 'end'. E.g. use parameter 'down=1' to retrieve the top-level citationStructures of this resource."
         )
-
     else
         (: check, if there is a resource with this identifier :)
         let $tei := if ( matches($resource, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then
@@ -1552,7 +1551,20 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: down = absent ref= present start/end = absent --> Information about the CitableUnit identified by ref. No member property in the Navigation object. :)
                 if ( not($down) and ( not($start) and not($end) ) and $ref ) then
+                    (: what happens if ref is not valid? must not return 500! :)
+                    (: TODO: validate here :)
                     local:citeable-unit-by-ref($tei, $ref)
+                    (:
+                    if ( local:validate-ref($ref, $tei) == true) then
+                        local:citeable-unit-by-ref($tei, $ref)
+                    else 
+                        (
+                        <rest:response>
+                            <http:response status="404"/>
+                        </rest:response>,
+                        "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
+                        )
+                    :)
 
                 (: down = absent ref = absent start/end = present --> Information about the CitableUnits identified by start and by end. No member property in the Navigation object. :)
                 else if ( not($down) and not($ref) and ($start and $end) ) then 
@@ -1669,6 +1681,13 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 "Document with the id '" ||  $resource || "' does not exist."
                 )
  };
+
+(:TODO: add this function
+declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI)) {
+    ()
+};
+:)
+
 
  (:~
  : Navigate a resource on level 1
@@ -2112,8 +2131,12 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     let $parent := if ($parent-string  eq "") then () else $parent-string
     let $ref-object := local:citable-unit($ref, $level, $parent, $cite-type, $tei-fragment, $doc-uri )
     
-    (: this is not the best idea eval is evil.. :)
-    (: maybe should filter for some characters like (), @ ... :)
+    (: Be careful, as Wolfgang Meier once said: eval() is evil.. 
+    to make eval less evil, check if ref conforms to a certain xpath and does not contain some bad code
+    This should be done before calling this function
+    Generally speaking this is a good way of retrieving segments identified by the xPath-ish ID
+    :)
+    
     let $self-elem := util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:"))
     let $pre-elems := util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:"))/preceding-sibling::element()
     let $post-elems :=  util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:"))/following-sibling::element()
