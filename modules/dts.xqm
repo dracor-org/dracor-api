@@ -1553,9 +1553,10 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 if ( not($down) and ( not($start) and not($end) ) and $ref ) then
                     (: what happens if ref is not valid? must not return 500! :)
                     (: TODO: validate here :)
-                    local:citeable-unit-by-ref($tei, $ref)
-                    (:
-                    if ( local:validate-ref($ref, $tei) == true) then
+                    (: local:citeable-unit-by-ref($tei, $ref) :)
+                    
+                    
+                    if ( local:validate-ref($ref, $tei) eq true() ) then
                         local:citeable-unit-by-ref($tei, $ref)
                     else 
                         (
@@ -1564,7 +1565,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                         </rest:response>,
                         "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
                         )
-                    :)
+                
 
                 (: down = absent ref = absent start/end = present --> Information about the CitableUnits identified by start and by end. No member property in the Navigation object. :)
                 else if ( not($down) and not($ref) and ($start and $end) ) then 
@@ -1682,11 +1683,27 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 )
  };
 
-(:TODO: add this function
-declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI)) {
-    ()
-};
+(:~
+: Check if the value of the parameter 'ref' can be used to retrieve a CiteableUnit from the TEI-XML file 
+: supplied as $tei
 :)
+declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI)) {
+    (:http://localhost:8080/exist/restxq/v1/dts/navigation?resource=ger000569&ref=body/div[1]:)
+    (: this is not the best ever regex, but it at least prevents that there are some strange xpath functions included
+    that could possibly introduce a security risk
+    It is not said, that the $ref value will already be a valid identifier in the context of the TEI file
+     :)
+    if ( matches($ref, "^(body|front|back)(/(div|stage|sp|set|castList)\[\d+\])*?$") ) then 
+        (: now check if there is a segment/CiteableUnit that can be identified with such an identifier :)
+        let $tei-fragment :=  util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:")) 
+        return 
+            (:we expect that the identifier matches at least an xml element:)
+            if ( $tei-fragment instance of element() ) then true()
+            else false()
+    else
+        (: does not match the regex; maybe also evaluate if the regex is really suiteable if frequent problems are reported:)
+        false()
+};
 
 
  (:~
