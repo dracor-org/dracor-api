@@ -41,6 +41,7 @@ services:
     image: dracor/frontend
     build: https://github.com/dracor-org/dracor-frontend.git#main
     environment:
+      NGINX_RESOLVER: "127.0.0.11"
       DRACOR_API_HOST: http://api:8080
       DRACOR_API_PREFIX: /exist/restxq/v1
     ports:
