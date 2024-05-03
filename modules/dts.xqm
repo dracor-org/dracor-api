@@ -1552,9 +1552,6 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 (: down = absent ref= present start/end = absent --> Information about the CitableUnit identified by ref. No member property in the Navigation object. :)
                 if ( not($down) and ( not($start) and not($end) ) and $ref ) then
                     (: what happens if ref is not valid? must not return 500! :)
-                    (: TODO: validate here :)
-                    (: local:citeable-unit-by-ref($tei, $ref) :)
-                    
                     
                     if ( local:validate-ref($ref, $tei) eq true() ) then
                         local:citeable-unit-by-ref($tei, $ref)
@@ -1569,13 +1566,31 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: down = absent ref = absent start/end = present --> Information about the CitableUnits identified by start and by end. No member property in the Navigation object. :)
                 else if ( not($down) and not($ref) and ($start and $end) ) then 
-                    local:citeable-units-by-start-end($tei, $start, $end)
-                
+                    (: check if start and end are valid:)
+
+                    if ( local:validate-ref($start, $tei) eq true() and local:validate-ref($end, $tei) eq true()  ) then
+                        local:citeable-units-by-start-end($tei, $start, $end)
+                    else 
+                        (
+                        <rest:response>
+                            <http:response status="404"/>
+                        </rest:response>,
+                        "Not found: The identifier(s) provided as parameter 'start' and/or 'end' do not match a citeable unit."
+                        )                
 
                 (: down=0	ref=present	start/end=absent -->	Information about the CitableUnit identified by ref along with a member property that is an array of CitableUnits that are siblings (sharing the same parent) including the current CitableUnit identified by ref. :)
                 else if ( $down eq "0" and $ref and not($start) and not($end)) then
-                local:siblings-of-citeable-unit-by-ref($tei, $ref)
-
+                
+                    if ( local:validate-ref($ref, $tei) eq true() ) then
+                        local:siblings-of-citeable-unit-by-ref($tei, $ref)
+                    else 
+                        (
+                        <rest:response>
+                            <http:response status="404"/>
+                        </rest:response>,
+                        "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
+                        )
+                
                 (: Level 1 :)
                 (: Parameter level is deprecated; use param "down" insted 
                 This level is either identified by having no down param or param down equals 1
@@ -1633,6 +1648,11 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 else if ( $ref and $down ) then
 
                     (: should check if requesting the layer makes sense :)
+                    (: This check also works if there is no Citeable Unit identified by ref, e.g. if 
+                    the cite depth provided as down does not make any sense inside the whole TEI Document, it is 
+                    not important if the value of the parameter ref is actually valid; 
+                    need only to check for valid ref if the value of down makes sense
+                    :)
                     let $max-cite-depth := local:get-citeDepth($tei)
                     let $level-of-fragment-identified-by-ref := local:get-level-from-ref($ref)
                     return
@@ -1647,8 +1667,19 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                         else 
                             (:could check here if the functionality is already available:)
+                            (: TODO: implement this for other structures as body as well :)
                             if (starts-with($ref,"body")) then
-                                local:descendants-of-subdivision($tei, $ref, $down)
+                                (: a problem could still be that the value of ref is not valid, check for this as well :)
+                                if ( local:validate-ref($ref, $tei) eq true() ) then
+                                    local:descendants-of-subdivision($tei, $ref, $down)
+                                else 
+                                    (
+                                    <rest:response>
+                                        <http:response status="404"/>
+                                    </rest:response>,
+                                    "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
+                                    )
+                                
                             else
                                 (
                         <rest:response>
@@ -1697,7 +1728,7 @@ declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI))
         (: now check if there is a segment/CiteableUnit that can be identified with such an identifier :)
         let $tei-fragment :=  util:eval("$tei/tei:text/tei:" || replace($ref, "/", "/tei:")) 
         return 
-            (:we expect that the identifier matches at least an xml element:)
+            (:we expect that the identifier matches a xml element. If it is not an XML element, then ref is not valid:)
             if ( $tei-fragment instance of element() ) then true()
             else false()
     else

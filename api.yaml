@@ -1150,6 +1150,8 @@ paths:
                 type: object
         '400':
           description: Bad request. Check error message in the response.
+        '404':
+          description: There are no Citeable Unit(s) identified by the provided identifier(s) in `ref`, `start` or `end`. 
   
   /dts/document:
     get:
