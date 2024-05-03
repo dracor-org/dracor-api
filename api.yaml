@@ -1095,7 +1095,7 @@ paths:
       operationId: get-dts-navigation
       tags: [DTS]
       parameters:
-         - name: resource
+        - name: resource
           in: query
           required: true
           description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID. 
