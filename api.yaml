@@ -1151,7 +1151,9 @@ paths:
         '400':
           description: Bad request. Check error message in the response.
         '404':
-          description: There are no Citeable Unit(s) identified by the provided identifier(s) in `ref`, `start` or `end`. 
+          description: There are no Citeable Unit(s) identified by the provided identifier(s) in `ref`, `start` or `end`.
+        '501':
+          description: Not implemented. Not all of the functionality foreseen by the specification is fully implemented, e.g. requesting sub-structures of non-body elements. 
   
   /dts/document:
     get:
