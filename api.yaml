@@ -1061,7 +1061,7 @@ paths:
                   "totalChildren" : 1,
                   "title" : "Test Drama Corpus",
                   "description" : "This corpus is for testing purposes only. It features a handful of plays in different languages.",
-                  "members" : [ 
+                  "members" : [
                   {
                     "@id" : "http://localhost:8088/id/test000001",
                     "@type" : "Resource",
@@ -1069,8 +1069,8 @@ paths:
                     "totalItems" : 0,
                     "totalParents" : 1,
                     "totalChildren" : 0,
-                    "dublinCore" : 
-                      { 
+                    "dublinCore" :
+                      {
                         "language" : "rus",
                         "creator" : "Гоголь, Николай Васильевич"
                       },
@@ -1084,7 +1084,7 @@ paths:
           description: Bad request. Using the parameter `page` with a document is not possible. (Paging functionality has not been implemented yet.)
         '404':
           description: The requested resource is not available.
-        '501': 
+        '501':
           description: Not implemented. Using the undocumented parameter `page` will result in this status code. The paging functionality has not been implemented yet.
 
   /dts/navigation:
@@ -1098,7 +1098,7 @@ paths:
         - name: resource
           in: query
           required: true
-          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID. 
+          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
           schema:
             type: string
           example: https://dracor.org/id/ger000088
@@ -1153,8 +1153,8 @@ paths:
         '404':
           description: There are no Citeable Unit(s) identified by the provided identifier(s) in `ref`, `start` or `end`.
         '501':
-          description: Not implemented. Not all of the functionality foreseen by the specification is fully implemented, e.g. requesting sub-structures of non-body elements. 
-  
+          description: Not implemented. Not all of the functionality foreseen by the specification is fully implemented, e.g. requesting sub-structures of non-body elements.
+
   /dts/document:
     get:
       summary: DTS Document endpoint
@@ -1166,7 +1166,7 @@ paths:
         - name: resource
           in: query
           required: true
-          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID. 
+          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
           schema:
             type: string
           example: https://dracor.org/id/ger000088
@@ -1393,12 +1393,16 @@ components:
       type: object
       properties:
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#service_name
           type: string
         version:
+          description: https://dracor.org/ontology/dracor-api-ontology#service_version
           type: string
         status:
+          description: https://dracor.org/ontology/dracor-api-ontology#service_development_stage
           type: string
         existdb:
+          description: https://dracor.org/ontology/dracor-api-ontology#service_dependency_is_existdb_version
           type: string
         base:
           type: string
@@ -1406,280 +1410,490 @@ components:
         openapi:
           type: string
           format: url
+      required:
+        - name
+        - version
+        - status
+        - existdb
+        - base
+        - openapi
     WordCounts:
       type: object
       properties:
         text:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_word_tokens_in_text_elements
           type: integer
         stage:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_word_tokens_in_stage
           type: integer
         sp:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_word_tokens_in_sp
           type: integer
+      required:
+        - text
+        - stage
+        - sp
     CorpusMetrics:
       type: object
       properties:
         characters:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_characters
           type: integer
         stage:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_stage
           type: integer
         updated:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_metrics_date_updated
           type: string
         sp:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_sp
           type: integer
         text:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_tei_text_elements
           type: integer
         plays:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_plays
           type: integer
         wordcount:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_corpus_wordcount_data
           $ref: '#/components/schemas/WordCounts'
         male:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_characters_male
           type: integer
         female:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_num_of_characters_female
           type: integer
+      required:
+        - characters
+        - stage
+        - updated
+        - sp
+        - text
+        - plays
+        - wordcount
+        - male
+        - female
     CorpusInCorpora:
       type: object
       required:
-        - name
+        - acronym
         - title
+        - licence
+        - licenceUrl
         - uri
+        - description
+        - name
+        - repository
       properties:
         acronym:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_acronym
           type: string
         commit:
           type: string
         metrics:
+          description: contains_corpus_metrics_data
           $ref: '#/components/schemas/CorpusMetrics'
         title:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_title
           type: string
         licence:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_licence
           type: string
         licenceUrl:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_licence_url
           type: string
           format: url
         uri:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_uri
           type: string
           format: url
         description:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_description
           type: string
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_name
           type: string
         repository:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_repository
           type: string
           format: url
     SourceInPlayMetadata:
       type: object
       properties:
         url:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_digital_source_url
+          type: string
+          format: url
           nullable: true
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_digital_source_name
           type: string
           nullable: true
+      required:
+        - url
+        - name
     ExternalReferenceResourceId:
       type: object
       properties:
         type:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_ref_external_id
           type: string
         ref:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_ref_type
           type: string
+      required:
+        - type
+        - ref
     AuthorInPlayInCorpus:
       type: object
       properties:
         refs:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_external_ref_id_data
           type: array
           items:
             $ref: '#/components/schemas/ExternalReferenceResourceId'
         alsoKnownAs:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_also_known_as
           type: array
           items:
             type: string
         fullnameEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_fullname_en
           type: string
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_name
           type: string
         shortnameEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_shortname
           type: string
         nameEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_name_en
           type: string
         fullname:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_fullname
           type: string
         shortname:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_shortname
           type: string
+      required:
+        - refs
+        - alsoKnownAs
+        - fullnameEn
+        - name
+        - shortnameEn
+        - nameEn
+        - fullname
+        - shortname
     PlayInCorpus:
       type: object
       properties:
         wikidataId:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_wikidata_id
           type: string
           nullable: true
         yearWritten:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_written
           type: string
           nullable: true
         source:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_digital_source_data
           $ref: '#/components/schemas/SourceInPlayMetadata'
         yearPremiered:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_premiered
           type: string
           nullable: true
         title:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_title
           type: string
         networkdataCsvUrl:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_data_csv_url
           type: string
           format: url
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_id
           type: string
         titleEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_title_en
           type: string
         subtitle:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_subtitle
           type: string
         datePremiered:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_date_premiered
           type: string
         yearPrinted:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_printed
           type: string
           nullable: true
         yearNormalized:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_normalized
           type: integer
           nullable: true
         authors:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_play_author_data
           type: array
           items:
             $ref: '#/components/schemas/AuthorInPlayInCorpus'
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_name
           type: string
         networkSize:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_size
           type: integer
         subtitleEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_subtitle_en
           type: string
+      required:
+        - wikidataId
+        - yearWritten
+        - source
+        - yearPremiered
+        - title
+        - networkdataCsvUrl
+        - id
+        - titleEn
+        - subtitle
+        - datePremiered
+        - yearPrinted
+        - yearNormalized
+        - authors
+        - name
+        - networkSize
+        - subtitleEn
     Corpus:
       type: object
       required:
-        - name
+        - acronym
         - title
+        - licence
+        - licenceUrl
+        - description
+        - name
+        - plays
+        - repository
       properties:
         acronym:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_acronym
           type: string
         commit:
           type: string
         title:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_title
           type: string
         licence:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_licence
           type: string
         licenceUrl:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_licence_url
           type: string
           format: url
         description:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_description
           type: string
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_name
           type: string
         plays:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_play_data
           type: array
           items:
             $ref: '#/components/schemas/PlayInCorpus'
         repository:
+          description: https://dracor.org/ontology/dracor-api-ontology#corpus_repository
           type: string
           format: url
     PlayMetadata:
       type: object
       properties:
         numOfSpeakersMale:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_speakers_gender_male
           type: integer
         diameter:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_diameter
           type: integer
         wikidataId:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_wikidata_id
           type: string
           nullable: true
         numOfSpeakersFemale:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_speakers_gender_female
           type: integer
         averageClustering:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_average_clustering
           type: number
         yearPremiered:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_premiered
           type: string
           nullable: true
         originalSourcePubPlace:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_original_source_publication_place
           type: string
           nullable: true
         numOfSpeakers:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_speakers
           type: integer
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_name
           type: string
         wordCountStage:
+          description: https://dracor.org/ontology/dracor-api-ontology#pplay_num_of_word_tokens_in_stage
           type: integer
         normalizedGenre:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_genre_normalized
           type: string
           nullable: true
         numOfL:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_verse_lines
           type: integer
         wordCountSp:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_word_tokens_in_sp
           type: integer
         numOfSpeakersUnknown:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_speakers_gender_unknown
           type: integer
         averagePathLength:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_average_path_length
           type: number
         originalSourceYear:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_original_source_publication_year
           type: integer
           nullable: true
         maxDegree:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_max_degree
           type: integer
         numEdges:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_num_edges
           type: integer
         subtitle:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_subtitle
           type: string
           nullable: true
         firstAuthor:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_first_author_shortname
           type: string
         originalSourcePublisher:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_original_source_publisher
           type: string
           nullable: true
         libretto:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_is_libretto
           type: boolean
         numConnectedComponents:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_num_connected_components
           type: integer
         yearWritten:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_written
           type: string
           nullable: true
         playName:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_name
           type: string
         numOfP:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_paragraphs
           type: integer
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_id
           type: string
         wordCountText:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_word_tokens_in_text_elements
           type: integer
         datePremiered:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_date_premiered
           type: string
         size:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_size
           type: integer
         averageDegree:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_average_degree
           type: number
         yearPrinted:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_printed
           type: string
           nullable: true
         numOfSegments:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_segments
           type: integer
         numOfActs:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_acts
           type: integer
         title:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_title
           type: string
         wikipediaLinkCount:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_wikipedia_links
           type: integer
           nullable: true
         digitalSource:
           nullable: true
         numOfPersonGroups:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_person_groups
           type: integer
         yearNormalized:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_normalized
           type: integer
           nullable: true
         numOfCoAuthors:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_co_authors
           type: integer
         maxDegreeIds:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_max_degree_character_id
           type: string
         originalSourceNumberOfPages:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_original_source_num_of_pages
           type: integer
           nullable: true
         density:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_density
           type: number
+      required:
+        - numOfSpeakersMale
+        - diameter
+        - wikidataId
+        - numOfSpeakersFemale
+        - averageClustering
+        - yearPremiered
+        - originalSourcePubPlace
+        - numOfSpeakers
+        - name
+        - wordCountStage
+        - normalizedGenre
+        - numOfL
+        - wordCountSp
+        - numOfSpeakersUnknown
+        - averagePathLength
+        - originalSourceYear
+        - maxDegree
+        - numEdges
+        - subtitle
+        - firstAuthor
+        - originalSourcePublisher
+        - libretto
+        - numConnectedComponents
+        - yearWritten
+        - playName
+        - numOfP
+        - id
+        - wordCountText
+        - datePremiered
+        - size
+        - averageDegree
+        - yearPrinted
+        - numOfSegments
+        - numOfActs
+        - title
+        - wikipediaLinkCount
+        - digitalSource
+        - numOfPersonGroups
+        - yearNormalized
+        - numOfCoAuthors
+        - maxDegreeIds
+        - originalSourceNumberOfPages
+        - density
     SegmentItemInPlayMetadata:
       type: object
       properties:
         type:
+          description: https://dracor.org/ontology/dracor-api-ontology#segment_type
           type: string
           nullable: true
         speakers:
@@ -1687,9 +1901,16 @@ components:
           items:
             type: string
         number:
+          description: https://dracor.org/ontology/dracor-api-ontology#segment_number
           type: integer
         title:
+          description: https://dracor.org/ontology/dracor-api-ontology#segment_title
           type: string
+      required:
+        - type
+        - speakers
+        - number
+        - title
     AuthorInPlayMetadata:
       type: object
       properties:
@@ -1698,46 +1919,75 @@ components:
           items:
             $ref: '#/components/schemas/ExternalReferenceResourceId'
         alsoKnownAs:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_also_known_as
           type: array
           items:
             type: string
         fullnameEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_fullname_en
           type: string
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_name
           type: string
         shortnameEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_shortname_en
           type: string
         nameEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_name_en
           type: string
         fullname:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_fullname
           type: string
         shortname:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_author_shortname
           type: string
+      required:
+        - refs
+        - alsoKnownAs
+        - fullnameEn
+        - name
+        - shortnameEn
+        - nameEn
+        - fullname
+        - shortname
     CharacterInPlayMetadata:
       type: object
       properties:
         wikidataId:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_wikidata_id
           type: string
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_id
           type: string
         isGroup:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_is_group
           type: boolean
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_name
           type: string
           nullable: true
         sex:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_gender
           type: string
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
           nullable: true
+      required:
+        - wikidataId
+        - id
+        - isGroup
+        - name
+        - sex
     RelationItemInPlayMetadata:
       type: object
       properties:
         directed:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_relation_is_directed
           type: boolean
         type:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_relation_type
           type: string
           enum:
           - parent_of
@@ -1748,9 +1998,16 @@ components:
           - spouses
           - friends
         source:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_relation_from
           type: string
         target:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_relation_to
           type: string
+      required:
+        - directed
+        - type
+        - source
+        - target
     Play:
       type: object
       required:
@@ -1758,6 +2015,7 @@ components:
         - name
         - corpus
         - title
+        - titleEn
         - authors
         - characters
         - segments
@@ -1765,8 +2023,22 @@ components:
         - allInSegment
         - libretto
         - uri
+        - wikidataId
+        - yearPremiered
+        - allInIndex
+        - normalizedGenre
+        - subtitleEn
+        - source
+        - subtitle
+        - allInSegment
+        - yearWritten
+        - datePremiered
+        - yearPrinted
+        - relations
+        - originalSource
       properties:
         wikidataId:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_wikidata_id
           type: string
           nullable: true
         segments:
@@ -1774,170 +2046,261 @@ components:
           items:
             $ref: '#/components/schemas/SegmentItemInPlayMetadata'
         corpus:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_corpus_name
           type: string
         yearPremiered:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_premiered
           type: string
           nullable: true
         allInIndex:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_all_in_index
           type: number
           nullable: true
           minimum: 0.0
           maximum: 1.0
         titleEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_title_en
           type: string
         authors:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_play_author_data
           type: array
           items:
             $ref: '#/components/schemas/AuthorInPlayMetadata'
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_name
           type: string
         normalizedGenre:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_genre_normalized
           type: string
           nullable: true
         subtitleEn:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_subtitle_en
           type: string
         characters:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_play_character_data
           type: array
           items:
             $ref: '#/components/schemas/CharacterInPlayMetadata'
         source:
+          description: https://dracor.org/ontology/dracor-api-ontology#ccontains_digital_source_data
           $ref: '#/components/schemas/SourceInPlayMetadata'
         subtitle:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_subtitle
           type: string
           nullable: true
         libretto:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_is_libretto
           type: boolean
         allInSegment:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_all_in_segment
           type: integer
           nullable: true
         yearWritten:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_written
           type: string
           nullable: true
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_id
           type: string
         datePremiered:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_date_premiered
           type: string
         yearPrinted:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_printed
           type: string
           nullable: true
         relations:
+          description: https://dracor.org/ontology/dracor-api-ontology#contains_character_relation_data
           type: array
           items:
             $ref: '#/components/schemas/RelationItemInPlayMetadata'
         title:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_title
           type: string
         yearNormalized:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_year_normalized
           type: integer
           nullable: true
         originalSource:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_original_source_full_citation
           type: string
-        uri:
-          type: string
-          format: url
     NodeInPlayMetrics:
       type: object
       properties:
         closeness:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_closeness
           type: number
         betweenness:
+          description: https://dracor.org/ontology/dracor-api-ontology#haracter_node_betweenness
           type: number
         degree:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_degree
           type: integer
         weightedDegree:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_weighted_degree
           type: integer
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_id
           type: string
         eigenvector:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_eigenvector
           type: number
+      required:
+        - closeness
+        - betweenness
+        - degree
+        - weightedDegree
+        - id
+        - eigenvector
     PlayMetrics:
       type: object
       properties:
         averagePathLength:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_average_path_length
           type: number
         diameter:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_diameter
           type: integer
         nodes:
           type: array
           items:
             $ref: '#/components/schemas/NodeInPlayMetrics'
         corpus:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_corpus_name
           type: string
         averageClustering:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_average_clustering
           type: number
         maxDegree:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_average_degree
           type: integer
         wikipediaLinkCount:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_wikipedia_links
           type: integer
           nullable: true
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_id
           type: string
         numEdges:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_num_edges
           type: integer
         size:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_size
           type: integer
         averageDegree:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_average_degree
           type: number
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_name
           type: string
         maxDegreeIds:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_max_degree_character_id
           type: array
           items:
             type: string
         numConnectedComponents:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_num_connected_components
           type: integer
         density:
+          description: https://dracor.org/ontology/dracor-api-ontology#play_network_density
           type: number
+      required:
+        - averagePathLength
+        - diameter
+        - nodes
+        - corpus
+        - averageClustering
+        - maxDegree
+        - wikipediaLinkCount
+        - id
+        - numEdges
+        - size
+        - averageDegree
+        - name
+        - maxDegreeIds
+        - numConnectedComponents
+        - density
     Character:
       type: object
       properties:
         closeness:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_closeness
           type: number
           nullable: true
         wikidataId:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_wikidata_id
           type: string
         betweenness:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_betweenness
           type: number
           nullable: true
         degree:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_degree
           type: integer
           nullable: true
         weightedDegree:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_weighted_degree
           type: integer
           nullable: true
         numOfSpeechActs:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_num_of_sp
           type: integer
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_id
           type: string
         eigenvector:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_node_eigenvector
           type: number
           nullable: true
         numOfScenes:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_num_of_segments
           type: integer
         numOfWords:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_num_of_word_tokens
           type: integer
         isGroup:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_is_group
           type: boolean
         name:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_name
           type: string
           nullable: true
         gender:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_gender
           type: string
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
           nullable: true
+      required:
+        - closeness
+        - wikidataId
+        - betweenness
+        - degree
+        - weightedDegree
+        - numOfSpeechActs
+        - id
+        - eigenvector
+        - numOfScenes
+        - numOfWords
+        - isGroup
+        - name
+        - gender
     SpokenTextByCharacter:
       type: object
       properties:
         roles:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_role
           type: array
           nullable: true
           items:
             type: string
         id:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_id
           type: string
         isGroup:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_is_group
           type: boolean
         gender:
           type: string
@@ -1947,11 +2310,20 @@ components:
           - UNKNOWN
           nullable: true
         label:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_name
           type: string
         text:
+          description: https://dracor.org/ontology/dracor-api-ontology#character_spoken_text
           type: array
           items:
             type: string
+      required:
+        - roles
+        - id
+        - isGroup
+        - gender
+        - label
+        - text
     PlayWithWikidataCharacter:
       type: object
       properties:
