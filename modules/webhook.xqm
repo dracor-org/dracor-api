@@ -154,8 +154,8 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
       )
     else if (not($event = 'push')) then
       (
-        <rest:response><http:response status="400"/></rest:response>,
-        map {"message": "Invalid GitHub Event, expecting push."}
+        <rest:response><http:response status="200"/></rest:response>,
+        map {"message": "Unsupported GitHub Event, expecting push."}
       )
     else if (not(local:check-signature($payload, $signature))) then
       (
@@ -171,7 +171,7 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
       )
     else if (not($json?ref = 'refs/heads/main')) then
       (
-        <rest:response><http:response status="400"/></rest:response>,
+        <rest:response><http:response status="200"/></rest:response>,
         map {"message": "Not from main branch."}
       )
     else if (not(local:check-repo($json?repository?html_url))) then
