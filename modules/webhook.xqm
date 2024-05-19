@@ -137,6 +137,11 @@ function webhook:github($data, $agent, $event, $delivery, $signature) {
       )
     else if ($event = 'ping') then
       map {"message": "Pong ;-)"}
+    else if (not($payload)) then
+      (
+        <rest:response><http:response status="400"/></rest:response>,
+        map {"message": "Missing payload"}
+      )
     else if (not($event = 'push')) then
       (
         <rest:response><http:response status="400"/></rest:response>,
