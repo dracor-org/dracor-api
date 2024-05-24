@@ -117,10 +117,23 @@ declare function local:get-repo-contents ($url-template) {
   return $json
 };
 
+declare function local:update-sha ($corpusinfo, $before, $after) {
+  (: util:log-system-out($corpusinfo?commit || " | " || $before || " | " || $after), :)
+  if ($corpusinfo?commit eq $before) then (
+    (: util:log-system-out("UPDATING SHA " || $after), :)
+    dutil:record-sha($corpusinfo?name, $after)
+  ) else if ($corpusinfo?commit) then (
+    (: util:log-system-out("REMOVING SHA " || $corpusinfo?commit), :)
+    dutil:remove-corpus-sha($corpusinfo?name)
+  ) else ()
+};
+
 declare function local:process-delivery () {
   let $delivery := collection($config:webhook-root)
     /delivery[@id = $local:delivery and not(@processed)]
   let $repo := $delivery/@repo/string()
+  let $before := $delivery/@before/string()
+  let $after := $delivery/@after/string()
   let $corpus := collection($config:corpora-root)//tei:teiCorpus[
     tei:teiHeader//tei:publicationStmt/tei:idno[@type="repo" and . = $repo]
   ]
@@ -163,6 +176,7 @@ declare function local:process-delivery () {
       return $result
     return (
       update insert attribute processed {current-dateTime()} into $delivery,
+      local:update-sha($info, $before, $after),
       $delivery
     )
   else if ($delivery) then

@@ -1438,8 +1438,14 @@ components:
           type: integer
     CorpusInCorpora:
       type: object
+      required:
+        - name
+        - title
+        - uri
       properties:
         acronym:
+          type: string
+        commit:
           type: string
         metrics:
           $ref: '#/components/schemas/CorpusMetrics'
@@ -1543,8 +1549,13 @@ components:
           type: string
     Corpus:
       type: object
+      required:
+        - name
+        - title
       properties:
         acronym:
+          type: string
+        commit:
           type: string
         title:
           type: string
@@ -1742,6 +1753,18 @@ components:
           type: string
     Play:
       type: object
+      required:
+        - id
+        - name
+        - corpus
+        - title
+        - authors
+        - characters
+        - segments
+        - yearNormalized
+        - allInSegment
+        - libretto
+        - uri
       properties:
         wikidataId:
           type: string
@@ -1808,6 +1831,9 @@ components:
           nullable: true
         originalSource:
           type: string
+        uri:
+          type: string
+          format: url
     NodeInPlayMetrics:
       type: object
       properties:

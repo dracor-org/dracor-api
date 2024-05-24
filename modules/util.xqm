@@ -55,7 +55,10 @@ declare function dutil:filepaths (
 ) as map() {
   let $playpath := $config:corpora-root || "/" || $corpusname || "/" || $playname
   let $url := $playpath || "/" || $filename
+  let $uri :=
+    $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
   return map {
+    "uri": $uri,
     "url": $url,
     "filename": $filename,
     "playname": $playname,
@@ -68,6 +71,7 @@ declare function dutil:filepaths (
       "tei": $playpath || "/tei.xml",
       "metrics": $playpath || "/metrics.xml",
       "rdf": $playpath || "/rdf.xml",
+      "git": $playpath || "/git.xml",
       "sitelinks": $playpath || "/sitelinks.xml"
     }
   }
@@ -478,6 +482,9 @@ declare function dutil:get-corpus-info(
     let $paras := for $p in $projectDesc/tei:p return local:markdown($p)
     return string-join($paras, "&#10;&#10;")
   ) else ()
+  let $git-file := $config:corpora-root || "/" || $name || "/git.xml"
+  let $sha := doc($git-file)/git/sha/text()
+
   return if ($header) then (
     map:merge((
       map:entry("name", $name),
@@ -488,6 +495,7 @@ declare function dutil:get-corpus-info(
           then $acronym
           else (functx:capitalize-first($name) || "DraCor")
       ),
+      if ($sha) then map:entry("commit", $sha) else (),
       if ($repo) then map:entry("repository", $repo) else (),
       if ($description) then map:entry("description", $description) else (),
       if ($licence)
@@ -944,10 +952,11 @@ declare function dutil:get-play-info(
   return if (not($doc)) then
     ()
   else
+    let $paths := dutil:filepaths($corpusname, $playname)
+    let $sha := doc($paths?files?git)/git/sha/text()
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
-    let $uri :=
-      $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
+    let $uri := $paths?uri
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, 'eng')
     let $source := dutil:get-source($tei)
@@ -1032,6 +1041,7 @@ declare function dutil:get-play-info(
       if($titlesEn?main) then map:entry("titleEn", $titlesEn?main) else (),
       if($titles?sub) then map:entry("subtitle", $titles?sub) else (),
       if($titlesEn?sub) then map:entry("subtitleEn", $titlesEn?sub) else (),
+      if($sha) then map:entry("commit", $sha) else (),
       if($wikidata-id) then
         map:entry("wikidataId", $wikidata-id)
       else (),
@@ -1331,4 +1341,95 @@ declare function dutil:create-corpus(
     "corpus.xml",
     $xml
   )
+};
+
+(:~
+ : Determine Git SHA for corpus recorded in git.xml files
+ :
+ : @param $name Corpus name
+ : @return string* Git SHA1 hash
+ :)
+declare function dutil:get-corpus-sha($name as xs:string) as xs:string* {
+  let $col := collection($config:corpora-root || "/" || $name)
+  let $num-plays := count($col/tei:TEI)
+  let $num-sha := count($col/git/sha)
+  let $shas := distinct-values($col/git/sha)
+
+  return if($num-plays = $num-sha and count($shas) = 1) then $shas[1] else ()
+};
+
+declare function local:record-sha(
+  $collection as xs:string,
+  $sha as xs:string
+) as xs:string* {
+  try {
+    xmldb:store( $collection, "git.xml", <git><sha>{$sha}</sha></git>)
+  } catch * {
+    util:log-system-out($err:description)
+  }
+};
+
+(:~
+ : Write commit SHA to git.xml file for play
+ :
+ : @param $corpusname Corpus name
+ : @param $play Play name
+ : @return string* Path to git.xml file
+ :)
+declare function dutil:record-sha(
+  $corpusname as xs:string,
+  $playname as xs:string,
+  $sha as xs:string
+) as xs:string* {
+  let $paths := dutil:filepaths($corpusname, $playname)
+  return local:record-sha($paths?collections?play, $sha)
+};
+
+(:~
+ : Write commit SHA to git.xml file for corpus
+ :
+ : @param $corpusname Corpus name
+ : @return string* Path to git.xml file
+ :)
+declare function dutil:record-sha(
+  $corpusname as xs:string,
+  $sha as xs:string
+) as xs:string* {
+  let $collection := $config:corpora-root || "/" || $corpusname
+  return local:record-sha($collection, $sha)
+};
+
+declare function local:remove-sha($collection as xs:string) {
+  if (doc-available($collection || "/git.xml")) then (
+    util:log-system-out("Removing git.xml for " || $collection),
+    xmldb:remove($collection, "git.xml")
+  ) else ()
+};
+
+(:~
+ : Remove corpus git.xml file
+ :
+ : @param $corpusname Corpus name
+ : @return string* Path to git.xml file
+ :)
+declare function dutil:remove-corpus-sha(
+  $corpusname as xs:string
+) as xs:string* {
+  let $collection := $config:corpora-root || "/" || $corpusname
+  return local:remove-sha($collection)
+};
+
+(:~
+ : Remove play git.xml file
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ :)
+declare function dutil:remove-sha(
+  $corpusname as xs:string,
+  $playname as xs:string
+) {
+  let $collection :=
+    $config:corpora-root || "/" || $corpusname || "/" || $playname
+  return local:remove-sha($collection)
 };
