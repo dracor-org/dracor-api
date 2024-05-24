@@ -7,7 +7,6 @@ const crypto = require('crypto');
 
 const secret = process.argv[2]
 const file = process.argv[3]
-console.log(file);
 
 const payload = fs.readFileSync(file, 'utf8');
 
