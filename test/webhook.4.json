@@ -1,0 +1,214 @@
+{
+  "ref": "refs/heads/main",
+  "before": "133fa0e4071760a59d752b0982464398c7bd61e2",
+  "after": "94bb85eecb6e2b71d149f9df7982096f427c55c6",
+  "repository": {
+    "id": 161497977,
+    "node_id": "MDEwOlJlcG9zaXRvcnkxNjE0OTc5Nzc=",
+    "name": "testdracor",
+    "full_name": "dracor-org/testdracor",
+    "private": false,
+    "owner": {
+      "name": "dracor-org",
+      "email": null,
+      "login": "dracor-org",
+      "id": 31931655,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjMxOTMxNjU1",
+      "avatar_url": "https://avatars.githubusercontent.com/u/31931655?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dracor-org",
+      "html_url": "https://github.com/dracor-org",
+      "followers_url": "https://api.github.com/users/dracor-org/followers",
+      "following_url": "https://api.github.com/users/dracor-org/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dracor-org/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dracor-org/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dracor-org/subscriptions",
+      "organizations_url": "https://api.github.com/users/dracor-org/orgs",
+      "repos_url": "https://api.github.com/users/dracor-org/repos",
+      "events_url": "https://api.github.com/users/dracor-org/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dracor-org/received_events",
+      "type": "Organization",
+      "site_admin": false
+    },
+    "html_url": "https://github.com/dracor-org/testdracor",
+    "description": "Sample files to test the DraCor API.",
+    "fork": false,
+    "url": "https://github.com/dracor-org/testdracor",
+    "forks_url": "https://api.github.com/repos/dracor-org/testdracor/forks",
+    "keys_url": "https://api.github.com/repos/dracor-org/testdracor/keys{/key_id}",
+    "collaborators_url": "https://api.github.com/repos/dracor-org/testdracor/collaborators{/collaborator}",
+    "teams_url": "https://api.github.com/repos/dracor-org/testdracor/teams",
+    "hooks_url": "https://api.github.com/repos/dracor-org/testdracor/hooks",
+    "issue_events_url": "https://api.github.com/repos/dracor-org/testdracor/issues/events{/number}",
+    "events_url": "https://api.github.com/repos/dracor-org/testdracor/events",
+    "assignees_url": "https://api.github.com/repos/dracor-org/testdracor/assignees{/user}",
+    "branches_url": "https://api.github.com/repos/dracor-org/testdracor/branches{/branch}",
+    "tags_url": "https://api.github.com/repos/dracor-org/testdracor/tags",
+    "blobs_url": "https://api.github.com/repos/dracor-org/testdracor/git/blobs{/sha}",
+    "git_tags_url": "https://api.github.com/repos/dracor-org/testdracor/git/tags{/sha}",
+    "git_refs_url": "https://api.github.com/repos/dracor-org/testdracor/git/refs{/sha}",
+    "trees_url": "https://api.github.com/repos/dracor-org/testdracor/git/trees{/sha}",
+    "statuses_url": "https://api.github.com/repos/dracor-org/testdracor/statuses/{sha}",
+    "languages_url": "https://api.github.com/repos/dracor-org/testdracor/languages",
+    "stargazers_url": "https://api.github.com/repos/dracor-org/testdracor/stargazers",
+    "contributors_url": "https://api.github.com/repos/dracor-org/testdracor/contributors",
+    "subscribers_url": "https://api.github.com/repos/dracor-org/testdracor/subscribers",
+    "subscription_url": "https://api.github.com/repos/dracor-org/testdracor/subscription",
+    "commits_url": "https://api.github.com/repos/dracor-org/testdracor/commits{/sha}",
+    "git_commits_url": "https://api.github.com/repos/dracor-org/testdracor/git/commits{/sha}",
+    "comments_url": "https://api.github.com/repos/dracor-org/testdracor/comments{/number}",
+    "issue_comment_url": "https://api.github.com/repos/dracor-org/testdracor/issues/comments{/number}",
+    "contents_url": "https://api.github.com/repos/dracor-org/testdracor/contents/{+path}",
+    "compare_url": "https://api.github.com/repos/dracor-org/testdracor/compare/{base}...{head}",
+    "merges_url": "https://api.github.com/repos/dracor-org/testdracor/merges",
+    "archive_url": "https://api.github.com/repos/dracor-org/testdracor/{archive_format}{/ref}",
+    "downloads_url": "https://api.github.com/repos/dracor-org/testdracor/downloads",
+    "issues_url": "https://api.github.com/repos/dracor-org/testdracor/issues{/number}",
+    "pulls_url": "https://api.github.com/repos/dracor-org/testdracor/pulls{/number}",
+    "milestones_url": "https://api.github.com/repos/dracor-org/testdracor/milestones{/number}",
+    "notifications_url": "https://api.github.com/repos/dracor-org/testdracor/notifications{?since,all,participating}",
+    "labels_url": "https://api.github.com/repos/dracor-org/testdracor/labels{/name}",
+    "releases_url": "https://api.github.com/repos/dracor-org/testdracor/releases{/id}",
+    "deployments_url": "https://api.github.com/repos/dracor-org/testdracor/deployments",
+    "created_at": 1544623931,
+    "updated_at": "2024-05-11T13:14:05Z",
+    "pushed_at": 1716567336,
+    "git_url": "git://github.com/dracor-org/testdracor.git",
+    "ssh_url": "git@github.com:dracor-org/testdracor.git",
+    "clone_url": "https://github.com/dracor-org/testdracor.git",
+    "svn_url": "https://github.com/dracor-org/testdracor",
+    "homepage": null,
+    "size": 1184,
+    "stargazers_count": 0,
+    "watchers_count": 0,
+    "language": "CSS",
+    "has_issues": true,
+    "has_projects": true,
+    "has_downloads": true,
+    "has_wiki": true,
+    "has_pages": false,
+    "has_discussions": false,
+    "forks_count": 1,
+    "mirror_url": null,
+    "archived": false,
+    "disabled": false,
+    "open_issues_count": 1,
+    "license": null,
+    "allow_forking": true,
+    "is_template": false,
+    "web_commit_signoff_required": false,
+    "topics": [
+
+    ],
+    "visibility": "public",
+    "forks": 1,
+    "open_issues": 1,
+    "watchers": 0,
+    "default_branch": "main",
+    "stargazers": 0,
+    "master_branch": "main",
+    "organization": "dracor-org",
+    "custom_properties": {
+
+    }
+  },
+  "pusher": {
+    "name": "cmil",
+    "email": "carsten.milling@gmail.com"
+  },
+  "organization": {
+    "login": "dracor-org",
+    "id": 31931655,
+    "node_id": "MDEyOk9yZ2FuaXphdGlvbjMxOTMxNjU1",
+    "url": "https://api.github.com/orgs/dracor-org",
+    "repos_url": "https://api.github.com/orgs/dracor-org/repos",
+    "events_url": "https://api.github.com/orgs/dracor-org/events",
+    "hooks_url": "https://api.github.com/orgs/dracor-org/hooks",
+    "issues_url": "https://api.github.com/orgs/dracor-org/issues",
+    "members_url": "https://api.github.com/orgs/dracor-org/members{/member}",
+    "public_members_url": "https://api.github.com/orgs/dracor-org/public_members{/member}",
+    "avatar_url": "https://avatars.githubusercontent.com/u/31931655?v=4",
+    "description": "Drama Corpora Project"
+  },
+  "sender": {
+    "login": "cmil",
+    "id": 3439037,
+    "node_id": "MDQ6VXNlcjM0MzkwMzc=",
+    "avatar_url": "https://avatars.githubusercontent.com/u/3439037?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/cmil",
+    "html_url": "https://github.com/cmil",
+    "followers_url": "https://api.github.com/users/cmil/followers",
+    "following_url": "https://api.github.com/users/cmil/following{/other_user}",
+    "gists_url": "https://api.github.com/users/cmil/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/cmil/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/cmil/subscriptions",
+    "organizations_url": "https://api.github.com/users/cmil/orgs",
+    "repos_url": "https://api.github.com/users/cmil/repos",
+    "events_url": "https://api.github.com/users/cmil/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/cmil/received_events",
+    "type": "User",
+    "site_admin": false
+  },
+  "created": false,
+  "deleted": false,
+  "forced": false,
+  "base_ref": null,
+  "compare": "https://github.com/dracor-org/testdracor/compare/133fa0e40717...94bb85eecb6e",
+  "commits": [
+    {
+      "id": "94bb85eecb6e2b71d149f9df7982096f427c55c6",
+      "tree_id": "e5e0fc1788c8f29ee444efb182659fabca7e877e",
+      "distinct": true,
+      "message": "Test commit",
+      "timestamp": "2024-05-24T18:15:27+02:00",
+      "url": "https://github.com/dracor-org/testdracor/commit/94bb85eecb6e2b71d149f9df7982096f427c55c6",
+      "author": {
+        "name": "Carsten Milling",
+        "email": "cmil@hashtable.de",
+        "username": "cmil"
+      },
+      "committer": {
+        "name": "Carsten Milling",
+        "email": "cmil@hashtable.de",
+        "username": "cmil"
+      },
+      "added": [
+
+      ],
+      "removed": [
+
+      ],
+      "modified": [
+        "tei/gogol-revizor.xml"
+      ]
+    }
+  ],
+  "head_commit": {
+    "id": "94bb85eecb6e2b71d149f9df7982096f427c55c6",
+    "tree_id": "e5e0fc1788c8f29ee444efb182659fabca7e877e",
+    "distinct": true,
+    "message": "Test commit",
+    "timestamp": "2024-05-24T18:15:27+02:00",
+    "url": "https://github.com/dracor-org/testdracor/commit/94bb85eecb6e2b71d149f9df7982096f427c55c6",
+    "author": {
+      "name": "Carsten Milling",
+      "email": "cmil@hashtable.de",
+      "username": "cmil"
+    },
+    "committer": {
+      "name": "Carsten Milling",
+      "email": "cmil@hashtable.de",
+      "username": "cmil"
+    },
+    "added": [
+
+    ],
+    "removed": [
+
+    ],
+    "modified": [
+      "tei/gogol-revizor.xml"
+    ]
+  }
+}
