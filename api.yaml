@@ -2124,6 +2124,7 @@ components:
         eigenvector:
           # ontology: #character_node_eigenvector
           type: number
+          nullable: true
         weightedDegree:
           # ontology: #character_node_weighted_degree
           type: integer
