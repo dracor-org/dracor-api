@@ -1061,7 +1061,7 @@ paths:
                   "totalChildren" : 1,
                   "title" : "Test Drama Corpus",
                   "description" : "This corpus is for testing purposes only. It features a handful of plays in different languages.",
-                  "members" : [ 
+                  "members" : [
                   {
                     "@id" : "http://localhost:8088/id/test000001",
                     "@type" : "Resource",
@@ -1069,8 +1069,8 @@ paths:
                     "totalItems" : 0,
                     "totalParents" : 1,
                     "totalChildren" : 0,
-                    "dublinCore" : 
-                      { 
+                    "dublinCore" :
+                      {
                         "language" : "rus",
                         "creator" : "Гоголь, Николай Васильевич"
                       },
@@ -1084,7 +1084,7 @@ paths:
           description: Bad request. Using the parameter `page` with a document is not possible. (Paging functionality has not been implemented yet.)
         '404':
           description: The requested resource is not available.
-        '501': 
+        '501':
           description: Not implemented. Using the undocumented parameter `page` will result in this status code. The paging functionality has not been implemented yet.
 
   /dts/navigation:
@@ -1098,7 +1098,7 @@ paths:
         - name: resource
           in: query
           required: true
-          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID. 
+          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
           schema:
             type: string
           example: https://dracor.org/id/ger000088
@@ -1153,8 +1153,8 @@ paths:
         '404':
           description: There are no Citeable Unit(s) identified by the provided identifier(s) in `ref`, `start` or `end`.
         '501':
-          description: Not implemented. Not all of the functionality foreseen by the specification is fully implemented, e.g. requesting sub-structures of non-body elements. 
-  
+          description: Not implemented. Not all of the functionality foreseen by the specification is fully implemented, e.g. requesting sub-structures of non-body elements.
+
   /dts/document:
     get:
       summary: DTS Document endpoint
@@ -1166,7 +1166,7 @@ paths:
         - name: resource
           in: query
           required: true
-          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID. 
+          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
           schema:
             type: string
           example: https://dracor.org/id/ger000088
@@ -1393,12 +1393,16 @@ components:
       type: object
       properties:
         name:
+          # ontology: #service_name
           type: string
         version:
+          # ontology: #service_version
           type: string
         status:
+          # ontology: #service_development_stage
           type: string
         existdb:
+          # ontology: #service_dependency_is_existdb_version
           type: string
         base:
           type: string
@@ -1406,291 +1410,497 @@ components:
         openapi:
           type: string
           format: url
+      required:
+        - name
+        - version
+        - status
+        - existdb
+        - base
+        - openapi
     WordCounts:
       type: object
       properties:
         text:
+          # ontology: #corpus_num_of_word_tokens_in_text_elements
           type: integer
         stage:
+          # ontology: #corpus_num_of_word_tokens_in_stage
           type: integer
         sp:
+          # ontology: #corpus_num_of_word_tokens_in_sp
           type: integer
+      required:
+        - text
+        - stage
+        - sp
     CorpusMetrics:
       type: object
       properties:
         characters:
+          # ontology: #corpus_num_of_characters
           type: integer
-        stage:
-          type: integer
-        updated:
-          type: string
-        sp:
-          type: integer
-        text:
-          type: integer
-        plays:
-          type: integer
-        wordcount:
-          $ref: '#/components/schemas/WordCounts'
         male:
+          # ontology: #corpus_num_of_characters_male
           type: integer
         female:
+          # ontology: #corpus_num_of_characters_female
           type: integer
+        stage:
+          # ontology: #corpus_num_of_stage
+          type: integer
+        sp:
+          # ontology: #corpus_num_of_sp
+          type: integer
+        text:
+          # ontology: #corpus_num_of_tei_text_elements
+          type: integer
+        plays:
+          # ontology: #corpus_num_of_plays
+          type: integer
+        wordcount:
+          # ontology: #contains_corpus_wordcount_data
+          $ref: '#/components/schemas/WordCounts'
+        updated:
+          # ontology: #corpus_metrics_date_updated
+          type: string
+      required:
+        - characters
+        - male
+        - female
+        - stage
+        - sp
+        - text
+        - plays
+        - wordcount
+        - updated
     CorpusInCorpora:
       type: object
-      required:
-        - name
-        - title
-        - uri
       properties:
+        uri:
+          # ontology: #corpus_uri
+          type: string
+          format: url
+        name:
+          # ontology: #corpus_name
+          type: string
+        title:
+          # ontology: #corpus_title
+          type: string
         acronym:
+          # ontology: #corpus_acronym
           type: string
         commit:
           type: string
-        metrics:
-          $ref: '#/components/schemas/CorpusMetrics'
-        title:
+        description:
+          # ontology: #corpus_description
           type: string
         licence:
+          # ontology: #corpus_licence
           type: string
         licenceUrl:
+          # ontology: #corpus_licence_url
           type: string
           format: url
-        uri:
-          type: string
-          format: url
-        description:
-          type: string
-        name:
-          type: string
         repository:
+          # ontology: #corpus_repository
           type: string
           format: url
+        metrics:
+          # ontology: contains_corpus_metrics_data
+          $ref: '#/components/schemas/CorpusMetrics'
+      required:
+        - uri
+        - name
+        - title
+        - acronym
     SourceInPlayMetadata:
+      # see dutil:get-source
       type: object
       properties:
-        url:
-          nullable: true
         name:
+          # ontology: #play_digital_source_name
           type: string
           nullable: true
+        url:
+          # ontology: #play_digital_source_url
+          type: string
+          format: url
+          nullable: true
+      # currently neither name nor url is required, but we omit the source
+      # object if none of the properties is available
+      required: []
     ExternalReferenceResourceId:
+      # see dutil:get-authors
       type: object
       properties:
         type:
+          # ontology: #play_author_ref_external_id
           type: string
         ref:
+          # ontology: #play_author_ref_type
           type: string
+      required:
+        - type
+        - ref
     AuthorInPlayInCorpus:
+      # see dutil:get-authors
       type: object
       properties:
+        name:
+          # ontology: #play_author_name
+          type: string
+        fullname:
+          # ontology: #play_author_fullname
+          type: string
+        shortname:
+          # ontology: #play_author_shortname
+          type: string
         refs:
+          # ontology: #contains_external_ref_id_data
           type: array
           items:
             $ref: '#/components/schemas/ExternalReferenceResourceId'
         alsoKnownAs:
+          # ontology: #play_author_also_known_as
           type: array
           items:
             type: string
-        fullnameEn:
+        nameEn:
+          # ontology: #play_author_name_en
           type: string
-        name:
+        fullnameEn:
+          # ontology: #play_author_fullname_en
           type: string
         shortnameEn:
+          # ontology: #play_author_shortname_en
           type: string
-        nameEn:
-          type: string
-        fullname:
-          type: string
-        shortname:
-          type: string
+      required:
+        - name
+        - fullname
+        - shortname
+        - refs
     PlayInCorpus:
+      # see api:corpus-index
       type: object
       properties:
-        wikidataId:
+        id:
+          # ontology: #play_id
           type: string
-          nullable: true
-        yearWritten:
-          type: string
-          nullable: true
-        source:
-          $ref: '#/components/schemas/SourceInPlayMetadata'
-        yearPremiered:
-          type: string
-          nullable: true
-        title:
-          type: string
-        networkdataCsvUrl:
+        uri:
           type: string
           format: url
-        id:
+        name:
+          # ontology: #play_name
           type: string
-        titleEn:
+        title:
+          # ontology: #play_title
           type: string
         subtitle:
+          # ontology: #play_subtitle
           type: string
-        datePremiered:
+        titleEn:
+          # ontology: #play_title_en
           type: string
-        yearPrinted:
+        subtitleEn:
+          # ontology: #play_subtitle_en
           type: string
-          nullable: true
-        yearNormalized:
-          type: integer
-          nullable: true
         authors:
+          # ontology: #contains_play_author_data
           type: array
           items:
             $ref: '#/components/schemas/AuthorInPlayInCorpus'
-        name:
-          type: string
-        networkSize:
+        yearNormalized:
+          # ontology: #play_year_normalized
           type: integer
-        subtitleEn:
+          nullable: true
+        yearWritten:
+          # ontology: #play_year_written
           type: string
-    Corpus:
-      type: object
+          nullable: true
+        yearPremiered:
+          # ontology: #play_year_premiered
+          type: string
+          nullable: true
+        yearPrinted:
+          # ontology: #play_year_printed
+          type: string
+          nullable: true
+        datePremiered:
+          # ontology: #play_date_premiered
+          type: string
+        source:
+          # ontology: #contains_digital_source_data
+          $ref: '#/components/schemas/SourceInPlayMetadata'
+        networkdataCsvUrl:
+          # ontology: #play_network_data_csv_url
+          type: string
+          format: url
+        networkSize:
+          # ontology: #play_network_size
+          type: integer
+        wikidataId:
+          # ontology: #play_wikidata_id
+          type: string
+          nullable: true
       required:
+        - id
+        - uri
         - name
         - title
+        - authors
+        - yearNormalized
+        - yearWritten
+        - yearPremiered
+        - yearPrinted
+        - networkSize
+        - networkdataCsvUrl
+        - wikidataId
+    Corpus:
+      # see dutil:get-corpus-info
+      type: object
       properties:
+        name:
+          # ontology: #corpus_name
+          type: string
+        title:
+          # ontology: #corpus_title
+          type: string
         acronym:
+          # ontology: #corpus_acronym
+          type: string
+        description:
+          # ontology: #corpus_description
           type: string
         commit:
           type: string
-        title:
-          type: string
-        licence:
-          type: string
-        licenceUrl:
+        repository:
+          # ontology: #corpus_repository
           type: string
           format: url
-        description:
+        licence:
+          # ontology: #corpus_licence
           type: string
-        name:
+        licenceUrl:
+          # ontology: #corpus_licence_url
           type: string
+          format: url
         plays:
+          # ontology: #contains_play_data
           type: array
           items:
             $ref: '#/components/schemas/PlayInCorpus'
-        repository:
-          type: string
-          format: url
+      required:
+        - name
+        - title
+        - acronym
     PlayMetadata:
+      # see dutil:get-corpus-meta-data
       type: object
       properties:
-        numOfSpeakersMale:
-          type: integer
-        diameter:
-          type: integer
-        wikidataId:
+        id:
+          # ontology: #play_id
           type: string
-          nullable: true
-        numOfSpeakersFemale:
-          type: integer
-        averageClustering:
-          type: number
-        yearPremiered:
-          type: string
-          nullable: true
-        originalSourcePubPlace:
-          type: string
-          nullable: true
-        numOfSpeakers:
-          type: integer
         name:
+          # ontology: #play_name
           type: string
-        wordCountStage:
-          type: integer
-        normalizedGenre:
+        title:
+          # ontology: #play_title
           type: string
-          nullable: true
-        numOfL:
-          type: integer
-        wordCountSp:
-          type: integer
-        numOfSpeakersUnknown:
-          type: integer
-        averagePathLength:
-          type: number
-        originalSourceYear:
-          type: integer
-          nullable: true
-        maxDegree:
-          type: integer
-        numEdges:
-          type: integer
         subtitle:
+          # ontology: #play_subtitle
+          type: string
+          nullable: true
+        wikidataId:
+          # ontology: #play_wikidata_id
           type: string
           nullable: true
         firstAuthor:
+          # ontology: #play_first_author_shortname
           type: string
-        originalSourcePublisher:
+        yearNormalized:
+          # ontology: #play_year_normalized
+          type: integer
+          nullable: true
+        yearWritten:
+          # ontology: #play_year_written
+          type: string
+          nullable: true
+        yearPremiered:
+          # ontology: #play_year_premiered
+          type: string
+          nullable: true
+        yearPrinted:
+          # ontology: #play_year_printed
+          type: string
+          nullable: true
+        datePremiered:
+          # ontology: #play_date_premiered
+          type: string
+        normalizedGenre:
+          # ontology: #play_genre_normalized
           type: string
           nullable: true
         libretto:
+          # ontology: #play_is_libretto
           type: boolean
-        numConnectedComponents:
-          type: integer
-        yearWritten:
-          type: string
-          nullable: true
-        playName:
-          type: string
-        numOfP:
-          type: integer
-        id:
-          type: string
-        wordCountText:
-          type: integer
-        datePremiered:
-          type: string
-        size:
-          type: integer
-        averageDegree:
+        density:
+          # ontology: #play_network_density
           type: number
-        yearPrinted:
-          type: string
-          nullable: true
-        numOfSegments:
-          type: integer
-        numOfActs:
-          type: integer
-        title:
-          type: string
-        wikipediaLinkCount:
-          type: integer
-          nullable: true
         digitalSource:
           nullable: true
-        numOfPersonGroups:
-          type: integer
-        yearNormalized:
+        originalSourceNumberOfPages:
+          # ontology: #play_original_source_num_of_pages
           type: integer
           nullable: true
-        numOfCoAuthors:
+        originalSourcePubPlace:
+          # ontology: #play_original_source_publication_place
+          type: string
+          nullable: true
+        originalSourcePublisher:
+          # ontology: #play_original_source_publisher
+          type: string
+          nullable: true
+        originalSourceYear:
+          # ontology: #play_original_source_publication_year
+          type: integer
+          nullable: true
+        averageClustering:
+          # ontology: #play_network_average_clustering
+          type: number
+        averageDegree:
+          # ontology: #play_network_average_degree
+          type: number
+        averagePathLength:
+          # ontology: #play_network_average_path_length
+          type: number
+        diameter:
+          # ontology: #play_network_diameter
+          type: integer
+        maxDegree:
+          # ontology: #play_network_max_degree
           type: integer
         maxDegreeIds:
+          # ontology: #play_network_max_degree_character_id
           type: string
-        originalSourceNumberOfPages:
+        numOfL:
+          # ontology: #play_num_of_verse_lines
+          type: integer
+        numConnectedComponents:
+          # ontology: #play_network_num_connected_components
+          type: integer
+        numEdges:
+          # ontology: #play_network_num_edges
+          type: integer
+        numOfActs:
+          # ontology: #play_num_of_acts
+          type: integer
+        numOfCoAuthors:
+          # ontology: #play_num_of_co_authors
+          type: integer
+        numOfP:
+          # ontology: #play_num_of_paragraphs
+          type: integer
+        numOfPersonGroups:
+          # ontology: #play_num_of_person_groups
+          type: integer
+        numOfSegments:
+          # ontology: #play_num_of_segments
+          type: integer
+        numOfSpeakers:
+          # ontology: #play_num_of_speakers
+          type: integer
+        numOfSpeakersMale:
+          # ontology: #play_num_of_speakers_gender_male
+          type: integer
+        numOfSpeakersFemale:
+          # ontology: #play_num_of_speakers_gender_female
+          type: integer
+        numOfSpeakersUnknown:
+          # ontology: #play_num_of_speakers_gender_unknown
+          type: integer
+        size:
+          # ontology: #play_network_size
+          type: integer
+        wikipediaLinkCount:
+          # ontology: #play_num_of_wikipedia_links
           type: integer
           nullable: true
-        density:
-          type: number
+        wordCountSp:
+          # ontology: #play_num_of_word_tokens_in_sp
+          type: integer
+        wordCountStage:
+          # ontology: #pplay_num_of_word_tokens_in_stage
+          type: integer
+        wordCountText:
+          # ontology: #play_num_of_word_tokens_in_text_elements
+          type: integer
+      required:
+        - id
+        - name
+        - title
+        - subtitle
+        - wikidataId
+        - firstAuthor
+        - yearNormalized
+        - yearWritten
+        - yearPremiered
+        - yearPrinted
+        - datePremiered
+        - normalizedGenre
+        - libretto
+        - digitalSource
+        - originalSourceNumberOfPages
+        - originalSourcePublisher
+        - originalSourcePubPlace
+        - originalSourceYear
+        - averageClustering
+        - averageDegree
+        - averagePathLength
+        - density
+        - diameter
+        - maxDegree
+        - maxDegreeIds
+        - numConnectedComponents
+        - numEdges
+        - numOfActs
+        - numOfCoAuthors
+        - numOfL
+        - numOfP
+        - numOfPersonGroups
+        - numOfSegments
+        - numOfSpeakers
+        - numOfSpeakersFemale
+        - numOfSpeakersMale
+        - numOfSpeakersUnknown
+        - size
+        - wikipediaLinkCount
+        - wordCountSp
+        - wordCountStage
+        - wordCountText
     SegmentItemInPlayMetadata:
+      # see dutil:get-play-info
       type: object
       properties:
         type:
+          # ontology: #segment_type
           type: string
           nullable: true
+        number:
+          # ontology: #segment_number
+          type: integer
+        title:
+          # ontology: #segment_title
+          type: string
         speakers:
           type: array
           items:
             type: string
-        number:
-          type: integer
-        title:
-          type: string
+      required:
+        - type
+        - number
     AuthorInPlayMetadata:
+      # FIXME: this schema seems to be identical to AuthorInPlayInCorpus, can we
+      # eliminate it?
       type: object
       properties:
         refs:
@@ -1698,46 +1908,72 @@ components:
           items:
             $ref: '#/components/schemas/ExternalReferenceResourceId'
         alsoKnownAs:
+          # ontology: #play_author_also_known_as
           type: array
           items:
             type: string
         fullnameEn:
+          # ontology: #play_author_fullname_en
           type: string
         name:
+          # ontology: #play_author_name
           type: string
         shortnameEn:
+          # ontology: #play_author_shortname_en
           type: string
         nameEn:
+          # ontology: #play_author_name_en
           type: string
         fullname:
+          # ontology: #play_author_fullname
           type: string
         shortname:
+          # ontology: #play_author_shortname
           type: string
+      required:
+        - name
+        - fullname
+        - shortname
+        - refs
     CharacterInPlayMetadata:
+      # see dutil:get-play-info
       type: object
       properties:
-        wikidataId:
-          type: string
         id:
+          # ontology: #character_id
           type: string
-        isGroup:
-          type: boolean
         name:
+          # ontology: #character_name
           type: string
           nullable: true
+        isGroup:
+          # ontology: #character_is_group
+          type: boolean
         sex:
+          # ontology: #character_gender
           type: string
-          enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
           nullable: true
+          enum:
+            - MALE
+            - FEMALE
+            - UNKNOWN
+        wikidataId:
+          # ontology: #character_wikidata_id
+          type: string
+      required:
+        - id
+        - name
+        - isGroup
+        - sex
     RelationItemInPlayMetadata:
+      # see dutil:get-relations
       type: object
       properties:
         directed:
+          # ontology: #character_relation_is_directed
           type: boolean
         type:
+          # ontology: #character_relation_type
           type: string
           enum:
           - parent_of
@@ -1748,196 +1984,303 @@ components:
           - spouses
           - friends
         source:
+          # ontology: #character_relation_from
           type: string
         target:
+          # ontology: #character_relation_to
           type: string
-    Play:
-      type: object
       required:
-        - id
-        - name
-        - corpus
-        - title
-        - authors
-        - characters
-        - segments
-        - yearNormalized
-        - allInSegment
-        - libretto
-        - uri
+        - directed
+        - type
+        - source
+        - target
+    Play:
+      # see dutil:get-play-info
+      type: object
       properties:
-        wikidataId:
+        id:
+          # ontology: #play_id
+          type: string
+        uri:
+          type: string
+          format: url
+        name:
+          # ontology: #play_name
+          type: string
+        corpus:
+          # ontology: #play_corpus_name
+          type: string
+        title:
+          # ontology: #play_title
+          type: string
+        subtitle:
+          # ontology: #play_subtitle
           type: string
           nullable: true
-        segments:
+        titleEn:
+          # ontology: #play_title_en
+          type: string
+        subtitleEn:
+          # ontology: #play_subtitle_en
+          type: string
+        authors:
+          # ontology: #contains_play_author_data
           type: array
           items:
-            $ref: '#/components/schemas/SegmentItemInPlayMetadata'
-        corpus:
-          type: string
-        yearPremiered:
+            $ref: '#/components/schemas/AuthorInPlayMetadata'
+        yearNormalized:
+          # ontology: #play_year_normalized
+          type: integer
+          nullable: true
+        yearWritten:
+          # ontology: #play_year_written
           type: string
           nullable: true
+        yearPremiered:
+          # ontology: #play_year_premiered
+          type: string
+          nullable: true
+        yearPrinted:
+          # ontology: #play_year_printed
+          type: string
+          nullable: true
+        datePremiered:
+          # ontology: #play_date_premiered
+          type: string
+        normalizedGenre:
+          # ontology: #play_genre_normalized
+          type: string
+          nullable: true
+        libretto:
+          # ontology: #play_is_libretto
+          type: boolean
         allInIndex:
+          # ontology: #play_all_in_index
           type: number
           nullable: true
           minimum: 0.0
           maximum: 1.0
-        titleEn:
-          type: string
-        authors:
-          type: array
-          items:
-            $ref: '#/components/schemas/AuthorInPlayMetadata'
-        name:
-          type: string
-        normalizedGenre:
-          type: string
+        allInSegment:
+          # ontology: #play_all_in_segment
+          type: integer
           nullable: true
-        subtitleEn:
-          type: string
         characters:
+          # ontology: #contains_play_character_data
           type: array
           items:
             $ref: '#/components/schemas/CharacterInPlayMetadata'
-        source:
-          $ref: '#/components/schemas/SourceInPlayMetadata'
-        subtitle:
-          type: string
-          nullable: true
-        libretto:
-          type: boolean
-        allInSegment:
-          type: integer
-          nullable: true
-        yearWritten:
-          type: string
-          nullable: true
-        id:
-          type: string
-        datePremiered:
-          type: string
-        yearPrinted:
-          type: string
-          nullable: true
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/SegmentItemInPlayMetadata'
         relations:
+          # ontology: #contains_character_relation_data
           type: array
           items:
             $ref: '#/components/schemas/RelationItemInPlayMetadata'
-        title:
-          type: string
-        yearNormalized:
-          type: integer
-          nullable: true
+        source:
+          # ontology: #ccontains_digital_source_data
+          $ref: '#/components/schemas/SourceInPlayMetadata'
         originalSource:
+          # ontology: #play_original_source_full_citation
           type: string
-        uri:
+        wikidataId:
+          # ontology: #play_wikidata_id
           type: string
-          format: url
+          nullable: true
+      required:
+        - id
+        - uri
+        - name
+        - corpus
+        - title
+        - authors
+        - yearPremiered
+        - yearPrinted
+        - yearWritten
+        - yearNormalized
+        - normalizedGenre
+        - libretto
+        - allInSegment
+        - allInIndex
+        - characters
+        - segments
     NodeInPlayMetrics:
+      # see dutil:get-play-metrics
       type: object
       properties:
-        closeness:
-          type: number
+        id:
+          # ontology: #character_id
+          type: string
         betweenness:
+          # ontology: #haracter_node_betweenness
+          type: number
+        closeness:
+          # ontology: #character_node_closeness
           type: number
         degree:
+          # ontology: #character_node_degree
           type: integer
-        weightedDegree:
-          type: integer
-        id:
-          type: string
         eigenvector:
+          # ontology: #character_node_eigenvector
           type: number
+        weightedDegree:
+          # ontology: #character_node_weighted_degree
+          type: integer
+      required:
+        - id
+        - betweenness
+        - closeness
+        - degree
+        - eigenvector
+        - weightedDegree
     PlayMetrics:
+      # see dutil:get-play-metrics
       type: object
       properties:
-        averagePathLength:
-          type: number
-        diameter:
-          type: integer
+        id:
+          # ontology: #play_id
+          type: string
+        name:
+          # ontology: #play_name
+          type: string
+        corpus:
+          # ontology: #play_corpus_name
+          type: string
         nodes:
           type: array
           items:
             $ref: '#/components/schemas/NodeInPlayMetrics'
-        corpus:
-          type: string
         averageClustering:
+          # ontology: #play_network_average_clustering
           type: number
-        maxDegree:
-          type: integer
-        wikipediaLinkCount:
-          type: integer
-          nullable: true
-        id:
-          type: string
-        numEdges:
-          type: integer
-        size:
-          type: integer
         averageDegree:
+          # ontology: #play_network_average_degree
           type: number
-        name:
-          type: string
+        averagePathLength:
+          # ontology: #play_network_average_path_length
+          type: number
+        density:
+          # ontology: #play_network_density
+          type: number
+        diameter:
+          # ontology: #play_network_diameter
+          type: integer
+        maxDegree:
+          # ontology: #play_network_average_degree
+          type: integer
         maxDegreeIds:
+          # ontology: #play_network_max_degree_character_id
           type: array
           items:
             type: string
         numConnectedComponents:
+          # ontology: #play_network_num_connected_components
           type: integer
-        density:
-          type: number
+        numEdges:
+          # ontology: #play_network_num_edges
+          type: integer
+        size:
+          # ontology: #play_network_size
+          type: integer
+        wikipediaLinkCount:
+          # ontology: #play_num_of_wikipedia_links
+          type: integer
+          nullable: true
+      required:
+        - id
+        - name
+        - corpus
+        - nodes
+        - averageClustering
+        - averageDegree
+        - averagePathLength
+        - density
+        - diameter
+        - maxDegree
+        - maxDegreeIds
+        - numConnectedComponents
+        - numEdges
+        - size
+        - wikipediaLinkCount
     Character:
       type: object
       properties:
-        closeness:
+        id:
+          # ontology: #character_id
+          type: string
+        name:
+          # ontology: #character_name
+          type: string
+          nullable: true
+        isGroup:
+          # ontology: #character_is_group
+          type: boolean
+        gender:
+          # ontology: #character_gender
+          type: string
+          enum:
+          - MALE
+          - FEMALE
+          - UNKNOWN
+          nullable: true
+        betweenness:
+          # ontology: #character_node_betweenness
           type: number
           nullable: true
-        wikidataId:
-          type: string
-        betweenness:
+        closeness:
+          # ontology: #character_node_closeness
           type: number
           nullable: true
         degree:
+          # ontology: #character_node_degree
           type: integer
           nullable: true
-        weightedDegree:
-          type: integer
-          nullable: true
-        numOfSpeechActs:
-          type: integer
-        id:
-          type: string
         eigenvector:
+          # ontology: #character_node_eigenvector
           type: number
           nullable: true
         numOfScenes:
+          # ontology: #character_num_of_segments
+          type: integer
+        numOfSpeechActs:
+          # ontology: #character_num_of_sp
           type: integer
         numOfWords:
+          # ontology: #character_num_of_word_tokens
           type: integer
-        isGroup:
-          type: boolean
-        name:
-          type: string
+        weightedDegree:
+          # ontology: #character_node_weighted_degree
+          type: integer
           nullable: true
-        gender:
+        wikidataId:
+          # ontology: #character_wikidata_id
           type: string
-          enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
-          nullable: true
+      required:
+        - id
+        - name
+        - isGroup
+        - gender
+        - betweenness
+        - closeness
+        - degree
+        - eigenvector
+        - numOfScenes
+        - numOfSpeechActs
+        - numOfWords
+        - weightedDegree
     SpokenTextByCharacter:
+      # see api:get-spoken-text-by-character
       type: object
       properties:
-        roles:
-          type: array
-          nullable: true
-          items:
-            type: string
         id:
+          # ontology: #character_id
+          type: string
+        label:
+          # ontology: #character_name
           type: string
         isGroup:
+          # ontology: #character_is_group
           type: boolean
         gender:
           type: string
@@ -1946,29 +2289,49 @@ components:
           - FEMALE
           - UNKNOWN
           nullable: true
-        label:
-          type: string
+        roles:
+          # ontology: #character_role
+          type: array
+          nullable: true
+          items:
+            type: string
         text:
+          # ontology: #character_spoken_text
           type: array
           items:
             type: string
+      required:
+        - id
+        - label
+        - isGroup
+        - gender
+        - roles
+        - text
     PlayWithWikidataCharacter:
+      # see dutil:get-plays-with-character
       type: object
       properties:
-        characterName:
-          type: string
-        title:
-          type: string
         id:
           type: string
         uri:
           type: string
           format: url
+        title:
+          type: string
         authors:
           type: array
           items:
             type: string
+        characterName:
+          type: string
+      required:
+        - id
+        - uri
+        - title
+        - authors
+        - characterName
     DtsEntrypoint:
+      # see ddts:entry-point
       type: object
       properties:
         "@context":
@@ -1985,3 +2348,11 @@ components:
           type: string
         navigation:
           type: string
+      required:
+        - "@context"
+        - "@id"
+        - "@type"
+        - dtsVersion
+        - collection
+        - document
+        - navigation
