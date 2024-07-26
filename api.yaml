@@ -1475,15 +1475,6 @@ components:
         - female
     CorpusInCorpora:
       type: object
-      required:
-        - acronym
-        - title
-        - licence
-        - licenceUrl
-        - uri
-        - description
-        - name
-        - repository
       properties:
         acronym:
           description: https://dracor.org/ontology/dracor-api-ontology#corpus_acronym
@@ -1517,7 +1508,13 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#corpus_repository
           type: string
           format: url
+      required:
+        - name
+        - title
+        - acronym
+        - uri
     SourceInPlayMetadata:
+      # see dutil:get-source
       type: object
       properties:
         url:
@@ -1529,10 +1526,11 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#play_digital_source_name
           type: string
           nullable: true
-      required:
-        - url
-        - name
+      # currently neither name nor url is required, but we omit the source
+      # object if none of the properties is available
+      required: []
     ExternalReferenceResourceId:
+      # see dutil:get-authors
       type: object
       properties:
         type:
@@ -1545,6 +1543,7 @@ components:
         - type
         - ref
     AuthorInPlayInCorpus:
+      # see dutil:get-authors
       type: object
       properties:
         refs:
@@ -1576,17 +1575,17 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#play_author_shortname
           type: string
       required:
-        - refs
-        - alsoKnownAs
-        - fullnameEn
         - name
-        - shortnameEn
-        - nameEn
         - fullname
         - shortname
+        - refs
     PlayInCorpus:
+      # see api:corpus-index
       type: object
       properties:
+        uri:
+          type: string
+          format: url
         wikidataId:
           description: https://dracor.org/ontology/dracor-api-ontology#play_wikidata_id
           type: string
@@ -1644,33 +1643,21 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#play_subtitle_en
           type: string
       required:
-        - wikidataId
-        - yearWritten
-        - source
-        - yearPremiered
-        - title
-        - networkdataCsvUrl
         - id
-        - titleEn
-        - subtitle
-        - datePremiered
-        - yearPrinted
-        - yearNormalized
-        - authors
+        - uri
         - name
-        - networkSize
-        - subtitleEn
-    Corpus:
-      type: object
-      required:
-        - acronym
         - title
-        - licence
-        - licenceUrl
-        - description
-        - name
-        - plays
-        - repository
+        - authors
+        - yearNormalized
+        - yearPremiered
+        - yearPrinted
+        - yearWritten
+        - networkSize
+        - networkdataCsvUrl
+        - wikidataId
+    Corpus:
+      # see dutil:get-corpus-info
+      type: object
       properties:
         acronym:
           description: https://dracor.org/ontology/dracor-api-ontology#corpus_acronym
@@ -1702,7 +1689,12 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#corpus_repository
           type: string
           format: url
+      required:
+        - name
+        - title
+        - acronym
     PlayMetadata:
+      # see dutil:get-corpus-meta-data
       type: object
       properties:
         numOfSpeakersMale:
@@ -1785,9 +1777,6 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#play_year_written
           type: string
           nullable: true
-        playName:
-          description: https://dracor.org/ontology/dracor-api-ontology#play_name
-          type: string
         numOfP:
           description: https://dracor.org/ontology/dracor-api-ontology#play_num_of_paragraphs
           type: integer
@@ -1846,50 +1835,50 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#play_network_density
           type: number
       required:
-        - numOfSpeakersMale
-        - diameter
-        - wikidataId
-        - numOfSpeakersFemale
-        - averageClustering
-        - yearPremiered
-        - originalSourcePubPlace
-        - numOfSpeakers
-        - name
-        - wordCountStage
-        - normalizedGenre
-        - numOfL
-        - wordCountSp
-        - numOfSpeakersUnknown
-        - averagePathLength
-        - originalSourceYear
-        - maxDegree
-        - numEdges
-        - subtitle
-        - firstAuthor
-        - originalSourcePublisher
-        - libretto
-        - numConnectedComponents
-        - yearWritten
-        - playName
-        - numOfP
         - id
-        - wordCountText
-        - datePremiered
-        - size
-        - averageDegree
-        - yearPrinted
-        - numOfSegments
-        - numOfActs
+        - name
         - title
-        - wikipediaLinkCount
-        - digitalSource
-        - numOfPersonGroups
+        - subtitle
+        - wikidataId
+        - firstAuthor
         - yearNormalized
-        - numOfCoAuthors
-        - maxDegreeIds
-        - originalSourceNumberOfPages
+        - yearPremiered
+        - yearPrinted
+        - yearWritten
+        - datePremiered
+        - digitalSource
+        - libretto
+        - averageClustering
+        - averageDegree
+        - averagePathLength
         - density
+        - diameter
+        - maxDegree
+        - maxDegreeIds
+        - normalizedGenre
+        - numConnectedComponents
+        - numEdges
+        - numOfActs
+        - numOfCoAuthors
+        - numOfL
+        - numOfP
+        - numOfPersonGroups
+        - numOfSegments
+        - numOfSpeakers
+        - numOfSpeakersFemale
+        - numOfSpeakersMale
+        - numOfSpeakersUnknown
+        - originalSourceNumberOfPages
+        - originalSourcePublisher
+        - originalSourcePubPlace
+        - originalSourceYear
+        - size
+        - wikipediaLinkCount
+        - wordCountSp
+        - wordCountStage
+        - wordCountText
     SegmentItemInPlayMetadata:
+      # see dutil:get-play-info
       type: object
       properties:
         type:
@@ -1908,10 +1897,10 @@ components:
           type: string
       required:
         - type
-        - speakers
         - number
-        - title
     AuthorInPlayMetadata:
+      # FIXME: this schema seems to be identical to AuthorInPlayInCorpus, can we
+      # eliminate it?
       type: object
       properties:
         refs:
@@ -1942,15 +1931,12 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#play_author_shortname
           type: string
       required:
-        - refs
-        - alsoKnownAs
-        - fullnameEn
         - name
-        - shortnameEn
-        - nameEn
         - fullname
         - shortname
+        - refs
     CharacterInPlayMetadata:
+      # see dutil:get-play-info
       type: object
       properties:
         wikidataId:
@@ -1969,18 +1955,18 @@ components:
         sex:
           description: https://dracor.org/ontology/dracor-api-ontology#character_gender
           type: string
-          enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
           nullable: true
+          enum:
+            - MALE
+            - FEMALE
+            - UNKNOWN
       required:
-        - wikidataId
         - id
-        - isGroup
         - name
+        - isGroup
         - sex
     RelationItemInPlayMetadata:
+      # see dutil:get-relations
       type: object
       properties:
         directed:
@@ -2009,33 +1995,8 @@ components:
         - source
         - target
     Play:
+      # see dutil:get-play-info
       type: object
-      required:
-        - id
-        - name
-        - corpus
-        - title
-        - titleEn
-        - authors
-        - characters
-        - segments
-        - yearNormalized
-        - allInSegment
-        - libretto
-        - uri
-        - wikidataId
-        - yearPremiered
-        - allInIndex
-        - normalizedGenre
-        - subtitleEn
-        - source
-        - subtitle
-        - allInSegment
-        - yearWritten
-        - datePremiered
-        - yearPrinted
-        - relations
-        - originalSource
       properties:
         wikidataId:
           description: https://dracor.org/ontology/dracor-api-ontology#play_wikidata_id
@@ -2124,7 +2085,25 @@ components:
         originalSource:
           description: https://dracor.org/ontology/dracor-api-ontology#play_original_source_full_citation
           type: string
+      required:
+        - id
+        - uri
+        - name
+        - corpus
+        - title
+        - authors
+        - normalizedGenre
+        - libretto
+        - allInSegment
+        - allInIndex
+        - characters
+        - segments
+        - yearPremiered
+        - yearPrinted
+        - yearWritten
+        - yearNormalized
     NodeInPlayMetrics:
+      # see dutil:get-play-metrics
       type: object
       properties:
         closeness:
@@ -2146,13 +2125,14 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#character_node_eigenvector
           type: number
       required:
-        - closeness
-        - betweenness
-        - degree
-        - weightedDegree
         - id
+        - betweenness
+        - closeness
+        - degree
         - eigenvector
+        - weightedDegree
     PlayMetrics:
+      # see dutil:get-play-metrics
       type: object
       properties:
         averagePathLength:
@@ -2205,18 +2185,18 @@ components:
           description: https://dracor.org/ontology/dracor-api-ontology#play_network_density
           type: number
       required:
+        - id
+        - name
+        - corpus
+        - nodes
+        - wikipediaLinkCount
         - averagePathLength
         - diameter
-        - nodes
-        - corpus
         - averageClustering
         - maxDegree
-        - wikipediaLinkCount
-        - id
         - numEdges
         - size
         - averageDegree
-        - name
         - maxDegreeIds
         - numConnectedComponents
         - density
@@ -2274,20 +2254,20 @@ components:
           - UNKNOWN
           nullable: true
       required:
-        - closeness
-        - wikidataId
-        - betweenness
+        - id
+        - name
+        - isGroup
+        - gender
+        - numOfScenes
+        - numOfSpeechActs
+        - numOfWords
         - degree
         - weightedDegree
-        - numOfSpeechActs
-        - id
+        - closeness
+        - betweenness
         - eigenvector
-        - numOfScenes
-        - numOfWords
-        - isGroup
-        - name
-        - gender
     SpokenTextByCharacter:
+      # see api:get-spoken-text-by-character
       type: object
       properties:
         roles:
@@ -2318,13 +2298,14 @@ components:
           items:
             type: string
       required:
-        - roles
         - id
+        - label
         - isGroup
         - gender
-        - label
+        - roles
         - text
     PlayWithWikidataCharacter:
+      # see dutil:get-plays-with-character
       type: object
       properties:
         characterName:
@@ -2340,7 +2321,14 @@ components:
           type: array
           items:
             type: string
+      required:
+        - id
+        - uri
+        - title
+        - authors
+        - characterName
     DtsEntrypoint:
+      # see ddts:entry-point
       type: object
       properties:
         "@context":
@@ -2357,3 +2345,11 @@ components:
           type: string
         navigation:
           type: string
+      required:
+        - "@context"
+        - "@id"
+        - "@type"
+        - dtsVersion
+        - collection
+        - document
+        - navigation
