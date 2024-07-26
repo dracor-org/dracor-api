@@ -116,50 +116,11 @@
     <delete dir="${build.dir}"/>
   </target>
 
-  <target name="check.metrics" unless="${check.metrics}">
-    <echo  level="warning" message="metrics service is not available." />
-    <echo  level="warning" message="loading the service from github…" />
-    <get
-      src="https://github.com/dracor-org/dracor-metrics/archive/python.zip"
-      dest="${build.dir}/metrics.zip"/>
-    <unzip src="${build.dir}/metrics.zip" dest="${devel.dir}"/>
-    <exec
-      failifexecutionfails="false"
-      failonerror="false"
-      dir="${devel.dir}/dracor-metrics-python"
-      executable="pipenv">
-      <arg value="install"/>
-    </exec>
-    <exec spawn="true"
-      failifexecutionfails="false"
-      failonerror="false"
-      dir="${devel.dir}/dracor-metrics-python"
-      executable="pipenv">
-      <arg value="run"/>
-      <arg value="hug"/>
-      <arg value="-f"/>
-      <arg value="main.py"/>
-      <arg value="-p"/>
-      <arg value="8030"/>
-    </exec>
-    <echo  level="warning" message="metrics should be up and running." />
-  </target>
-
   <target
     name="devel"
     depends="check.install, xar, prepare.exist, init"
     description="create a development environment with dependencies included">
     <!-- now eXist is set up, we can start importing DraCors. -->
-    <get
-      src="http://localhost:8030/"
-      quiet="true" ignoreerrors="true"
-      dest="anttmp-${timestamp}"
-      skipexisting="false"/>
-    <condition property="check.metrics">
-      <available file="anttmp-${timestamp}" type="file" />
-    </condition>
-    <delete file="anttmp-${timestamp}"/>
-    <antcall target="check.metrics"/>
     <echo message="Start the database with `ant devel.startup`."/>
     <echo message="Use `ant load.corpus` to populate the database."/>
   </target>
