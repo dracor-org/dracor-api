@@ -57,6 +57,7 @@ declare variable $api:metadata-columns := (
   "numOfSegments",
   "wikipediaLinkCount",
   "numOfActs",
+  "numOfScenes",
   "wordCountText",
   "wordCountSp",
   "wordCountStage",
