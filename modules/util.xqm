@@ -623,7 +623,7 @@ declare function dutil:get-corpus-meta-data(
     else
       "several characters",
     "numOfSegments": count(dutil:get-segments($tei)),
-    "numOfActs": count($tei//tei:div[@type="act"]),
+    "numOfActs": count($tei//tei:body//tei:div[@type="act"]),
     "numOfSpeakers": $num-speakers,
     "numOfSpeakersMale": $num-male,
     "numOfSpeakersFemale": $num-female,
