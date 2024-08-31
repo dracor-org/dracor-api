@@ -110,22 +110,34 @@ declare function local:make-target ($path, $corpusname) {
   )
 };
 
-declare function local:get-repo-contents ($url-template) {
-  let $url := local:make-url($url-template, $config:corpus-repo-prefix)
+declare function local:get-repo-contents ($url-template, $sha) {
+  let $url := replace($url-template, "\{/sha\}", "/" || $sha || "?recursive=1")
   let $response := local:gh-request("get", $url)
   let $json := parse-json(util:base64-decode($response[2]))
   return $json
 };
 
-declare function local:update-sha ($corpusinfo, $before, $after) {
-  (: util:log-system-out($corpusinfo?commit || " | " || $before || " | " || $after), :)
-  if ($corpusinfo?commit eq $before) then (
-    (: util:log-system-out("UPDATING SHA " || $after), :)
-    dutil:record-sha($corpusinfo?name, $after)
-  ) else if ($corpusinfo?commit) then (
-    (: util:log-system-out("REMOVING SHA " || $corpusinfo?commit), :)
-    dutil:remove-corpus-sha($corpusinfo?name)
-  ) else ()
+declare function local:update-sha ($corpusinfo, $delivery) {
+  let $before := $delivery/@before/string()
+  let $after := $delivery/@after/string()
+  let $failures := count($delivery//file[@failure])
+  return (
+    if ($failures > 0) then (
+      util:log-system-out(
+        "Webhook failed to update " || $failures || " files. See " ||
+        $delivery/base-uri()
+      ),
+      dutil:remove-corpus-sha($corpusinfo?name)
+    ) else if ($corpusinfo?commit eq $before) then (
+      dutil:record-sha($corpusinfo?name, $after)
+    ) else if ($corpusinfo?commit eq $after) then (
+      (: Don't delete git SHA when it's already ath the $after to support
+         resubmissions of the same webhook payload. :)
+      ()
+    ) else if ($corpusinfo?commit) then (
+      dutil:remove-corpus-sha($corpusinfo?name)
+    ) else ()
+  )
 };
 
 declare function local:process-delivery () {
@@ -146,7 +158,8 @@ declare function local:process-delivery () {
       "info", "Processing webhook delivery: " || $local:delivery
     )
     let $contents-url := $delivery/@contents-url/string()
-    let $contents := local:get-repo-contents($contents-url)
+    let $trees-url := $delivery/@trees-url/string()
+    let $contents := local:get-repo-contents($trees-url, $after)
     let $files := $delivery//file[
       @path = "corpus.xml" or
       starts-with(@path, $config:corpus-repo-prefix)
@@ -156,7 +169,7 @@ declare function local:process-delivery () {
       let $path := $file/@path/string()
       let $source := if ($path = "corpus.xml")
         then local:make-url($contents-url, $path)
-        else $contents?*[?type = "file" and ?path = $path]?git_url
+        else $contents?tree?*[?type = "blob" and ?path = $path]?url
       let $target := local:make-target($path, $corpusname)
       let $action := $file/@action
       let $log := util:log-system-out(
@@ -176,7 +189,7 @@ declare function local:process-delivery () {
       return $result
     return (
       update insert attribute processed {current-dateTime()} into $delivery,
-      local:update-sha($info, $before, $after),
+      local:update-sha($info, $delivery),
       $delivery
     )
   else if ($delivery) then
