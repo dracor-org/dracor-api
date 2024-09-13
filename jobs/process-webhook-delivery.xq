@@ -122,6 +122,11 @@ declare function local:update-sha ($corpusinfo, $delivery) {
   let $after := $delivery/@after/string()
   let $failures := count($delivery//file[@failure])
   return (
+    util:log-system-out(
+      "corpus: " || $corpusinfo?commit ||
+      ", before: " || $before ||
+      ", after: " || $after
+    ),
     if ($failures > 0) then (
       util:log-system-out(
         "Webhook failed to update " || $failures || " files. See " ||
@@ -131,7 +136,7 @@ declare function local:update-sha ($corpusinfo, $delivery) {
     ) else if ($corpusinfo?commit eq $before) then (
       dutil:record-sha($corpusinfo?name, $after)
     ) else if ($corpusinfo?commit eq $after) then (
-      (: Don't delete git SHA when it's already ath the $after to support
+      (: Don't delete git SHA when it's already at the $after to support
          resubmissions of the same webhook payload. :)
       ()
     ) else if ($corpusinfo?commit) then (
@@ -144,7 +149,6 @@ declare function local:process-delivery () {
   let $delivery := collection($config:webhook-root)
     /delivery[@id = $local:delivery and not(@processed)]
   let $repo := $delivery/@repo/string()
-  let $before := $delivery/@before/string()
   let $after := $delivery/@after/string()
   let $corpus := collection($config:corpora-root)//tei:teiCorpus[
     tei:teiHeader//tei:publicationStmt/tei:idno[@type="repo" and . = $repo]
