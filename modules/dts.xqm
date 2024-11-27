@@ -3,7 +3,8 @@ xquery version "3.1";
 (:
  : DTS Endpoint
  : This module implements the DTS (Distributed Text Services) API specification – https://distributed-text-services.github.io/specifications/
- : developed for the DTS Hackathon https://distributed-text-services.github.io/workshops/events/2021-hackathon/ by Ingo Börner
+ : the original implementation was developed for the DTS Hackathon https://distributed-text-services.github.io/workshops/events/2021-hackathon/ by Ingo Börner
+ : it was later revised to meet the updated specification of 1-alpha (see https://github.com/dracor-org/dracor-api/pull/172)
  :)
 
 (: todo:
@@ -17,12 +18,11 @@ xquery version "3.1";
 
 
 
-(: ddts – DraCor-Implementation of DTS follows naming conventions, e.g. dutil :)
+(: ddts – DraCor-Implementation of DTS follows naming conventions of the dracor-api, e.g. dutil :)
 module namespace ddts = "http://dracor.org/ns/exist/v1/dts";
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
-import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -31,7 +31,8 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 (: Namespaces mentioned in the spec:  :)
 declare namespace dts = "https://w3id.org/dts/api#";
-declare namespace hydra = "https://www.w3.org/ns/hydra/core#";
+(: hydra was used in pre-alpha :)
+(: declare namespace hydra = "https://www.w3.org/ns/hydra/core#"; :)
 declare namespace dc = "http://purl.org/dc/terms/";
 
 (: Variables used in responses :)
@@ -42,20 +43,18 @@ declare variable $ddts:documents-base := $ddts:api-base || "/document" ;
 declare variable $ddts:navigation-base := $ddts:api-base || "/navigation" ;
 
 declare variable $ddts:ns-dts := "https://w3id.org/dts/api#" ;
-declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#" ;
+(: hydra was used in pre-alpha but has since been deprecated :)
+(: declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#" ; :)
 declare variable $ddts:ns-dc := "http://purl.org/dc/terms/" ;
 declare variable $ddts:dts-jsonld-context-url := "https://distributed-text-services.github.io/specifications/context/1-alpha1.json" ;
 declare variable $ddts:spec-version :=  "1-alpha" ; 
 
-(: fixed parts in response, e.g. namespaces :)
-(: TODO: check, maybe these need fixing for alpha!!:)
-declare variable $ddts:context :=
+(: JSON-ld context that (is) should be embedded in the responses:)
+(: The @context is hardcoded at some other places so this might be deprecated here :)
+declare variable $ddts:context := 
   map {
-      "@vocab": $ddts:ns-hydra,
-      "dc": $ddts:ns-dc,
-      "dts": $ddts:ns-dts
+      "@context": $ddts:dts-jsonld-context-url
   };
-
 
 (:
  : --------------------
