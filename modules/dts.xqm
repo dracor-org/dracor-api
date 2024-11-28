@@ -271,8 +271,19 @@ but in case of an error it is a sequence! :)
             else if ( $nav eq 'parents') then
             (: requested the parent collection of a document :)
             (: "DEBUG: This is called with playname: " || $playname :)
+            (: SHOULD sanity check the nav parameter FIXME :)
             local:child-readable-collection-with-parent-by-id($playname)
             else
+                (: Sanity Check $nav param, see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
+                if ( $nav and $nav != 'parents' ) then
+                (
+                        <rest:response>
+                        <http:response status="400"/>
+                        </rest:response>,
+                    "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
+                )
+                else
+                (: not sure if this should be allowed, maybe never get to this point:)
                 (: display as a readable collection :)
                 (: This currently causes a server errror :)
                 local:child-readable-collection-by-id($playname)
@@ -301,12 +312,13 @@ but in case of an error it is a sequence! :)
                     )
                     else
 
-
+                    (: SHOULD sanity check the nav parameter FIXME :)
                     if ( $nav eq "parents")
                     then
                         (: requesting the corpus + its parent, which will be the root-collection in the dracor-context :)
                         local:corpus-to-collection-with-parent-as-member($id)
                     else
+                        (: what is the value of $nav here? FIXME :)
                         (: return the collection by id :)
                         local:corpus-to-collection($id)
                         
