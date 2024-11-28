@@ -2173,10 +2173,11 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     }
 
      return
-
+     (: added @type = 'Navigation' to the response object see https://github.com/mromanello/DTS-validator/blob/6f1f0fb6c78a815411c6c5cce57840599dc2c475/NOTES.md#validation-reports-explained:)
      map{
          "@context" : $ddts:dts-jsonld-context-url,
          "@id" : $request-id,
+         "@type" : "Navigation",
          "dtsVersion" : $ddts:spec-version,
          "passage" : $passage,
          (: "collection" : $collection, :) (: this according to the spec:)
