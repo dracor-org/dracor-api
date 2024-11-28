@@ -1,10 +1,17 @@
 xquery version "3.1";
 
 (:
- : DTS Endpoint
+ : DTS Endpoints
+
  : This module implements the DTS (Distributed Text Services) API specification – https://distributed-text-services.github.io/specifications/
  : the original implementation was developed for the DTS Hackathon https://distributed-text-services.github.io/workshops/events/2021-hackathon/ by Ingo Börner
  : it was later revised to meet the updated specification of 1-alpha (see https://github.com/dracor-org/dracor-api/pull/172)
+ : 
+ : The DTS-Validator (https://github.com/mromanello/DTS-validator) was used to test the endpoints, see Readme on how to run locally;
+ : pytest --entry-endpoint=http://localhost:8088/api/v1/dts --html=report.html
+ : The validator does not use strict "1-alpha" but the later version "unstable". Therefore there might be some minor diviations
+ : from the spec version 1-alpha. These are marked in the code.
+ : https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained
  :)
 
 (: todo:
@@ -50,7 +57,7 @@ declare variable $ddts:dts-jsonld-context-url := "https://distributed-text-servi
 declare variable $ddts:spec-version :=  "1-alpha" ; 
 
 (: JSON-ld context that (is) should be embedded in the responses:)
-(: The @context is hardcoded at some other places so this might be deprecated here :)
+(: The @context is hardcoded at some other places so this might be deprecated :)
 declare variable $ddts:context := 
   map {
       "@context": $ddts:dts-jsonld-context-url
@@ -396,6 +403,8 @@ as map() {
  :
  : Helper function to transform a DraCor-Corpus to a DTS-Collection – https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-collection-containing-a-single-work
  :
+ : Here we probably had a DTS-Validator error which is due to changes from 1-alpha to "unstable": https://github.com/distributed-text-services/specifications/issues/250
+ :
  : @param $id Identifier of the corpus, e.g. "ger"
  :
  :)
@@ -417,6 +426,9 @@ as map() {
   (: assumes that it's a corpus one level below root-collection  :)
   let $totalParents := 1
   let $totalChildren := count( $teis )
+  
+  (: The property "totalItems" will become deprecated in the "unstable" spec see also https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
+  (: TODO: Will remove this later :)
   let $totalItems := count( $teis )
 
   let $members := for $tei in $teis
@@ -441,6 +453,8 @@ as map() {
  : Document to collection member
  :
  : Helper function to transform a DraCor-TEI-Document to a member in a DTS-Collection.
+ :
+ : Here we might have had a validation error of the DTS-Validator see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained
  :
  : @param $tei TEI representation of a play
  :
@@ -467,6 +481,9 @@ as map() {
     :)
     let $dts-document := $ddts:documents-base || "?resource=" || $uri || "{&amp;ref,start,end}" (: URI template:)
     let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri || "{&amp;ref,start,end,down}" (: URI template:)
+    
+    (: "unstable" adds a "collection" property :)
+    let $dts-collection := $ddts:collections-base || "?id=" || $uri || "{&amp;nav}" (: URI template:)
 
     return
         map {
@@ -479,6 +496,7 @@ as map() {
             "dublinCore" : $dublincore ,
             "document" : $dts-document, 
             "navigation" : $dts-navigation,
+            "collection" : $dts-collection ,
             "download": $dts-download
         }
 };
