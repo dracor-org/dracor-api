@@ -2142,7 +2142,8 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     let $collection := if ($collection-url != "") then $collection-url else $ddts:collections-base || "?id=" || $doc-uri || "{&amp;nav}"
     let $navigation := if ($navigation-url != "") then $navigation-url else $ddts:navigation-base || "?resource=" || $doc-uri || "{&amp;ref,start,end,down}" (: maybe add also page, althoug not plan to implement it now:)
     :)
-    let $passage := $ddts:documents-base || "{?resource,ref,start,end,mediaType}"
+    (: 'passage' has been renamed to 'document' in "unstable" see https://github.com/mromanello/DTS-validator/blob/6f1f0fb6c78a815411c6c5cce57840599dc2c475/NOTES.md#validation-reports-explained :)
+    let $document := $ddts:documents-base || "{?resource,ref,start,end,mediaType}"
     (: according to the spec this endpoint only includes passage and navigation in the Navigation object :)
     (: let $collection := $ddts:collections-base || "{?id,nav}" :)
     let $navigation := $ddts:navigation-base || "{?resource,ref,start,end,down}"
@@ -2169,8 +2170,8 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
          "@id" : $request-id,
          "@type" : "Navigation",
          "dtsVersion" : $ddts:spec-version,
-         (: TODO: this will be renamed to document in "unstable" :)
-         "passage" : $passage,
+         (: "passage" has been renamed to "document" in version "unstable" :)
+         "document" : $document,
          (: "collection" : $collection, :) (: this according to the spec:)
          "navigation" : $navigation,
          "resource" : $resource
