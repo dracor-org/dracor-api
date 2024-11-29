@@ -12,18 +12,8 @@ xquery version "3.1";
  : The validator does not use strict "1-alpha" but the later version "unstable". Therefore there might be some minor diviations
  : from the spec version 1-alpha. These are marked in the code.
  : https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained
+ : In general the aim is to implement the spec in a way that the Validator does not raises any errors.
  :)
-
-(: todo:
- : * Paginated Child Collection; Paginantion not implemented, will return Status code 501
- : * add dublin core metadata; only added language so far
- : * didn't manage to implement all fields in the link header on all levels when requesting a fragment
- : * citeStructure: does it represent the structure, e.g. the types, or is it like a TOC, e.g. list all five acts in a five act play? needs to be refactored
- : * add machine readble endpoint documentation
- : * code of navigation endpoint should be refactored, maybe also code of documents endpoint (fragments)
- : :)
-
-
 
 (: ddts – DraCor-Implementation of DTS follows naming conventions of the dracor-api, e.g. dutil :)
 module namespace ddts = "http://dracor.org/ns/exist/v1/dts";
@@ -54,7 +44,8 @@ declare variable $ddts:ns-dts := "https://w3id.org/dts/api#" ;
 (: declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#" ; :)
 declare variable $ddts:ns-dc := "http://purl.org/dc/terms/" ;
 declare variable $ddts:dts-jsonld-context-url := "https://distributed-text-services.github.io/specifications/context/1-alpha1.json" ;
-declare variable $ddts:spec-version :=  "1-alpha" ; 
+(: Implemented "unstable", was "1-alpha" :)
+declare variable $ddts:spec-version :=  "unstable" ; 
 
 (: JSON-ld context that (is) should be embedded in the responses:)
 (: The @context is hardcoded at some other places so this might be deprecated :)
@@ -368,7 +359,7 @@ as map() {
       "@id": $ddts:base-uri,
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
-      "totalItems": $totalChildren , (:! same as children:)
+      (:"totalItems": $totalChildren , :) (:! same as children:) (: totalItems is deprecated in "unstable" :)
       "totalParents": $totalParents ,
       "totalChildren": $totalChildren ,
       "title": $title,
@@ -403,7 +394,7 @@ as map() {
           "@type" : "Collection" ,
           "title" : $info?title ,
           "description" : $info?description ,
-          "totalItems" : $file-count ,
+          (: "totalItems" : $file-count , :) (: totalItems is deprecated in "unstable" :)
           "totalParents": 1 ,
           "totalChildren" : $file-count
         }
@@ -439,9 +430,8 @@ as map() {
   let $totalParents := 1
   let $totalChildren := count( $teis )
   
-  (: The property "totalItems" will become deprecated in the "unstable" spec see also https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
-  (: TODO: Will remove this later :)
-  let $totalItems := count( $teis )
+  (: The property "totalItems" has become deprecated in the "unstable" spec see also https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
+  (: let $totalItems := count( $teis ) :)
 
   let $members := for $tei in $teis
     return local:teidoc-to-collection-member($tei)
@@ -452,7 +442,7 @@ as map() {
       "@id": local:id-to-uri($corpusname), 
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
-      "totalItems" : $totalItems ,
+      (: removed totalItems here for "unstable" :)
       "totalParents": $totalParents ,
       "totalChildren": $totalChildren ,
       "title": $title,
@@ -502,7 +492,7 @@ as map() {
             "@id" : $uri ,
             "@type": "Resource" ,
             "title" : $titles?main ,
-            "totalItems": 0 ,
+            (:"totalItems": 0 , :) (: remove for "unstable" :)
             "totalParents": 1 ,
             "totalChildren": 0 ,
             "dublinCore" : $dublincore ,
@@ -2179,6 +2169,7 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
          "@id" : $request-id,
          "@type" : "Navigation",
          "dtsVersion" : $ddts:spec-version,
+         (: TODO: this will be renamed to document in "unstable" :)
          "passage" : $passage,
          (: "collection" : $collection, :) (: this according to the spec:)
          "navigation" : $navigation,
