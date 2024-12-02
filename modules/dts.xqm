@@ -1624,9 +1624,20 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: down=absent, ref=absent, start/end=absent --> 400 Bad Request Error :)
                 (: any other value of down than  1 :)    
+                
+                else if (not($ref) and not($start) and ($down eq "2") ) then
+                    (:
+                    First run of the DTS-Validation raised an error here:
 
+                    tests/test_navigation_endpoint.py::test_navigation_two_down_response_validity
+request URI: https://dev.dracor.org/api/v1/dts/navigation?resource=https://dev.dracor.org/id/test000001&down=2
+Reason: the API raises an error here (I understand this wasn't implemented fully yet). The expected behaviour is the following: retrieve a citation sub-tree containing children + grand-children; the corresponding Citable Units should be contained in the member property of the returned Navigation response object.
+                     :)
+                    
                 (: Level 2 :)
-                (: DEPRECATED:)
+                local:navigation-level2($tei)
+               
+            
                 (: Some in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
                 (: in the case of tei:body, it would be the top-level divisions of the body, normally "acts" – could also be "scenes" if there are no "acts"... but this case must be handled separately :)
                 else if ( $level and not($ref) ) then
@@ -1782,6 +1793,57 @@ declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI))
      
  };
 
+ (:~ 
+ : Navigate a resource on level 2
+ : There is a test in the DTS-Validator that tests for level 2.
+ :
+ : tests/test_navigation_endpoint.py::test_navigation_two_down_response_validity
+ : request URI: https://dev.dracor.org/api/v1/dts/navigation?resource=https://dev.dracor.org/id/test000001&down=2
+ : 
+ : The expected behaviour is the following: retrieve a citation sub-tree containing children + grand-children; 
+ : the corresponding Citable Units should be contained in the member property of the returned Navigation response object.
+ :)
+declare function local:navigation-level2($tei as element(tei:TEI)) {
+
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=2"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+
+    (: when requesting the resource include the level 1 divisions, e.g. front, body, back as members :)
+    (: TODO:should check if local:members-down-1 would work as well. This would reduce boiler plate code :)
+    let $member :=
+        (
+            (: include front = level 1 then followed by all children of front :)
+        if ($tei//tei:front) then ( 
+            local:citable-unit("front", 1, (), "front", $tei//tei:front, $doc-uri ) ,
+            local:members-down-1($tei//tei:front, "front", 1, $doc-uri)) 
+            else () ,
+
+        (: include body and its children :)
+        if ($tei//tei:body) then (
+            local:citable-unit("body", 1, (), "body", $tei//tei:body, $doc-uri ) ,
+            local:members-down-1($tei//tei:body, "body", 1, $doc-uri)) 
+
+         else () ,
+
+        (: include back and its children :)
+        if ($tei//tei:back) then (
+            local:citable-unit("back", 1, (), "back", $tei//tei:back, $doc-uri ) ,
+            local:members-down-1($tei//tei:back, "back", 1, $doc-uri)) 
+        else ()
+        )
+
+    
+    return
+    map:merge( ($basic-response-map, map{"member" : $member}) )
+
+ };
+
+
 (:~
 : Helper function to generate a CitableUnit
 :)
@@ -1931,6 +1993,7 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
 
     (: need to include something in ref and member :)
     (: first ref:)
+    (: HIER!! :)
     let $tei-fragment := local:get-fragment-of-doc($tei, $ref)[2]/node()/node() (: this also returns a respone object somehow; the real fragment is in tei:TEI/dts:wrapper/..:)
     let $cite-type := local:get-cite-type-from-tei-fragment($tei-fragment)
     let $level := local:get-level-from-ref($ref)
@@ -1983,6 +2046,9 @@ declare function local:members-down-1($tei-fragment as element(), $ref as xs:str
                         
                         else if ($item/name() eq "stage") then
                             $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
+                        
+                        else if ($item/name() eq "set") then
+                             $ref || "/set[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
 
                         else ""
                     
