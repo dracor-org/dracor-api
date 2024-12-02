@@ -1636,6 +1636,9 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                     
                 (: Level 2 :)
                 local:navigation-level2($tei)
+
+                else if (not($ref) and not($start) and ($down eq "3") ) then
+                    local:navigation-level3($tei) 
                
             
                 (: Some in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
@@ -1814,7 +1817,7 @@ declare function local:navigation-level2($tei as element(tei:TEI)) {
     let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
 
     (: when requesting the resource include the level 1 divisions, e.g. front, body, back as members :)
-    (: TODO:should check if local:members-down-1 would work as well. This would reduce boiler plate code :)
+    
     let $member :=
         (
             (: include front = level 1 then followed by all children of front :)
@@ -1834,6 +1837,52 @@ declare function local:navigation-level2($tei as element(tei:TEI)) {
         if ($tei//tei:back) then (
             local:citable-unit("back", 1, (), "back", $tei//tei:back, $doc-uri ) ,
             local:members-down-1($tei//tei:back, "back", 1, $doc-uri)) 
+        else ()
+        )
+
+    
+    return
+    map:merge( ($basic-response-map, map{"member" : $member}) )
+
+ };
+
+(:~ 
+ : Navigate a resource on level 3
+ :
+ : tests/test_navigation_endpoint.py::test_navigation_two_down_response_validity
+ : request URI: https://dev.dracor.org/api/v1/dts/navigation?resource=https://dev.dracor.org/id/test000001&down=3
+ :
+ : Does the same as local:navigation-level2 but also include grandchildren
+ :)
+declare function local:navigation-level3($tei as element(tei:TEI)) {
+
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=3"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+    
+    let $member :=
+        (
+            (: include front = level 1 then followed by all children and grandchildren of front :)
+        if ($tei//tei:front) then ( 
+            local:citable-unit("front", 1, (), "front", $tei//tei:front, $doc-uri ) ,
+            local:members-down-2($tei//tei:front, "front", 1, $doc-uri)) 
+            else () ,
+
+        (: include body and its children and grandchildren :)
+        if ($tei//tei:body) then (
+            local:citable-unit("body", 1, (), "body", $tei//tei:body, $doc-uri ) ,
+            local:members-down-2($tei//tei:body, "body", 1, $doc-uri)) 
+
+         else () ,
+
+        (: include back and its children and gradchildren :)
+        if ($tei//tei:back) then (
+            local:citable-unit("back", 1, (), "back", $tei//tei:back, $doc-uri ) ,
+            local:members-down-2($tei//tei:back, "back", 1, $doc-uri)) 
         else ()
         )
 
