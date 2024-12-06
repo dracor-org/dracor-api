@@ -1711,6 +1711,7 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                             if (starts-with($ref,"body")) then
                                 (: a problem could still be that the value of ref is not valid, check for this as well :)
                                 if ( local:validate-ref($ref, $tei) eq true() ) then
+                                    (: TODO: here maybe the error of the dts validator down=-1 occurs. Need to track from here  :)
                                     local:descendants-of-subdivision($tei, $ref, $down)
                                 else 
                                     (
@@ -2137,7 +2138,7 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
 
     (: need to include something in ref and member :)
     (: first ref:)
-    (: HIER!! :)
+    
     let $tei-fragment := local:get-fragment-of-doc($tei, $ref)[2]/node()/node() (: this also returns a respone object somehow; the real fragment is in tei:TEI/dts:wrapper/..:)
     let $cite-type := local:get-cite-type-from-tei-fragment($tei-fragment)
     let $level := local:get-level-from-ref($ref)
@@ -2156,6 +2157,11 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
         
         else if ($down eq "3") then
             local:members-down-3($tei-fragment, $ref, $level, $doc-uri)
+        
+        else if ($down eq "-1") then
+            let $maxCiteDepth := $basic-navigation-object?resource?citationTrees?1?maxCiteDepth
+            return
+                local:members-down-minus-1($tei-fragment, $ref, $level, $doc-uri, $maxCiteDepth)
         else ()
         
     
@@ -2264,6 +2270,20 @@ declare function local:members-down-3($tei-fragment, $ref, $level, $doc-uri) {
                 else ()            
                 
 };
+
+
+declare function local:members-down-minus-1($tei-fragment, $ref, $level, $doc-uri, $maxCiteDepth) {
+    (: we are starting at body so the level needs to be reduced by 1:)
+    if ($maxCiteDepth eq 2) then
+        local:members-down-1($tei-fragment, $ref, $level, $doc-uri)
+    else if ($maxCiteDepth eq 3) then
+        local:members-down-2($tei-fragment, $ref, $level, $doc-uri)
+    else if ($maxCiteDepth eq 4) then
+        local:members-down-3($tei-fragment, $ref, $level, $doc-uri)
+    else ()
+
+};
+
 
 
 (:~
