@@ -1643,6 +1643,9 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                
                 else if (not($ref) and not($start) and ($down eq "4") ) then
                     local:navigation-level4($tei) 
+                
+                else if (not($ref) and not($start) and ($down eq "-1") ) then
+                    local:navigation-whole-citeTree($tei)
 
 
                 (: Some in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
@@ -1939,6 +1942,49 @@ declare function local:navigation-level4($tei as element(tei:TEI)) {
 
  };
 
+(:~ 
+ : Navigate a resource: get whole citeTree
+ :
+ : produces the response on the navigation endpoint in which down=-1
+ :)
+declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
+
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=-1"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+    
+    
+
+    (: members can come from 
+    local:navigation-level1,local:navigation-level2, local:navigation-level4 
+    and local:navigation-level4 depending on the maximum cite depth :)
+
+    let $citeDepth := $basic-response-map?resource?citationTrees?1?maxCiteDepth
+    
+    (: members can come from 
+    local:navigation-level1,local:navigation-level2, local:navigation-level4 
+    and local:navigation-level4 depending on the maximum cite depth :)
+
+    let $member :=
+        if ($citeDepth eq 1) then
+            local:navigation-level1($tei)?member
+        else if ($citeDepth eq 2) then
+            local:navigation-level2($tei)?member
+        else if ($citeDepth eq 3) then
+            local:navigation-level3($tei)?member
+        else if ($citeDepth eq 4) then
+            local:navigation-level4($tei)?member
+        else
+            ()
+        
+    return 
+        map:merge( ($basic-response-map, map{"member" : $member}) )
+
+ };
 
 (:~
 : Helper function to generate a CitableUnit
@@ -1973,6 +2019,8 @@ declare function local:navigation-level4($tei as element(tei:TEI)) {
     else ()
 
  };
+
+
 
 (:~ 
 : This is the function to generate the response of the navigation endpoint in the original pre-alpha implementation
