@@ -1,28 +1,25 @@
 xquery version "3.1";
 
 (:
- : DTS Endpoint
+ : DTS Endpoints
+
  : This module implements the DTS (Distributed Text Services) API specification – https://distributed-text-services.github.io/specifications/
- : developed for the DTS Hackathon https://distributed-text-services.github.io/workshops/events/2021-hackathon/ by Ingo Börner
+ : the original implementation was developed for the DTS Hackathon https://distributed-text-services.github.io/workshops/events/2021-hackathon/ by Ingo Börner
+ : it was later revised to meet the updated specification of 1-alpha (see https://github.com/dracor-org/dracor-api/pull/172)
+ : 
+ : The DTS-Validator (https://github.com/mromanello/DTS-validator) was used to test the endpoints, see Readme on how to run locally;
+ : pytest --entry-endpoint=http://localhost:8088/api/v1/dts --html=report.html
+ : The validator does not use strict "1-alpha" but the later version "unstable". Therefore there might be some minor diviations
+ : from the spec version 1-alpha. These are marked in the code.
+ : https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained
+ : In general the aim is to implement the spec in a way that the Validator does not raises any errors.
  :)
 
-(: todo:
- : * Paginated Child Collection; Paginantion not implemented, will return Status code 501
- : * add dublin core metadata; only added language so far
- : * didn't manage to implement all fields in the link header on all levels when requesting a fragment
- : * citeStructure: does it represent the structure, e.g. the types, or is it like a TOC, e.g. list all five acts in a five act play? needs to be refactored
- : * add machine readble endpoint documentation
- : * code of navigation endpoint should be refactored, maybe also code of documents endpoint (fragments)
- : :)
-
-
-
-(: ddts – DraCor-Implementation of DTS follows naming conventions, e.g. dutil :)
+(: ddts – DraCor-Implementation of DTS follows naming conventions of the dracor-api, e.g. dutil :)
 module namespace ddts = "http://dracor.org/ns/exist/v1/dts";
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
-import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -31,7 +28,8 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 (: Namespaces mentioned in the spec:  :)
 declare namespace dts = "https://w3id.org/dts/api#";
-declare namespace hydra = "https://www.w3.org/ns/hydra/core#";
+(: hydra was used in pre-alpha :)
+(: declare namespace hydra = "https://www.w3.org/ns/hydra/core#"; :)
 declare namespace dc = "http://purl.org/dc/terms/";
 
 (: Variables used in responses :)
@@ -42,20 +40,19 @@ declare variable $ddts:documents-base := $ddts:api-base || "/document" ;
 declare variable $ddts:navigation-base := $ddts:api-base || "/navigation" ;
 
 declare variable $ddts:ns-dts := "https://w3id.org/dts/api#" ;
-declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#" ;
+(: hydra was used in pre-alpha but has since been deprecated :)
+(: declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#" ; :)
 declare variable $ddts:ns-dc := "http://purl.org/dc/terms/" ;
 declare variable $ddts:dts-jsonld-context-url := "https://distributed-text-services.github.io/specifications/context/1-alpha1.json" ;
-declare variable $ddts:spec-version :=  "1-alpha" ; 
+(: Implemented "unstable", was "1-alpha" :)
+declare variable $ddts:spec-version :=  "unstable" ; 
 
-(: fixed parts in response, e.g. namespaces :)
-(: TODO: check, maybe these need fixing for alpha!!:)
-declare variable $ddts:context :=
+(: JSON-ld context that (is) should be embedded in the responses:)
+(: The @context is hardcoded at some other places so this might be deprecated :)
+declare variable $ddts:context := 
   map {
-      "@vocab": $ddts:ns-hydra,
-      "dc": $ddts:ns-dc,
-      "dts": $ddts:ns-dts
+      "@context": $ddts:dts-jsonld-context-url
   };
-
 
 (:
  : --------------------
@@ -265,8 +262,19 @@ but in case of an error it is a sequence! :)
             else if ( $nav eq 'parents') then
             (: requested the parent collection of a document :)
             (: "DEBUG: This is called with playname: " || $playname :)
+            (: SHOULD sanity check the nav parameter FIXME :)
             local:child-readable-collection-with-parent-by-id($playname)
             else
+                (: Sanity Check $nav param, see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
+                if ( $nav and $nav != 'parents' ) then
+                (
+                        <rest:response>
+                        <http:response status="400"/>
+                        </rest:response>,
+                    "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
+                )
+                else
+                (: not sure if this should be allowed, maybe never get to this point:)
                 (: display as a readable collection :)
                 (: This currently causes a server errror :)
                 local:child-readable-collection-by-id($playname)
@@ -295,12 +303,13 @@ but in case of an error it is a sequence! :)
                     )
                     else
 
-
+                    (: SHOULD sanity check the nav parameter FIXME :)
                     if ( $nav eq "parents")
                     then
                         (: requesting the corpus + its parent, which will be the root-collection in the dracor-context :)
                         local:corpus-to-collection-with-parent-as-member($id)
                     else
+                        (: what is the value of $nav here? FIXME :)
                         (: return the collection by id :)
                         local:corpus-to-collection($id)
                         
@@ -350,7 +359,7 @@ as map() {
       "@id": $ddts:base-uri,
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
-      "totalItems": $totalChildren , (:! same as children:)
+      (:"totalItems": $totalChildren , :) (:! same as children:) (: totalItems is deprecated in "unstable" :)
       "totalParents": $totalParents ,
       "totalChildren": $totalChildren ,
       "title": $title,
@@ -385,7 +394,7 @@ as map() {
           "@type" : "Collection" ,
           "title" : $info?title ,
           "description" : $info?description ,
-          "totalItems" : $file-count ,
+          (: "totalItems" : $file-count , :) (: totalItems is deprecated in "unstable" :)
           "totalParents": 1 ,
           "totalChildren" : $file-count
         }
@@ -396,6 +405,8 @@ as map() {
  : Corpus to Collection
  :
  : Helper function to transform a DraCor-Corpus to a DTS-Collection – https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-collection-containing-a-single-work
+ :
+ : Here we probably had a DTS-Validator error which is due to changes from 1-alpha to "unstable": https://github.com/distributed-text-services/specifications/issues/250
  :
  : @param $id Identifier of the corpus, e.g. "ger"
  :
@@ -418,7 +429,9 @@ as map() {
   (: assumes that it's a corpus one level below root-collection  :)
   let $totalParents := 1
   let $totalChildren := count( $teis )
-  let $totalItems := count( $teis )
+  
+  (: The property "totalItems" has become deprecated in the "unstable" spec see also https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
+  (: let $totalItems := count( $teis ) :)
 
   let $members := for $tei in $teis
     return local:teidoc-to-collection-member($tei)
@@ -429,7 +442,7 @@ as map() {
       "@id": local:id-to-uri($corpusname), 
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
-      "totalItems" : $totalItems ,
+      (: removed totalItems here for "unstable" :)
       "totalParents": $totalParents ,
       "totalChildren": $totalChildren ,
       "title": $title,
@@ -442,6 +455,8 @@ as map() {
  : Document to collection member
  :
  : Helper function to transform a DraCor-TEI-Document to a member in a DTS-Collection.
+ :
+ : Here we might have had a validation error of the DTS-Validator see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained
  :
  : @param $tei TEI representation of a play
  :
@@ -468,18 +483,22 @@ as map() {
     :)
     let $dts-document := $ddts:documents-base || "?resource=" || $uri || "{&amp;ref,start,end}" (: URI template:)
     let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri || "{&amp;ref,start,end,down}" (: URI template:)
+    
+    (: "unstable" adds a "collection" property :)
+    let $dts-collection := $ddts:collections-base || "?id=" || $uri || "{&amp;nav}" (: URI template:)
 
     return
         map {
             "@id" : $uri ,
             "@type": "Resource" ,
             "title" : $titles?main ,
-            "totalItems": 0 ,
+            (:"totalItems": 0 , :) (: remove for "unstable" :)
             "totalParents": 1 ,
             "totalChildren": 0 ,
             "dublinCore" : $dublincore ,
             "document" : $dts-document, 
             "navigation" : $dts-navigation,
+            "collection" : $dts-collection ,
             "download": $dts-download
         }
 };
@@ -659,13 +678,14 @@ declare function local:generate-citationTree($tei as element(tei:TEI), $type as 
 declare function local:generate-citeStructure($tei as element(tei:TEI) ) {
     (: Generate citeStructure to be used in citationTree :)
 
-    let $set := if ($tei//tei:front/tei:set) then ("set") else ()
+    let $set := if ($tei//tei:front/tei:set) then ("setting") else ()
+    let $titlePage := if ($tei//tei:front/tei:titlePage) then ("title_page") else ()
     
     let $front-structure-types :=
 
         if ($tei//tei:front) then
             array {
-                for $front-sub-structure-type in (distinct-values($tei//tei:front/tei:div/@type/string() ), $set)
+                for $front-sub-structure-type in (distinct-values($tei//tei:front/tei:div/@type/string() ), $titlePage, $set)
                 return
                     map{ 
                         "@type" : "CiteStructure",
@@ -1216,6 +1236,7 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 return
                     $tei//tei:front/tei:set[$pos]
             (: tei:castList in tei:front :)
+            (: not sure if this is implemented; also depends on the encoding :)
             else if ( matches($ref, '^front.castList.\d+$') ) then
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
                 return
@@ -1224,6 +1245,14 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 let $pos := xs:int(replace(replace($ref, "front/castList\[",""),"\]",""))
                 return
                     $tei//tei:front/tei:castList[$pos]
+
+            (: tei:titlePage in tei:front:)
+            (: this is only xPath-ish :)
+            else if ( matches($ref, '^front/titlePage\[\d+\]$') ) then
+                let $pos := xs:int(replace(replace($ref, "front/titlePage\[",""),"\]",""))
+                return
+                    $tei//tei:front/tei:titlePage[$pos]
+
 
             (: body structures level 2 :)
             else if ( matches($ref, "^body.div.\d+$") ) then
@@ -1234,6 +1263,9 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
             else if ( matches($ref, "^body/div\[\d+\]$") ) then
                 let $pos := xs:integer(replace(replace($ref,"body/div\[",""),"\]",""))
                 return $tei//tei:body/tei:div[$pos]
+            
+            (: there are also cases in which we have a stage direction in body, without a div :)
+            (: TODO: implement, e.g. http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&ref=body/stage[1] :)
 
             (: back structures level 2 :)
             else if ( matches($ref, "^back.div.\d+$") ) then
@@ -1605,9 +1637,30 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
 
                 (: down=absent, ref=absent, start/end=absent --> 400 Bad Request Error :)
                 (: any other value of down than  1 :)    
+                
+                else if (not($ref) and not($start) and ($down eq "2") ) then
+                    (:
+                    First run of the DTS-Validation raised an error here:
 
+                    tests/test_navigation_endpoint.py::test_navigation_two_down_response_validity
+request URI: https://dev.dracor.org/api/v1/dts/navigation?resource=https://dev.dracor.org/id/test000001&down=2
+Reason: the API raises an error here (I understand this wasn't implemented fully yet). The expected behaviour is the following: retrieve a citation sub-tree containing children + grand-children; the corresponding Citable Units should be contained in the member property of the returned Navigation response object.
+                     :)
+                    
                 (: Level 2 :)
-                (: DEPRECATED:)
+                local:navigation-level2($tei)
+
+
+                else if (not($ref) and not($start) and ($down eq "3") ) then
+                    local:navigation-level3($tei) 
+               
+                else if (not($ref) and not($start) and ($down eq "4") ) then
+                    local:navigation-level4($tei) 
+                
+                else if (not($ref) and not($start) and ($down eq "-1") ) then
+                    local:navigation-whole-citeTree($tei)
+
+
                 (: Some in the case of tei:front, would contain the divisions tei:div of tei:front, which is also the tei:castList :)
                 (: in the case of tei:body, it would be the top-level divisions of the body, normally "acts" – could also be "scenes" if there are no "acts"... but this case must be handled separately :)
                 else if ( $level and not($ref) ) then
@@ -1679,7 +1732,20 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                                     </rest:response>,
                                     "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
                                     )
-                                
+                            (: the following block is experimental. See how I can get sub-divisions of front with, e.g. $down=1 as well :)
+                            else if (starts-with($ref, "front")) then
+                                (: validity of $ref is checked :)
+                                if ( local:validate-ref($ref, $tei) eq true() ) then
+                                    local:descendants-of-subdivision($tei, $ref, $down)
+                                else 
+                                    (
+                                     
+                                    <rest:response>
+                                        <http:response status="404"/>
+                                    </rest:response>,
+                                    "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
+                                    
+                                    )  
                             else
                                 (
                         <rest:response>
@@ -1763,10 +1829,194 @@ declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI))
      
  };
 
+ (:~ 
+ : Navigate a resource on level 2
+ : There is a test in the DTS-Validator that tests for level 2.
+ :
+ : tests/test_navigation_endpoint.py::test_navigation_two_down_response_validity
+ : request URI: https://dev.dracor.org/api/v1/dts/navigation?resource=https://dev.dracor.org/id/test000001&down=2
+ : 
+ : The expected behaviour is the following: retrieve a citation sub-tree containing children + grand-children; 
+ : the corresponding Citable Units should be contained in the member property of the returned Navigation response object.
+ :)
+declare function local:navigation-level2($tei as element(tei:TEI)) {
+
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=2"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+
+    (: when requesting the resource include the level 1 divisions, e.g. front, body, back as members :)
+    
+    let $member :=
+        (
+            (: include front = level 1 then followed by all children of front :)
+        if ($tei//tei:front) then ( 
+            local:citable-unit("front", 1, (), "front", $tei//tei:front, $doc-uri ) ,
+            local:members-down-1($tei//tei:front, "front", 1, $doc-uri)) 
+            else () ,
+
+        (: include body and its children :)
+        if ($tei//tei:body) then (
+            local:citable-unit("body", 1, (), "body", $tei//tei:body, $doc-uri ) ,
+            local:members-down-1($tei//tei:body, "body", 1, $doc-uri)) 
+
+         else () ,
+
+        (: include back and its children :)
+        if ($tei//tei:back) then (
+            local:citable-unit("back", 1, (), "back", $tei//tei:back, $doc-uri ) ,
+            local:members-down-1($tei//tei:back, "back", 1, $doc-uri)) 
+        else ()
+        )
+
+    
+    return
+    map:merge( ($basic-response-map, map{"member" : $member}) )
+
+ };
+
+(:~ 
+ : Navigate a resource on level 3
+ :
+ : tests/test_navigation_endpoint.py::test_navigation_two_down_response_validity
+ : request URI: https://dev.dracor.org/api/v1/dts/navigation?resource=https://dev.dracor.org/id/test000001&down=3
+ :
+ : Does the same as local:navigation-level2 but also include grandchildren
+ :)
+declare function local:navigation-level3($tei as element(tei:TEI)) {
+
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=3"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+    
+    let $member :=
+        (
+            (: include front = level 1 then followed by all children and grandchildren of front :)
+        if ($tei//tei:front) then ( 
+            local:citable-unit("front", 1, (), "front", $tei//tei:front, $doc-uri ) ,
+            local:members-down-2($tei//tei:front, "front", 1, $doc-uri)) 
+            else () ,
+
+        (: include body and its children and grandchildren :)
+        if ($tei//tei:body) then (
+            local:citable-unit("body", 1, (), "body", $tei//tei:body, $doc-uri ) ,
+            local:members-down-2($tei//tei:body, "body", 1, $doc-uri)) 
+
+         else () ,
+
+        (: include back and its children and gradchildren :)
+        if ($tei//tei:back) then (
+            local:citable-unit("back", 1, (), "back", $tei//tei:back, $doc-uri ) ,
+            local:members-down-2($tei//tei:back, "back", 1, $doc-uri)) 
+        else ()
+        )
+
+    
+    return
+    map:merge( ($basic-response-map, map{"member" : $member}) )
+
+ };
+
+(:~ 
+ : Navigate a resource on level 4
+ :
+ : Does the same as local:navigation-level3 but also include grand-grandchildren
+ :)
+declare function local:navigation-level4($tei as element(tei:TEI)) {
+
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=4"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+    
+    let $member :=
+        (
+            (: include front = level 1 then followed by all children and grandchildren of front :)
+        if ($tei//tei:front) then ( 
+            local:citable-unit("front", 1, (), "front", $tei//tei:front, $doc-uri ) ,
+            local:members-down-3($tei//tei:front, "front", 1, $doc-uri)) 
+            else () ,
+
+        (: include body and its children and grandchildren :)
+        if ($tei//tei:body) then (
+            local:citable-unit("body", 1, (), "body", $tei//tei:body, $doc-uri ) ,
+            local:members-down-3($tei//tei:body, "body", 1, $doc-uri)) 
+
+         else () ,
+
+        (: include back and its children and gradchildren :)
+        if ($tei//tei:back) then (
+            local:citable-unit("back", 1, (), "back", $tei//tei:back, $doc-uri ) ,
+            local:members-down-3($tei//tei:back, "back", 1, $doc-uri)) 
+        else ()
+        )
+
+    
+    return
+    map:merge( ($basic-response-map, map{"member" : $member}) )
+
+ };
+
+(:~ 
+ : Navigate a resource: get whole citeTree
+ :
+ : produces the response on the navigation endpoint in which down=-1
+ :)
+declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
+
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=-1"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+    
+    
+
+    (: members can come from 
+    local:navigation-level1,local:navigation-level2, local:navigation-level4 
+    and local:navigation-level4 depending on the maximum cite depth :)
+
+    let $citeDepth := $basic-response-map?resource?citationTrees?1?maxCiteDepth
+    
+    (: members can come from 
+    local:navigation-level1,local:navigation-level2, local:navigation-level4 
+    and local:navigation-level4 depending on the maximum cite depth :)
+
+    let $member :=
+        if ($citeDepth eq 1) then
+            local:navigation-level1($tei)?member
+        else if ($citeDepth eq 2) then
+            local:navigation-level2($tei)?member
+        else if ($citeDepth eq 3) then
+            local:navigation-level3($tei)?member
+        else if ($citeDepth eq 4) then
+            local:navigation-level4($tei)?member
+        else
+            ()
+        
+    return 
+        map:merge( ($basic-response-map, map{"member" : $member}) )
+
+ };
+
 (:~
 : Helper function to generate a CitableUnit
 :)
  declare function local:citable-unit($identifier, $level, $parent, $cite-type, $tei-fragment as element(), $resource ) {
+    (: not totally sure if this is bullet-proof :)
     let $dublinCore := local:extract-dc-from-tei-fragment($tei-fragment)
     
     (: This is not in the spec, but I would like to have a link to the document endpoint to easily request the passage :)
@@ -1788,14 +2038,21 @@ declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI))
 
 (:~
 : Helper function to extract dublin core metatada of a TEI fragment becoming a CiteableUnit
+: This is not the best function ever...
 :)
  declare function local:extract-dc-from-tei-fragment($tei-fragment as element()) {
+    if ($tei-fragment/parent::tei:body) then
+    
     if ($tei-fragment/name() eq "div") then
         if ($tei-fragment[tei:head]) then  map {"title" : normalize-space($tei-fragment/tei:head/text())}
         else ()
     else ()
 
+    else ()
+
  };
+
+
 
 (:~ 
 : This is the function to generate the response of the navigation endpoint in the original pre-alpha implementation
@@ -1912,6 +2169,7 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
 
     (: need to include something in ref and member :)
     (: first ref:)
+    
     let $tei-fragment := local:get-fragment-of-doc($tei, $ref)[2]/node()/node() (: this also returns a respone object somehow; the real fragment is in tei:TEI/dts:wrapper/..:)
     let $cite-type := local:get-cite-type-from-tei-fragment($tei-fragment)
     let $level := local:get-level-from-ref($ref)
@@ -1930,6 +2188,11 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
         
         else if ($down eq "3") then
             local:members-down-3($tei-fragment, $ref, $level, $doc-uri)
+        
+        else if ($down eq "-1") then
+            let $maxCiteDepth := $basic-navigation-object?resource?citationTrees?1?maxCiteDepth
+            return
+                local:members-down-minus-1($tei-fragment, $ref, $level, $doc-uri, $maxCiteDepth)
         else ()
         
     
@@ -1943,6 +2206,30 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
 };
 
 (:~ 
+: Construct an identifier of a CiteableUnit by counting preceeding siblings with the same name
+: pseudo xPath ...
+:)
+declare function local:generate-id-of-citeable-unit($parent-id as xs:string, $tei-fragment as element()) as xs:string {
+    if ($tei-fragment/name() eq "div") then 
+        $parent-id || "/div[" || xs:string(count($tei-fragment/preceding-sibling::tei:div) + 1) || "]"
+                        
+    else if ($tei-fragment/name() eq "sp") then
+        $parent-id || "/sp[" || xs:string(count($tei-fragment/preceding-sibling::tei:sp) + 1) || "]"
+                        
+    else if ($tei-fragment/name() eq "stage") then
+        $parent-id || "/stage[" || xs:string(count($tei-fragment/preceding-sibling::tei:stage) + 1) || "]" 
+                        
+    else if ($tei-fragment/name() eq "set") then
+        $parent-id || "/set[" || xs:string(count($tei-fragment/preceding-sibling::tei:set) + 1) || "]" 
+
+    else if ($tei-fragment/name() eq "titlePage") then
+        $parent-id || "/titlePage[" || xs:string(count($tei-fragment/preceding-sibling::tei:set) + 1) || "]"
+
+    else ""
+};
+
+
+(:~ 
 : Retrieve substructures one level down
 : parameter down eq "1"
 : this is used by local:descendants-of-subdivision to retrieve the member items that are one level below
@@ -1951,21 +2238,16 @@ declare function local:members-down-1($tei-fragment as element(), $ref as xs:str
     for $item in $tei-fragment/element()
             return
                 (: only for elements that are CiteableUnits :)
-                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+                if ( 
+                    $item/name() eq "div" or 
+                    $item/name() eq "sp" or 
+                    $item/name() eq "stage" or
+                    $item/name() eq "set" or 
+                    $item/name() eq "titlePage") then
 
                     (:need to construct an identifier for this element :)
-                    let $item-identifier :=
-                        
-                        if ($item/name() eq "div") then 
-                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
-                        
-                        else if ($item/name() eq "sp") then
-                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
-                        
-                        else if ($item/name() eq "stage") then
-                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
-
-                        else ""
+                    (: this should go into designated function :)
+                    let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
                     
                     return local:citable-unit($item-identifier, $level + 1 , $ref, local:get-cite-type-from-tei-fragment($item) , $item, $doc-uri )
                 else ()
@@ -1978,21 +2260,16 @@ declare function local:members-down-2($tei-fragment, $ref, $level, $doc-uri) {
                 
                 
                 (: only for elements that are CiteableUnits :)
-                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+            
+                if ( $item/name() eq "div" or 
+                    $item/name() eq "sp" or 
+                    $item/name() eq "stage" or
+                    $item/name() eq "set" or
+                    $item/name() eq "titlePage"
+                    ) then
 
                     (:need to construct an identifier for this element :)
-                    let $item-identifier :=
-                        
-                        if ($item/name() eq "div") then 
-                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
-                        
-                        else if ($item/name() eq "sp") then
-                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
-                        
-                        else if ($item/name() eq "stage") then
-                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
-
-                        else ""
+                    let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
                     
                     return
                     (: this and all it's sub elements:) 
@@ -2010,21 +2287,15 @@ declare function local:members-down-3($tei-fragment, $ref, $level, $doc-uri) {
                 
                 
                 (: only for elements that are CiteableUnits :)
-                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+                if ( $item/name() eq "div" or 
+                $item/name() eq "sp" or 
+                $item/name() eq "stage" or
+                $item/name() eq "set" or
+                $item/name() eq "titlePage"
+                ) then
 
                     (:need to construct an identifier for this element :)
-                    let $item-identifier :=
-                        
-                        if ($item/name() eq "div") then 
-                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
-                        
-                        else if ($item/name() eq "sp") then
-                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
-                        
-                        else if ($item/name() eq "stage") then
-                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
-
-                        else ""
+                    let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
                     
                     return
                     (: this and all it's sub elements:) 
@@ -2035,6 +2306,20 @@ declare function local:members-down-3($tei-fragment, $ref, $level, $doc-uri) {
                 else ()            
                 
 };
+
+
+declare function local:members-down-minus-1($tei-fragment, $ref, $level, $doc-uri, $maxCiteDepth) {
+    (: we are starting at body so the level needs to be reduced by 1:)
+    if ($maxCiteDepth eq 2) then
+        local:members-down-1($tei-fragment, $ref, $level, $doc-uri)
+    else if ($maxCiteDepth eq 3) then
+        local:members-down-2($tei-fragment, $ref, $level, $doc-uri)
+    else if ($maxCiteDepth eq 4) then
+        local:members-down-3($tei-fragment, $ref, $level, $doc-uri)
+    else ()
+
+};
+
 
 
 (:~
@@ -2090,6 +2375,8 @@ declare function local:get-cite-type-from-tei-fragment($tei-fragment as element(
         if ($tei-fragment/@type/string() eq "act") then "act"
         else if ($tei-fragment/@type/string() eq "scene") then "scene"
         else lower-case($tei-fragment/@type/string())
+    else if ($tei-fragment/name() eq "set") then "setting"
+    else if ($tei-fragment/name() eq "titlePage") then "title_page" 
     else "unknown" || "[Debug: " || $tei-fragment/name() || "]"
 };
 
@@ -2123,7 +2410,8 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     let $collection := if ($collection-url != "") then $collection-url else $ddts:collections-base || "?id=" || $doc-uri || "{&amp;nav}"
     let $navigation := if ($navigation-url != "") then $navigation-url else $ddts:navigation-base || "?resource=" || $doc-uri || "{&amp;ref,start,end,down}" (: maybe add also page, althoug not plan to implement it now:)
     :)
-    let $passage := $ddts:documents-base || "{?resource,ref,start,end,mediaType}"
+    (: 'passage' has been renamed to 'document' in "unstable" see https://github.com/mromanello/DTS-validator/blob/6f1f0fb6c78a815411c6c5cce57840599dc2c475/NOTES.md#validation-reports-explained :)
+    let $document := $ddts:documents-base || "{?resource,ref,start,end,mediaType}"
     (: according to the spec this endpoint only includes passage and navigation in the Navigation object :)
     (: let $collection := $ddts:collections-base || "{?id,nav}" :)
     let $navigation := $ddts:navigation-base || "{?resource,ref,start,end,down}"
@@ -2144,12 +2432,14 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     }
 
      return
-
+     (: added @type = 'Navigation' to the response object see https://github.com/mromanello/DTS-validator/blob/6f1f0fb6c78a815411c6c5cce57840599dc2c475/NOTES.md#validation-reports-explained:)
      map{
          "@context" : $ddts:dts-jsonld-context-url,
          "@id" : $request-id,
+         "@type" : "Navigation",
          "dtsVersion" : $ddts:spec-version,
-         "passage" : $passage,
+         (: "passage" has been renamed to "document" in version "unstable" :)
+         "document" : $document,
          (: "collection" : $collection, :) (: this according to the spec:)
          "navigation" : $navigation,
          "resource" : $resource
