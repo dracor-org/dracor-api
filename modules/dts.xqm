@@ -678,13 +678,14 @@ declare function local:generate-citationTree($tei as element(tei:TEI), $type as 
 declare function local:generate-citeStructure($tei as element(tei:TEI) ) {
     (: Generate citeStructure to be used in citationTree :)
 
-    let $set := if ($tei//tei:front/tei:set) then ("set") else ()
+    let $set := if ($tei//tei:front/tei:set) then ("setting") else ()
+    let $titlePage := if ($tei//tei:front/tei:titlePage) then ("title_page") else ()
     
     let $front-structure-types :=
 
         if ($tei//tei:front) then
             array {
-                for $front-sub-structure-type in (distinct-values($tei//tei:front/tei:div/@type/string() ), $set)
+                for $front-sub-structure-type in (distinct-values($tei//tei:front/tei:div/@type/string() ), $titlePage, $set)
                 return
                     map{ 
                         "@type" : "CiteStructure",
@@ -1235,6 +1236,7 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 return
                     $tei//tei:front/tei:set[$pos]
             (: tei:castList in tei:front :)
+            (: not sure if this is implemented; also depends on the encoding :)
             else if ( matches($ref, '^front.castList.\d+$') ) then
                 let $pos := xs:integer(tokenize($ref,'\.')[last()])
                 return
@@ -1243,6 +1245,14 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
                 let $pos := xs:int(replace(replace($ref, "front/castList\[",""),"\]",""))
                 return
                     $tei//tei:front/tei:castList[$pos]
+
+            (: tei:titlePage in tei:front:)
+            (: this is only xPath-ish :)
+            else if ( matches($ref, '^front/titlePage\[\d+\]$') ) then
+                let $pos := xs:int(replace(replace($ref, "front/titlePage\[",""),"\]",""))
+                return
+                    $tei//tei:front/tei:titlePage[$pos]
+
 
             (: body structures level 2 :)
             else if ( matches($ref, "^body.div.\d+$") ) then
@@ -1253,6 +1263,9 @@ declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:
             else if ( matches($ref, "^body/div\[\d+\]$") ) then
                 let $pos := xs:integer(replace(replace($ref,"body/div\[",""),"\]",""))
                 return $tei//tei:body/tei:div[$pos]
+            
+            (: there are also cases in which we have a stage direction in body, without a div :)
+            (: TODO: implement, e.g. http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&ref=body/stage[1] :)
 
             (: back structures level 2 :)
             else if ( matches($ref, "^back.div.\d+$") ) then
@@ -2003,6 +2016,7 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
 : Helper function to generate a CitableUnit
 :)
  declare function local:citable-unit($identifier, $level, $parent, $cite-type, $tei-fragment as element(), $resource ) {
+    (: not totally sure if this is bullet-proof :)
     let $dublinCore := local:extract-dc-from-tei-fragment($tei-fragment)
     
     (: This is not in the spec, but I would like to have a link to the document endpoint to easily request the passage :)
@@ -2208,6 +2222,9 @@ declare function local:generate-id-of-citeable-unit($parent-id as xs:string, $te
     else if ($tei-fragment/name() eq "set") then
         $parent-id || "/set[" || xs:string(count($tei-fragment/preceding-sibling::tei:set) + 1) || "]" 
 
+    else if ($tei-fragment/name() eq "titlePage") then
+        $parent-id || "/titlePage[" || xs:string(count($tei-fragment/preceding-sibling::tei:set) + 1) || "]"
+
     else ""
 };
 
@@ -2225,7 +2242,8 @@ declare function local:members-down-1($tei-fragment as element(), $ref as xs:str
                     $item/name() eq "div" or 
                     $item/name() eq "sp" or 
                     $item/name() eq "stage" or
-                    $item/name() eq "set" ) then
+                    $item/name() eq "set" or 
+                    $item/name() eq "titlePage") then
 
                     (:need to construct an identifier for this element :)
                     (: this should go into designated function :)
@@ -2242,10 +2260,13 @@ declare function local:members-down-2($tei-fragment, $ref, $level, $doc-uri) {
                 
                 
                 (: only for elements that are CiteableUnits :)
+            
                 if ( $item/name() eq "div" or 
                     $item/name() eq "sp" or 
                     $item/name() eq "stage" or
-                    $item/name() eq "set" ) then
+                    $item/name() eq "set" or
+                    $item/name() eq "titlePage"
+                    ) then
 
                     (:need to construct an identifier for this element :)
                     let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
@@ -2269,7 +2290,9 @@ declare function local:members-down-3($tei-fragment, $ref, $level, $doc-uri) {
                 if ( $item/name() eq "div" or 
                 $item/name() eq "sp" or 
                 $item/name() eq "stage" or
-                $item/name() eq "set") then
+                $item/name() eq "set" or
+                $item/name() eq "titlePage"
+                ) then
 
                     (:need to construct an identifier for this element :)
                     let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
@@ -2352,7 +2375,8 @@ declare function local:get-cite-type-from-tei-fragment($tei-fragment as element(
         if ($tei-fragment/@type/string() eq "act") then "act"
         else if ($tei-fragment/@type/string() eq "scene") then "scene"
         else lower-case($tei-fragment/@type/string())
-    else if ($tei-fragment/name() eq "set") then "setting" 
+    else if ($tei-fragment/name() eq "set") then "setting"
+    else if ($tei-fragment/name() eq "titlePage") then "title_page" 
     else "unknown" || "[Debug: " || $tei-fragment/name() || "]"
 };
 
