@@ -1711,7 +1711,6 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                             if (starts-with($ref,"body")) then
                                 (: a problem could still be that the value of ref is not valid, check for this as well :)
                                 if ( local:validate-ref($ref, $tei) eq true() ) then
-                                    (: TODO: here maybe the error of the dts validator down=-1 occurs. Need to track from here  :)
                                     local:descendants-of-subdivision($tei, $ref, $down)
                                 else 
                                     (
@@ -1720,7 +1719,20 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                                     </rest:response>,
                                     "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
                                     )
-                                
+                            (: the following block is experimental. See how I can get sub-divisions of front with, e.g. $down=1 as well :)
+                            else if (starts-with($ref, "front")) then
+                                (: validity of $ref is checked :)
+                                if ( local:validate-ref($ref, $tei) eq true() ) then
+                                    local:descendants-of-subdivision($tei, $ref, $down)
+                                else 
+                                    (
+                                     
+                                    <rest:response>
+                                        <http:response status="404"/>
+                                    </rest:response>,
+                                    "Not found: The identifier provided as parameter 'ref' does not match a citeable unit."
+                                    
+                                    )  
                             else
                                 (
                         <rest:response>
@@ -2012,11 +2024,16 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
 
 (:~
 : Helper function to extract dublin core metatada of a TEI fragment becoming a CiteableUnit
+: This is not the best function ever...
 :)
  declare function local:extract-dc-from-tei-fragment($tei-fragment as element()) {
+    if ($tei-fragment/parent::tei:body) then
+    
     if ($tei-fragment/name() eq "div") then
         if ($tei-fragment[tei:head]) then  map {"title" : normalize-space($tei-fragment/tei:head/text())}
         else ()
+    else ()
+
     else ()
 
  };
@@ -2175,6 +2192,27 @@ declare function local:descendants-of-subdivision($tei, $ref, $down) {
 };
 
 (:~ 
+: Construct an identifier of a CiteableUnit by counting preceeding siblings with the same name
+: pseudo xPath ...
+:)
+declare function local:generate-id-of-citeable-unit($parent-id as xs:string, $tei-fragment as element()) as xs:string {
+    if ($tei-fragment/name() eq "div") then 
+        $parent-id || "/div[" || xs:string(count($tei-fragment/preceding-sibling::tei:div) + 1) || "]"
+                        
+    else if ($tei-fragment/name() eq "sp") then
+        $parent-id || "/sp[" || xs:string(count($tei-fragment/preceding-sibling::tei:sp) + 1) || "]"
+                        
+    else if ($tei-fragment/name() eq "stage") then
+        $parent-id || "/stage[" || xs:string(count($tei-fragment/preceding-sibling::tei:stage) + 1) || "]" 
+                        
+    else if ($tei-fragment/name() eq "set") then
+        $parent-id || "/set[" || xs:string(count($tei-fragment/preceding-sibling::tei:set) + 1) || "]" 
+
+    else ""
+};
+
+
+(:~ 
 : Retrieve substructures one level down
 : parameter down eq "1"
 : this is used by local:descendants-of-subdivision to retrieve the member items that are one level below
@@ -2183,24 +2221,15 @@ declare function local:members-down-1($tei-fragment as element(), $ref as xs:str
     for $item in $tei-fragment/element()
             return
                 (: only for elements that are CiteableUnits :)
-                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+                if ( 
+                    $item/name() eq "div" or 
+                    $item/name() eq "sp" or 
+                    $item/name() eq "stage" or
+                    $item/name() eq "set" ) then
 
                     (:need to construct an identifier for this element :)
-                    let $item-identifier :=
-                        
-                        if ($item/name() eq "div") then 
-                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
-                        
-                        else if ($item/name() eq "sp") then
-                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
-                        
-                        else if ($item/name() eq "stage") then
-                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
-                        
-                        else if ($item/name() eq "set") then
-                             $ref || "/set[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
-
-                        else ""
+                    (: this should go into designated function :)
+                    let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
                     
                     return local:citable-unit($item-identifier, $level + 1 , $ref, local:get-cite-type-from-tei-fragment($item) , $item, $doc-uri )
                 else ()
@@ -2213,21 +2242,13 @@ declare function local:members-down-2($tei-fragment, $ref, $level, $doc-uri) {
                 
                 
                 (: only for elements that are CiteableUnits :)
-                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+                if ( $item/name() eq "div" or 
+                    $item/name() eq "sp" or 
+                    $item/name() eq "stage" or
+                    $item/name() eq "set" ) then
 
                     (:need to construct an identifier for this element :)
-                    let $item-identifier :=
-                        
-                        if ($item/name() eq "div") then 
-                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
-                        
-                        else if ($item/name() eq "sp") then
-                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
-                        
-                        else if ($item/name() eq "stage") then
-                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
-
-                        else ""
+                    let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
                     
                     return
                     (: this and all it's sub elements:) 
@@ -2245,21 +2266,13 @@ declare function local:members-down-3($tei-fragment, $ref, $level, $doc-uri) {
                 
                 
                 (: only for elements that are CiteableUnits :)
-                if ( $item/name() eq "div" or $item/name() eq "sp" or $item/name() eq "stage" ) then
+                if ( $item/name() eq "div" or 
+                $item/name() eq "sp" or 
+                $item/name() eq "stage" or
+                $item/name() eq "set") then
 
                     (:need to construct an identifier for this element :)
-                    let $item-identifier :=
-                        
-                        if ($item/name() eq "div") then 
-                            $ref || "/div[" || xs:string(count($item/preceding-sibling::tei:div) + 1) || "]"
-                        
-                        else if ($item/name() eq "sp") then
-                            $ref || "/sp[" || xs:string(count($item/preceding-sibling::tei:sp) + 1) || "]"
-                        
-                        else if ($item/name() eq "stage") then
-                            $ref || "/stage[" || xs:string(count($item/preceding-sibling::tei:stage) + 1) || "]" 
-
-                        else ""
+                    let $item-identifier := local:generate-id-of-citeable-unit($ref, $item)
                     
                     return
                     (: this and all it's sub elements:) 
@@ -2339,6 +2352,7 @@ declare function local:get-cite-type-from-tei-fragment($tei-fragment as element(
         if ($tei-fragment/@type/string() eq "act") then "act"
         else if ($tei-fragment/@type/string() eq "scene") then "scene"
         else lower-case($tei-fragment/@type/string())
+    else if ($tei-fragment/name() eq "set") then "setting" 
     else "unknown" || "[Debug: " || $tei-fragment/name() || "]"
 };
 
