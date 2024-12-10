@@ -1762,6 +1762,20 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                 (: valid requests end above :)
 
                 (: don't really know, when this could become true :)
+                
+                else if ($start and $end and $down) then
+                    (: "start and end AND (!) down" :)
+                     if ( local:validate-ref($start, $tei) eq true() and local:validate-ref($end, $tei) eq true()  ) then
+                        (: it is already checked if the value of down makes sense:) 
+                        local:citeable-units-by-start-end-with-members($tei, $start, $end, $down)
+                    else 
+                        (
+                        <rest:response>
+                            <http:response status="404"/>
+                        </rest:response>,
+                        "Not found: The identifier(s) provided as parameter 'start' and/or 'end' do not match a citeable unit."
+                        )
+                
                 else (: maybe return invalid request? or 404 :)
                 (
                 <rest:response>
@@ -2542,8 +2556,57 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     let $parent-end := if ($parent-string-end  eq "") then () else $parent-string-end
     let $end-object := local:citable-unit($end, $level-end, $parent-end, $cite-type-end, $tei-fragment-end, $doc-uri )
 
+    (: This also should include member! :)
+    (: assume that the fragment returned by the document endpoint is already useable and just use 
+    this for creating the members :)
+    (: e.g. http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4] :)
+    (: use the function local:get-fragment-range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) :)
+   let $tei_fragment := local:get-fragment-range($tei, $start, $end)/dts:wrapper
+   let $start-pos-in-parent := 
+        if ( matches($start, 'body/div\[\d+\]$')) then
+            xs:int(replace(replace($start, "body/div\[",""),"\]",""))
+        else 0
+        (: TODO: there are probably other cases I need to take care of :)
+        (: this will work only for elements of the same type on the same level! :)
+   
+   let $members := for $item at $pos in $tei_fragment/(tei:div|tei:stage|tei:sp)
+        let $cite-type-item := local:get-cite-type-from-tei-fragment($item)
+        let $item-id := if ($item/name() eq "div") 
+            then $parent-start || "/div[" || xs:string($start-pos-in-parent - 1 + $pos) || "]"
+        else if ($item/name() eq "sp") 
+            then $parent-start || "/sp[" || xs:string($start-pos-in-parent - 1 + $pos) || "]"
+        else if ($item/name() eq "stage") 
+            then $parent-start || "/stage[" || xs:string($start-pos-in-parent - 1 + $pos) || "]"
+        else "FAILED"
+        return
+            local:citable-unit($item-id, $level-start, $parent-start, $cite-type-item, $item, $doc-uri )
+    
+
     return 
-        map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}) )
+        map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}, map{"member" : $members}) ) 
+        
 
  };
-                
+
+(:~
+Produce response if start/end and down
+:)
+declare function local:citeable-units-by-start-end-with-members($tei, $start as xs:string, $end as xs:string, $down as xs:string) {
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end || "&amp;down=" || $down
+    
+    let $basic-navigation-object := local:navigation-basic-response($tei, $request-id, "", "", "")
+    
+    (: we implement this only if start and and is in the same parent fragment, e.g. body! :)
+
+    (: let $tei-fragment-start := local:get-fragment-of-doc($tei, $start)[2]/node()/node()
+    let $tei-fragment-end := local:get-fragment-of-doc($tei, $end)[2]/node()/node() :)
+
+    (: this would already get the right document snippet:)
+    (: http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4] :)
+
+    return
+    "Still work to be done"
+};            
