@@ -1021,6 +1021,15 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 return
                     ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() )
             
+            (: sp on level 3 – xpath-ish :)
+            (: body/div[x]/sp[x] :)
+            (: added this, need to debug :)
+            else if ( matches($start, "^body/div\[\d+\]/sp\[\d+\]$") ) then
+                let $div-pos := xs:int(replace(replace(tokenize($start,"/")[2],"div\[",""),"\]",""))
+                let $sp-pos := xs:int(replace(replace(tokenize($start, "/")[3], "sp\[",""),"\]",""))
+                return
+                    ( $tei//tei:body/tei:div[$div-pos]/tei:sp[$sp-pos] , $tei//tei:body/tei:div[$div-pos]/tei:sp[$sp-pos]/following-sibling::node() )
+
             (: structures on level 4 :)
             (: body/act/scene/sp|stage :)
             (: only xPath-ish ref values are supported here :)
@@ -1102,6 +1111,14 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 return
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() 
             
+            (: level3: sp in div :)
+            else if ( matches($start, "^body/div\[\d+\]/sp\[\d+\]$") ) then
+                let $div-pos := xs:int(replace(replace(tokenize($start,"/")[2],"div\[",""),"\]",""))
+                let $sp-pos := xs:int(replace(replace(tokenize($start, "/")[3], "sp\[",""),"\]",""))
+                return
+                    $tei//tei:body/tei:div[$div-pos]/tei:sp[$sp-pos]/following-sibling::node() 
+
+
             (: level4 structures :)
             (: sp on level 4 :)
             else if ( matches($end, "^body/div\[\d+\]/div\[\d+\]/sp\[\d+\]$") ) then
@@ -2585,15 +2602,20 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
                     else if ( $start eq "body" and $end eq "back" ) then 
                         ( $start-object, $end-object ) (: also probably nobody would request that :)
                     
-                    (: this is for debugging.. :)
-                    else if ($start eq "body/div[2]/sp[1]") then
-                    ("error") (: top_level_members_of_range does not work for body/div[2]/sp[1] :)
-                    (: the reason is that the document endpoint returns an empty wrapper element, e.g 
-                    http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]/sp[1]&end=body/div[2]/sp[5] :)
-                    
+
                     (: this works for body structures, e.g. /body/div[2] to /body/div[7] :)
                     (: somewhere before all is returned there should be a warning if something strange is requested :)
-                    else local:top_level_members_of_range($tei, $start, $end)
+                    else if (matches($start,"^body/div\[\d+\]$") ) then 
+                        local:top_level_members_of_range($tei, $start, $end)
+
+                    (: this is for debugging.. :)
+                    (: else if ($start eq "body/div[2]/sp[1]") then :)
+                    (: ("error") :) (: top_level_members_of_range does not work for body/div[2]/sp[1] :)
+                    (: the reason is that the document endpoint returns an empty wrapper element, e.g 
+                    http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]/sp[1]&end=body/div[2]/sp[5] :)
+                    (: this now returns a single member element :)
+                    
+                    else ()
     
 
     return 
@@ -2633,17 +2655,21 @@ declare function local:top_level_members_of_range($tei, $start as xs:string, $en
         (: this will work only for elements of the same type on the same level! :)
 
 
-        let $members := for $item at $pos in $tei_fragment/(tei:div|tei:stage|tei:sp)
+        let $members := 
+            for $item at $pos in $tei_fragment/(tei:div|tei:stage|tei:sp)
         
-        let $cite-type-item := local:get-cite-type-from-tei-fragment($item)
+                let $cite-type-item := local:get-cite-type-from-tei-fragment($item)
         
-        let $item-id := if ($item/name() eq "div") 
-            then $parent-start || "/div[" || xs:string($start-pos-in-parent - 1 + $pos) || "]"
-        (: if this is done for anything than div it is hard to get the start ID to start counting; I would need to
-        know with position is the stage/sp element in the parent div (which I can not get from the extracted TEI fragment) :)
-        else "unknown"
-        return
-            local:citable-unit($item-id, $level-start, $parent-start, $cite-type-item, $item, $doc-uri )
+                let $item-id := 
+                    if ($item/name() eq "div") 
+                        then $parent-start || "/div[" || xs:string($start-pos-in-parent - 1 + $pos) || "]"
+                (: if this is done for anything than div it is hard to get the start ID to start counting; I would need to
+                know with position is the stage/sp element in the parent div (which I can not get from the extracted TEI fragment) :)
+
+        
+                    else "unknown"
+            return
+                local:citable-unit($item-id, $level-start, $parent-start, $cite-type-item, $item, $doc-uri )
     
     return $members 
 
