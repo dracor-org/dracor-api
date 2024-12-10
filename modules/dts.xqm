@@ -1775,7 +1775,7 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                         <rest:response>
                             <http:response status="501"/>
                         </rest:response>,
-                        "Requesting children of members of the range with the used value of down is not implemented."
+                        "Requesting children of members of the range with the used value of down '" || $down || "' is not implemented."
                         )
                     else 
                         (
@@ -2695,9 +2695,16 @@ declare function local:citeable-units-by-start-end-with-members-down-1($tei, $st
             $end-object,
             local:members-down-1($tei//tei:back, "back", 1, $doc-uri)
             )
-
+        (: the more generic case: get the members without down then iterate and get the children of each item :)
+        (: this works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4]&down=2 :)
         else (
-            "a different range"
+            let $top_level_members := local:top_level_members_of_range($tei, $start, $end)
+            
+            for $item in $top_level_members
+                let $tei-fragment := local:get-fragment-of-doc($tei, $item?identifier)[2]/node()/node()[1] (: strage, but this yields the right result :)
+
+            return ( $item, local:members-down-1($tei-fragment, $item?identifier, 2, $doc-uri)) 
+              
         )
 
     return
