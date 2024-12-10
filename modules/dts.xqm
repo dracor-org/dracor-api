@@ -2585,6 +2585,12 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
                     else if ( $start eq "body" and $end eq "back" ) then 
                         ( $start-object, $end-object ) (: also probably nobody would request that :)
                     
+                    (: this is for debugging.. :)
+                    else if ($start eq "body/div[2]/sp[1]") then
+                    ("error") (: top_level_members_of_range does not work for body/div[2]/sp[1] :)
+                    (: the reason is that the document endpoint returns an empty wrapper element, e.g 
+                    http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]/sp[1]&end=body/div[2]/sp[5] :)
+                    
                     (: this works for body structures, e.g. /body/div[2] to /body/div[7] :)
                     (: somewhere before all is returned there should be a warning if something strange is requested :)
                     else local:top_level_members_of_range($tei, $start, $end)
@@ -2695,6 +2701,7 @@ declare function local:citeable-units-by-start-end-with-members-down-1($tei, $st
             $end-object,
             local:members-down-1($tei//tei:back, "back", 1, $doc-uri)
             )
+
         (: the more generic case: get the members without down then iterate and get the children of each item :)
         (: this works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4]&down=2 :)
         else (
