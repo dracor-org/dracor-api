@@ -1029,6 +1029,15 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $sp-pos := xs:int(replace(replace(tokenize($start, "/")[3], "sp\[",""),"\]",""))
                 return
                     ( $tei//tei:body/tei:div[$div-pos]/tei:sp[$sp-pos] , $tei//tei:body/tei:div[$div-pos]/tei:sp[$sp-pos]/following-sibling::node() )
+            
+            (: stage on level 3 - xpath-ish :)
+            (: body/div[x]/stage[y] :)
+            else if ( matches($start, "^body/div\[\d+\]/stage\[\d+\]$") ) then
+                let $div-pos := xs:int(replace(replace(tokenize($start,"/")[2],"div\[",""),"\]",""))
+                let $stage-pos := xs:int(replace(replace(tokenize($start, "/")[3], "stage\[",""),"\]",""))
+                return
+                    ( $tei//tei:body/tei:div[$div-pos]/tei:stage[$stage-pos] , $tei//tei:body/tei:div[$div-pos]/tei:stage[$stage-pos]/following-sibling::node() )
+            
 
             (: structures on level 4 :)
             (: body/act/scene/sp|stage :)
@@ -1112,11 +1121,19 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/following-sibling::node() 
             
             (: level3: sp in div :)
-            else if ( matches($start, "^body/div\[\d+\]/sp\[\d+\]$") ) then
-                let $div-pos := xs:int(replace(replace(tokenize($start,"/")[2],"div\[",""),"\]",""))
-                let $sp-pos := xs:int(replace(replace(tokenize($start, "/")[3], "sp\[",""),"\]",""))
+            else if ( matches($end, "^body/div\[\d+\]/sp\[\d+\]$") ) then
+                let $div-pos := xs:int(replace(replace(tokenize($end,"/")[2],"div\[",""),"\]",""))
+                let $sp-pos := xs:int(replace(replace(tokenize($end, "/")[3], "sp\[",""),"\]",""))
                 return
                     $tei//tei:body/tei:div[$div-pos]/tei:sp[$sp-pos]/following-sibling::node() 
+
+            (: stage on level 3 - xpath-ish :)
+            (: body/div[x]/stage[y] :)
+            else if ( matches($end, "^body/div\[\d+\]/stage\[\d+\]$") ) then
+                let $div-pos := xs:int(replace(replace(tokenize($end,"/")[2],"div\[",""),"\]",""))
+                let $stage-pos := xs:int(replace(replace(tokenize($end, "/")[3], "stage\[",""),"\]",""))
+                return
+                    $tei//tei:body/tei:div[$div-pos]/tei:stage[$stage-pos]/following-sibling::node()
 
 
             (: level4 structures :)
@@ -2605,8 +2622,12 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
 
                     (: this works for body structures, e.g. /body/div[2] to /body/div[7] :)
                     (: somewhere before all is returned there should be a warning if something strange is requested :)
-                    else if (matches($start,"^body/div\[\d+\]$") ) then 
+                    else if (matches($start,"^body/div\[\d+\]$") and  matches($end,"^body/div\[\d+\]$")) then 
                         local:top_level_members_of_range($tei, $start, $end)
+
+                    (: this works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000638&start=body/div[2]/stage[1]&end=body/div[2]/sp[5]  :)
+                    else if (matches($start, "^body/div\[\d+\]/(sp|stage)\[\d+\]") ) then
+                        local:sp_stage_level3_members_of_range($tei, $start, $end)
 
                     (: this is for debugging.. :)
                     (: else if ($start eq "body/div[2]/sp[1]") then :)
@@ -2621,6 +2642,48 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
     return 
         map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}, map{"member" : $members}) ) 
         
+
+ };
+
+(:~ should handle the case of getting the members of 
+start=body/div[x]/stage[y]&end=body/div[z]/sp[a] 
+:)
+ declare function local:sp_stage_level3_members_of_range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+    let $start-object := local:bordering-citeable-unit-of-range($tei, $start, $doc-uri)
+    let $end-object := local:bordering-citeable-unit-of-range($tei, $end, $doc-uri)
+    
+    (: not sure if I really need them because I can retrieve the fragment via the alreay implemented funcion – see other :)
+    let $start-xpath := "$tei//" || replace(replace($start, "/","/tei:"),"body", "tei:body")
+    
+    let $start-elem := util:eval($start-xpath)
+
+    (: get the number of preceding elements sp and stage inside the same parent. 
+    We need this to construct the identifier in the requested range  :)
+    let $preceding-sp-count := count($start-elem/preceding-sibling::tei:sp)
+    let $preceding-stage-count := count($start-elem/preceding-sibling::tei:stage)
+    
+    (: use the designated function to get the range  :)
+    let $tei-fragments := local:get-fragment-range($tei, $start, $end)/dts:wrapper/element()
+    let $parent := local:get-parent-from-ref($start) 
+    let $members := for $item in $tei-fragments 
+        let $identifier := 
+            if ($item/name() eq "sp") then 
+                (: we need to check how many sp are before this item and add the number of sp before the start of the range :)
+                let $pos := count($item/preceding-sibling::tei:sp) + $preceding-sp-count + 1
+                    return $parent || "/sp[" || xs:string($pos) || "]"
+            
+            else if ($item/name() eq "stage") then 
+                let $pos := count($item/preceding-sibling::tei:stage) + $preceding-stage-count + 1
+                    return $parent || "/stage[" || xs:string($pos) || "]"
+
+            else "unknown"
+        
+        return local:citable-unit($identifier, 3, $parent, local:get-cite-type-from-tei-fragment($item), $item, $doc-uri )
+    
+
+    return $members
 
  };
 
