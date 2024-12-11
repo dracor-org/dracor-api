@@ -1058,8 +1058,17 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 return
                     ( $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:stage[$stage-pos] , $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:stage[$stage-pos]/following-sibling::node() )
 
+            (: front :)
+            else if ( matches($start, "^front$") ) then ( $tei//tei:front, $tei//tei:front/following-sibling::node() )
+
+            (: body :)
+            else if ( matches($start, "^body$") ) then ( $tei//tei:body, $tei//tei:body/following-sibling::node() )
+
+            (: back :)
+            else if ( matches($start, "^back$") ) then ( $tei//tei:back, $tei//tei:back/following-sibling::node() )
+
             (: not matched by any rule :)
-            else()
+            else ()
 
 
     (:  node set two :)
@@ -1152,6 +1161,16 @@ declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs
                 let $stage-pos := xs:int(replace(replace(tokenize($end, "/")[last()],"stage\[",""),"\]","")) 
                 return
                     $tei//tei:body/tei:div[$div1-pos]/tei:div[$div2-pos]/tei:stage[$stage-pos]/following-sibling::node()
+
+            (: front :)
+            else if ( matches($end, "^front$") ) then $tei//tei:front/following-sibling::node() 
+
+            (: body :)
+            else if ( matches($end, "^body$") ) then  $tei//tei:body/following-sibling::node() 
+
+            (: back :)
+            else if ( matches($end, "^back$") ) then  $tei//tei:back/following-sibling::node() 
+
 
             (: not matched by any rule :)
             else()
@@ -2629,12 +2648,13 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
                     else if (matches($start, "^body/div\[\d+\]/(sp|stage)\[\d+\]") ) then
                         local:sp_stage_level3_members_of_range($tei, $start, $end)
 
-                    (: this is for debugging.. :)
-                    (: else if ($start eq "body/div[2]/sp[1]") then :)
-                    (: ("error") :) (: top_level_members_of_range does not work for body/div[2]/sp[1] :)
-                    (: the reason is that the document endpoint returns an empty wrapper element, e.g 
-                    http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]/sp[1]&end=body/div[2]/sp[5] :)
-                    (: this now returns a single member element :)
+                    else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]$") )
+                        then "implement body/div[1]/div[1]"
+
+                    (: e.g. ger000171:)
+                    (: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]/div[3]&end=body/div[2]/div[5]: :)
+                    else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]/(sp|stage)\[\d+\]") )
+                        then "implement body/div[1]/div[1]/sp|stage"
                     
                     else ()
     
@@ -2642,7 +2662,6 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
     return 
         map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}, map{"member" : $members}) ) 
         
-
  };
 
 (:~ should handle the case of getting the members of 
@@ -2678,11 +2697,11 @@ start=body/div[x]/stage[y]&end=body/div[z]/sp[a]
                 let $pos := count($item/preceding-sibling::tei:stage) + $preceding-stage-count + 1
                     return $parent || "/stage[" || xs:string($pos) || "]"
 
+            (: if the item is not a sp or a stage, this is probably not triggered :)
             else "unknown"
         
         return local:citable-unit($identifier, 3, $parent, local:get-cite-type-from-tei-fragment($item), $item, $doc-uri )
     
-
     return $members
 
  };
