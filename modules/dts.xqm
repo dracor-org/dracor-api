@@ -2114,16 +2114,14 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
 
 (:~
 : Helper function to extract dublin core metatada of a TEI fragment becoming a CiteableUnit
-: This is not the best function ever...
+: This is not the best function ever... and needs to be reworked
 :)
  declare function local:extract-dc-from-tei-fragment($tei-fragment as element()) {
-    if ($tei-fragment/parent::tei:body) then
-    
+ 
     if ($tei-fragment/name() eq "div") then
-        if ($tei-fragment[tei:head]) then  map {"title" : normalize-space($tei-fragment/tei:head/text())}
+        if ($tei-fragment[tei:head]) then  
+            map {"title" : normalize-space($tei-fragment/tei:head/text())}
         else ()
-    else ()
-
     else ()
 
  };
@@ -2649,7 +2647,7 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
                         local:sp_stage_level3_members_of_range($tei, $start, $end)
 
                     else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]$") )
-                        then "implement body/div[1]/div[1]"
+                        then local:scenes_of_acts_as_members_of_range($tei, $start, $end)
 
                     (: e.g. ger000171:)
                     (: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]/div[3]&end=body/div[2]/div[5]: :)
@@ -2704,6 +2702,13 @@ start=body/div[x]/stage[y]&end=body/div[z]/sp[a]
     
     return $members
 
+ };
+
+(:~ Get sences of an act as members of a range
+: works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]/div[3]&end=body/div[2]/div[5]
+:)
+ declare function local:scenes_of_acts_as_members_of_range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
+    "implement this"
  };
 
 (:~ Get the members of a range requested via the navigation endpoint
