@@ -2787,9 +2787,6 @@ declare function local:citeable-units-by-start-end-with-members-down-1($tei, $st
 
     (: we implement this only if start and and is in the same parent fragment, e.g. body! :)
 
-    (: let $tei-fragment-start := local:get-fragment-of-doc($tei, $start)[2]/node()/node()
-    let $tei-fragment-end := local:get-fragment-of-doc($tei, $end)[2]/node()/node() :)
-
     (: this would already get the right document snippet:)
     (: http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4] :)
 
@@ -2832,7 +2829,7 @@ declare function local:citeable-units-by-start-end-with-members-down-1($tei, $st
             for $item in $top_level_members
                 let $tei-fragment := local:get-fragment-of-doc($tei, $item?identifier)[2]/node()/node()[1] (: strage, but this yields the right result :)
 
-            return ( $item, local:members-down-1($tei-fragment, $item?identifier, 2, $doc-uri)) 
+            return ( $item, local:members-down-1($tei-fragment, $item?identifier, $item?level , $doc-uri)) 
               
         )
 
