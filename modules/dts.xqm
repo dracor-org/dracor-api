@@ -2114,7 +2114,7 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
 
 (:~
 : Helper function to extract dublin core metatada of a TEI fragment becoming a CiteableUnit
-: This is not the best function ever... and needs to be reworked
+: Includes dc metadata if there is a head element in the div
 :)
  declare function local:extract-dc-from-tei-fragment($tei-fragment as element()) {
  
@@ -2642,12 +2642,14 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
                     else if (matches($start,"^body/div\[\d+\]$") and  matches($end,"^body/div\[\d+\]$")) then 
                         local:top_level_members_of_range($tei, $start, $end)
 
+                    (: this works for body structures where we have a act - scene structure, e.g. from body/div[2]/div[3] to body/div[2]/div[5] :)
+                    else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]$") )
+                        then local:top_level_members_of_range($tei, $start, $end)
+
                     (: this works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000638&start=body/div[2]/stage[1]&end=body/div[2]/sp[5]  :)
                     else if (matches($start, "^body/div\[\d+\]/(sp|stage)\[\d+\]") ) then
                         local:sp_stage_level3_members_of_range($tei, $start, $end)
 
-                    else if ( matches($start, "^body/div\[\d+\]/div\[\d+\]$") )
-                        then local:scenes_of_acts_as_members_of_range($tei, $start, $end)
 
                     (: e.g. ger000171:)
                     (: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]/div[3]&end=body/div[2]/div[5]: :)
@@ -2704,16 +2706,11 @@ start=body/div[x]/stage[y]&end=body/div[z]/sp[a]
 
  };
 
-(:~ Get sences of an act as members of a range
-: works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]/div[3]&end=body/div[2]/div[5]
-:)
- declare function local:scenes_of_acts_as_members_of_range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
-    "implement this"
- };
 
 (:~ Get the members of a range requested via the navigation endpoint
 : this works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4]
-: but would not work for mixed element range, e.g. sp/stage
+: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]/div[3]&end=body/div[2]/div[5]
+but would not work for mixed element range, e.g. sp/stage
 :)
 declare function local:top_level_members_of_range($tei, $start as xs:string, $end as xs:string) {
 
@@ -2724,7 +2721,6 @@ declare function local:top_level_members_of_range($tei, $start as xs:string, $en
     (: assume that the fragment returned by the document endpoint is already useable and just use 
     this for creating the members :)
     (: e.g. http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4] :)
-    (: use the function local:get-fragment-range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) :)
     let $tei_fragment := local:get-fragment-range($tei, $start, $end)/dts:wrapper
    
     let $parent-string-start :=  local:get-parent-from-ref($start)
@@ -2737,9 +2733,11 @@ declare function local:top_level_members_of_range($tei, $start as xs:string, $en
         (: level 2 segments div :)
         if ( matches($start, 'body/div\[\d+\]$')) then
             xs:int(replace(replace($start, "body/div\[",""),"\]",""))
+        (: level 3 segments div :)
+        else if (matches($start, 'body/div\[\d+\]/div\[\d+\]$')) then
+            xs:int(replace(replace($start, "body/div\[\d+\]/div\[",""),"\]",""))
         else 0
-        (: TODO: there are probably other cases I need to take care of :)
-        (: this will work only for elements of the same type on the same level! :)
+        (: this will work only for elements div of the same type on the same level! :)
 
 
         let $members := 
