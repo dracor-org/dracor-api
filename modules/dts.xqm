@@ -1834,6 +1834,10 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                         (: TODO: here this probably does not work for all structures, need to check :) 
                         if ($down eq "1") then
                             local:citeable-units-by-start-end-with-members-down-1($tei, $start, $end, $down)
+                        else if ($down eq "2") then
+                            (: need to check if it is possible to go down; use maxCiteDepth:)
+                            (: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]&end=body/div[4]&down=2 :)
+                            local:citeable-units-by-start-end-with-members-down-2($tei, $start, $end, $down)
                         else
                             (
                         <rest:response>
@@ -2128,10 +2132,13 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
 : Includes dc metadata if there is a head element in the div
 :)
  declare function local:extract-dc-from-tei-fragment($tei-fragment as element()) {
- 
+    (: strangely this only works for body head, maybe in the front there are multiple head elements? 
+    one solution would be to restrict it to body div heads only, but it also works if i just take the first head element
+    to ultimately solve this one would need to have a closer look at the head elements
+    :)
     if ($tei-fragment/name() eq "div") then
         if ($tei-fragment[tei:head]) then  
-            map {"title" : normalize-space($tei-fragment/tei:head/text())}
+            map {"title" : normalize-space($tei-fragment/tei:head[1]/text())}
         else ()
     else ()
 
@@ -2858,4 +2865,66 @@ declare function local:start_end_share_same_parent($start as xs:string, $end as 
 :)
 declare function local:xpathish-id-to-xpath($id) {
     "$tei//" || replace(replace(replace(replace($id, "/", "/tei:"), "body", "tei:body"), "front", "tei:front"), "back", "tei:back")
+};
+
+(:~ Go down two levels when requesting a range 
+: http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=body/div[2]&end=body/div[4]&down=2
+:)
+declare function local:citeable-units-by-start-end-with-members-down-2($tei, $start as xs:string, $end as xs:string, $down as xs:string) {
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end || "&amp;down=" || $down
+    
+    let $basic-navigation-object := local:navigation-basic-response($tei, $request-id, "", "", "")
+    
+    let $start-object := local:bordering-citeable-unit-of-range($tei, $start, $doc-uri)
+    let $end-object := local:bordering-citeable-unit-of-range($tei, $end, $doc-uri)
+
+    let $members := 
+        if ($start eq "front" and $end eq "body") then
+        (
+            $start-object,
+            (: for the body we can not go down 2 :)
+            local:members-down-1($tei//tei:front, "front", 1, $doc-uri),
+            $end-object,
+            local:members-down-2($tei//tei:body, "body", 1, $doc-uri)
+        )
+
+        else if ($start eq "front" and $end eq "back") then 
+            let $body := local:citable-unit("body", 1, (), "body", $tei//tei:body, $doc-uri )
+            return
+                (
+                    $start-object,
+                    local:members-down-1($tei//tei:front, "front", 1, $doc-uri),
+                    $body,
+                    (: body can go down 2, the others not!:)
+                    local:members-down-2($tei//tei:body, "body", 1, $doc-uri),
+                    $end-object,
+                    local:members-down-1($tei//tei:back, "back", 1, $doc-uri)
+                )
+        
+        else if ($start eq "body" and $end eq "back") then 
+            (
+            $start-object,
+            (: body can go down 2 back probably not :)
+            local:members-down-2($tei//tei:body, "body", 1, $doc-uri),
+            $end-object,
+            local:members-down-1($tei//tei:back, "back", 1, $doc-uri)
+            )
+
+        (: the more generic case: get the members without down then iterate and get the children of each item :)
+        (: this works for http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000638&start=body/div[2]&end=body/div[4]&down=2 :)
+        else (
+            let $top_level_members := local:top_level_members_of_range($tei, $start, $end)
+            
+            for $item in $top_level_members
+                let $tei-fragment := local:get-fragment-of-doc($tei, $item?identifier)[2]/node()/node()[1] (: strage, but this yields the right result :)
+
+            return ( $item, local:members-down-2($tei-fragment, $item?identifier, $item?level , $doc-uri)) 
+              
+        )
+
+    return
+    map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}, map{"member" : $members}) ) 
 };
