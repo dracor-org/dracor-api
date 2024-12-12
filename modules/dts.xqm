@@ -1842,6 +1842,10 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                             (: this only make sense for a strange range of front to body and then three down, e.g.
                             http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/ger000171&start=front&end=body&down=3 :)
                             local:citeable-units-by-start-end-with-members-down-3($tei, $start, $end, $down)
+                        
+                        else if ($down eq "-1") then  
+                            (: the whole cite tree of the range :)
+                            local:navigation-range-whole-citeTree($tei, $start, $end)
                         else
                             (
                         <rest:response>
@@ -2989,10 +2993,33 @@ declare function local:citeable-units-by-start-end-with-members-down-3($tei as e
             for $item in $top_level_members
                 let $tei-fragment := local:get-fragment-of-doc($tei, $item?identifier)[2]/node()/node()[1] (: strage, but this yields the right result :)
 
-            return ( $item, local:members-down-3($tei-fragment, $item?identifier, $item?level , $doc-uri)) 
+            return ( $item, local:members-down-3($tei-fragment, $item?identifier, $item?level , $doc-uri))  
               
         )
 
     return
     map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}, map{"member" : $members}) )
+};
+
+
+(:~ Get the whole citeTree of a range 
+: Because there are currently no sanity checks for the down parameter in place, requesting down eq 3 should always do the trick
+:)
+declare function local:navigation-range-whole-citeTree($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
+    let $doc-id := $tei/@xml:id/string()
+    let $doc-uri := local:id-to-uri($doc-id)
+     
+    (:Will add down parameter here:)
+    let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end || "&amp;down=-1"
+     
+    let $basic-response-map := local:navigation-basic-response($tei, $request-id, "", "", "") (: use the default uri templates:)
+    
+    
+
+    (: members can come from local:citeable-units-by-start-end-with-members-down-3($tei as element(tei:TEI), $start as xs:string, $end as xs:string, $down as xs:string):)
+
+    let $member := local:citeable-units-by-start-end-with-members-down-3($tei,$start,$end,"3")?member
+        
+    return 
+        map:merge( ($basic-response-map, map{"member" : $member}) )
 };
