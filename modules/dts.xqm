@@ -1652,9 +1652,19 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
                 (: down = absent ref = absent start/end = present --> Information about the CitableUnits identified by start and by end. No member property in the Navigation object. :)
                 else if ( not($down) and not($ref) and ($start and $end) ) then 
                     (: check if start and end are valid:)
-
                     if ( local:validate-ref($start, $tei) eq true() and local:validate-ref($end, $tei) eq true()  ) then
-                        local:citeable-units-by-start-end($tei, $start, $end)
+                        (: when requesting structures deeper down we expect that start and end have the same parent
+                        i.e. it is not implemented to get the last two scenes of the first act and the first scene of the second act
+                        Don't know if the specification would allow for that but it would have to be implemented in a different way than it is currently :)
+                        if ( local:start_end_share_same_parent($start, $end, $tei) eq true() ) then
+                            local:citeable-units-by-start-end($tei, $start, $end)
+                        else 
+                            (
+                        <rest:response>
+                            <http:response status="501"/>
+                        </rest:response>,
+                        "Not implemented: It is not possible to get a range if the citeable units identified by start and and do not share the same parent."
+                        )
                     else 
                         (
                         <rest:response>
@@ -1820,7 +1830,8 @@ Reason: the API raises an error here (I understand this wasn't implemented fully
                     (: "start and end AND (!) down" :)
                     (: not everything can be implemented; I need to check here if the request is supported :)
                      if ( local:validate-ref($start, $tei) eq true() and local:validate-ref($end, $tei) eq true()  ) then
-                        (: it is already checked if the value of down makes sense:) 
+                        (: it is already checked if the value of down makes sense:)
+                        (: TODO: here this probably does not work for all structures, need to check :) 
                         if ($down eq "1") then
                             local:citeable-units-by-start-end-with-members-down-1($tei, $start, $end, $down)
                         else
@@ -2827,4 +2838,27 @@ declare function local:citeable-units-by-start-end-with-members-down-1($tei, $st
 
     return
     map:merge( ($basic-navigation-object, map{"start" : $start-object}, map{"end" : $end-object}, map{"member" : $members}) ) 
-};            
+};
+
+
+(:~ Checks if the citeable units identified by start and end share the same parent:)
+declare function local:start_end_share_same_parent($start as xs:string, $end as xs:string, $tei as element(tei:TEI)) {
+    (: we expect that start and end have been validated already by the function validate-ref
+    which uses the xPath: "^(body|front|back)(/(div|stage|sp|set|castList)\[\d+\])*?$"
+    this prevents us of having any xPath functions called :)
+    (: the problem is that the xPaths do not include namespaces :)
+    let $start-xpath := local:xpathish-id-to-xpath($start)
+    let $end-xpath := local:xpathish-id-to-xpath($end)
+    return
+        if ( util:eval($start-xpath)/parent::element() eq util:eval($end-xpath)/parent::element() ) then
+            true()
+        else
+            false()
+};
+
+(:~ Transforms a xPath-ish identifier to a string that is a real xPath an can be evaluated with util:eval
+: It is necessary to make sure that the xPath evaluated is actually safe, i.e. use validate-ref function before passing something on to util:eval
+:)
+declare function local:xpathish-id-to-xpath($id) {
+    "$tei//" || replace(replace(replace(replace($id, "/", "/tei:"), "body", "tei:body"), "front", "tei:front"), "back", "tei:back")
+};
