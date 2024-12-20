@@ -1736,6 +1736,7 @@ components:
         datePremiered:
           # ontology: #play_date_premiered
           type: string
+          nullable: true
         normalizedGenre:
           # ontology: #play_genre_normalized
           type: string
