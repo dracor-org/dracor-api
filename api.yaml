@@ -1958,6 +1958,8 @@ components:
             - MALE
             - FEMALE
             - UNKNOWN
+        role:
+          type: string
         wikidataId:
           # ontology: #character_wikidata_id
           type: string
@@ -2226,6 +2228,8 @@ components:
           - FEMALE
           - UNKNOWN
           nullable: true
+        role:
+          type: string
         betweenness:
           # ontology: #character_node_betweenness
           type: number
