@@ -3,16 +3,16 @@ xquery version "3.1";
 (:
  : DTS Endpoints
 
- : This module implements the DTS (Distributed Text Services) API specification – https://distributed-text-services.github.io/specifications/
+ : This module implements the DTS (Distributed Text Services) API Specification – https://distributed-text-services.github.io/specifications/
  : the original implementation was developed for the DTS Hackathon https://distributed-text-services.github.io/workshops/events/2021-hackathon/ by Ingo Börner
- : it was later revised to meet the updated specification of 1-alpha (see https://github.com/dracor-org/dracor-api/pull/172)
+ : it was later revised to meet the updated specification of 1-alpha (see https://github.com/dracor-org/dracor-api/pull/172) 
+ : or, more precisely, "unstable" as of December 2024.
  : 
- : The DTS-Validator (https://github.com/mromanello/DTS-validator) was used to test the endpoints, see Readme on how to run locally;
+ : The DTS-Validator (https://github.com/mromanello/DTS-validator) was used to test the endpoints, see Readme there on how to run locally;
  : pytest --entry-endpoint=http://localhost:8088/api/v1/dts --html=report.html
- : The validator does not use strict "1-alpha" but the later version "unstable". Therefore there might be some minor diviations
- : from the spec version 1-alpha. These are marked in the code.
+ : The validator does not use strict "1-alpha" but the later version "unstable". 
  : https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained
- : In general the aim is to implement the spec in a way that the Validator does not raises any errors.
+ : In general the aim is to implement the spec in a way that the Validator does not raises any errors which as of Dec 16th 2024 is the case.
  :)
 
 (: ddts – DraCor-Implementation of DTS follows naming conventions of the dracor-api, e.g. dutil :)
@@ -28,9 +28,9 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 (: Namespaces mentioned in the spec:  :)
 declare namespace dts = "https://w3id.org/dts/api#";
-(: hydra was used in pre-alpha :)
-(: declare namespace hydra = "https://www.w3.org/ns/hydra/core#"; :)
 declare namespace dc = "http://purl.org/dc/terms/";
+(: there are others, see the JSON-LD context at https://distributed-text-services.github.io/specifications/context/1-alpha1.json 
+: which are not in use here :)
 
 (: Variables used in responses :)
 declare variable $ddts:base-uri := replace($config:api-base, "/api/v1","") ;
@@ -40,15 +40,15 @@ declare variable $ddts:documents-base := $ddts:api-base || "/document" ;
 declare variable $ddts:navigation-base := $ddts:api-base || "/navigation" ;
 
 declare variable $ddts:ns-dts := "https://w3id.org/dts/api#" ;
-(: hydra was used in pre-alpha but has since been deprecated :)
-(: declare variable $ddts:ns-hydra := "https://www.w3.org/ns/hydra/core#" ; :)
 declare variable $ddts:ns-dc := "http://purl.org/dc/terms/" ;
 declare variable $ddts:dts-jsonld-context-url := "https://distributed-text-services.github.io/specifications/context/1-alpha1.json" ;
-(: Implemented "unstable", was "1-alpha" :)
+
+(: Implemented "unstable", needs to be changed when there is a stable version 1 :)
 declare variable $ddts:spec-version :=  "unstable" ; 
 
 (: JSON-ld context that (is) should be embedded in the responses:)
-(: The @context is hardcoded at some other places so this might be deprecated :)
+(: The @context is hardcoded at some other places so this might be deprecated. It is only used in the 
+: also deprecated function local:navigation-level-n :)
 declare variable $ddts:context := 
   map {
       "@context": $ddts:dts-jsonld-context-url
@@ -67,8 +67,12 @@ declare variable $ddts:context :=
  : DTS Entry Point
  :
  : Main Entry Point to the DTS API. Provides the base path for each of the 3 specified endpoints: collections, navigation and documents.
+ : Implemented it like the example response here: https://distributed-text-services.github.io/specifications/versions/1-alpha/#entry-endpoint
  :
  : @result JSON object
+ :
+ : TODO: need to check which params are available on the endpoints in the final implementation
+ : and adapt the URI templates accordingly, e.g. additional param 'page', but also currently not functional 'mediaType' and 'tree'.
  :)
 declare
   %rest:GET
@@ -76,13 +80,8 @@ declare
   %rest:produces("application/ld+json")
   %output:media-type("application/ld+json")
   %output:method("json")
-function ddts:entry-point() {
-    (:  
-    Implemented it like the example response here: https://distributed-text-services.github.io/specifications/versions/1-alpha/#entry-endpoint
-    Can we use full URIs here or are these always relative paths?
-    TODO: need to check which params are available on the endpoints in the final implementation
-    and adapt the URI templates accordingly
-    :)
+function ddts:entry-point() 
+as map() {
     let $collection-template := $ddts:collections-base || "{?id,nav}"
     let $document-template := $ddts:documents-base || "{?resource,ref,start,end,mediaType}"
     let $navigation-template := $ddts:navigation-base || "{?resource,ref,start,end,down,tree}"
@@ -103,9 +102,14 @@ function ddts:entry-point() {
  : Calculate citeDepth
  :
  : Helper function to get citeDepth of a document
- : Can currently cite maximum structure of tei:body/tei:div/tei:div/tei:sp or tei:stage --> 4 levels, but not all dramas have the structure text proper - act - scene
+ : Can currently cite maximum structure of tei:body/tei:div/tei:div/tei:sp or tei:stage --> 4 levels,
+ : but not all dramas have the structure text proper - act - scene. 
+ : This only evaluates the tei:body element, but we can expect the body being the most complex part.
  :
- :   :)
+ : @param $tei TEI of a play
+ :
+ : @result maximum depth of the citation tree
+ :)
 declare function local:get-citeDepth($tei as element(tei:TEI))
 as xs:integer {
     if ( $tei//tei:body/tei:div/tei:div[tei:stage or tei:sp] ) then 4
@@ -119,7 +123,11 @@ as xs:integer {
  : 
  : The DTS Spec seems to favor the use of real URIs as identifiers. DraCor already resolve URIs 
  : of plays, https://dracor.org/id/gerXXXXXX; it would be logical to use them here as well
-:)
+ :
+ : @param $uri DraCor URI (can not work with /entity/ pattern!)
+ :
+ : @result DraCor ID
+ :)
 declare function local:uri-to-id($uri as xs:string) 
 as xs:string {
     (:this might not be the best option, hope it works for now:)
@@ -131,7 +139,11 @@ as xs:string {
  :
  : see local:uri-to-id, this does the inverse, e.g. identifiers playname (and corpusname) are turned
  : into URIs, e.g. gerXXXXXX becomes https://dracor.org/id/gerXXXXXX.
-:)
+ : 
+ : @param $id DraCor ID
+ :
+ : @result URI
+ :)
 declare function local:id-to-uri($id as xs:string)
 as xs:string {
     (: might not be the ultimate best solution, hope it works for now :)
@@ -156,7 +168,6 @@ as xs:string {
  : DTS Collection Endpoint
  :
  : Get a collection according to the specification: https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
- : TODO: this must be changed to handle full URIs!
  :
  : @param $id Identifier for a collection or document, Should be a URI, forget this for 1-alpha: e.g. "ger" for GerDraCor. Root collection can be requested by leaving the parameter out or explicitly requesting it with "corpora"
  : @param $page Page of the current collection’s members. Functionality is not implemented, will return 501 status code.
@@ -173,38 +184,40 @@ declare
   %rest:produces("application/ld+json")
   %output:media-type("application/ld+json")
   %output:method("json")
-function ddts:collections($id, $page, $nav)
-{
-(: FIXME: had to remove the return type annotation because in case of an error it created a server error; was as map();
-but in case of an error it is a sequence! :)    
-
+function ddts:collections($id as xs:string*, $page as xs:string*, $nav as xs:string*)
+as item()+ {
   (: check, if param $id is set -- request a certain collection :)
   if ( $id ) then
 
-    (: if root-collection "corpora is explicitly requested by id = 'corpora'" :)
+    (: if root-collection "corpora" is explicitly requested by id = 'corpora' :)
     (: this is somewhat a legacy behaviour before switching to 1-alpha and adressing everything by URIs :)
+    (: we can still support it because, still, it feels natural to use only the corpusname to get a corpus :)
     if ( $id eq "corpora") then
+        (: http://localhost:8088/api/v1/dts/collection?id=corpora :)
         local:root-collection()
     else if ( $id eq $ddts:base-uri ) then
         (: this would be the default to address the root collection :)
+        (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088:)
         local:root-collection()
 
     else if ( matches($id, "^[a-z]+$") ) then
     (: this is a collection only, e.g. "ger" or "test" :)
-    (: TODO: check if this corpus really exists :)
         let $corpus := dutil:get-corpus($id)
         return
             if ($corpus/name() eq "teiCorpus") then 
                 if ( $nav eq 'parents') then 
                     local:corpus-to-collection-with-parent-as-member($id)
+                (: TODO: we miss the 'page' parameter here :)
                 else    
                     local:corpus-to-collection($id)
             else
+            (: A corpus with this ID does not exist :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=foo :)
             (
                     <rest:response>
                         <http:response status="404"/>
                     </rest:response>,
-                    "The requested resource '" || $id ||  "' is not available."
+                    "The requested resource (corpus) '" || $id ||  "' is not available."
             )
     else if ( matches($id, concat("^", $ddts:base-uri, "/id/","[a-z]+$" ) ) ) then
         (: A corpus = collection requested with URI as value of the id param :)
@@ -214,25 +227,34 @@ but in case of an error it is a sequence! :)
             if ($corpus/name() eq "teiCorpus") then 
                 
                 if ( $nav eq 'parents') then 
+                
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger&nav=parents :)
                     local:corpus-to-collection-with-parent-as-member($id)
+                (: sanity check the parameter "nav"; this could only be "parents" :)
+                (: TODO: Continue HIER :)
+                else if ($nav and $nav != "parents" ) then
+                    "Produce Error!!"
                 else
+                (: the default behaviour :)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger :)
                     local:corpus-to-collection($id)
             else
             (
                     <rest:response>
                         <http:response status="404"/>
                     </rest:response>,
-                    "The requested resource '" || $id ||  "' is not available."
+                    "The requested resource (corpus) '" || $id ||  "' is not available."
             )
 
     (: in pre-alpha we used normal DraCor playnames or so; now everything should be adressed with real uris 
-     : this is somewhat legacy behaviour, but will handle if someone request e.g. ger000001
+     : this is somewhat legacy behaviour, but will handle the original ids to be backwards
+     : compatible, e.g. if someone request e.g. ger000001
     :)
     (: could also be a single document :)
-    (: this regex check might not be a good idea, e.g if if use ger1 a thing that does not exist it still tries to find it :)
     else if ( matches($id, "^[a-z]+[0-9]{6}$") ) then
           if ( $page ) then
             (: paging on readable collection = single document is not supported :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=ger000171&page=1 :)
             (
                     <rest:response>
                     <http:response status="400"/>
@@ -241,10 +263,20 @@ but in case of an error it is a sequence! :)
             )
             else if ( $nav eq 'parents') then
             (: requested the parent collection of a document :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=ger000171&nav=parents :)
               local:child-readable-collection-with-parent-by-id($id)
+            else if ( $nav and $nav != "parents") then
+                (: Sanity Check $nav param, see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&nav=foo :)
+                (
+                        <rest:response>
+                        <http:response status="400"/>
+                        </rest:response>,
+                    "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
+                )
             else
                 (: display as a readable collection :)
-                (: This currently causes a server errror :)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=ger000171 :)
                 local:child-readable-collection-by-id($id)
     
     else if ( matches($id, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then
@@ -253,6 +285,7 @@ but in case of an error it is a sequence! :)
         return
             if ( $page ) then
             (: paging on readable collection = single document is not supported :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&page=1 :)
             (
                     <rest:response>
                     <http:response status="400"/>
@@ -261,8 +294,7 @@ but in case of an error it is a sequence! :)
             )
             else if ( $nav eq 'parents') then
             (: requested the parent collection of a document :)
-            (: "DEBUG: This is called with playname: " || $playname :)
-            (: SHOULD sanity check the nav parameter FIXME :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&nav=parents :)
             local:child-readable-collection-with-parent-by-id($playname)
             else
                 (: Sanity Check $nav param, see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
@@ -274,13 +306,12 @@ but in case of an error it is a sequence! :)
                     "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
                 )
                 else
-                (: not sure if this should be allowed, maybe never get to this point:)
                 (: display as a readable collection :)
-                (: This currently causes a server errror :)
                 local:child-readable-collection-by-id($playname)
     
 
     (: Normally, this else would not be executed because all the other cases are already covered :)
+    (: This is covered by the case when somebody requests a collection with an ID above :)
     else
         (: this might be deprecated :)
         (: should check here if someone uses corpus name or a full uri :)
@@ -299,7 +330,7 @@ but in case of an error it is a sequence! :)
                         <rest:response>
                         <http:response status="501"/>
                         </rest:response>,
-                    "Paging on a collection is not implemented. Try without parameter 'page'!"
+                    "Paging on a collection is not implemented. Try without parameter 'page'! YES"
                     )
                     else
 
@@ -325,7 +356,11 @@ but in case of an error it is a sequence! :)
                     "The requested resource '" || $id ||  "' is not available."
                 )
 
-  else (: id is not set, return root-collection "corpora" :)
+  else 
+  (: id is not set, return root-collection "corpora" :)
+  (: test: http://localhost:8088/api/v1/dts/collection :)
+  (: FIXME: this fails: http://localhost:8088/api/v1/dts/collection/ :)
+  (: tailing slashes suck! Don't use them! :)
     local:root-collection()
 };
 
