@@ -862,13 +862,11 @@ declare
   %rest:query-param("end", "{$end}")
   %rest:query-param("tree", "{$tree}")
   %rest:query-param("mediaType", "{$media-type}")
-  %rest:query-param("format", "{$format}")
   %rest:produces("application/tei+xml")
   %output:media-type("application/xml")
   %output:method("xml")
-function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $format) {
+function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
     (: check, if valid request :)
-    (: param format is DEPRECTED :)
 
     (: In GET requests one may either provide a ref parameter or a pair of start and end parameters. A request cannot combine ref with the other two. If, say, a ref and a start are both provided this should cause the request to fail. :)
     if ( $ref and ( $start or $end ) ) then
@@ -892,7 +890,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $forma
             <description>If a range is requested, parameters 'start' and 'end' are mandatory.</description>
         </error>
         )
-    else if ( $format ) then
+    else if ( $media-type ) then
         (: requesting other format than TEI is not implemented :)
         (: This param is DEPRECATED in 1-alpha. Should be removed. Maybe mediaType will be added here :)
         (
@@ -901,7 +899,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type, $forma
         </rest:response>,
         <error statusCode="501" xmlns="https://w3id.org/dts/api#">
             <title>Not implemented</title>
-            <description>Requesting other format than 'application/tei+xml' is not supported. The parameter 'format' is deprecated.</description>
+            <description>Requesting other format than 'application/tei+xml' is not supported.</description>
         </error>
         )
         (: handled common errors, should check, if document with a certain $id exists :)
