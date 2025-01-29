@@ -204,10 +204,19 @@ as item()+ {
     (: this is a collection only, e.g. "ger" or "test" :)
         let $corpus := dutil:get-corpus($id)
         return
-            if ($corpus/name() eq "teiCorpus") then 
+            if ( $page ) then
+            (: Paging is currently not supported :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=rus&page=1 :)
+            (
+                    <rest:response>
+                    <http:response status="400"/>
+                    </rest:response>,
+                    "Paging is not possible on a single resource. Try without parameter 'page'!"
+            )
+
+            else if ($corpus/name() eq "teiCorpus") then 
                 if ( $nav eq 'parents') then 
                     local:corpus-to-collection-with-parent-as-member($id)
-                (: TODO: we miss the 'page' parameter here :)
                 else    
                     local:corpus-to-collection($id)
             else
@@ -225,15 +234,31 @@ as item()+ {
         let $corpus := dutil:get-corpus($corpusname)
         return
             if ($corpus/name() eq "teiCorpus") then 
-                
-                if ( $nav eq 'parents') then 
+                if ( $page ) then
+                (: paging is currently not supported :)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/rus&page=1 :)
+                (
+                    <rest:response>
+                    <http:response status="400"/>
+                    </rest:response>,
+                    "Paging is not possible on a single resource (corpus). Try without parameter 'page'!"
+                )
+
+
+                else if ( $nav eq 'parents') then 
                 
                 (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger&nav=parents :)
                     local:corpus-to-collection-with-parent-as-member($id)
-                (: sanity check the parameter "nav"; this could only be "parents" :)
-                (: TODO: Continue HIER :)
+                
                 else if ($nav and $nav != "parents" ) then
-                    "Produce Error!!"
+                (: sanity check the parameter "nav"; this could only be "parents" :)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger&nav=foo :)
+                    (
+                        <rest:response>
+                        <http:response status="400"/>
+                        </rest:response>,
+                        "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
+                    )
                 else
                 (: the default behaviour :)
                 (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger :)
@@ -310,56 +335,22 @@ as item()+ {
                 local:child-readable-collection-by-id($playname)
     
 
-    (: Normally, this else would not be executed because all the other cases are already covered :)
-    (: This is covered by the case when somebody requests a collection with an ID above :)
-    else
-        (: this might be deprecated :)
-        (: should check here if someone uses corpus name or a full uri :)
-        (: requesting a collection, but not the root-collection :)
-        (: evaluate $id – check if collection with "id" exists :)
-
-        let $corpus := dutil:get-corpus($id)
-        return
-            (: there is something, that's a teiCorpus :)
-            (: this is causing a problem because the check doesn't really check if the corpus exists :)
-            if ( $corpus/name() eq "teiCorpus" ) then
-                (: should check for paging and nav :)
-                if ( $page ) then
-                    (: will probably not implement paging for the moment :)
-                    (
-                        <rest:response>
-                        <http:response status="501"/>
-                        </rest:response>,
-                    "Paging on a collection is not implemented. Try without parameter 'page'! YES"
-                    )
-                    else
-
-                    (: SHOULD sanity check the nav parameter FIXME :)
-                    if ( $nav eq "parents")
-                    then
-                        (: requesting the corpus + its parent, which will be the root-collection in the dracor-context :)
-                        local:corpus-to-collection-with-parent-as-member($id)
-                    else
-                        (: what is the value of $nav here? FIXME :)
-                        (: return the collection by id :)
-                        local:corpus-to-collection($id)
-                        
-                    
-
-            else
-                (: if the corpus doesn't exist, return 404 Not found :)
-                (: Strangely, this does not trigger when using a non existent corpus id :)
-                (
-                    <rest:response>
-                        <http:response status="404"/>
-                    </rest:response>,
-                    "The requested resource '" || $id ||  "' is not available."
-                )
+    
+    else 
+    (: Parameter id is set, but it is not a valid ID (not covered by the regexes) :)
+    (: test: http://localhost:8088/api/v1/dts/collection?id=ger12345 :)
+    (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger12345 :)
+        (
+            <rest:response>
+                <http:response status="400"/>
+            </rest:response>,
+                    "The value '" || $id || "' of the parameter 'id' is not in a valid format: Either provide the id or URI of a corpus or play."
+        )
 
   else 
   (: id is not set, return root-collection "corpora" :)
   (: test: http://localhost:8088/api/v1/dts/collection :)
-  (: FIXME: this fails: http://localhost:8088/api/v1/dts/collection/ :)
+  (: this fails: http://localhost:8088/api/v1/dts/collection/ :)
   (: tailing slashes suck! Don't use them! :)
     local:root-collection()
 };
@@ -381,7 +372,7 @@ as map() {
       return local:collection-member-by-id($corpus-id)
     }
 
-  (: response :)
+  (: assemble the data of the response :)
 
   let $title := "DraCor Corpora"
   let $dublincore := map {}
@@ -394,7 +385,6 @@ as map() {
       "@id": $ddts:base-uri,
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
-      (:"totalItems": $totalChildren , :) (:! same as children:) (: totalItems is deprecated in "unstable" :)
       "totalParents": $totalParents ,
       "totalChildren": $totalChildren ,
       "title": $title,
@@ -412,8 +402,8 @@ as map() {
  :)
 declare function local:collection-member-by-id($id as xs:string)
 as map() {
-    (: get metadata on the corpus by util-function :)
     let $corpusname := local:uri-to-id($id)
+    (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($corpusname)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
     (: this is basically what the dutil-function does before evaluating the files :)
@@ -429,7 +419,6 @@ as map() {
           "@type" : "Collection" ,
           "title" : $info?title ,
           "description" : $info?description ,
-          (: "totalItems" : $file-count , :) (: totalItems is deprecated in "unstable" :)
           "totalParents": 1 ,
           "totalChildren" : $file-count
         }
@@ -441,15 +430,13 @@ as map() {
  :
  : Helper function to transform a DraCor-Corpus to a DTS-Collection – https://distributed-text-services.github.io/specifications/Collections-Endpoint.html#child-collection-containing-a-single-work
  :
- : Here we probably had a DTS-Validator error which is due to changes from 1-alpha to "unstable": https://github.com/distributed-text-services/specifications/issues/250
- :
  : @param $id Identifier of the corpus, e.g. "ger"
  :
  :)
 declare function local:corpus-to-collection($id as xs:string)
 as map() {
-    (: get metadata on the corpus by util-function :)
     let $corpusname := local:uri-to-id($id)
+    (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($corpusname)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
     (: this is basically what the dutil-function does before evaluating the files :)
@@ -490,9 +477,7 @@ as map() {
  : Document to collection member
  :
  : Helper function to transform a DraCor-TEI-Document to a member in a DTS-Collection.
- :
- : Here we might have had a validation error of the DTS-Validator see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained
- :
+ : 
  : @param $tei TEI representation of a play
  :
  :)
@@ -514,12 +499,9 @@ as map() {
     
     (: This actually need to be URI templates, not URLs, but to implement this, 
     we need to know which params the endpoints are supporting 
-    TODO: add the parameters to the templates
     :)
     let $dts-document := $ddts:documents-base || "?resource=" || $uri || "{&amp;ref,start,end}" (: URI template:)
     let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri || "{&amp;ref,start,end,down}" (: URI template:)
-    
-    (: "unstable" adds a "collection" property :)
     let $dts-collection := $ddts:collections-base || "?id=" || $uri || "{&amp;nav}" (: URI template:)
 
     return
@@ -527,7 +509,6 @@ as map() {
             "@id" : $uri ,
             "@type": "Resource" ,
             "title" : $titles?main ,
-            (:"totalItems": 0 , :) (: remove for "unstable" :)
             "totalParents": 1 ,
             "totalChildren": 0 ,
             "dublinCore" : $dublincore ,
@@ -567,6 +548,7 @@ as map() {
 
 };
 
+
 (:~
  : Document as child readable collection (resource)
  :
@@ -576,14 +558,12 @@ as map() {
  :
  :)
 declare function local:child-readable-collection-by-id($id as xs:string)
+as item()+
 {
-    (: FIXME: Need to remove the return type annotation b/c in case of an error this fails :)
   
   (: Retrieve the TEI file:)
   let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $id]
-  
-  (: The line below causes problems if there this is not a valid ID :)
-  
+    
   return
       if ( $tei/name() eq "TEI" ) then
         
@@ -609,12 +589,16 @@ declare function local:child-readable-collection-by-id($id as xs:string)
  : this implements the "Parent Collection Query" as described in the specification of the collections endpoint
  : https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
  :)
-declare function local:child-readable-collection-with-parent-by-id($id as xs:string) {
+declare function local:child-readable-collection-with-parent-by-id($id as xs:string) 
+as map()
+{
     let $self := local:child-readable-collection-by-id($id)
     
     (: must change map and add totalItems == 1 because of parent collection will be added as a member :)
-    let $self-without-totalItems := map:remove($self, "totalItems")
-    let $self-with-new-totalItems := map:merge( ( $self-without-totalItems, map{"totalItems" : 1})  )
+    (: TODO: unstable (later v1) drops the properter "totalItems" can it be removed here already  :)
+    (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger&nav=parents :)
+    (: let $self-without-totalItems := map:remove($self, "totalItems") :)
+    (: let $self-with-new-totalItems := map:merge( ( $self-without-totalItems, map{"totalItems" : 1})  ) :)
     
     (: get parent collection and remove the members :)
     (: TODO: maybe use a dutil:function instead; this is very custom; not sure how this will
@@ -634,7 +618,8 @@ declare function local:child-readable-collection-with-parent-by-id($id as xs:str
     
 
     return
-        map:merge(($self-with-new-totalItems, $members))
+        (: map:merge(($self-with-new-totalItems, $members)) :)
+        map:merge(($self, $members))
 };
 
 
@@ -650,6 +635,7 @@ declare function local:corpus-to-collection-with-parent-as-member($id as xs:stri
 as map() {
     let $self := local:corpus-to-collection($id)
     (: remove the members and the totalItems; set value of totalItems to one because there is only one root-collection  :)
+    (: totalItems should be removed alltogether! :)
     let $self-without-members := map:remove($self, "member")
     let $self-without-totalItems := map:remove($self-without-members, "totalItems")
     let $prepared-self := map:merge(( $self-without-totalItems, map{"totalItems" : 1} ))
