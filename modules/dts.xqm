@@ -594,19 +594,13 @@ as map()
 {
     let $self := local:child-readable-collection-by-id($id)
     
-    (: must change map and add totalItems == 1 because of parent collection will be added as a member :)
-    (: TODO: unstable (later v1) drops the properter "totalItems" can it be removed here already  :)
-    (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger&nav=parents :)
-    (: let $self-without-totalItems := map:remove($self, "totalItems") :)
-    (: let $self-with-new-totalItems := map:merge( ( $self-without-totalItems, map{"totalItems" : 1})  ) :)
-    
     (: get parent collection and remove the members :)
+    
     (: TODO: maybe use a dutil:function instead; this is very custom; not sure how this will
     work when something is changed in the general API code
      :)
     let $file-db-path := util:collection-name(collection($config:corpora-root)/tei:TEI[@xml:id eq $id])
-    let $corpusname := tokenize(replace($file-db-path, "/db/dracor/corpora/",""),"/")[1]
-    (: let $playname := tokenize(replace($file-db-path, "/db/dracor/corpora/",""),"/")[2] :) 
+    let $corpusname := tokenize(replace($file-db-path, "/db/dracor/corpora/",""),"/")[1] 
     
     (: get the parent by the function to generate a collection :)
     let $parent := local:corpus-to-collection($corpusname)
@@ -616,9 +610,7 @@ as map()
     let $parent-without-context := map:remove($parent-without-members, "@context")
     let $members := map {"member" : array { $parent-without-context }} 
     
-
     return
-        (: map:merge(($self-with-new-totalItems, $members)) :)
         map:merge(($self, $members))
 };
 
@@ -634,11 +626,7 @@ as map()
 declare function local:corpus-to-collection-with-parent-as-member($id as xs:string)
 as map() {
     let $self := local:corpus-to-collection($id)
-    (: remove the members and the totalItems; set value of totalItems to one because there is only one root-collection  :)
-    (: totalItems should be removed alltogether! :)
     let $self-without-members := map:remove($self, "member")
-    let $self-without-totalItems := map:remove($self-without-members, "totalItems")
-    let $prepared-self := map:merge(( $self-without-totalItems, map{"totalItems" : 1} ))
 
     (: get the root collection and prepare :)
     let $parent := local:root-collection()
@@ -650,7 +638,7 @@ as map() {
     let $member := map { "member" : array { $prepared-parent } }
 
     (: merge the maps :)
-    let $result := map:merge( ($prepared-self, $member) )
+    let $result := map:merge( ($self-without-members, $member) )
 
     return $result
 };
