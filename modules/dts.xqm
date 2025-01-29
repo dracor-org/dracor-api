@@ -866,6 +866,9 @@ declare
   %output:media-type("application/xml")
   %output:method("xml")
 function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
+    
+    (: TODO: to properly implement a possibility to request a document or fragment in a different media type
+    we would need to set the serialization parameters rest:produces, output: ... dynamically :)
     (: check, if valid request :)
 
     (: In GET requests one may either provide a ref parameter or a pair of start and end parameters. A request cannot combine ref with the other two. If, say, a ref and a start are both provided this should cause the request to fail. :)
@@ -890,9 +893,10 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
             <description>If a range is requested, parameters 'start' and 'end' are mandatory.</description>
         </error>
         )
-    else if ( $media-type ) then
-        (: requesting other format than TEI is not implemented :)
-        (: This param is DEPRECATED in 1-alpha. Should be removed. Maybe mediaType will be added here :)
+    else if ( $media-type and not(starts-with($media-type, "application/tei"))) then
+        (: somehow strangely the '+' is not possible to test for; it becomes a whitespace, 
+        so actually, we need to do "application/tei xml" if direct string comparison is necessary :)
+        (: requesting other format than TEI is not implemented anyways :)
         (
         <rest:response>
             <http:response status="501"/>
@@ -900,6 +904,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
         <error statusCode="501" xmlns="https://w3id.org/dts/api#">
             <title>Not implemented</title>
             <description>Requesting other format than 'application/tei+xml' is not supported.</description>
+            <debug>{$media-type}</debug>
         </error>
         )
         (: handled common errors, should check, if document with a certain $id exists :)
