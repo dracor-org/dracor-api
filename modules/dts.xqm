@@ -54,6 +54,11 @@ declare variable $ddts:context :=
       "@context": $ddts:dts-jsonld-context-url
   };
 
+(: DTS extensions :)
+(: Properties that are used in the DTS extension part should be defined in an ontology which
+we have to publish somewhere. The base-URI of this ontology can be set here :)
+declare variable $ddts:extensions-context-url := "https://dracor.org/ontology/dts-extension-context.json" ;
+
 (:
  : --------------------
  : Entry Point
@@ -2141,9 +2146,8 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
  declare function local:citable-unit($identifier, $level, $parent, $cite-type, $tei-fragment as element(), $resource ) {
     (: not totally sure if this is bullet-proof :)
     let $dublinCore := local:extract-dc-from-tei-fragment($tei-fragment)
-    
-    (: This is not in the spec, but I would like to have a link to the document endpoint to easily request the passage :)
-    (: let $passage := $ddts:documents-base || "?resource=" || $resource || "&amp;ref=" || $identifier || "{&amp;mediaType}" :)
+    (: extensions :)
+    let $extension-metadata := try { local:extract-extensions-from-tei-fragment($tei-fragment) } catch * { () }
     
     let $citeable-unit-data := map {
         "@type": "CitableUnit",
@@ -2151,12 +2155,22 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
         "level" : $level,
         "parent" : $parent,
         "citeType": $cite-type
-        (: ,"passage" : $passage :)
     }
+
     
     return
-        if ($dublinCore instance of map(*) ) then map:merge( ($citeable-unit-data, map{"dublinCore": $dublinCore}) )
-    else $citeable-unit-data 
+
+        (: additional dublin core metadata and dracor extension metadata :)
+        if ($dublinCore instance of map(*) and $extension-metadata instance of map(*) ) then 
+            map:merge( ($citeable-unit-data, map{"dublinCore": $dublinCore}, map{"extensions": $extension-metadata}) )
+
+        (: additional dublin core metadata available:)
+        else if ($dublinCore instance of map(*) ) then map:merge( ($citeable-unit-data, map{"dublinCore": $dublinCore}) )
+        
+        (: only extensions metadata :)
+        else if ($extension-metadata instance of map(*) ) then map:merge( ($citeable-unit-data, map{"extensions": $extension-metadata}) )
+
+        else $citeable-unit-data 
  };
 
 (:~
@@ -2176,6 +2190,78 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
 
  };
 
+
+(:~
+: Helper function to extract dracor extensions metatada of a TEI fragment becoming a CiteableUnit
+:)
+ declare function local:extract-extensions-from-tei-fragment($tei-fragment as element())
+{
+   (: define the URIs of the respective properties 
+   They should be included in some ontology
+   :) 
+
+    (: we have to decide based on the type of the citeable unit which addtional extension metadata
+    to include, e.g. it does not make sense to include speakers for a stage direction :)
+
+
+
+        (: speech element sp :)
+        if ( name($tei-fragment) eq "sp" ) then
+            
+            (: check for speakers :)
+            let $speakers := if ($tei-fragment[@who]) then 
+                tokenize($tei-fragment/@who, " ") => replace("#","")
+            else ()
+
+            let $snippet := local:snippet($tei-fragment)
+
+            return
+                map {
+                    "@context" : $ddts:extensions-context-url, 
+                    "speakers" : array{ $speakers },
+                    "snippet" : $snippet
+                }
+                
+        
+        (: metadata of stage direction :)
+        else if (name($tei-fragment) eq "stage" ) then
+
+            let $snippet := local:snippet($tei-fragment) return
+                
+                map {
+                    "@context" : $ddts:extensions-context-url, 
+                    "snippet": $snippet
+                    }
+                
+        
+        (: not an element handled by this, not extension metadata :)
+        else () 
+
+ };
+
+(:~ Snippet of Text of CiteableUnit
+:
+: Get a snippet to be displayed for a Citeable Unit (speech and stage direction).  
+:
+: @param $tei-fragment TEI-XML fragment
+:)
+declare function local:snippet($tei-fragment as element()) {
+
+    (: in case of sp also filter stage directions :)
+   let $text := if (name($tei-fragment) eq "sp") then 
+    $tei-fragment//text()[not(parent::tei:speaker|parent::tei:stage|parent::tei:note)] => string-join(" ") => normalize-space()
+    else  $tei-fragment//text()[not(parent::tei:note)] => string-join(" ") => normalize-space()
+
+   let $tokenized := tokenize($text, ' ')
+   let $snippet-start := $tokenized[position() < 6]
+   let $snippet-end := $tokenized[position() = last()]
+   return 
+        if (count($tokenized) > 5 ) then
+        string-join(($snippet-start, "[...]", $snippet-end), " ")
+        else 
+        string-join($snippet-start, " ")
+   
+};
 
 
 (:~ 
