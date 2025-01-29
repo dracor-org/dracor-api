@@ -588,6 +588,9 @@ as item()+
 
  : this implements the "Parent Collection Query" as described in the specification of the collections endpoint
  : https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint
+ :
+ : @param $id Identifier of the document, e.g. "ger000278"
+ 
  :)
 declare function local:child-readable-collection-with-parent-by-id($id as xs:string) 
 as map()
@@ -646,10 +649,13 @@ as map() {
 
 (:~
  : Citation Trees
- 
+ :
  : Maybe at some point there will be multiple citation trees, but for now there is only one
+ :
+ : @param $tei TEI file (play)
 :)
-declare function local:generate-citationTrees($tei as element(tei:TEI)) {
+declare function local:generate-citationTrees($tei as element(tei:TEI)) 
+as item()+ {
     (: returns the defaul citation tree as a sequence to be converted to an array:)
     array{
         local:generate-citationTree($tei,"default")
@@ -658,10 +664,15 @@ declare function local:generate-citationTrees($tei as element(tei:TEI)) {
 
 (:~
  : Citation Trees
- 
+ :
  : Maybe at some point there will be multiple citation trees, but for now there is only one
+ : 
+ : @param $tei TEI file (play)
+ : @param $type Type of the citation tree (only "default" is supported)
+
 :)
-declare function local:generate-citationTree($tei as element(tei:TEI), $type as xs:string) {
+declare function local:generate-citationTree($tei as element(tei:TEI), $type as xs:string)
+as item() {
     if ( $type eq "default" ) then 
         let $citeStructure := local:generate-citeStructure($tei) return
         let $maxCiteDepth := local:get-citeDepth($tei)
@@ -683,8 +694,9 @@ declare function local:generate-citationTree($tei as element(tei:TEI), $type as 
  :
  : @param $tei TEI file
  :
- : :)
-declare function local:generate-citeStructure($tei as element(tei:TEI) ) {
+ :)
+declare function local:generate-citeStructure($tei as element(tei:TEI) )
+as item() {
     (: Generate citeStructure to be used in citationTree :)
 
     let $set := if ($tei//tei:front/tei:set) then ("setting") else ()
