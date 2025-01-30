@@ -505,7 +505,7 @@ as map() {
     (: This actually need to be URI templates, not URLs, but to implement this, 
     we need to know which params the endpoints are supporting 
     :)
-    let $dts-document := $ddts:documents-base || "?resource=" || $uri || "{&amp;ref,start,end}" (: URI template:)
+    let $dts-document := $ddts:documents-base || "?resource=" || $uri || "{&amp;ref,start,end,mediaType}" (: URI template:)
     let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri || "{&amp;ref,start,end,down}" (: URI template:)
     let $dts-collection := $ddts:collections-base || "?id=" || $uri || "{&amp;nav}" (: URI template:)
 
@@ -867,7 +867,7 @@ declare
   %rest:query-param("end", "{$end}")
   %rest:query-param("tree", "{$tree}")
   %rest:query-param("mediaType", "{$media-type}")
-  %rest:produces("application/tei+xml")
+  %rest:produces("application/tei+xml", "text/plain")
   %output:media-type("application/xml")
   %output:method("xml")
 function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
@@ -898,7 +898,20 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
             <description>If a range is requested, parameters 'start' and 'end' are mandatory.</description>
         </error>
         )
-    else if ( $media-type and not(starts-with($media-type, "application/tei"))) then
+    (:
+    else if ( $media-type eq "text/plain") then
+        (
+        (: overwrite the serialization of the function by explicitly setting the Content-Type of
+        the response :)
+        <rest:response>
+            <http:response status="200">
+                <http:header name="Content-Type" value="text/plain; charset=utf-8"/>
+            </http:response>
+        </rest:response>,
+        "Bla"
+        )
+    :) (: uncommented block above to be removed later:)
+    else if ( $media-type and not(starts-with($media-type, "application/tei")) and not($media-type eq "text/plain")) then
         (: somehow strangely the '+' is not possible to test for; it becomes a whitespace, 
         so actually, we need to do "application/tei xml" if direct string comparison is necessary :)
         (: requesting other format than TEI is not implemented anyways :)
@@ -908,12 +921,11 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
         </rest:response>,
         <error statusCode="501" xmlns="https://w3id.org/dts/api#">
             <title>Not implemented</title>
-            <description>Requesting other format than 'application/tei+xml' is not supported.</description>
+            <description>Requesting other formats than 'application/tei+xml' or 'text/plain' is not supported.</description>
             <debug>{$media-type}</debug>
         </error>
         )
         (: handled common errors, should check, if document with a certain $id exists :)
-
     else
         (: valid request :)
         (: need to check here if "short ID"/playname or full URI :)
@@ -930,7 +942,13 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
 
                 if ( $ref ) then
                     (: requested a fragment :)
-                    local:get-fragment-of-doc($tei, $ref)
+
+                    (: switch on media type; default would be application/tei+xml :)
+                    if ($media-type eq "text/plain") then
+                        local:get-plaintext-fragment-of-doc($tei, $ref)
+                    
+                    else
+                        local:get-fragment-of-doc($tei, $ref)
 
 
                 else if ( $start and $end ) then
@@ -958,6 +976,59 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
         </error>
         )
 
+};
+
+
+(:~ Get a fragment of a TEI document identfied by ref as plaintext
+: This is experimental..
+:)
+declare function local:get-plaintext-fragment-of-doc($tei as element(tei:TEI), $ref as xs:string) {
+    
+    let $fragment := local:get-fragment-of-doc($tei, $ref)
+    (: quick and dirty :)
+    (: let $text := $fragment//node()/text() => string-join(" ") => normalize-space() :)
+    let $top-level-element := $fragment[2]/dts:wrapper/element()
+    (: top-level chunks could be a div, a sp or a stage ? :)
+    (: depending on what we have, we might need to proceed differently to get the contents as txt :)
+    let $text := 
+    
+    if ( $top-level-element/name() eq "sp") then
+        ( upper-case($top-level-element/tei:speaker/string()) , 
+        $top-level-element//(tei:p|tei:l|tei:stage)//text() ) => string-join(" ") => normalize-space()
+
+    (: stage-direction :)
+    else if ($top-level-element/name() eq "stage") then 
+        $top-level-element//text()  => string-join(" ") => normalize-space()
+
+    else if ($top-level-element/name() eq "div") then
+
+    (: this could be a upper level div, i.e. an act, would have to handle that differently:)
+        if ($top-level-element/tei:div) then
+            (: test: http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000001&ref=body/div[1]&mediaType=text/plain :)
+            "ERROR: NOT IMPLEMENTED!"
+        else
+            let $chunks:= $top-level-element/(tei:head|tei:stage|tei:sp)
+            for $chunk in $chunks return
+            if ($chunk/tei:speaker) then
+                ( upper-case($chunk/tei:speaker/string()) , 
+            $chunk//(tei:p|tei:l|tei:stage)//text()) => string-join(" ") => normalize-space() || "&#xa;&#xa;" 
+            else
+                normalize-space(string-join($chunk//text()," ")) || "&#xa;&#xa;" 
+    
+    else ()
+
+
+    (: overwrite the serialization of the function by explicitly setting the Content-Type of
+                        the response :)
+    return
+    ( 
+        <rest:response>
+            <http:response status="200">
+                <http:header name="Content-Type" value="text/plain; charset=utf-8"/>
+            </http:response>
+        </rest:response>,
+        $text
+    )
 };
 
 
@@ -2637,7 +2708,7 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
         "@id" : $doc-uri,
         "@type" : "Resource",
         "citationTrees" : $citationTrees,
-        "mediaTypes" : array {"application/tei+xml"},
+        "mediaTypes" : array {"application/tei+xml", "text/plain"},
         "collection" : $collection
     }
 
