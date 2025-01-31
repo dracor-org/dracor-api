@@ -980,7 +980,11 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
 
 
 (:~ Get a fragment of a TEI document identfied by ref as plaintext
-: This is experimental..
+: 
+: This is still experimental functionality.
+:
+: @param $tei TEI Document (play)
+: @param $ref fragment identfier
 :)
 declare function local:get-plaintext-fragment-of-doc($tei as element(tei:TEI), $ref as xs:string) {
     
@@ -1003,10 +1007,27 @@ declare function local:get-plaintext-fragment-of-doc($tei as element(tei:TEI), $
     else if ($top-level-element/name() eq "div") then
 
     (: this could be a upper level div, i.e. an act, would have to handle that differently:)
+    (: there is till the <head> missing, also <stage> in the upper <div> could get lost :)
         if ($top-level-element/tei:div) then
             (: test: http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/ger000001&ref=body/div[1]&mediaType=text/plain :)
-            "ERROR: NOT IMPLEMENTED!"
+            let $top-level-chunks := $top-level-element/(tei:div|tei:head|tei:stage)
+            for $top-level-chunk in $top-level-chunks return
+                if ($top-level-chunk/name() eq "head") then
+                normalize-space($top-level-chunk/text()) || "&#xa;&#xa;"
+                else if ($top-level-chunk/name() eq "stage") then
+                normalize-space($top-level-chunk/text()) || "&#xa;&#xa;"
+                else
+                (: this is the content of the scene div :)
+                let $chunks := $top-level-chunk/(tei:head|tei:stage|tei:sp)
+            for $chunk in $chunks return
+            if ($chunk/tei:speaker) then
+                ( upper-case($chunk/tei:speaker/string()) , 
+            $chunk//(tei:p|tei:l|tei:stage)//text()) => string-join(" ") => normalize-space() || "&#xa;&#xa;" 
+            else
+                normalize-space(string-join($chunk//text()," ")) || "&#xa;&#xa;" 
+
         else
+            (: only one div :)
             let $chunks:= $top-level-element/(tei:head|tei:stage|tei:sp)
             for $chunk in $chunks return
             if ($chunk/tei:speaker) then
