@@ -500,7 +500,7 @@ as map() {
 
     let $dublincore := local:play_metadata_to_dc($tei)
 
-    let $dts-download := $ddts:api-base || "/corpora/" || $corpusname || "/plays/" || $playname || "/tei"
+    let $dts-download := substring-before($ddts:api-base,"/dts") || "/corpora/" || $corpusname || "/plays/" || $playname || "/tei"
     
     (: This actually need to be URI templates, not URLs, but to implement this, 
     we need to know which params the endpoints are supporting 
