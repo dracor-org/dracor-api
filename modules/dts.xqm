@@ -946,18 +946,41 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
                     (: switch on media type; default would be application/tei+xml :)
                     if ($media-type eq "text/plain") then
                         local:get-plaintext-fragment-of-doc($tei, $ref)
-                    
+        
                     else
                         local:get-fragment-of-doc($tei, $ref)
 
 
                 else if ( $start and $end ) then
                     (: requested a range; could be implemented, but not sure, if I will manage in time – at the Hackathon then :)
-                    local:get-fragment-range($tei, $start, $end)
+                    if ($media-type eq "text/plain") then
+                    (
+                        <rest:response>
+                            <http:response status="501"/>
+                        </rest:response>,
+                        <error statusCode="501" xmlns="https://w3id.org/dts/api#">
+                            <title>Not implemented</title>
+                            <description>Retrieving a section of a document with start and end as plaintext is not implemented.</description>
+                        </error>
+                    )
+                    else
+                        local:get-fragment-range($tei, $start, $end)
 
                 else
                 (: requested full document :)
-                    local:get-full-doc($tei)
+                    if ($media-type eq "text/plain") then
+                    (: Getting a full doc in text/plain is currently not implemented, only fragments identified by ref can be retrieved :)
+                    (
+                        <rest:response>
+                            <http:response status="501"/>
+                        </rest:response>,
+                        <error statusCode="501" xmlns="https://w3id.org/dts/api#">
+                            <title>Not implemented</title>
+                            <description>Retrieving the whole document as plaintext is not implemented.</description>
+                        </error>
+                    )
+                    else
+                        local:get-full-doc($tei)
 
             else
                 (: this might be DEPRECATED!! :)
