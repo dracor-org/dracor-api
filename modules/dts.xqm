@@ -509,6 +509,8 @@ as map() {
     let $dts-navigation := $ddts:navigation-base || "?resource=" || $uri || "{&amp;ref,start,end,down}" (: URI template:)
     let $dts-collection := $ddts:collections-base || "?id=" || $uri || "{&amp;nav}" (: URI template:)
 
+    let $extensions := local:play_metadata_to_extensions($tei)
+
     return
         map {
             "@id" : $uri ,
@@ -520,8 +522,55 @@ as map() {
             "document" : $dts-document, 
             "navigation" : $dts-navigation,
             "collection" : $dts-collection ,
-            "download": $dts-download
+            "download": $dts-download ,
+            "extensions" : $extensions
         }
+};
+
+(:~
+: Additional DraCor Metadata on a play to be included in the response of the collection endpoint
+:
+: Reuses util functions whenever possible
+: 
+: @param $tei TEI of the play
+:)
+declare function local:play_metadata_to_extensions($tei as element(tei:TEI))
+as map() {
+
+    (: Useful would be to have year_normalized because this would allow for filtering, and
+    wikidata as an external identifier:)
+
+    (: also tested an approach to combine a result object (map) from small maps. 
+    : This might be a way to have more fine granular functions to extract info from the TEI  :)
+
+    let $year-normalized := map{ "yearNormalized" : dutil:get-normalized-year($tei)} 
+    (: a question is what the semantics of the relation is :)
+    
+    let $wikidata-uri := if (dutil:get-play-wikidata-id($tei)) then 
+        map { "wikidataUri" : "http://www.wikidata.org/entity/" || dutil:get-play-wikidata-id($tei) } 
+        else map{}
+
+    let $num-speakers := map{ "numOfSpeakers" : count(dutil:distinct-speakers($tei)) }
+
+    let $num-segments := map{"numOfSegments": count(dutil:get-segments($tei)) }
+    
+    (: like in the util function  dutil:get-corpus-meta-data:)
+    let $paths := dutil:filepaths(base-uri($tei))
+    let $metrics := doc($paths?files?metrics)/metrics
+    let $wordcount := map {"wordCountText": xs:integer($metrics/text/string()) }
+
+    let $context := map{ "@context" : $ddts:extensions-context-url  }
+
+    return 
+           map:merge((
+            $context, 
+            $year-normalized, 
+            $wikidata-uri,
+            $num-speakers,
+            $num-segments,
+            $wordcount
+            ))
+        
 };
 
 (:~ 
