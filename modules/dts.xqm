@@ -57,7 +57,7 @@ declare variable $ddts:context :=
 (: DTS extensions :)
 (: Properties that are used in the DTS extension part should be defined in an ontology which
 we have to publish somewhere. The base-URI of this ontology can be set here :)
-declare variable $ddts:extensions-context-url := "https://dracor.org/ontology/dts-extension-context.json" ;
+declare variable $ddts:extensions-context-url := "https://raw.githubusercontent.com/dracor-org/dracor-ontology/refs/heads/main/json-ld-contexts/dts-extension-context.json" ;
 
 (:
  : --------------------
