@@ -2800,9 +2800,11 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     let $resource := map {
         "@id" : $doc-uri,
         "@type" : "Resource",
+        "document" : $document,
+        "collection" : $collection,
+        "navigation" : $navigation,
         "citationTrees" : $citationTrees,
-        "mediaTypes" : array {"application/tei+xml", "text/plain"},
-        "collection" : $collection
+        "mediaTypes" : array {"application/tei+xml", "text/plain"}
     }
 
      return
@@ -2812,10 +2814,6 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
          "@id" : $request-id,
          "@type" : "Navigation",
          "dtsVersion" : $ddts:spec-version,
-         (: "passage" has been renamed to "document" in version "unstable" :)
-         "document" : $document,
-         (: "collection" : $collection, :) (: this according to the spec:)
-         "navigation" : $navigation,
          "resource" : $resource
      }
  };
