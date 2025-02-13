@@ -2785,10 +2785,10 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
     let $navigation := if ($navigation-url != "") then $navigation-url else $ddts:navigation-base || "?resource=" || $doc-uri || "{&amp;ref,start,end,down}" (: maybe add also page, althoug not plan to implement it now:)
     :)
     (: 'passage' has been renamed to 'document' in "unstable" see https://github.com/mromanello/DTS-validator/blob/6f1f0fb6c78a815411c6c5cce57840599dc2c475/NOTES.md#validation-reports-explained :)
-    let $document := $ddts:documents-base || "{?resource,ref,start,end,mediaType}"
+    let $document := $ddts:documents-base || "?resource=" || $doc-uri || "{&amp;ref,start,end,mediaType}"
     (: according to the spec this endpoint only includes passage and navigation in the Navigation object :)
     (: let $collection := $ddts:collections-base || "{?id,nav}" :)
-    let $navigation := $ddts:navigation-base || "{?resource,ref,start,end,down}"
+    let $navigation := $ddts:navigation-base || "?resource=" || $doc-uri || "{&amp;ref,start,end,down}"
     
     let $citationTrees := local:generate-citationTrees($tei)
 
