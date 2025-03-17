@@ -2348,7 +2348,7 @@ declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
     :)
     if ($tei-fragment/name() eq "div") then
         if ($tei-fragment[tei:head]) then
-            map {"title" : normalize-space($tei-fragment/tei:head[1]/text())}
+            map {"title" : normalize-space($tei-fragment/tei:head[1])}
         else ()
     else ()
 
