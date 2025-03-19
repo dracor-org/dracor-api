@@ -73,6 +73,9 @@ declare variable $config:metrics-server :=
 (:~
  : The Wikidata IDs for text classification currently recognized as text class
  : codes in DraCor.
+ :
+ : See also https://dracor-org.github.io/dracor-schema/#section-genre,
+ : https://dracor-org.github.io/dracor-schema/#play_genre_normalized
  :)
 declare variable $config:wd-text-classes := map {
   "Q40831": "Comedy",
