@@ -430,6 +430,24 @@ paths:
           description: >-
             There is no corpus with the given `corpusname`.
 
+  /corpora/{corpusname}/plays/{playname}/txt:
+    get:
+      summary: Get plain text of a single play
+      operationId: play-txt
+      tags: [public]
+      parameters:
+        - $ref: "#/components/parameters/corpusname"
+        - $ref: "#/components/parameters/playname"
+      responses:
+        '200':
+          description: Returns play as plain text.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Unknown play (or corpus)
+
   /corpora/{corpusname}/plays/{playname}/characters:
     get:
       summary: Get a list of characters of a play
