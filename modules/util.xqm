@@ -11,6 +11,7 @@ import module namespace config = "http://dracor.org/ns/exist/v1/config"
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace json = "http://www.w3.org/2013/XSL/json";
+declare namespace transform = "http://exist-db.org/xquery/transform";
 
 (:~
  : Provide map of files and paths related to a play.
@@ -113,6 +114,19 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
     (: (see https://github.com/dracor-org/gerdracor/issues/6) :)
     where string-length($ref) > 1
     return substring($ref, 2)
+};
+
+(:~
+ : Extract plain text from document or element.
+ :
+ : @param $node element
+ : @return Plain text content
+ :)
+declare function dutil:extract-text($node as node()) as xs:string {
+  let $xsl := doc("/db/apps/dracor-v1/tei-to-txt.xsl")
+  let $text := transform:transform($node, $xsl, ())
+  (: trim leading spaces :)
+  return replace($text, '\n +', '&#10;') => replace('^\s+', '')
 };
 
 (:~

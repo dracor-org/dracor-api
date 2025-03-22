@@ -813,6 +813,29 @@ function api:play-tei($corpusname, $playname) {
 };
 
 (:~
+ : Get plain text representation of a single play
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result plain text
+ :)
+declare
+  %rest:GET
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/txt")
+  %rest:produces("text/plain")
+  %output:media-type("text/plain")
+function api:play-txt($corpusname, $playname) {
+  let $doc := dutil:get-doc($corpusname, $playname)
+  return
+    if (not($doc)) then
+      <rest:response>
+        <http:response status="404"/>
+      </rest:response>
+    else
+      dutil:extract-text($doc)
+};
+
+(:~
  : Add new or update existing TEI document
  :
  : When sending a PUT request to a new play URI, the request body is stored in
