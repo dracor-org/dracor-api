@@ -117,14 +117,14 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
 };
 
 (:~
- : Extract plain text from TEI document or element.
+ : Extract plain text from document or element.
  :
- : @param $tei TEI element
+ : @param $node element
  : @return Plain text content
  :)
-declare function dutil:extract-text($tei as node()) as xs:string* {
+declare function dutil:extract-text($node as node()) as xs:string {
   let $xsl := doc("/db/apps/dracor-v1/tei-to-txt.xsl")
-  let $text := transform:transform($tei, $xsl, ())
+  let $text := transform:transform($node, $xsl, ())
   (: trim leading spaces :)
   return replace($text, '\n +', '&#10;') => replace('^\s+', '')
 };
