@@ -491,7 +491,7 @@ declare function dutil:get-corpus-info(
   let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"][1]/string()
   let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"][1]/string()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
-  let $licence := $header//tei:availability/tei:licence
+  let $licence := $header//tei:publicationStmt/tei:availability/tei:licence
   let $description := if ($projectDesc) then (
     let $paras := for $p in $projectDesc/tei:p return local:markdown($p)
     return string-join($paras, "&#10;&#10;")
@@ -513,7 +513,7 @@ declare function dutil:get-corpus-info(
       if ($repo) then map:entry("repository", $repo) else (),
       if ($description) then map:entry("description", $description) else (),
       if ($licence)
-        then map:entry("licence", normalize-space($licence)) else (),
+        then map:entry("licence", normalize-space($licence[1])) else (),
       if ($licence/@target)
         then map:entry("licenceUrl", $licence/@target/string()) else ()
     ))
