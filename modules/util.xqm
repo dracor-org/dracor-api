@@ -212,8 +212,7 @@ declare function dutil:get-speech-filtered (
   let $roles := tokenize($role, ',')
 
   let $listPerson := $parent/ancestor::tei:TEI//tei:particDesc/tei:listPerson
-  let $relations := $listPerson/tei:listRelation[@type="personal"]
-
+  let $relations := $listPerson/tei:listRelation
   let $ids := $listPerson/(tei:person|tei:personGrp)
     [
       (not($gender) or @sex = $genders) and
@@ -1214,7 +1213,7 @@ declare function dutil:get-relations (
   $playname as xs:string
 ) as map()* {
   let $doc := dutil:get-doc($corpusname, $playname)
-  let $listRel := $doc//tei:listRelation[@type = "personal"]
+  let $listRel := $doc//tei:particDesc/tei:listPerson/tei:listRelation
   let $relations := (
     for $rel in $listRel/tei:relation[@mutual]
       let $ids := local:tokenize($rel/@mutual)
