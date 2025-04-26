@@ -851,35 +851,28 @@ paths:
   /corpora/{corpusname}/plays/{playname}/spoken-text:
     get:
       summary: Get spoken text of a play (excluding stage directions)
+      description: |
+        The lines or paragraphs of text to include can be filtered by the
+        gender, role or relation of the speakers.
+
+        Note that the response may be empty when you use filter parameters and
+        there is no speaker matching the filter
       operationId: play-spoken-text
       tags: [public]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
         - name: gender
+          description: Speaker gender
           in: query
           required: false
           schema:
             type: string
             enum: [FEMALE, MALE, UNKNOWN]
-        - name: relation
-          in: query
-          required: false
-          schema:
-            type: string
-            enum:
-              - siblings
-              - friends
-              - spouses
-              - parent_of_active
-              - parent_of_passive
-              - lover_of_active
-              - lover_of_passive
-              - related_with_active
-              - related_with_passive
-              - associated_with_active
-              - associated_with_passive
+        - $ref: "#/components/parameters/relationName"
+        - $ref: "#/components/parameters/relationRole"
         - name: role
+          description: Speaker role
           in: query
           required: false
           schema:
@@ -891,6 +884,8 @@ paths:
             text/plain:
               schema:
                 type: string
+        '400':
+          description: Invalid value for `gender` or `relation-role` parameters
         '404':
           description: Unknown play (or corpus)
 
@@ -1406,6 +1401,43 @@ components:
         munoz_refugio:
           value: munoz-refugio
           summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
+    relationName:
+      name: relation
+      description: |
+        Speaker relation name. The possible values can vary depending on the
+        corpus. For examples see the the section
+        [Relations of Characters](/doc/odd#section-character-relations) of the
+        Encoding Guidelines.
+      in: query
+      required: false
+      schema:
+        type: string
+      examples:
+        siblings:
+          value: siblings
+        friends:
+          value: friends
+        spouses:
+          value: spouses
+        parent_of:
+          value: parent_of
+        related_with:
+          value: related_with
+        associated_with:
+          value: associated_with
+    relationRole:
+      name: relation-role
+      description: |
+        For directed relations this selects either the passive or the active
+        participants. This parameter needs to be combined with the
+        `relation` parameter, otherwise it is ignored.
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - passive
+          - active
   schemas:
     Info:
       type: object
