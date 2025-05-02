@@ -1411,17 +1411,17 @@ components:
       type: object
       properties:
         name:
-          # ontology: #service_name
           type: string
+          x-dracor-feature: service_name
         version:
-          # ontology: #service_version
           type: string
+          x-dracor-feature: service_version
         status:
-          # ontology: #service_development_stage
           type: string
+          x-dracor-feature: service_development_stage
         existdb:
-          # ontology: #service_dependency_is_existdb_version
           type: string
+          x-dracor-feature: service_dependency_is_existdb_version
         base:
           type: string
           format: url
@@ -1439,14 +1439,14 @@ components:
       type: object
       properties:
         text:
-          # ontology: #corpus_num_of_word_tokens_in_text_elements
           type: integer
+          x-dracor-feature: corpus_num_of_word_tokens_in_text_elements
         stage:
-          # ontology: #corpus_num_of_word_tokens_in_stage
           type: integer
+          x-dracor-feature: corpus_num_of_word_tokens_in_stage
         sp:
-          # ontology: #corpus_num_of_word_tokens_in_sp
           type: integer
+          x-dracor-feature: corpus_num_of_word_tokens_in_sp
       required:
         - text
         - stage
@@ -1455,32 +1455,32 @@ components:
       type: object
       properties:
         characters:
-          # ontology: #corpus_num_of_characters
           type: integer
+          x-dracor-feature: corpus_num_of_characters
         male:
-          # ontology: #corpus_num_of_characters_male
           type: integer
+          x-dracor-feature: corpus_num_of_characters_male
         female:
-          # ontology: #corpus_num_of_characters_female
           type: integer
+          x-dracor-feature: corpus_num_of_characters_female
         stage:
-          # ontology: #corpus_num_of_stage
           type: integer
+          x-dracor-feature: corpus_num_of_stage
         sp:
-          # ontology: #corpus_num_of_sp
           type: integer
+          x-dracor-feature: corpus_num_of_sp
         text:
-          # ontology: #corpus_num_of_tei_text_elements
           type: integer
+          x-dracor-feature: corpus_num_of_tei_text_elements
         plays:
-          # ontology: #corpus_num_of_plays
           type: integer
+          x-dracor-feature: corpus_num_of_plays
         wordcount:
-          # ontology: #contains_corpus_wordcount_data
           $ref: '#/components/schemas/WordCounts'
+          x-dracor-feature: contains_corpus_wordcount_data
         updated:
-          # ontology: #corpus_metrics_date_updated
           type: string
+          x-dracor-feature: corpus_metrics_date_updated
       required:
         - characters
         - male
@@ -1495,37 +1495,37 @@ components:
       type: object
       properties:
         uri:
-          # ontology: #corpus_uri
           type: string
           format: url
+          x-dracor-feature: corpus_uri
         name:
-          # ontology: #corpus_name
           type: string
+          x-dracor-feature: corpus_name
         title:
-          # ontology: #corpus_title
           type: string
+          x-dracor-feature: corpus_title
         acronym:
-          # ontology: #corpus_acronym
           type: string
+          x-dracor-feature: corpus_acronym
         commit:
           type: string
         description:
-          # ontology: #corpus_description
           type: string
+          x-dracor-feature: corpus_description
         licence:
-          # ontology: #corpus_licence
           type: string
+          x-dracor-feature: corpus_licence
         licenceUrl:
-          # ontology: #corpus_licence_url
           type: string
           format: url
+          x-dracor-feature: corpus_licence_url
         repository:
-          # ontology: #corpus_repository
           type: string
           format: url
+          x-dracor-feature: corpus_repository
         metrics:
-          # ontology: contains_corpus_metrics_data
           $ref: '#/components/schemas/CorpusMetrics'
+          x-dracor-feature: contains_corpus_metrics_data
       required:
         - uri
         - name
@@ -1538,24 +1538,24 @@ components:
         # currently neither name nor url is required, but we omit the source
         # object if none of the properties is available
         name:
-          # ontology: #play_digital_source_name
           type: string
           nullable: true
+          x-dracor-feature: play_digital_source_name
         url:
-          # ontology: #play_digital_source_url
           type: string
           format: url
           nullable: true
+          x-dracor-feature: play_digital_source_url
     ExternalReferenceResourceId:
       # see dutil:get-authors
       type: object
       properties:
         type:
-          # ontology: #play_author_ref_external_id
           type: string
+          x-dracor-feature: play_author_ref_external_id
         ref:
-          # ontology: #play_author_ref_type
           type: string
+          x-dracor-feature: play_author_ref_type
       required:
         - type
         - ref
@@ -1564,33 +1564,33 @@ components:
       type: object
       properties:
         name:
-          # ontology: #play_author_name
           type: string
+          x-dracor-feature: play_author_name
         fullname:
-          # ontology: #play_author_fullname
           type: string
+          x-dracor-feature: play_author_fullname
         shortname:
-          # ontology: #play_author_shortname
           type: string
+          x-dracor-feature: play_author_shortname
         refs:
-          # ontology: #contains_external_ref_id_data
           type: array
+          x-dracor-feature: contains_external_ref_id_data
           items:
             $ref: '#/components/schemas/ExternalReferenceResourceId'
         alsoKnownAs:
-          # ontology: #play_author_also_known_as
           type: array
+          x-dracor-feature: play_author_also_known_as
           items:
             type: string
         nameEn:
-          # ontology: #play_author_name_en
           type: string
+          x-dracor-feture: play_author_name_en
         fullnameEn:
-          # ontology: #play_author_fullname_en
           type: string
+          x-dracor-feature: play_author_fullname_en
         shortnameEn:
-          # ontology: #play_author_shortname_en
           type: string
+          x-dracor-feature: play_author_shortname_en
       required:
         - name
         - fullname
@@ -1601,64 +1601,64 @@ components:
       type: object
       properties:
         id:
-          # ontology: #play_id
           type: string
+          x-dracor-feature: play_id
         uri:
           type: string
           format: url
         name:
-          # ontology: #play_name
           type: string
+          x-dracor-feature: play_name
         title:
-          # ontology: #play_title
           type: string
+          x-dracor-feature: play_title
         subtitle:
-          # ontology: #play_subtitle
           type: string
+          x-dracor-feature: play_subtitle
         titleEn:
-          # ontology: #play_title_en
           type: string
+          x-dracor-feature: play_title_en
         subtitleEn:
-          # ontology: #play_subtitle_en
           type: string
+          x-dracor-feature: play_subtitle_en
         authors:
-          # ontology: #contains_play_author_data
           type: array
+          x-dracor-feature: contains_play_author_data
           items:
             $ref: '#/components/schemas/AuthorInPlayInCorpus'
         yearNormalized:
-          # ontology: #play_year_normalized
           type: integer
           nullable: true
+          x-dracor-feature: play_year_normalized
         yearWritten:
-          # ontology: #play_year_written
           type: string
           nullable: true
+          x-dracor-feature: play_year_written
         yearPremiered:
-          # ontology: #play_year_premiered
           type: string
           nullable: true
+          x-dracor-feature: play_year_premiered
         yearPrinted:
-          # ontology: #play_year_printed
           type: string
           nullable: true
+          x-dracor-feature: play_year_printed
         datePremiered:
-          # ontology: #play_date_premiered
           type: string
+          x-dracor-feature: play_date_premiered
         source:
-          # ontology: #contains_digital_source_data
           $ref: '#/components/schemas/SourceInPlayMetadata'
+          x-dracor-feature: contains_digital_source_data
         networkdataCsvUrl:
-          # ontology: #play_network_data_csv_url
           type: string
           format: url
+          x-dracor-feature: play_network_data_csv_url
         networkSize:
-          # ontology: #play_network_size
           type: integer
+          x-dracor-feature: play_network_size
         wikidataId:
-          # ontology: #play_wikidata_id
           type: string
           nullable: true
+          x-dracor-feature: play_wikidata_id
       required:
         - id
         - uri
@@ -1677,33 +1677,33 @@ components:
       type: object
       properties:
         name:
-          # ontology: #corpus_name
           type: string
+          x-dracor-feature: corpus_name
         title:
-          # ontology: #corpus_title
           type: string
+          x-dracor-feature: corpus_title
         acronym:
-          # ontology: #corpus_acronym
           type: string
+          x-dracor-feature: corpus_acronym
         description:
-          # ontology: #corpus_description
           type: string
+          x-dracor-feature: corpus_description
         commit:
           type: string
         repository:
-          # ontology: #corpus_repository
           type: string
           format: url
+          x-dracor-feature: corpus_repository
         licence:
-          # ontology: #corpus_licence
           type: string
+          x-dracor-feature: corpus_licence
         licenceUrl:
-          # ontology: #corpus_licence_url
           type: string
           format: url
+          x-dracor-feature: corpus_licence_url
         plays:
-          # ontology: #contains_play_data
           type: array
+          x-dracor-feature: contains_play_data
           items:
             $ref: '#/components/schemas/PlayInCorpus'
       required:
@@ -1715,143 +1715,143 @@ components:
       type: object
       properties:
         id:
-          # ontology: #play_id
           type: string
+          x-dracor-feature: play_id
         name:
-          # ontology: #play_name
           type: string
+          x-dracor-feature: play_name
         title:
-          # ontology: #play_title
           type: string
+          x-dracor-feature: play_title
         subtitle:
-          # ontology: #play_subtitle
           type: string
           nullable: true
+          x-dracor-feature: play_subtitle
         wikidataId:
-          # ontology: #play_wikidata_id
           type: string
           nullable: true
+          x-dracor-feature: play_wikidata_id
         firstAuthor:
-          # ontology: #play_first_author_shortname
           type: string
+          x-dracor-feature: play_first_author_shortname
         yearNormalized:
-          # ontology: #play_year_normalized
           type: integer
           nullable: true
+          x-dracor-feature: play_year_normalized
         yearWritten:
-          # ontology: #play_year_written
           type: string
           nullable: true
+          x-dracor-feature: play_year_written
         yearPremiered:
-          # ontology: #play_year_premiered
           type: string
           nullable: true
+          x-dracor-feature: play_year_premiered
         yearPrinted:
-          # ontology: #play_year_printed
           type: string
           nullable: true
+          x-dracor-feature: play_year_printed
         datePremiered:
-          # ontology: #play_date_premiered
           type: string
           nullable: true
+          x-dracor-feature: play_date_premiered
         normalizedGenre:
-          # ontology: #play_genre_normalized
           type: string
           nullable: true
+          x-dracor-feature: play_genre_normalized
         libretto:
-          # ontology: #play_is_libretto
           type: boolean
+          x-dracor-feature: play_is_libretto
         density:
-          # ontology: #play_network_density
           type: number
+          x-dracor-feature: play_network_density
         digitalSource:
           nullable: true
         originalSourceNumberOfPages:
-          # ontology: #play_original_source_num_of_pages
           type: integer
           nullable: true
+          x-dracor-feature: play_original_source_num_of_pages
         originalSourcePubPlace:
-          # ontology: #play_original_source_publication_place
           type: string
           nullable: true
+          x-dracor-feature: play_original_source_publication_place
         originalSourcePublisher:
-          # ontology: #play_original_source_publisher
           type: string
           nullable: true
+          x-dracor-feature: play_original_source_publisher
         originalSourceYear:
-          # ontology: #play_original_source_publication_year
           type: integer
           nullable: true
+          x-dracor-feature: play_original_source_publication_year
         averageClustering:
-          # ontology: #play_network_average_clustering
           type: number
+          x-dracor-feature: play_network_average_clustering
         averageDegree:
-          # ontology: #play_network_average_degree
           type: number
+          x-dracor-feature: play_network_average_degree
         averagePathLength:
-          # ontology: #play_network_average_path_length
           type: number
+          x-dracor-feature: play_network_average_path_length
         diameter:
-          # ontology: #play_network_diameter
           type: integer
+          x-dracor-feature: play_network_diameter
         maxDegree:
-          # ontology: #play_network_max_degree
           type: integer
+          x-dracor-feature: play_network_max_degree
         maxDegreeIds:
-          # ontology: #play_network_max_degree_character_id
           type: string
+          x-dracor-feature: play_network_max_degree_character_id
         numOfL:
-          # ontology: #play_num_of_verse_lines
           type: integer
+          x-dracor-feature: play_num_of_verse_lines
         numConnectedComponents:
-          # ontology: #play_network_num_connected_components
           type: integer
+          x-dracor-feature: play_network_num_connected_components
         numEdges:
-          # ontology: #play_network_num_edges
           type: integer
+          x-dracor-feature: play_network_num_edges
         numOfActs:
-          # ontology: #play_num_of_acts
           type: integer
+          x-dracor-feature: play_num_of_acts
         numOfCoAuthors:
-          # ontology: #play_num_of_co_authors
           type: integer
+          x-dracor-feature: play_num_of_co_authors
         numOfP:
-          # ontology: #play_num_of_paragraphs
           type: integer
+          x-dracor-feature: play_num_of_paragraphs
         numOfPersonGroups:
-          # ontology: #play_num_of_person_groups
           type: integer
+          x-dracor-feature: play_num_of_person_groups
         numOfSegments:
-          # ontology: #play_num_of_segments
           type: integer
+          x-dracor-feature: play_num_of_segments
         numOfSpeakers:
-          # ontology: #play_num_of_speakers
           type: integer
+          x-dracor-feature: play_num_of_speakers
         numOfSpeakersMale:
-          # ontology: #play_num_of_speakers_gender_male
           type: integer
+          x-dracor-feature: play_num_of_speakers_gender_male
         numOfSpeakersFemale:
-          # ontology: #play_num_of_speakers_gender_female
           type: integer
+          x-dracor-feature: play_num_of_speakers_gender_female
         numOfSpeakersUnknown:
-          # ontology: #play_num_of_speakers_gender_unknown
           type: integer
+          x-dracor-feature: play_num_of_speakers_gender_unknown
         size:
-          # ontology: #play_network_size
           type: integer
+          x-dracor-feature: play_network_size
         wikipediaLinkCount:
-          # ontology: #play_num_of_wikipedia_links
           type: integer
           nullable: true
+          x-dracor-feature: play_num_of_wikipedia_links
         wordCountSp:
-          # ontology: #play_num_of_word_tokens_in_sp
           type: integer
+          x-dracor-feature: play_num_of_word_tokens_in_sp
         wordCountStage:
-          # ontology: #pplay_num_of_word_tokens_in_stage
           type: integer
+          x-dracor-feature: play_num_of_word_tokens_in_stage
         wordCountText:
-          # ontology: #play_num_of_word_tokens_in_text_elements
           type: integer
+          x-dracor-feature: play_num_of_word_tokens_in_text_elements
       required:
         - id
         - name
@@ -1900,15 +1900,15 @@ components:
       type: object
       properties:
         type:
-          # ontology: #segment_type
           type: string
           nullable: true
+          x-dracor-feature: segment_type
         number:
-          # ontology: #segment_number
           type: integer
+          x-dracor-feature: segment_number
         title:
-          # ontology: #segment_title
           type: string
+          x-dracor-feature: segment_title
         speakers:
           type: array
           items:
@@ -1926,28 +1926,28 @@ components:
           items:
             $ref: '#/components/schemas/ExternalReferenceResourceId'
         alsoKnownAs:
-          # ontology: #play_author_also_known_as
           type: array
+          x-dracor-feature: play_author_also_known_as
           items:
             type: string
         fullnameEn:
-          # ontology: #play_author_fullname_en
           type: string
+          x-dracor-feature: play_author_fullname_en
         name:
-          # ontology: #play_author_name
           type: string
+          x-dracor-feature: play_author_name
         shortnameEn:
-          # ontology: #play_author_shortname_en
           type: string
+          x-dracor-feature: play_author_shortname_en
         nameEn:
-          # ontology: #play_author_name_en
           type: string
+          x-dracor-feature: play_author_name_en
         fullname:
-          # ontology: #play_author_fullname
           type: string
+          x-dracor-feature: play_author_fullname
         shortname:
-          # ontology: #play_author_shortname
           type: string
+          x-dracor-feature: play_author_shortname
       required:
         - name
         - fullname
@@ -1958,28 +1958,29 @@ components:
       type: object
       properties:
         id:
-          # ontology: #character_id
           type: string
+          x-dracor-feature: character_id
         name:
-          # ontology: #character_name
           type: string
           nullable: true
+          x-dracor-feature: character_name
         isGroup:
-          # ontology: #character_is_group
           type: boolean
+          x-dracor-feature: character_is_group
         sex:
-          # ontology: #character_gender
           type: string
           nullable: true
           enum:
             - MALE
             - FEMALE
             - UNKNOWN
+          x-dracor-feature: character_gender
         role:
           type: string
+          x-dracor-feature: character_role
         wikidataId:
-          # ontology: #character_wikidata_id
           type: string
+          x-dracor-feature: character_wikidata_id
       required:
         - id
         - name
@@ -1990,10 +1991,9 @@ components:
       type: object
       properties:
         directed:
-          # ontology: #character_relation_is_directed
           type: boolean
+          x-dracor-feature: character_relation_is_directed
         type:
-          # ontology: #character_relation_type
           type: string
           enum:
           - parent_of
@@ -2003,12 +2003,13 @@ components:
           - siblings
           - spouses
           - friends
+          x-dracor-feature: character_relation_type
         source:
-          # ontology: #character_relation_from
           type: string
+          x-dracor-feature: character_relation_from
         target:
-          # ontology: #character_relation_to
           type: string
+          x-dracor-feature: character_relation_to
       required:
         - directed
         - type
@@ -2019,95 +2020,96 @@ components:
       type: object
       properties:
         id:
-          # ontology: #play_id
           type: string
+          x-dracor-feature: play_id
         uri:
           type: string
           format: url
         name:
-          # ontology: #play_name
           type: string
+          x-dracor-feature: play_name
         corpus:
-          # ontology: #play_corpus_name
           type: string
+          x-dracor-feature: play_corpus_name
         title:
-          # ontology: #play_title
           type: string
+          x-dracor-feature: play_title
         subtitle:
-          # ontology: #play_subtitle
           type: string
           nullable: true
+          x-dracor-feature: play_subtitle
         titleEn:
-          # ontology: #play_title_en
           type: string
+          x-dracor-feature: play_title_en
         subtitleEn:
-          # ontology: #play_subtitle_en
           type: string
+          x-dracor-feature: play_subtitle_en
         authors:
-          # ontology: #contains_play_author_data
           type: array
+          x-dracor-feature: contains_play_author_data
           items:
             $ref: '#/components/schemas/AuthorInPlayMetadata'
         yearNormalized:
-          # ontology: #play_year_normalized
           type: integer
           nullable: true
+          x-dracor-feature: play_year_normalized
         yearWritten:
-          # ontology: #play_year_written
           type: string
           nullable: true
+          x-dracor-feature: play_year_written
         yearPremiered:
-          # ontology: #play_year_premiered
           type: string
           nullable: true
+          x-dracor-feature: play_year_premiered
         yearPrinted:
-          # ontology: #play_year_printed
           type: string
           nullable: true
+          x-dracor-feature: play_year_printed
         datePremiered:
-          # ontology: #play_date_premiered
           type: string
+          x-dracor-feature: play_date_premiered
         normalizedGenre:
-          # ontology: #play_genre_normalized
           type: string
           nullable: true
+          x-dracor-feature: play_genre_normalized
         libretto:
-          # ontology: #play_is_libretto
           type: boolean
+          x-dracor-feature: play_is_libretto
         allInIndex:
-          # ontology: #play_all_in_index
           type: number
           nullable: true
           minimum: 0.0
           maximum: 1.0
+          x-dracor-feature: play_all_in_index
         allInSegment:
-          # ontology: #play_all_in_segment
           type: integer
           nullable: true
+          x-dracor-feature: play_all_in_segment
         characters:
-          # ontology: #contains_play_character_data
           type: array
           items:
             $ref: '#/components/schemas/CharacterInPlayMetadata'
+          x-dracor-feature: contains_play_character_data
         segments:
           type: array
           items:
             $ref: '#/components/schemas/SegmentItemInPlayMetadata'
+          x-dracor-feature: contains_play_segment_data
         relations:
-          # ontology: #contains_character_relation_data
           type: array
           items:
             $ref: '#/components/schemas/RelationItemInPlayMetadata'
+          x-dracor-feature: contains_character_relation_data
         source:
-          # ontology: #ccontains_digital_source_data
           $ref: '#/components/schemas/SourceInPlayMetadata'
+          x-dracor-feature: contains_digital_source_data
         originalSource:
-          # ontology: #play_original_source_full_citation
           type: string
+          x-dracor-feature: play_original_source_full_citation
         wikidataId:
-          # ontology: #play_wikidata_id
           type: string
           nullable: true
+          x-dracor-feature: play_wikidata_id
       required:
         - id
         - uri
@@ -2130,24 +2132,24 @@ components:
       type: object
       properties:
         id:
-          # ontology: #character_id
           type: string
+          x-dracor-feature: character_id
         betweenness:
-          # ontology: #haracter_node_betweenness
           type: number
+          x-dracor-feature: character_node_betweenness
         closeness:
-          # ontology: #character_node_closeness
           type: number
+          x-dracor-feature: character_node_closeness
         degree:
-          # ontology: #character_node_degree
           type: integer
+          x-dracor-feature: character_node_degree
         eigenvector:
-          # ontology: #character_node_eigenvector
           type: number
           nullable: true
+          x-dracor-feature: character_node_eigenvector
         weightedDegree:
-          # ontology: #character_node_weighted_degree
           type: integer
+          x-dracor-feature: character_node_weighted_degree
       required:
         - id
         - betweenness
@@ -2160,54 +2162,55 @@ components:
       type: object
       properties:
         id:
-          # ontology: #play_id
           type: string
+          x-dracor-feature: play_id
         name:
-          # ontology: #play_name
           type: string
+          x-dracor-feature: play_name
         corpus:
-          # ontology: #play_corpus_name
           type: string
+          x-dracor-feature: play_corpus_name
         nodes:
           type: array
           items:
             $ref: '#/components/schemas/NodeInPlayMetrics'
+          x-dracor-feature: contains_play_network_node_data
         averageClustering:
-          # ontology: #play_network_average_clustering
           type: number
+          x-dracor-feature: play_network_average_clustering
         averageDegree:
-          # ontology: #play_network_average_degree
           type: number
+          x-dracor-feature: play_network_average_degree
         averagePathLength:
-          # ontology: #play_network_average_path_length
           type: number
+          x-dracor-feature: play_network_average_path_length
         density:
-          # ontology: #play_network_density
           type: number
+          x-dracor-feature: play_network_density
         diameter:
-          # ontology: #play_network_diameter
           type: integer
+          x-dracor-feature: play_network_diameter
         maxDegree:
-          # ontology: #play_network_average_degree
           type: integer
+          x-dracor-feature: play_network_max_degree
         maxDegreeIds:
-          # ontology: #play_network_max_degree_character_id
           type: array
           items:
             type: string
+          x-dracor-feature: play_network_max_degree_character_id
         numConnectedComponents:
-          # ontology: #play_network_num_connected_components
           type: integer
+          x-dracor-feature: play_network_num_connected_components
         numEdges:
-          # ontology: #play_network_num_edges
           type: integer
+          x-dracor-feature: play_network_num_edges
         size:
-          # ontology: #play_network_size
           type: integer
+          x-dracor-feature: play_network_size
         wikipediaLinkCount:
-          # ontology: #play_num_of_wikipedia_links
           type: integer
           nullable: true
+          x-dracor-feature: play_num_of_wikipedia_links
       required:
         - id
         - name
@@ -2228,57 +2231,58 @@ components:
       type: object
       properties:
         id:
-          # ontology: #character_id
           type: string
+          x-dracor-feature: character_id
         name:
-          # ontology: #character_name
           type: string
           nullable: true
+          x-dracor-feature: character_name
         isGroup:
-          # ontology: #character_is_group
           type: boolean
+          x-dracor-feature: character_is_group
         gender:
-          # ontology: #character_gender
           type: string
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
           nullable: true
+          x-dracor-feature: character_gender
         role:
           type: string
+          x-dracor-feature: character_role
         betweenness:
-          # ontology: #character_node_betweenness
           type: number
           nullable: true
+          x-dracor-feature: character_node_betweenness
         closeness:
-          # ontology: #character_node_closeness
           type: number
           nullable: true
+          x-dracor-feature: character_node_closeness
         degree:
-          # ontology: #character_node_degree
           type: integer
           nullable: true
+          x-dracor-feature: character_node_degree
         eigenvector:
-          # ontology: #character_node_eigenvector
           type: number
           nullable: true
+          x-dracor-feature: character_node_eigenvector
         numOfScenes:
-          # ontology: #character_num_of_segments
           type: integer
+          x-dracor-feature: character_num_of_segments
         numOfSpeechActs:
-          # ontology: #character_num_of_sp
           type: integer
+          x-dracor-feature: character_num_of_sp
         numOfWords:
-          # ontology: #character_num_of_word_tokens
           type: integer
+          x-dracor-feature: character_num_of_word_tokens
         weightedDegree:
-          # ontology: #character_node_weighted_degree
           type: integer
           nullable: true
+          x-dracor-feature: character_node_weighted_degree
         wikidataId:
-          # ontology: #character_wikidata_id
           type: string
+          x-dracor-feature: character_wikidata_id
       required:
         - id
         - name
@@ -2297,14 +2301,15 @@ components:
       type: object
       properties:
         id:
-          # ontology: #character_id
           type: string
+          x-dracor-feature: character_id
         label:
-          # ontology: #character_name
           type: string
+          x-dracor-feature: character_name
         isGroup:
           # ontology: #character_is_group
           type: boolean
+          x-dracor-feature: character_is_group
         gender:
           type: string
           enum:
@@ -2312,17 +2317,18 @@ components:
           - FEMALE
           - UNKNOWN
           nullable: true
+          x-dracor-feature: character_gender
         roles:
-          # ontology: #character_role
           type: array
           nullable: true
           items:
             type: string
+          x-dracor-feature: character_role
         text:
-          # ontology: #character_spoken_text
           type: array
           items:
             type: string
+          x-dracor-feature: character_spoken_text
       required:
         - id
         - label
