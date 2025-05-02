@@ -1535,6 +1535,8 @@ components:
       # see dutil:get-source
       type: object
       properties:
+        # currently neither name nor url is required, but we omit the source
+        # object if none of the properties is available
         name:
           # ontology: #play_digital_source_name
           type: string
@@ -1544,9 +1546,6 @@ components:
           type: string
           format: url
           nullable: true
-      # currently neither name nor url is required, but we omit the source
-      # object if none of the properties is available
-      required: []
     ExternalReferenceResourceId:
       # see dutil:get-authors
       type: object
