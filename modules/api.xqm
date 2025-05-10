@@ -1496,18 +1496,22 @@ declare function local:get-text-by-character ($doc) {
       tei:persName[@xml:id=$id]
     )
     let $sex := $label/parent::*/@sex/string()
+    let $gender := $label/parent::*/@gender/string()
     let $role := $label/parent::*/@role/string()
     let $isGroup := if ($label/parent::tei:personGrp)
     then true() else false()
     let $sp := dutil:get-speech($doc//tei:body, $id)
-    return map {
-      "id": $id,
-      "label": $label/text(),
-      "isGroup": $isGroup,
-      "sex": $sex,
-      "roles": array {tokenize($role, '\s+')},
-      "text": array {for $l in $sp return $l/normalize-space()}
-    }
+    return map:merge((
+      map {
+        "id": $id,
+        "label": $label/text(),
+        "isGroup": $isGroup,
+        "sex": $sex,
+        "roles": array {tokenize($role, '\s+')},
+        "text": array {for $l in $sp return $l/normalize-space()}
+      },
+      if ($gender) then map:entry("gender", $gender) else ()
+    ))
   }
 };
 
