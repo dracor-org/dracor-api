@@ -1975,6 +1975,9 @@ components:
             - FEMALE
             - UNKNOWN
           x-dracor-feature: character_sex
+        gender:
+          type: string
+          x-dracor-feature: character_gender
         role:
           type: string
           x-dracor-feature: character_role
@@ -2248,6 +2251,9 @@ components:
           - UNKNOWN
           nullable: true
           x-dracor-feature: character_sex
+        gender:
+          type: string
+          x-dracor-feature: character_gender
         role:
           type: string
           x-dracor-feature: character_role
@@ -2318,6 +2324,9 @@ components:
           - UNKNOWN
           nullable: true
           x-dracor-feature: character_sex
+        gender:
+          type: string
+          x-dracor-feature: character_gender
         roles:
           type: array
           nullable: true

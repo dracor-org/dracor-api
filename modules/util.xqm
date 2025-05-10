@@ -1034,6 +1034,7 @@ declare function dutil:get-play-info(
           )
           let $name := $node/(tei:persName | tei:name)[1]/text()
           let $sex := $node/@sex/string()
+          let $gender := $node/@gender/string()
           let $role := $node/@role/string()
           let $isGroup := if ($node/name() eq 'personGrp')
             then true() else false()
@@ -1045,6 +1046,7 @@ declare function dutil:get-play-info(
               "isGroup": $isGroup,
               "sex": if($sex) then $sex else ()
             },
+            if ($gender) then map:entry("gender", $gender) else (),
             if ($role) then map:entry("role", $role) else (),
             if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
           ))
@@ -1167,6 +1169,7 @@ declare function dutil:characters-info (
       )
       let $name := $node/(tei:persName | tei:name)[1]/text()
       let $sex := $node/@sex/string()
+      let $gender := $node/@gender/string()
       let $role := $node/@role/string()
       let $isGroup := if ($node/name() eq 'personGrp')
         then true() else false()
@@ -1191,6 +1194,7 @@ declare function dutil:characters-info (
           "betweenness": $metrics-node/betweenness/number(.),
           "eigenvector": $eigenvector
         },
+        if ($gender) then map:entry("gender", $gender) else (),
         if ($role) then map:entry("role", $role) else (),
         if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
       ))
