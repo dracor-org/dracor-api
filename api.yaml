@@ -469,7 +469,7 @@ paths:
                 [
                   {
                     "numOfSpeechActs": 171,
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "numOfScenes": 21,
                     "name": "Городничий",
                     "numOfWords": 4985,
@@ -478,7 +478,7 @@ paths:
                   },
                   {
                     "numOfSpeechActs": 49,
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "numOfScenes": 8,
                     "name": "Аммос Федорович",
                     "numOfWords": 748,
@@ -487,7 +487,7 @@ paths:
                   },
                   {
                     "numOfSpeechActs": 50,
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "numOfScenes": 9,
                     "name": "Артемий Филиппович Земляника",
                     "numOfWords": 735,
@@ -496,7 +496,7 @@ paths:
                   },
                   {
                     "numOfSpeechActs": 24,
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "numOfScenes": 8,
                     "name": "Лука Лукич",
                     "numOfWords": 291,
@@ -508,7 +508,7 @@ paths:
               schema:
                 type: string
               example: |
-                id,name,gender,isGroup,numOfScenes,numOfSpeechActs,numOfWords
+                id,name,sex,isGroup,numOfScenes,numOfSpeechActs,numOfWords
                 "gorodnichij","Городничий","MALE","false","21","171","4985"
                 "ammos_fedorovich_ljapkin_tjapkin","Аммос Федорович","MALE","false","8","49","748"
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
@@ -532,7 +532,7 @@ paths:
               schema:
                 type: string
               example: |
-                id,name,gender,isGroup,numOfScenes,numOfSpeechActs,numOfWords
+                id,name,sex,isGroup,numOfScenes,numOfSpeechActs,numOfWords
                 "gorodnichij","Городничий","MALE","false","21","171","4985"
                 "ammos_fedorovich_ljapkin_tjapkin","Аммос Федорович","MALE","false","8","49","748"
                 "artemij_filippovich_zemljanika","Артемий Филиппович Земляника","MALE","false","9","50","735"
@@ -656,7 +656,7 @@ paths:
                   </meta>
                   <graph mode="static">
                     <attributes class="node" mode="static">
-                      <attribute id="gender" title="Gender" type="string"/>
+                      <attribute id="sex" title="Sex" type="string"/>
                       <attribute id="person-group" title="Person group" type="boolean"/>
                       <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
                     </attributes>
@@ -668,63 +668,63 @@ paths:
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="1037"/>
-                          <attvalue for="gender" value="FEMALE"/>
+                          <attvalue for="sex" value="FEMALE"/>
                         </attvalues>
                       </node>
                       <node id="menalkas" label="Menalkas">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="1509"/>
-                          <attvalue for="gender" value="MALE"/>
+                          <attvalue for="sex" value="MALE"/>
                         </attvalues>
                       </node>
                       <node id="nisus" label="Nisus">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="2203"/>
-                          <attvalue for="gender" value="MALE"/>
+                          <attvalue for="sex" value="MALE"/>
                         </attvalues>
                       </node>
                       <node id="atalanta" label="Atalanta">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="2307"/>
-                          <attvalue for="gender" value="FEMALE"/>
+                          <attvalue for="sex" value="FEMALE"/>
                         </attvalues>
                       </node>
                       <node id="corydon" label="Corydon">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="1373"/>
-                          <attvalue for="gender" value="MALE"/>
+                          <attvalue for="sex" value="MALE"/>
                         </attvalues>
                       </node>
                       <node id="damon" label="Damon">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="2674"/>
-                          <attvalue for="gender" value="MALE"/>
+                          <attvalue for="sex" value="MALE"/>
                         </attvalues>
                       </node>
                       <node id="amaryllis" label="Amaryllis">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="823"/>
-                          <attvalue for="gender" value="FEMALE"/>
+                          <attvalue for="sex" value="FEMALE"/>
                         </attvalues>
                       </node>
                       <node id="myrtillus" label="Myrtillus">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="1720"/>
-                          <attvalue for="gender" value="MALE"/>
+                          <attvalue for="sex" value="MALE"/>
                         </attvalues>
                       </node>
                       <node id="damoetas" label="Damötas">
                         <attvalues>
                           <attvalue for="person-group" value="0"/>
                           <attvalue for="number-of-words" value="679"/>
-                          <attvalue for="gender" value="MALE"/>
+                          <attvalue for="sex" value="MALE"/>
                         </attvalues>
                       </node>
                     </nodes>
@@ -765,52 +765,52 @@ paths:
                 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
                   <key attr.name="label" attr.type="string" for="node" id="label"/>
                   <key attr.name="Relation" attr.type="string" for="edge" id="relation"/>
-                  <key attr.name="Gender" attr.type="string" for="node" id="gender"/>
+                  <key attr.name="Sex" attr.type="string" for="node" id="sex"/>
                   <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
                   <graph edgedefault="undirected">
                     <node id="doris">
                       <data key="label">Doris</data>
-                      <data key="gender">FEMALE</data>
+                      <data key="sex">FEMALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="menalkas">
                       <data key="label">Menalkas</data>
-                      <data key="gender">MALE</data>
+                      <data key="sex">MALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="nisus">
                       <data key="label">Nisus</data>
-                      <data key="gender">MALE</data>
+                      <data key="sex">MALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="atalanta">
                       <data key="label">Atalanta</data>
-                      <data key="gender">FEMALE</data>
+                      <data key="sex">FEMALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="corydon">
                       <data key="label">Corydon</data>
-                      <data key="gender">MALE</data>
+                      <data key="sex">MALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="damon">
                       <data key="label">Damon</data>
-                      <data key="gender">MALE</data>
+                      <data key="sex">MALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="amaryllis">
                       <data key="label">Amaryllis</data>
-                      <data key="gender">FEMALE</data>
+                      <data key="sex">FEMALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="myrtillus">
                       <data key="label">Myrtillus</data>
-                      <data key="gender">MALE</data>
+                      <data key="sex">MALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <node id="damoetas">
                       <data key="label">Damötas</data>
-                      <data key="gender">MALE</data>
+                      <data key="sex">MALE</data>
                       <data key="person-group">false</data>
                     </node>
                     <edge id="1" directed="false" source="amaryllis" target="atalanta">
@@ -862,8 +862,8 @@ paths:
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
-        - name: gender
-          description: Speaker gender
+        - name: sex
+          description: Speaker sex
           in: query
           required: false
           schema:
@@ -1894,13 +1894,13 @@ components:
           x-dracor-feature: play_num_of_speakers
         numOfSpeakersMale:
           type: integer
-          x-dracor-feature: play_num_of_speakers_gender_male
+          x-dracor-feature: play_num_of_speakers_sex_male
         numOfSpeakersFemale:
           type: integer
-          x-dracor-feature: play_num_of_speakers_gender_female
+          x-dracor-feature: play_num_of_speakers_sex_female
         numOfSpeakersUnknown:
           type: integer
-          x-dracor-feature: play_num_of_speakers_gender_unknown
+          x-dracor-feature: play_num_of_speakers_sex_unknown
         size:
           type: integer
           x-dracor-feature: play_network_size
@@ -2039,7 +2039,7 @@ components:
             - MALE
             - FEMALE
             - UNKNOWN
-          x-dracor-feature: character_gender
+          x-dracor-feature: character_sex
         role:
           type: string
           x-dracor-feature: character_role
@@ -2305,14 +2305,14 @@ components:
         isGroup:
           type: boolean
           x-dracor-feature: character_is_group
-        gender:
+        sex:
           type: string
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
           nullable: true
-          x-dracor-feature: character_gender
+          x-dracor-feature: character_sex
         role:
           type: string
           x-dracor-feature: character_role
@@ -2352,7 +2352,7 @@ components:
         - id
         - name
         - isGroup
-        - gender
+        - sex
         - betweenness
         - closeness
         - degree
@@ -2375,14 +2375,14 @@ components:
           # ontology: #character_is_group
           type: boolean
           x-dracor-feature: character_is_group
-        gender:
+        sex:
           type: string
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
           nullable: true
-          x-dracor-feature: character_gender
+          x-dracor-feature: character_sex
         roles:
           type: array
           nullable: true
@@ -2398,7 +2398,7 @@ components:
         - id
         - label
         - isGroup
-        - gender
+        - sex
         - roles
         - text
     PlayWithWikidataCharacter:
