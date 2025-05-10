@@ -994,7 +994,7 @@ declare function local:make-gexf-nodes($speakers, $doc) as element()* {
         <attvalue for="number-of-words" value="{$wc}" />
       {
         if ($sex) then
-          <attvalue for="gender" value="{$sex}"></attvalue>
+          <attvalue for="sex" value="{$sex}"></attvalue>
         else ()
       }
       </attvalues>
@@ -1066,7 +1066,7 @@ function api:networkdata-gexf($corpusname, $playname) {
           </meta>
           <graph mode="static" defaultedgetype="undirected">
             <attributes class="node" mode="static">
-              <attribute id="gender" title="Gender" type="string"/>
+              <attribute id="sex" title="Sex" type="string"/>
               <attribute id="person-group" title="Person group" type="boolean"/>
               <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
             </attributes>
@@ -1135,7 +1135,7 @@ function api:networkdata-graphml($corpusname, $playname) {
           <key attr.name="label" attr.type="string" for="node" id="label"/>
           <key attr.name="Edge Label" attr.type="string" for="edge" id="edgelabel"/>
           <key attr.name="weight" attr.type="double" for="edge" id="weight"/>
-          <key attr.name="Gender" attr.type="string" for="node" id="gender"/>
+          <key attr.name="Sex" attr.type="string" for="node" id="sex"/>
           <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
           <key attr.name="Number of spoken words" attr.type="int" for="node" id="number-of-words"/>
           <graph edgedefault="undirected">
@@ -1148,7 +1148,7 @@ function api:networkdata-graphml($corpusname, $playname) {
               return
                 <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
                   <data key="label">{$label}</data>
-                  {if ($sex) then <data key="gender">{$sex}</data> else ()}
+                  {if ($sex) then <data key="sex">{$sex}</data> else ()}
                   <data key="person-group">
                     {if ($n?isGroup) then "true" else "false"}
                   </data>
@@ -1270,7 +1270,7 @@ function api:relations-gexf($corpusname, $playname) {
           </meta>
           <graph mode="static">
             <attributes class="node" mode="static">
-              <attribute id="gender" title="Gender" type="string"/>
+              <attribute id="sex" title="Sex" type="string"/>
               <attribute id="person-group" title="Person group" type="boolean"/>
               <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
             </attributes>
@@ -1340,7 +1340,7 @@ function api:relations-graphml($corpusname, $playname) {
         <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
           <key attr.name="label" attr.type="string" for="node" id="label"/>
           <key attr.name="Relation" attr.type="string" for="edge" id="relation"/>
-          <key attr.name="Gender" attr.type="string" for="node" id="gender"/>
+          <key attr.name="Sex" attr.type="string" for="node" id="sex"/>
           <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
           <graph edgedefault="undirected">
             {
@@ -1351,7 +1351,7 @@ function api:relations-graphml($corpusname, $playname) {
               return
                 <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
                   <data key="label">{$label}</data>
-                  {if ($sex) then <data key="gender">{$sex}</data> else ()}
+                  {if ($sex) then <data key="sex">{$sex}</data> else ()}
                   <data key="person-group">
                     {if ($n?isGroup) then "true" else "false"}
                   </data>
@@ -1403,7 +1403,7 @@ declare
 function api:characters-info-csv($corpusname, $playname) {
   let $info := dutil:characters-info($corpusname, $playname)
   let $keys := (
-    "id", "name", "gender", "isGroup",
+    "id", "name", "sex", "isGroup",
     "numOfScenes", "numOfSpeechActs", "numOfWords", "wikidataId",
     "degree", "weightedDegree", "betweenness", "closeness", "eigenvector"
   )
@@ -1435,7 +1435,7 @@ function api:characters-info-csv-ext($corpusname, $playname) {
  :
  : @param $corpusname Corpus name
  : @param $playname Play name
- : @param $gender Gender ("MALE"|"FEMALE"|"UNKNOWN")
+ : @param $sex Sex ("MALE"|"FEMALE"|"UNKNOWN")
  : @param $role Role
  : @param $relation Relation
  : @param $relation Relation role ("active"|"passive")
@@ -1444,7 +1444,7 @@ function api:characters-info-csv-ext($corpusname, $playname) {
 declare
   %rest:GET
   %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text")
-  %rest:query-param("gender", "{$gender}")
+  %rest:query-param("sex", "{$sex}")
   %rest:query-param("role", "{$role}")
   %rest:query-param("relation", "{$relation}")
   %rest:query-param("relation-active", "{$relation-active}")
@@ -1452,32 +1452,32 @@ declare
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:spoken-text(
-  $corpusname, $playname, $gender, $role, $relation, $relation-active,
+  $corpusname, $playname, $sex, $role, $relation, $relation-active,
   $relation-passive
 ) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  let $genders := tokenize($gender, ',')
+  let $sexes := tokenize($sex, ',')
   return
     if (not($doc)) then
       <rest:response>
         <http:response status="404"/>
       </rest:response>
     else if (
-      $gender and
-      $genders[.!="MALE" and .!="FEMALE" and .!="UNKNOWN"]
+      $sex and
+      $sexes[.!="MALE" and .!="FEMALE" and .!="UNKNOWN"]
     ) then
       (
         <rest:response>
           <http:response status="400"/>
         </rest:response>,
-        "gender must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
+        "sex must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
       )
     else
       let $sp := if (
-        $gender or $relation or $relation-active or $relation-passive or $role
+        $sex or $relation or $relation-active or $relation-passive or $role
         ) then
         dutil:get-speech-filtered(
-          $doc//tei:body, $gender, $role, $relation, $relation-active,
+          $doc//tei:body, $sex, $role, $relation, $relation-active,
           $relation-passive
         )
       else
@@ -1495,7 +1495,7 @@ declare function local:get-text-by-character ($doc) {
       tei:personGrp[@xml:id=$id]/tei:name[1] |
       tei:persName[@xml:id=$id]
     )
-    let $gender := $label/parent::*/@sex/string()
+    let $sex := $label/parent::*/@sex/string()
     let $role := $label/parent::*/@role/string()
     let $isGroup := if ($label/parent::tei:personGrp)
     then true() else false()
@@ -1504,7 +1504,7 @@ declare function local:get-text-by-character ($doc) {
       "id": $id,
       "label": $label/text(),
       "isGroup": $isGroup,
-      "gender": $gender,
+      "sex": $sex,
       "roles": array {tokenize($role, '\s+')},
       "text": array {for $l in $sp return $l/normalize-space()}
     }
@@ -1581,12 +1581,12 @@ function api:spoken-text-by-character-csv($corpusname, $playname) {
     else
       let $texts := local:get-text-by-character($doc)
       return (
-        "ID,Label,Type,Gender,Text&#10;",
+        "ID,Label,Type,Sex,Text&#10;",
         for $t in $texts?*
         let $type := if ($t?isGroup) then "personGrp" else "person"
         let $text := string-join($t?text?*, '&#10;')
         return $t?id || ',"' || dutil:csv-escape($t?label) || '","' ||
-          $type  || '","' || $t?gender || '","' ||
+          $type  || '","' || $t?sex || '","' ||
           dutil:csv-escape($text) || '"&#10;'
       )
 };
