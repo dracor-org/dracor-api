@@ -134,15 +134,17 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
  : @param $tei Document element
  : @param $gender Gender of speaker
  : @param $role Role of speaker.
- : @param $relation Relation of speaker.
- : @param $relation-role Relation role (active|passive).
+ : @param $relation Relation of speakers (mutual participants).
+ : @param $relation-active Relation of speakers (active participants).
+ : @param $relation-passive Relation of speakers (passive participants).
  :)
 declare function dutil:get-filtered-speakers (
   $tei as element(tei:TEI),
   $gender as xs:string*,
   $role as xs:string*,
   $relation as xs:string*,
-  $relation-role as xs:string*
+  $relation-active as xs:string*,
+  $relation-passive as xs:string*
 ) as xs:string* {
   let $genders := tokenize($gender, ',')
   let $roles := tokenize($role, ',')
@@ -152,8 +154,11 @@ declare function dutil:get-filtered-speakers (
   let $rel := $ana//fn:non-match/text()
   let $suffix := $ana//fn:group[@nr="1"]/text()
 
-  let $relside := if ($relation-role) then $relation-role
-    else if ($suffix) then $suffix else ()
+  let $mutual := if (not($suffix)) then $rel else ()
+  let $active := if ($relation-active) then $relation-active else
+    if ($suffix eq 'active') then $rel else ()
+  let $passive := if ($relation-passive) then $relation-passive else
+    if ($suffix eq 'passive') then $rel else ()
 
   let $listPerson := $tei//tei:particDesc/tei:listPerson
   let $relations := $listPerson/tei:listRelation
@@ -164,28 +169,15 @@ declare function dutil:get-filtered-speakers (
     ]/@xml:id/string()
 
   let $filtered := for $id in $ids
-    return if (not($rel)) then
+    return if (not($mutual) and not($active) and not($passive)) then
       $id
     else if (
-      not($relside)
-      and $relations/tei:relation
-        [@name = $rel and (
-          contains(@mutual||' ', '#'||$id||' ') or
-          contains(@active||' ', '#'||$id||' ') or
-          contains(@passive||' ', '#'||$id||' ')
-        )]
-    ) then
-      $id
-    else if (
-      $relside = 'active'
-      and $relations/tei:relation
-        [@name = $rel and contains(@active||' ', '#'||$id||' ')]
-    ) then
-      $id
-    else if (
-      $relside = 'passive'
-      and $relations/tei:relation
-        [@name = $rel and contains(@passive||' ', '#'||$id||' ')]
+      $relations/tei:relation
+        [
+          (@name = $mutual and contains(@mutual||' ', '#'||$id||' ')) or
+          (@name = $active and contains(@active||' ', '#'||$id||' ')) or
+          (@name = $passive and contains(@passive||' ', '#'||$id||' '))
+        ]
     ) then
       $id
     else ()
@@ -262,18 +254,21 @@ declare function dutil:get-speech-by-gender (
  : @param $parent Element to search in
  : @param $gender Gender of speaker
  : @param $role Role of speaker
- : @param $relation Relation of speaker
- : @param $relation-role Relation role (active|passive)
+ : @param $relation Relation of speakers
+ : @param $relation-active Relation of speakers (active participants)
+ : @param $relation-passive Relation of speakers (passive participants)
  :)
 declare function dutil:get-speech-filtered (
   $parent as element(),
   $gender as xs:string*,
   $role as xs:string*,
   $relation as xs:string*,
-  $relation-role as xs:string*
+  $relation-active as xs:string*,
+  $relation-passive as xs:string*
 ) as item()* {
   let $speakers := dutil:get-filtered-speakers(
-    $parent/ancestor::tei:TEI, $gender, $role, $relation, $relation-role
+    $parent/ancestor::tei:TEI, $gender, $role, $relation, $relation-active,
+    $relation-passive
   )
 
   let $refs := for $id in $speakers return '#'||$id

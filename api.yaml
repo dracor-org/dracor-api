@@ -869,14 +869,15 @@ paths:
           schema:
             type: string
             enum: [FEMALE, MALE, UNKNOWN]
-        - $ref: "#/components/parameters/relationName"
-        - $ref: "#/components/parameters/relationRole"
         - name: role
           description: Speaker role
           in: query
           required: false
           schema:
             type: string
+        - $ref: "#/components/parameters/relationMutual"
+        - $ref: "#/components/parameters/relationActive"
+        - $ref: "#/components/parameters/relationPassive"
       responses:
         '200':
           description: Returns plain text document
@@ -885,7 +886,7 @@ paths:
               schema:
                 type: string
         '400':
-          description: Invalid value for `gender` or `relation-role` parameters
+          description: Invalid value for `gender` parameter
         '404':
           description: Unknown play (or corpus)
 
@@ -1401,11 +1402,16 @@ components:
         munoz_refugio:
           value: munoz-refugio
           summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
-    relationName:
+    relationMutual:
       name: relation
       description: |
-        Speaker relation name. The possible values can vary depending on the
-        corpus. For examples see the the section
+        Name of an undirected relation between speakers. When a valid relation
+        is given, the response lists only results associated with speakers that
+        are participants in that relation (i.e. are referenced in the
+        `@mutual` attribute of the relation element).
+
+        The possible values can vary depending on the corpus. For examples see
+        the section
         [Relations of Characters](/doc/odd#section-character-relations) of the
         Encoding Guidelines.
       in: query
@@ -1419,25 +1425,52 @@ components:
           value: friends
         spouses:
           value: spouses
+    relationActive:
+      name: relation-active
+      description: |
+        Name of a directed relation between speakers. When a valid relation is
+        given, the response lists only results associated with speakers that
+        are active participants in that relation (i.e. are referenced in the
+        `@active` attribute of the relation element).
+
+        The possible values can vary depending on the corpus. For examples see
+        the section
+        [Relations of Characters](/doc/odd#section-character-relations) of the
+        Encoding Guidelines.
+      in: query
+      required: false
+      schema:
+        type: string
+      examples:
         parent_of:
           value: parent_of
         related_with:
           value: related_with
         associated_with:
           value: associated_with
-    relationRole:
-      name: relation-role
+    relationPassive:
+      name: relation-passive
       description: |
-        For directed relations this selects either the passive or the active
-        participants. This parameter needs to be combined with the
-        `relation` parameter, otherwise it is ignored.
+        Name of a directed relation between speakers. When a valid relation is
+        given, the response lists only results associated with speakers that
+        are passive participants in that relation (i.e. are referenced in the
+        `@passive` attribute of the relation element).
+
+        The possible values can vary depending on the corpus. For examples see
+        the section
+        [Relations of Characters](/doc/odd#section-character-relations) of the
+        Encoding Guidelines.
       in: query
       required: false
       schema:
         type: string
-        enum:
-          - passive
-          - active
+      examples:
+        parent_of:
+          value: parent_of
+        related_with:
+          value: related_with
+        associated_with:
+          value: associated_with
   schemas:
     Info:
       type: object

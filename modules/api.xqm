@@ -1447,11 +1447,13 @@ declare
   %rest:query-param("gender", "{$gender}")
   %rest:query-param("role", "{$role}")
   %rest:query-param("relation", "{$relation}")
-  %rest:query-param("relation-role", "{$relation-role}")
+  %rest:query-param("relation-active", "{$relation-active}")
+  %rest:query-param("relation-passive", "{$relation-passive}")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:spoken-text(
-  $corpusname, $playname, $gender, $role, $relation, $relation-role
+  $corpusname, $playname, $gender, $role, $relation, $relation-active,
+  $relation-passive
 ) {
   let $doc := dutil:get-doc($corpusname, $playname)
   let $genders := tokenize($gender, ',')
@@ -1470,20 +1472,13 @@ function api:spoken-text(
         </rest:response>,
         "gender must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
       )
-    else if (
-      $relation-role and
-      not($relation-role != ("active", "passive"))
-    ) then
-      (
-        <rest:response>
-          <http:response status="400"/>
-        </rest:response>,
-        "relation-role must be ""active"" or ""passive"""
-      )
     else
-      let $sp := if ($gender or $relation or $role) then
+      let $sp := if (
+        $gender or $relation or $relation-active or $relation-passive or $role
+        ) then
         dutil:get-speech-filtered(
-          $doc//tei:body, $gender, $role, $relation, $relation-role
+          $doc//tei:body, $gender, $role, $relation, $relation-active,
+          $relation-passive
         )
       else
         dutil:get-speech($doc//tei:body, ())
