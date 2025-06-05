@@ -117,6 +117,75 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
 };
 
 (:~
+ : Retrieve list of speaker IDs of a play filtered by gender, role or relation
+ :
+ : This function retrieve a list of IDs from the particDesc of a play that
+ : can be filtered by gender, role and/or relation.
+ :
+ : The $relation parameter should be a value used in the `name` attribute of
+ : the tei:listRelation/tei:relation element. For directed relations the active
+ : or passive side can be selected using the $relation-role parameter.
+ :
+ : To support the behavior in API versions prior to 1.1.0 the relation role can
+ : also be specified by suffixing the relation name with '_active' or
+ : '_passive'. The $relation-role parameter, when used together with a suffix,
+ : will have precedence.
+ :
+ : @param $tei Document element
+ : @param $gender Gender of speaker
+ : @param $role Role of speaker.
+ : @param $relation Relation of speakers (mutual participants).
+ : @param $relation-active Relation of speakers (active participants).
+ : @param $relation-passive Relation of speakers (passive participants).
+ :)
+declare function dutil:get-filtered-speakers (
+  $tei as element(tei:TEI),
+  $gender as xs:string*,
+  $role as xs:string*,
+  $relation as xs:string*,
+  $relation-active as xs:string*,
+  $relation-passive as xs:string*
+) as xs:string* {
+  let $genders := tokenize($gender, ',')
+  let $roles := tokenize($role, ',')
+
+  (: extract possible relation role from $relation :)
+  let $ana := analyze-string($relation, "_(active|passive)$")
+  let $rel := $ana//fn:non-match/text()
+  let $suffix := $ana//fn:group[@nr="1"]/text()
+
+  let $mutual := if (not($suffix)) then $rel else ()
+  let $active := if ($relation-active) then $relation-active else
+    if ($suffix eq 'active') then $rel else ()
+  let $passive := if ($relation-passive) then $relation-passive else
+    if ($suffix eq 'passive') then $rel else ()
+
+  let $listPerson := $tei//tei:particDesc/tei:listPerson
+  let $relations := $listPerson/tei:listRelation
+  let $ids := $listPerson/(tei:person|tei:personGrp)
+    [
+      (not($gender) or @sex = $genders) and
+      (not($role) or tokenize(@role, '\s+') = $roles)
+    ]/@xml:id/string()
+
+  let $filtered := for $id in $ids
+    return if (not($mutual) and not($active) and not($passive)) then
+      $id
+    else if (
+      $relations/tei:relation
+        [
+          (@name = $mutual and contains(@mutual||' ', '#'||$id||' ')) or
+          (@name = $active and contains(@active||' ', '#'||$id||' ')) or
+          (@name = $passive and contains(@passive||' ', '#'||$id||' '))
+        ]
+    ) then
+      $id
+    else ()
+
+  return $filtered
+};
+
+(:~
  : Extract plain text from document or element.
  :
  : @param $node element
@@ -173,77 +242,36 @@ declare function dutil:get-speech-by-gender (
 };
 
 (:~
- : Retrieve and filter spoken text by gender and/or relation
+ : Retrieve and filter spoken text by gender, role and/or relation
  :
  : This function selects the `tei:p` and `tei:l` elements inside those `tei:sp`
  : descendants of a given element $parent that reference a speaker with the
- : given gender and/or relation. It then strips these elements possible stage
- : directions (`tei:stage`).
+ : given gender, role and/or relation. It then strips these elements of possible
+ : stage directions and notes (`tei:stage`, `tei:note`).
  :
- : Possible values for the relation parameter are:
- :  - siblings
- :  - friends
- :  - spouses
- :  - parent_of_active
- :  - lover_of_active
- :  - related_with_active
- :  - associated_with_active
- :  - parent_of_passive
- :  - lover_of_passive
- :  - related_with_passive
- :  - associated_with_passive
+ : For the relation parameter also see dutil:get-filtered-speakers().
  :
  : @param $parent Element to search in
  : @param $gender Gender of speaker
- : @param $relation Relation of speaker.
+ : @param $role Role of speaker
+ : @param $relation Relation of speakers
+ : @param $relation-active Relation of speakers (active participants)
+ : @param $relation-passive Relation of speakers (passive participants)
  :)
 declare function dutil:get-speech-filtered (
   $parent as element(),
   $gender as xs:string*,
+  $role as xs:string*,
   $relation as xs:string*,
-  $role as xs:string*
+  $relation-active as xs:string*,
+  $relation-passive as xs:string*
 ) as item()* {
-  let $undirected := ("siblings", "friends", "spouses")
-  let $directed := ("parent_of", "lover_of", "related_with", "associated_with")
-  let $active := for $x in $directed return $x || '_active'
-  let $passive := for $x in $directed return $x || '_passive'
-  let $rel := replace($relation, '_(active|passive)$', '')
-  let $genders := tokenize($gender, ',')
-  let $roles := tokenize($role, ',')
+  let $speakers := dutil:get-filtered-speakers(
+    $parent/ancestor::tei:TEI, $gender, $role, $relation, $relation-active,
+    $relation-passive
+  )
 
-  let $listPerson := $parent/ancestor::tei:TEI//tei:particDesc/tei:listPerson
-  let $relations := $listPerson/tei:listRelation[@type="personal"]
-
-  let $ids := $listPerson/(tei:person|tei:personGrp)
-    [
-      (not($gender) or @sex = $genders) and
-      (not($role) or tokenize(@role, '\s+') = $roles)
-    ]/@xml:id/string()
-
-  let $filtered := for $id in $ids
-    return if (not($relation)) then
-      $id
-    else if (
-      $relation = $undirected
-      and $relations/tei:relation
-        [@name = $relation and contains(@mutual||' ', '#'||$id||' ')]
-    ) then
-      $id
-    else if (
-      $relation = $active
-      and $relations/tei:relation
-        [@name = $rel and contains(@active||' ', '#'||$id||' ')]
-    ) then
-      $id
-    else if (
-      $relation = $passive
-      and $relations/tei:relation
-        [@name = $rel and contains(@passive||' ', '#'||$id||' ')]
-    ) then
-      $id
-    else ()
-
-  let $refs := for $id in $filtered return '#'||$id
+  let $refs := for $id in $speakers return '#'||$id
   let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
   return functx:remove-elements-deep($sp, ('*:stage', '*:note'))
 };
@@ -1214,7 +1242,7 @@ declare function dutil:get-relations (
   $playname as xs:string
 ) as map()* {
   let $doc := dutil:get-doc($corpusname, $playname)
-  let $listRel := $doc//tei:listRelation[@type = "personal"]
+  let $listRel := $doc//tei:particDesc/tei:listPerson/tei:listRelation
   let $relations := (
     for $rel in $listRel/tei:relation[@mutual]
       let $ids := local:tokenize($rel/@mutual)

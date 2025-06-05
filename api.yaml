@@ -851,39 +851,33 @@ paths:
   /corpora/{corpusname}/plays/{playname}/spoken-text:
     get:
       summary: Get spoken text of a play (excluding stage directions)
+      description: |
+        The lines or paragraphs of text to include can be filtered by the
+        gender, role or relation of the speakers.
+
+        Note that the response may be empty when you use filter parameters and
+        there is no speaker matching the filter
       operationId: play-spoken-text
       tags: [public]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
         - name: gender
+          description: Speaker gender
           in: query
           required: false
           schema:
             type: string
             enum: [FEMALE, MALE, UNKNOWN]
-        - name: relation
-          in: query
-          required: false
-          schema:
-            type: string
-            enum:
-              - siblings
-              - friends
-              - spouses
-              - parent_of_active
-              - parent_of_passive
-              - lover_of_active
-              - lover_of_passive
-              - related_with_active
-              - related_with_passive
-              - associated_with_active
-              - associated_with_passive
         - name: role
+          description: Speaker role
           in: query
           required: false
           schema:
             type: string
+        - $ref: "#/components/parameters/relationMutual"
+        - $ref: "#/components/parameters/relationActive"
+        - $ref: "#/components/parameters/relationPassive"
       responses:
         '200':
           description: Returns plain text document
@@ -891,6 +885,8 @@ paths:
             text/plain:
               schema:
                 type: string
+        '400':
+          description: Invalid value for `gender` parameter
         '404':
           description: Unknown play (or corpus)
 
@@ -1406,6 +1402,75 @@ components:
         munoz_refugio:
           value: munoz-refugio
           summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
+    relationMutual:
+      name: relation
+      description: |
+        Name of an undirected relation between speakers. When a valid relation
+        is given, the response lists only results associated with speakers that
+        are participants in that relation (i.e. are referenced in the
+        `@mutual` attribute of the relation element).
+
+        The possible values can vary depending on the corpus. For examples see
+        the section
+        [Relations of Characters](/doc/odd#section-character-relations) of the
+        Encoding Guidelines.
+      in: query
+      required: false
+      schema:
+        type: string
+      examples:
+        siblings:
+          value: siblings
+        friends:
+          value: friends
+        spouses:
+          value: spouses
+    relationActive:
+      name: relation-active
+      description: |
+        Name of a directed relation between speakers. When a valid relation is
+        given, the response lists only results associated with speakers that
+        are active participants in that relation (i.e. are referenced in the
+        `@active` attribute of the relation element).
+
+        The possible values can vary depending on the corpus. For examples see
+        the section
+        [Relations of Characters](/doc/odd#section-character-relations) of the
+        Encoding Guidelines.
+      in: query
+      required: false
+      schema:
+        type: string
+      examples:
+        parent_of:
+          value: parent_of
+        related_with:
+          value: related_with
+        associated_with:
+          value: associated_with
+    relationPassive:
+      name: relation-passive
+      description: |
+        Name of a directed relation between speakers. When a valid relation is
+        given, the response lists only results associated with speakers that
+        are passive participants in that relation (i.e. are referenced in the
+        `@passive` attribute of the relation element).
+
+        The possible values can vary depending on the corpus. For examples see
+        the section
+        [Relations of Characters](/doc/odd#section-character-relations) of the
+        Encoding Guidelines.
+      in: query
+      required: false
+      schema:
+        type: string
+      examples:
+        parent_of:
+          value: parent_of
+        related_with:
+          value: related_with
+        associated_with:
+          value: associated_with
   schemas:
     Info:
       type: object

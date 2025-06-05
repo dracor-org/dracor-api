@@ -1436,22 +1436,25 @@ function api:characters-info-csv-ext($corpusname, $playname) {
  : @param $corpusname Corpus name
  : @param $playname Play name
  : @param $gender Gender ("MALE"|"FEMALE"|"UNKNOWN")
- : @param $relation Relation ("siblings"|"friends"|spouses"|"parent_of_active"|
- :   "parent_of_passive"|"lover_of_active"|"lover_of_passive"|
- :   "related_with_active"|"related_with_passive"|"associated_with_active"|
- :   "associated_with_passive")
  : @param $role Role
+ : @param $relation Relation
+ : @param $relation Relation role ("active"|"passive")
  : @result text
  :)
 declare
   %rest:GET
   %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text")
   %rest:query-param("gender", "{$gender}")
-  %rest:query-param("relation", "{$relation}")
   %rest:query-param("role", "{$role}")
+  %rest:query-param("relation", "{$relation}")
+  %rest:query-param("relation-active", "{$relation-active}")
+  %rest:query-param("relation-passive", "{$relation-passive}")
   %rest:produces("text/plain")
   %output:media-type("text/plain")
-function api:spoken-text($corpusname, $playname, $gender, $relation, $role) {
+function api:spoken-text(
+  $corpusname, $playname, $gender, $role, $relation, $relation-active,
+  $relation-passive
+) {
   let $doc := dutil:get-doc($corpusname, $playname)
   let $genders := tokenize($gender, ',')
   return
@@ -1470,8 +1473,13 @@ function api:spoken-text($corpusname, $playname, $gender, $relation, $role) {
         "gender must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
       )
     else
-      let $sp := if ($gender or $relation or $role) then
-        dutil:get-speech-filtered($doc//tei:body, $gender, $relation, $role)
+      let $sp := if (
+        $gender or $relation or $relation-active or $relation-passive or $role
+        ) then
+        dutil:get-speech-filtered(
+          $doc//tei:body, $gender, $role, $relation, $relation-active,
+          $relation-passive
+        )
       else
         dutil:get-speech($doc//tei:body, ())
       let $txt := string-join(($sp/normalize-space(), ""), '&#10;')
