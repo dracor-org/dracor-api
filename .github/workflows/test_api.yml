@@ -51,22 +51,16 @@ jobs:
         # https://schemathesis.readthedocs.io/en/stable/cli.html
         uses: schemathesis/action@bae1db239f4af803b9bc43b11aa4e196a7b87289 # v1.1.0
         with:
-          api-name: dracor-api
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
-          # OPTIONAL. Your Schemathesis.io token
-          token: ${{ secrets.SCHEMATHESIS_TOKEN }}
           # OPTIONAL. List of Schemathesis checks to run. Defaults to `all`
           # if multiple checks should be used, use a comma seperated string,
           # e.g. "not_a_server_error,status_code_conformance"
           checks: not_a_server_error,content_type_conformance,response_headers_conformance,response_schema_conformance
-          # OPTIONAL. Whether you'd like to see the results in a Web UI
-          # Defaults to `true`
-          report: true
           # OPTIONAL. Maximum number of generated examples for each endpoint
           max-examples: 100
           # OPTIONAL. Extra arguments to pass to Schemathesis
-          args: '--auth=admin: --workers=2 --method=GET'
+          args: "--auth=admin: --workers=2 --method=GET"
 
       - name: Stop the docker-compose stack
         run: docker compose down
