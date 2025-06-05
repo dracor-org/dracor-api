@@ -97,9 +97,6 @@ RUN apt-get update \
         ${EXIST_HOME}/etc/webapp/WEB-INF/web.xml \
         ${EXIST_HOME}/etc/jetty/jetty.xml \
         ${EXIST_HOME}/orig/ \
-    # remove DTD references to prevent saxon from trying to handle them
-    && sed -i '2,3d' ${EXIST_HOME}/orig/exist-webapp-context.xml \
-    && sed -i '2d' ${EXIST_HOME}/orig/jetty.xml \
     # clean up apt cache
     && rm -rf /var/lib/apt/lists/* \
     # remove portal webapp
