@@ -60,7 +60,7 @@ jobs:
           # OPTIONAL. Maximum number of generated examples for each endpoint
           max-examples: 100
           # OPTIONAL. Extra arguments to pass to Schemathesis
-          args: "--auth=admin: --workers=2 --method=GET"
+          args: "--auth=admin: --workers=2 --include-method=GET"
 
       - name: Stop the docker-compose stack
         run: docker compose down
