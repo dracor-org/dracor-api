@@ -219,22 +219,22 @@ declare function dutil:get-speech (
 };
 
 (:~
- : Retrieve and filter spoken text by gender
+ : Retrieve and filter spoken text by sex
  :
  : This function selects the `tei:p` and `tei:l` elements inside those `tei:sp`
  : descendants of a given element $parent that reference a speaker with the
- : given gender. It then strips these elements possible stage directions
+ : given sex. It then strips these elements possible stage directions
  : (`tei:stage`).
  :
  : @param $parent Element to search in
- : @param $gender Gender of speaker
+ : @param $sex Sex of speaker
  :)
-declare function dutil:get-speech-by-gender (
+declare function dutil:get-speech-by-sex (
   $parent as element(),
-  $gender as xs:string+
+  $sex as xs:string+
 ) as item()* {
   let $ids := $parent/ancestor::tei:TEI//tei:particDesc
-              /tei:listPerson/(tei:person|tei:personGrp)[@sex = $gender]
+              /tei:listPerson/(tei:person|tei:personGrp)[@sex = $sex]
               /@xml:id/string()
   let $refs := for $id in $ids return '#'||$id
   let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
@@ -242,17 +242,17 @@ declare function dutil:get-speech-by-gender (
 };
 
 (:~
- : Retrieve and filter spoken text by gender, role and/or relation
+ : Retrieve and filter spoken text by sex, role and/or relation
  :
  : This function selects the `tei:p` and `tei:l` elements inside those `tei:sp`
  : descendants of a given element $parent that reference a speaker with the
- : given gender, role and/or relation. It then strips these elements of possible
+ : given sex, role and/or relation. It then strips these elements of possible
  : stage directions and notes (`tei:stage`, `tei:note`).
  :
  : For the relation parameter also see dutil:get-filtered-speakers().
  :
  : @param $parent Element to search in
- : @param $gender Gender of speaker
+ : @param $sex Sex of speaker
  : @param $role Role of speaker
  : @param $relation Relation of speakers
  : @param $relation-active Relation of speakers (active participants)
@@ -260,14 +260,14 @@ declare function dutil:get-speech-by-gender (
  :)
 declare function dutil:get-speech-filtered (
   $parent as element(),
-  $gender as xs:string*,
+  $sex as xs:string*,
   $role as xs:string*,
   $relation as xs:string*,
   $relation-active as xs:string*,
   $relation-passive as xs:string*
 ) as item()* {
   let $speakers := dutil:get-filtered-speakers(
-    $parent/ancestor::tei:TEI, $gender, $role, $relation, $relation-active,
+    $parent/ancestor::tei:TEI, $sex, $role, $relation, $relation-active,
     $relation-passive
   )
 
@@ -1062,6 +1062,7 @@ declare function dutil:get-play-info(
           )
           let $name := $node/(tei:persName | tei:name)[1]/text()
           let $sex := $node/@sex/string()
+          let $gender := $node/@gender/string()
           let $role := $node/@role/string()
           let $isGroup := if ($node/name() eq 'personGrp')
             then true() else false()
@@ -1073,6 +1074,7 @@ declare function dutil:get-play-info(
               "isGroup": $isGroup,
               "sex": if($sex) then $sex else ()
             },
+            if ($gender) then map:entry("gender", $gender) else (),
             if ($role) then map:entry("role", $role) else (),
             if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
           ))
@@ -1195,6 +1197,7 @@ declare function dutil:characters-info (
       )
       let $name := $node/(tei:persName | tei:name)[1]/text()
       let $sex := $node/@sex/string()
+      let $gender := $node/@gender/string()
       let $role := $node/@role/string()
       let $isGroup := if ($node/name() eq 'personGrp')
         then true() else false()
@@ -1208,7 +1211,7 @@ declare function dutil:characters-info (
           "id": $id,
           "name": $name,
           "isGroup": $isGroup,
-          "gender": if($sex) then $sex else (),
+          "sex": if($sex) then $sex else (),
           "numOfScenes": count($segments?*[?speakers = $id]),
           "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
           "numOfWords": dutil:num-of-spoken-words($tei, $id),
@@ -1219,6 +1222,7 @@ declare function dutil:characters-info (
           "betweenness": $metrics-node/betweenness/number(.),
           "eigenvector": $eigenvector
         },
+        if ($gender) then map:entry("gender", $gender) else (),
         if ($role) then map:entry("role", $role) else (),
         if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
       ))
