@@ -7,6 +7,7 @@ import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xq
 import module namespace load = "http://dracor.org/ns/exist/v1/load" at "load.xqm";
 import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikidata.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
+import module namespace drdf = "http://dracor.org/ns/exist/v1/rdf" at "rdf.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -914,17 +915,40 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
 declare
   %rest:GET
   %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/rdf")
-  %rest:produces("application/xml", "text/xml")
-  %output:media-type("application/xml")
+  %rest:produces("application/rdf+xml")
+  %output:media-type("application/rdf+xml")
+  %output:method("xml")
 function api:play-rdf($corpusname, $playname) {
-  let $paths := dutil:filepaths($corpusname, $playname)
-  let $doc := doc($paths?files?rdf)
+  let $doc := dutil:get-rdf($corpusname, $playname)
   return
     if (not($doc)) then
       <rest:response>
         <http:response status="404"/>
       </rest:response>
     else $doc
+};
+
+(:~
+: Update RDF document of a single play
+:
+: Do not provide anything in the body of the request, just send the plain request to trigger an update based
+: on the already stored TEI
+: TODO: This function needs proper error handling.
+:)
+declare
+  %rest:PUT
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/rdf")
+  %rest:header-param("Authorization", "{$auth}")
+  %output:method("xml")
+function api:play-tei-put($corpusname, $playname, $auth) {
+  if (not($auth)) then
+    <rest:response>
+      <http:response status="401"/>
+    </rest:response>
+  else
+    let $paths := dutil:filepaths($corpusname, $playname)
+    let $tei-url := $paths?files?tei
+    return drdf:update($tei-url)
 };
 
 (:~

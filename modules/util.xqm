@@ -93,6 +93,20 @@ declare function dutil:get-doc(
 };
 
 (:~
+ : Return RDF for a play.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function dutil:get-rdf(
+  $corpusname as xs:string,
+  $playname as xs:string
+) as node()* {
+  let $paths := dutil:filepaths($corpusname, $playname)
+  return doc($paths?files?rdf)
+};
+
+(:~
  : Return DraCor ID of a play.
  :
  : @param $tei TEI document
