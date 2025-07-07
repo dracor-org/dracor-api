@@ -617,7 +617,9 @@ declare function dutil:get-corpus-meta-data(
   let $num-groups := count($characters[name()="personGrp"])
 
   let $num-p := count($tei//tei:body//tei:sp//tei:p)
-  let $num-l := count($tei//tei:body//tei:sp//tei:l)
+  (: for antilabe (i.e. lines with a 'part' attribute) we count only the initial
+  ones :)
+  let $num-l := count($tei//tei:body//tei:sp//tei:l[not(@part) or @part = "I"])
 
   let $metrics := doc($paths?files?metrics)/metrics
   let $max-degree-ids := tokenize($metrics/network/maxDegreeIds)
