@@ -1,7 +1,7 @@
 name: dracor
 services:
   api:
-    image: dracor/api:1.1.0-rc.1
+    image: dracor/api:1.1.0
     environment:
       - DRACOR_API_BASE=http://localhost:8088/api/v1
       - EXIST_PASSWORD
@@ -15,7 +15,7 @@ services:
   metrics:
     image: dracor/metrics:1.5.1
   frontend:
-    image: dracor/frontend:2.4.0-rc.1
+    image: dracor/frontend:2.4.0
     environment:
       NGINX_RESOLVER: "127.0.0.11"
       DRACOR_API_HOST: http://api:8080
