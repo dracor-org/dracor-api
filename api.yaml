@@ -181,6 +181,7 @@ paths:
           application/xml:
             schema:
               type: string
+              format: binary
             example: |
               <?xml version="1.0" encoding="UTF-8"?>
               <teiCorpus xmlns="http://www.tei-c.org/ns/1.0">
@@ -387,6 +388,7 @@ paths:
             application/xml:
               schema:
                 type: string
+                format: binary
         '404':
           description: Unknown play (or corpus)
     put:
@@ -415,6 +417,7 @@ paths:
           application/xml:
             schema:
               type: string
+              format: binary
       responses:
         '200':
           description: TEI document has been stored
@@ -422,6 +425,7 @@ paths:
             application/xml:
               schema:
                 type: string
+                format: binary
         '400':
           description: >-
             The request body is not a valid TEI document or the `playname` is
@@ -581,6 +585,7 @@ paths:
             application/xml:
               schema:
                 type: string
+                format: binary
         '404':
           description: Unknown play (or corpus)
 
@@ -599,6 +604,7 @@ paths:
             application/xml:
               schema:
                 type: string
+                format: binary
         '404':
           description: Unknown play (or corpus)
 
@@ -647,6 +653,7 @@ paths:
             application/xml:
               schema:
                 type: string
+                format: binary
               example: |
                 <?xml version="1.0" encoding="UTF-8"?>
                 <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
@@ -760,6 +767,7 @@ paths:
             application/xml:
               schema:
                 type: string
+                format: binary
               example: |
                 <?xml version="1.0" encoding="UTF-8"?>
                 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -1215,9 +1223,10 @@ paths:
         '200':
           description: Returns either a whole TEI-XML document of a play or a fragment thereof. In case a fragment was requested it is contained in the element <dts:wrapper> inside the root <TEI> element.
           content:
-            application/xml:
+            application/tei+xml:
               schema:
                 type: string
+                format: binary
                 example: |
                   <?xml version="1.0" encoding="UTF-8"?>
                   <TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -2112,6 +2121,8 @@ components:
         subtitleEn:
           type: string
           x-dracor-feature: play_subtitle_en
+        commit:
+          type: string
         authors:
           type: array
           x-dracor-feature: contains_play_author_data
