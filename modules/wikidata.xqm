@@ -10,6 +10,10 @@ import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xq
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace sparqlres = "http://www.w3.org/2005/sparql-results#";
+declare namespace hc = "http://expath.org/ns/http-client";
+
+declare variable $wd:user-agent := 'DraCor API (https://dracor.org) version '
+  || config:expath-descriptor()/@version;
 declare variable $wd:sparql-endpoint := 'https://query.wikidata.org/sparql';
 
 (:~
@@ -26,6 +30,7 @@ declare function wd:get-sitelinks($id as xs:string) as xs:string* {
     let $request :=
         <hc:request method="get" href="{ $url }">
             <hc:header name="Accept" value="application/xml" />
+            <hc:header name="User-Agent" value="{$wd:user-agent}" />
         </hc:request>
     let $response := hc:send-request($request)
     return
@@ -61,15 +66,20 @@ WHERE {
     let $request :=
         <hc:request method="get" href="{ $url }">
             <hc:header name="Accept" value="application/xml" />
+            <hc:header name="User-Agent" value="{$wd:user-agent}" />
         </hc:request>
     let $response := hc:send-request($request)
-    let $bindings := $response[2]//sparqlres:sparql/
-      sparqlres:results/sparqlres:result/sparqlres:binding
+    let $status := $response[1]/@status/string()
+    let $type := $response[1]//hc:body/@media-type/string()
 
-    let $img := $bindings[@name="img"][1]/sparqlres:uri/text()
+    return if (
+      $status = '200' and starts-with($type, 'application/sparql-results+xml')
+    ) then
+      let $bindings := $response[2]//sparqlres:sparql/
+        sparqlres:results/sparqlres:result/sparqlres:binding
+      let $img := $bindings[@name="img"][1]/sparqlres:uri/text()
 
-    return (
-      map:merge((
+      return map:merge((
         map:entry(
           'name', $bindings[@name="authorLabel"][1]/sparqlres:literal/text()
         ),
@@ -94,6 +104,17 @@ WHERE {
           'deathDate', $bindings[@name="deathDate"][1]/sparqlres:literal/text()
         ),
         if($img) then map:entry('imageUrl', $img) else ()
+      ))
+    else (
+      util:log-system-out(
+        'Failed to query author info for "' || $id || '", status: ' || $status
+      ),
+      map:merge((
+        map:entry(
+          'error', 'Wikidata query failed with status ' || $status
+        ),
+        if (starts-with($type,'text/plain'))
+          then map:entry('errorMessage', $response[2]) else ()
       ))
     )
 };
