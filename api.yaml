@@ -1215,7 +1215,7 @@ paths:
         '200':
           description: Returns either a whole TEI-XML document of a play or a fragment thereof. In case a fragment was requested it is contained in the element <dts:wrapper> inside the root <TEI> element.
           content:
-            application/xml:
+            application/tei+xml:
               schema:
                 type: string
                 example: |
@@ -2112,6 +2112,8 @@ components:
         subtitleEn:
           type: string
           x-dracor-feature: play_subtitle_en
+        commit:
+          type: string
         authors:
           type: array
           x-dracor-feature: contains_play_author_data
