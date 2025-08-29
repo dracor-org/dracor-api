@@ -4,7 +4,6 @@
 name: dracor-dev
 services:
   api:
-    image: dracor/api-dev
     build:
       context: .
       dockerfile: Dockerfile
@@ -24,7 +23,6 @@ services:
       - fuseki
       - metrics
   fuseki:
-    image: dracor/fuseki
     build: https://github.com/dracor-org/dracor-fuseki.git#main
     environment:
       - ADMIN_PASSWORD=qwerty
@@ -33,12 +31,10 @@ services:
     volumes:
       - fusekidata:/fuseki
   metrics:
-    image: dracor/metrics
     build: https://github.com/dracor-org/dracor-metrics.git#main
     ports:
       - 8030:8030
   frontend:
-    image: dracor/frontend
     build: https://github.com/dracor-org/dracor-frontend.git#main
     environment:
       NGINX_RESOLVER: "127.0.0.11"
