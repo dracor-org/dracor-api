@@ -15,7 +15,7 @@ services:
   metrics:
     image: dracor/metrics:1.5.1
   frontend:
-    image: dracor/frontend:2.4.0
+    image: dracor/frontend:2.4.1
     environment:
       NGINX_RESOLVER: "127.0.0.11"
       DRACOR_API_HOST: http://api:8080
