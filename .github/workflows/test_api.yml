@@ -18,7 +18,7 @@ jobs:
   test_api:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: docker --version
       - name: Start the docker-compose stack
         run: docker compose up --detach --wait
