@@ -71,5 +71,8 @@ else
   set_passwd ${SECRET}
 fi
 
+# this fixes https://github.com/dracor-org/dracor-api/issues/321
+export JDK_JAVA_OPTIONS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+
 # starting the database
 exec ${EXIST_HOME}/bin/startup.sh
