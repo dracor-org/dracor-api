@@ -1504,13 +1504,16 @@ components:
       type: object
       properties:
         text:
-          type: integer
+          type: number
+          format: double
           x-dracor-feature: corpus_num_of_word_tokens_in_text_elements
         stage:
-          type: integer
+          type: number
+          format: double
           x-dracor-feature: corpus_num_of_word_tokens_in_stage
         sp:
-          type: integer
+          type: number
+          format: double
           x-dracor-feature: corpus_num_of_word_tokens_in_sp
       required:
         - text
