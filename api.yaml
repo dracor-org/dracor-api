@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 
 info:
-  version: 1.1.0
+  version: 1.1.4
   title: DraCor API
   contact:
     email: "fr.fischer@fu-berlin.de"
