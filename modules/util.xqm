@@ -635,8 +635,7 @@ declare function dutil:get-corpus-meta-data(
     )
   )
 
-  let $digitalSource := $tei//tei:sourceDesc/
-    tei:bibl[@type="digitalSource"]/tei:idno[@type="URL"][1]/text()
+  let $digitalSource := dutil:get-source($tei)?url
 
   let $origSource := $tei//tei:sourceDesc//
     tei:bibl[@type="originalSource"][1]
@@ -925,12 +924,18 @@ declare function dutil:get-titles(
  : @param $tei
  :)
 declare function dutil:get-source($tei as element(tei:TEI)) as map()? {
-  let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"]
+  let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"][1]
   return if (count($source)) then map:merge((
-    if ($source/tei:name) then
+    if ($source/tei:ref[@target]) then
+      map {'name': $source/tei:ref[@target][1]/normalize-space()}
+    (: deprecated :)
+    else if ($source/tei:name) then
       map {'name': $source/tei:name[1]/normalize-space()}
     else (),
-    if ($source/tei:idno[@type="URL"]) then
+    if ($source/tei:ref[@target]) then
+      map {'url': $source/tei:ref[@target][1]/@target/string()}
+    (: deprecated :)
+    else if ($source/tei:idno[@type="URL"]) then
       map {'url': $source/tei:idno[@type="URL"][1]/normalize-space()}
     else ()
   )) else ()
