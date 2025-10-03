@@ -14,6 +14,8 @@ xquery version "3.1";
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config"
   at "modules/config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util"
+  at "modules/util.xqm";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace ep = "http://earlyprint.org/ns/1.0";
@@ -33,10 +35,11 @@ return if (not($id)) then (
 ) else
   let $tei := collection($col)//tei:TEI[@xml:id = $id]
   let $id := $tei/@xml:id/string()
+  let $source := dutil:get-source($tei)
   let $epid := replace(
     tokenize(
-      $tei//tei:sourceDesc/tei:bibl[@type='digitalSource']
-        /tei:idno[@type='URL' and starts-with(., 'https://texts.earlyprint.org/works/')],
+      if (starts-with($source?url, 'https://texts.earlyprint.org/works/')) then
+        $source?url else '',
       '/'
     )[last()],
     '.xml',
