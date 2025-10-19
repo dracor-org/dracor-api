@@ -176,7 +176,6 @@ declare function metrics:update($url as xs:string) {
   let $metrics := metrics:calculate($url)
   let $paths := dutil:filepaths($url)
   let $collection := $paths?collections?play
-  let $resource := $paths?filename
   return (
     util:log-system-out('Metrics update: ' || $paths?files?metrics),
     xdb:store($collection, "metrics.xml", $metrics)
