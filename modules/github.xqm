@@ -5,11 +5,6 @@ xquery version "3.1";
  :)
 module namespace gh = "http://dracor.org/ns/exist/v1/github";
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config"
-  at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/v1/util"
-  at "util.xqm";
-
 (:~
  : Analyze repository URL
  :
