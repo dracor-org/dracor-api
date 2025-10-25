@@ -11,11 +11,11 @@ import module namespace dutil = "http://dracor.org/ns/exist/v1/util"
   at "util.xqm";
 
 (:~
- : Analyse repository URL
+ : Analyze repository URL
  :
  : If the URL is recognized as Github URL a map providing account name, repo
  : name and branch name is returned. The branch name is extracted from a
- : fragement if available, otherwise it defaults to "main".
+ : fragment if available, otherwise it defaults to "main".
  :
  : @param $url Repository URL
  : @return map
