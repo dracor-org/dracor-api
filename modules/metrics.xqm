@@ -156,7 +156,7 @@ declare function metrics:get-network-metrics($url as xs:string) {
 declare function metrics:calculate($url as xs:string) {
   let $separator := '\W+'
   let $doc := doc($url)
-  let $text-count := count(tokenize($doc//tei:text[1], $separator))
+  let $text-count := count(tokenize($doc/tei:TEI/tei:text[1], $separator))
   let $stage-count := count(tokenize(string-join($doc//tei:stage, ' '), $separator))
   let $sp-count := count(tokenize(string-join($doc//tei:sp, ' '), $separator))
   return <metrics updated="{current-dateTime()}">
