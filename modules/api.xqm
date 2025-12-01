@@ -281,7 +281,7 @@ function api:corpora-post-tei($data, $auth) {
     )
   else
 
-  let $header := $data//tei:teiCorpus/tei:teiHeader
+  let $header := if ($data) then $data//tei:teiCorpus/tei:teiHeader else ()
   let $name := $header//tei:publicationStmt/tei:idno[
     @type = "URI" and @xml:base = "https://dracor.org/"
   ]/text()
