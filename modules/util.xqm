@@ -1210,7 +1210,7 @@ declare function dutil:characters-info (
         then true() else false()
       let $num-of-speech := $tei//tei:sp[@who='#'||$id]
       let $metrics-node := $metrics//node[@id=$id]
-      let $eigenvector := if ($metrics-node/eigenvector) then
+      let $eigenvector := if ($metrics-node/eigenvector[text()]) then
         number($metrics-node/eigenvector) else 0
       let $wikidata-id := dutil:get-wikidata-id-from-ana($node)
       return map:merge((
