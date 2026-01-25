@@ -124,8 +124,13 @@ can be installed via the dashboard of any eXist DB instance you can just run
 The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
 of the corpus data when the configured GitHub repository for the corpus changes.
 
-*Note:* For the webhook to work, the shared secret between DraCor and GitHub
+_Note:_ For the webhook to work, the shared secret between DraCor and GitHub
 needs to be configured at `/db/data/dracor/secrets.xml` in the database.
+
+## How to Contribute
+
+See our [CONTRIBUTING](CONTRIBUTING.md) document. For ways to get in touch with
+the team see https://dracor.org/doc/get-in-touch.
 
 ## License
 
