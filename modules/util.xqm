@@ -907,7 +907,7 @@ declare function dutil:get-titles(
   else
   let $title :=
     $tei//tei:fileDesc/tei:titleStmt
-      /tei:title[@xml:lang = $lang and (not(@type) or  or @type = 'main')][1]
+      /tei:title[@xml:lang = $lang and (not(@type) or @type = 'main')][1]
       /normalize-space()
   let $subtitle :=
     $tei//tei:titleStmt/tei:title[@type = 'sub' and @xml:lang = $lang][1]
