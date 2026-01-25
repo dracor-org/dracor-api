@@ -844,9 +844,9 @@ declare function dutil:get-authors($tei as node()) as map()* {
   let $name := dutil:get-sort-name($author)
   let $fullname := dutil:get-full-name($author)
   let $shortname := dutil:get-short-name($author)
-  let $nameEn := dutil:get-sort-name($author, 'eng')
-  let $fullnameEn := dutil:get-full-name($author, 'eng')
-  let $shortnameEn := dutil:get-short-name($author, 'eng')
+  let $nameEn := dutil:get-sort-name($author, 'en')
+  let $fullnameEn := dutil:get-full-name($author, 'en')
+  let $shortnameEn := dutil:get-short-name($author, 'en')
   let $refs := array {
     for $idno in $author/tei:idno[@type]
     let $ref := $idno => normalize-space()
@@ -1008,7 +1008,7 @@ declare function dutil:get-play-info(
     let $id := dutil:get-dracor-id($tei)
     let $uri := $paths?uri
     let $titles := dutil:get-titles($tei)
-    let $titlesEn := dutil:get-titles($tei, 'eng')
+    let $titlesEn := dutil:get-titles($tei, 'en')
     let $source := dutil:get-source($tei)
     let $orig-source := $tei//tei:bibl[@type="originalSource"][1]/normalize-space(.)
     let $speakers := dutil:distinct-speakers($doc//tei:body)

@@ -425,7 +425,7 @@ function api:corpus-index($corpusname) {
         let $name := $paths?playname
         let $id := dutil:get-dracor-id($tei)
         let $titles := dutil:get-titles($tei)
-        let $titlesEng := dutil:get-titles($tei, 'eng')
+        let $titlesEng := dutil:get-titles($tei, 'en')
         let $years := dutil:get-years-iso($tei)
         let $authors := dutil:get-authors($tei)
         let $play-uri := $paths?uri
