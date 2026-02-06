@@ -883,7 +883,8 @@ declare function dutil:get-authors($tei as node()) as map()* {
 declare function dutil:get-titles(
   $tei as element(tei:TEI)
 ) as map() {
-  let $title := $tei//tei:fileDesc/tei:titleStmt/tei:title[not(@type) or @type = 'main'][1]/normalize-space()
+  let $title := $tei//tei:fileDesc/tei:titleStmt
+    /tei:title[not(@type = 'sub')][1]/normalize-space()
   let $subtitle :=
     $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
   return map:merge((
