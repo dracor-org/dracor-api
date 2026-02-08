@@ -645,7 +645,9 @@ declare function dutil:get-corpus-meta-data(
   )
   let $year := $origSource/tei:date
   let $origSourceYear := if (number($year)) then xs:integer($year) else ()
-  let $scope := $origSource/tei:biblScope[@unit="page" and @from and @to]
+  (: NB: we currently do not support multiple biblScope elements as in
+    https://dracor.org/id/ger000758 :)
+  let $scope := $origSource/tei:biblScope[@unit="page" and @from and @to][1]
   let $origSourceNumPages :=
     if ($scope and number($scope/@to) and number($scope/@from))
     then number($scope/@to) - number($scope/@from) + 1
