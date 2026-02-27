@@ -639,7 +639,9 @@ declare function dutil:get-corpus-meta-data(
 
   let $origSource := $tei//tei:sourceDesc//
     tei:bibl[@type="originalSource"][1]
-  let $origSourcePublisher := normalize-space($origSource/tei:publisher)
+  let $origSourcePublisher := string-join(
+    $origSource/tei:publisher ! normalize-space(), ", "
+  )
   let $origSourcePubPlace := string-join(
     $origSource/tei:pubPlace ! normalize-space(), ", "
   )
