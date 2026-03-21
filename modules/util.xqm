@@ -345,7 +345,9 @@ declare function local:get-year($iso-date as xs:string) as xs:string* {
  : @return Map of years
  :)
 declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
-  let $dates := $tei//tei:standOff/tei:listEvent/tei:event
+  (: DEPRECATED: remove standOff support in v2 :)
+  let $dates := $tei/(tei:standOff|tei:teiHeader//tei:sourceDesc)
+    /tei:listEvent/tei:event
     [@type = ("print", "premiere", "written")]
     [@when or @notAfter or @notBefore]
 
@@ -375,7 +377,9 @@ declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
  : @return Map of years
  :)
 declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
-  let $dates := $tei//tei:standOff/tei:listEvent/tei:event
+  (: DEPRECATED: remove standOff support in v2 :)
+  let $dates := $tei/(tei:standOff|tei:teiHeader//tei:sourceDesc)
+    /tei:listEvent/tei:event
     [@type = ("print", "premiere", "written")]
     [@when or @notAfter or @notBefore]
 
@@ -406,15 +410,16 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
  : Retrieve premiere date for the play passed in $tei.
  :
  : This function only returns a value when the exact date of the premiere in ISO
- : format (YYYY-MM-DD) is specified in tei:standOff.
+ : format (YYYY-MM-DD) is specified in sourceDesc/listEvent.
  :
  : @param $tei The TEI root element of a play
  : @return ISO date string
  :)
 declare function dutil:get-premiere-date ($tei as element(tei:TEI)*) as xs:string* {
-  let $date := $tei//tei:standOff/tei:listEvent/tei:event
-    [@type = "premiere"]/@when
-  return if (matches($date, "^-?[0-9]{4}-[0-9]{2}-[0-9]{2}")) then $date else ()
+  (: DEPRECATED: remove standOff support in v2 :)
+  let $date := $tei/(tei:standOff|tei:teiHeader//tei:sourceDesc)
+    /tei:listEvent/tei:event[@type = "premiere"]/@when
+  return if (matches($date[1], "^-?[0-9]{4}-[0-9]{2}-[0-9]{2}")) then $date[1] else ()
 };
 
 (:~
@@ -947,14 +952,25 @@ declare function dutil:get-source($tei as element(tei:TEI)) as map()? {
 };
 
 (:~
- : Extract Wikidata ID for play from standOff.
+ : Extract Wikidata QID for play.
  :
  : @param $tei TEI element
+ : @see https://dracor.org/doc/odd#section-play-wikidata
  :)
 declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
-  let $uri := $tei//tei:standOff/tei:listRelation
+  let $idno := $tei/tei:teiHeader/tei:fileDesc/tei:sourceDesc
+    /tei:bibl[@type eq 'wikidata']
+    /tei:idno[matches(normalize-space(.), '^Q[1-9]\d*$')]
+  (: DEPRECATED: remove standOff support in v2 :)
+  let $uri := $tei/tei:standOff/tei:listRelation
     /tei:relation[@name="wikidata"][1]/@passive/string()
-  return if (starts-with($uri, 'http://www.wikidata.org/entity/')) then
+
+  return if (count($idno)) then
+    normalize-space($idno[1])
+  else if (
+    starts-with($uri, 'http://www.wikidata.org/entity/')
+    and matches($uri, '/Q[1-9]\d*$')
+  ) then
     tokenize($uri, '/')[last()]
   else ()
 };
@@ -966,12 +982,23 @@ declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
  :)
 declare function dutil:get-play-wikidata-ids ($corpus as xs:string) {
   let $collection := $config:corpora-root || '/' || $corpus
-  for $uri in collection($collection)
-    /tei:TEI//tei:standOff/tei:listRelation
+  return (
+    for $idno in collection($collection)
+      /tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc
+      /tei:bibl[@type="wikidata"]
+      /tei:idno[matches(normalize-space(.), '^Q[1-9]\d*$')]
+    return normalize-space($idno),
+    (: DEPRECATED: remove standOff support in v2 :)
+    for $uri in collection($collection)
+      /tei:TEI/tei:standOff/tei:listRelation
       /tei:relation[@name="wikidata"]/@passive/string()
-  return if (starts-with($uri, 'http://www.wikidata.org/entity/')) then
-    tokenize($uri, '/')[last()]
-  else ()
+    return if (
+      starts-with($uri, 'http://www.wikidata.org/entity/')
+      and matches($uri, '/Q[1-9]\d*$')
+    ) then
+      tokenize($uri, '/')[last()]
+    else ()
+  )
 };
 
 (:~
