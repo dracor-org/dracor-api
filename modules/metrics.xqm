@@ -62,9 +62,13 @@ declare function metrics:update-sitelinks($url as xs:string) {
 declare function metrics:collect-sitelinks($corpus as xs:string) {
   util:log-system-out('collecting sitelinks for corpus ' || $corpus),
   let $collection := $config:corpora-root || '/' || $corpus
+  (: DEPRECATED: remove standOff support in v2 :)
   for $tei in collection($collection)
-    /tei:TEI[.//tei:standOff/tei:listRelation
-      /tei:relation[@name="wikidata"]/@passive]
+    /tei:TEI[
+      tei:teiHeader//tei:sourceDesc/tei:bibl[@type="wikidata"]/tei:idno
+      or
+      tei:standOff/tei:listRelation/tei:relation[@name="wikidata"]/@passive
+    ]
   return metrics:update-sitelinks($tei/base-uri())
 };
 
