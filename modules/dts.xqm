@@ -219,7 +219,8 @@ as item()+ {
                     "Paging is not possible on a single resource. Try without parameter 'page'!"
             )
 
-            else if ($corpus/name() eq "teiCorpus") then
+            (: DEPRECATED: remove teiCorpus support in v2 :)
+            else if ($corpus/name() = ("dracorCorpus", "teiCorpus")) then
                 if ( $nav eq 'parents') then
                     local:corpus-to-collection-with-parent-as-member($id)
                 else
@@ -238,7 +239,8 @@ as item()+ {
         let $corpusname := local:uri-to-id($id)
         let $corpus := dutil:get-corpus($corpusname)
         return
-            if ($corpus/name() eq "teiCorpus") then
+            (: DEPRECATED: remove teiCorpus support in v2 :)
+            if ($corpus/name() = ("dracorCorpus", "teiCorpus")) then
                 if ( $page ) then
                 (: paging is currently not supported :)
                 (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/rus&page=1 :)
@@ -368,10 +370,13 @@ as item()+ {
  :)
 declare function local:root-collection()
 as map() {
-    (: Get the corpora, get info needed for the member-array :)
-  let $corpora := collection($config:corpora-root)//tei:teiCorpus
-  (: get all the ids – these has to evaluate the teiCorpus files, unfortunately :)
-  let $corpus-ids := $corpora//tei:idno[@type eq "URI"][@xml:base eq "https://dracor.org/"]/string()
+  (: Get the corpora, get info needed for the member-array :)
+  (: DEPRECATED: remove teiCorpus support in v2 :)
+  let $corpora := collection($config:corpora-root)//(tei:dracorCorpus|tei:teiCorpus)
+  (: get all the ids – these has to evaluate the dracorCorpus files, unfortunately :)
+  let $corpus-ids := $corpora//tei:publicationStmt/tei:idno[
+    not(@type) or (@type eq "URI" and @xml:base eq "https://dracor.org/")
+  ]/string()
   let $members := array {
       for $corpus-id in $corpus-ids
       return local:collection-member-by-id($corpus-id)

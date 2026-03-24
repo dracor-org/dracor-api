@@ -150,8 +150,10 @@ declare function local:process-delivery () {
     /delivery[@id = $local:delivery and not(@processed)]
   let $repo := $delivery/@repo/string()
   let $after := $delivery/@after/string()
-  let $corpus := collection($config:corpora-root)//tei:teiCorpus[
-    tei:teiHeader//tei:publicationStmt/tei:idno[@type="repo" and . = $repo]
+  (: DEPRECATED: remove teiCorpus support in v2 :)
+  let $corpus := collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)[
+    tei:teiHeader//tei:publicationStmt/tei:ref[@type="repo" and @target = $repo]
+    or tei:teiHeader//tei:publicationStmt/tei:idno[@type="repo" and . = $repo]
   ]
 
   let $info := dutil:get-corpus-info($corpus)

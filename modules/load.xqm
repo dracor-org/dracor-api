@@ -72,11 +72,13 @@ declare function local:record-corpus-sha($name) {
 (:~
  : Load corpus from ZIP archive
  :
- : @param $corpus The <corpus> element providing corpus name and archive URL
+ : @param $corpus The <dracorCorpus> element providing corpus name and archive URL
  : @return List of created collections and files
+ :
+ : NB: until we remove support for it in v2 $corpus can also be a <teiCorpus>
+ : element
 :)
-declare function load:load-corpus($corpus as element(tei:teiCorpus))
-as xs:string* {
+declare function load:load-corpus($corpus as element()) as xs:string* {
   let $info := dutil:get-corpus-info($corpus)
   let $name := $info?name
 
