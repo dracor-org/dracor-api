@@ -514,13 +514,15 @@ declare function local:markdown($input as element()) as item()* {
  : @param $corpusname
  : @return map
  :)
-declare function dutil:get-corpus-info(
-  $corpus as element()*
-) as map(*)* {
+declare function dutil:get-corpus-info($corpus as element()*) as map(*)* {
+  (: IMPORTANT: do not assign any text() nodes to variables emitted with the
+    returned map. These will vanish when the corpus.xml is deleted and thus
+    break load:load-corpus(). (the "recreating null" problem)
+  :)
   let $header := $corpus[1]/tei:teiHeader
   let $name := $header//tei:publicationStmt/tei:idno[
     not(@type) or (@type="URI" and @xml:base="https://dracor.org/")
-  ][1]/text()
+  ][1]/string()
   let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/string()
   let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"][1]/string()
   let $repo := $header//tei:publicationStmt/(
@@ -533,7 +535,7 @@ declare function dutil:get-corpus-info(
     return string-join($paras, "&#10;&#10;")
   ) else ()
   let $git-file := $config:corpora-root || "/" || $name || "/git.xml"
-  let $sha := doc($git-file)/git/sha/text()
+  let $sha := doc($git-file)/git/sha/string()
 
   return if ($header) then (
     map:merge((
