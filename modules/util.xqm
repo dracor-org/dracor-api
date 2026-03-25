@@ -473,19 +473,20 @@ declare function dutil:count-sitelinks(
 };
 
 (:~
- : Get teiCorpus element for corpus identified by $corpusname.
+ : Get dracorCorpus element for corpus identified by $corpusname.
  :
  : @param $corpusname
- : @return teiCorpus element
+ : @return dracorCorpus element
  :)
 declare function dutil:get-corpus(
   $corpusname as xs:string
 ) as element()* {
-  collection($config:corpora-root)//tei:teiCorpus[
+  (: DEPRECATED: remove teiCorpus support in v2 :)
+  collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)[
     tei:teiHeader//tei:publicationStmt/tei:idno[
-      @type="URI" and
-      @xml:base="https://dracor.org/" and
-      . = $corpusname
+      (not(@type) or
+        (@type="URI" and @xml:base="https://dracor.org/")
+      ) and . = $corpusname
     ]
   ]
 };
@@ -513,16 +514,20 @@ declare function local:markdown($input as element()) as item()* {
  : @param $corpusname
  : @return map
  :)
-declare function dutil:get-corpus-info(
-  $corpus as element(tei:teiCorpus)*
-) as map(*)* {
-  let $header := $corpus/tei:teiHeader
+declare function dutil:get-corpus-info($corpus as element()*) as map(*)* {
+  (: IMPORTANT: do not assign any text() nodes to variables emitted with the
+    returned map. These will vanish when the corpus.xml is deleted and thus
+    break load:load-corpus(). (the "recreating null" problem)
+  :)
+  let $header := $corpus[1]/tei:teiHeader
   let $name := $header//tei:publicationStmt/tei:idno[
-    @type="URI" and @xml:base="https://dracor.org/"
+    not(@type) or (@type="URI" and @xml:base="https://dracor.org/")
   ][1]/string()
   let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/string()
   let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"][1]/string()
-  let $repo := $header//tei:publicationStmt/tei:idno[@type="repo"][1]/string()
+  let $repo := $header//tei:publicationStmt/(
+    tei:idno[@type="repo"][1]|tei:ref[@type="repo"]/@target
+    )/string()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:publicationStmt/tei:availability/tei:licence
   let $description := if ($projectDesc) then (
@@ -530,7 +535,7 @@ declare function dutil:get-corpus-info(
     return string-join($paras, "&#10;&#10;")
   ) else ()
   let $git-file := $config:corpora-root || "/" || $name || "/git.xml"
-  let $sha := doc($git-file)/git/sha/text()
+  let $sha := doc($git-file)/git/sha/string()
 
   return if ($header) then (
     map:merge((
@@ -1376,53 +1381,9 @@ declare function dutil:id-to-url (
   else ()
 };
 
-(:~
- : Create new corpus collection
- :
- : @param $corpus Map with corpus description
- :)
-declare function dutil:create-corpus($corpus as map()) {
-  let $xml :=
-    <teiCorpus xmlns="http://www.tei-c.org/ns/1.0">
-      <teiHeader>
-        <fileDesc>
-          <titleStmt>
-            <title>{$corpus?title}</title>
-          </titleStmt>
-          <publicationStmt>
-            <idno type="URI" xml:base="https://dracor.org/">{$corpus?name}</idno>
-            {
-              if ($corpus?repository)
-              then <idno type="repo">{$corpus?repository}</idno>
-              else ()
-            }
-          </publicationStmt>
-        </fileDesc>
-        {if ($corpus?description) then (
-          <encodingDesc>
-            <projectDesc>
-              {
-                for $p in tokenize($corpus?description, "&#10;&#10;")
-                return <p>{$p}</p>
-              }
-            </projectDesc>
-          </encodingDesc>
-        ) else ()}
-      </teiHeader>
-    </teiCorpus>
-
-  return dutil:create-corpus($corpus?name, $xml)
-};
-
-(:~
- : Create new corpus collection
- :
- : @param $name Corpus name
- : @param $xml Corpus description
- :)
-declare function dutil:create-corpus(
+declare function local:create-corpus(
   $name as xs:string,
-  $xml as element(tei:teiCorpus)
+  $xml as element(tei:dracorCorpus)
 ) {
   util:log-system-out("creating corpus"),
   util:log-system-out($xml),
@@ -1431,6 +1392,132 @@ declare function dutil:create-corpus(
     "corpus.xml",
     $xml
   )
+};
+
+(:~
+ : Create new corpus collection from JSON
+ :
+ : @param $corpus Map with corpus description
+ :)
+declare function dutil:create-corpus($corpus as map()) {
+  let $name := $corpus?name
+
+  return if (not($name) or not($corpus?title)) then
+    error (
+      xs:QName('dutil:invalid-corpus-document'),
+      "Missing corpus name or title"
+    )
+  else if (not(matches($name, '^[a-z]+$'))) then
+    error (
+      xs:QName('dutil:invalid-corpus-name'),
+      "Invalid name '" || $name
+        || "'. Only lower case ASCII letters are accepted"
+    )
+  else (
+    let $exists := dutil:get-corpus($name)
+    return if ($exists) then
+      error (
+        xs:QName('dutil:corpus-exists'),
+        "Corpus with name '" || $name || "' already exists"
+      )
+    else
+    let $xml :=
+      <dracorCorpus xmlns="http://www.tei-c.org/ns/1.0">
+        <teiHeader>
+          <fileDesc>
+            <titleStmt>
+              <title>{$corpus?title}</title>
+            </titleStmt>
+            <publicationStmt>
+              <idno>{$corpus?name}</idno>
+              {
+                if ($corpus?repository)
+                then <ref type="repo" target="{$corpus?repository}"/>
+                else ()
+              }
+            </publicationStmt>
+          </fileDesc>
+          {if ($corpus?description) then (
+            <encodingDesc>
+              <projectDesc>
+                {
+                  for $p in tokenize($corpus?description, "&#10;&#10;")
+                  return <p>{$p}</p>
+                }
+              </projectDesc>
+            </encodingDesc>
+          ) else ()}
+        </teiHeader>
+      </dracorCorpus>
+    return (
+      local:create-corpus($name, $xml),
+      $corpus
+    )
+  )
+};
+
+(:~
+ : Create new corpus collection from dracorCorpus document
+ :
+ : This function does not rely on the corpus document to be valid against the
+ : DraCor schema. In fact, it works with legacy teiCorpus documents from which
+ : it only extracts the teiHeader element and wraps it into dracorCorpus.
+ :
+ : @param $xml dracorCorpus document
+ :)
+declare function dutil:create-corpus-from-xml($xml as element()) {
+  let $corpus := element {QName('http://www.tei-c.org/ns/1.0', 'dracorCorpus')} {
+    $xml/tei:teiHeader
+  }
+
+  let $header := $corpus/tei:teiHeader[1]
+  (: A document might (erroneously) have multiple idnos from which we extract
+    the distinct values. Below we will throw an error if there is more than
+    one unique name. :)
+  let $name := distinct-values(
+    $header//tei:publicationStmt/tei:idno[
+      not(@type)
+      or (: DEPRECATED: drop support for <idno type="URI"> in v2 :)
+      @type = "URI" and @xml:base = "https://dracor.org/"
+    ]
+  )
+  let $title := $header//tei:titleStmt/tei:title[1]/text()
+
+  return if (not($header)) then
+    error (
+      xs:QName('dutil:invalid-corpus-document'),
+      "Missing teiHeader element"
+    )
+  else if (count($name) > 1) then
+    error (
+      xs:QName('dutil:invalid-corpus-document'),
+      "Multiple corpus names found"
+    )
+  else if (not($name) or not($title)) then
+    error (
+      xs:QName('dutil:invalid-corpus-document'),
+      "Missing corpus name or title"
+    )
+  else if (not(matches($name, '^[a-z]+$'))) then
+    error (
+      xs:QName('dutil:invalid-corpus-name'),
+      "Invalid name '" || $name
+        || "'. Only lower case ASCII letters are accepted"
+    )
+  else
+    let $exists := dutil:get-corpus($name)
+    return if ($exists) then (
+      error (
+        xs:QName('dutil:corpus-exists'),
+        "Corpus with name '" || $name || "' already exists"
+      )
+    ) else (
+      local:create-corpus($name, $corpus),
+      map {
+        "name": $name,
+        "title": $title
+      }
+    )
 };
 
 (:~

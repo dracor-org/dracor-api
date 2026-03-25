@@ -77,7 +77,8 @@ declare function metrics:collect-sitelinks($corpus as xs:string) {
  : sitelinks collection
 :)
 declare function metrics:collect-sitelinks() {
-  for $corpus in collection($config:corpora-root)//tei:teiCorpus
+  (: DEPRECATED: remove teiCorpus support in v2 :)
+  for $corpus in collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)
   let $info := dutil:get-corpus-info($corpus)
   return metrics:collect-sitelinks($info?name)
 };

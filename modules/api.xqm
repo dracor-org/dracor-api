@@ -238,7 +238,8 @@ declare
   %output:method("json")
 function api:corpora($include) {
   array {
-    for $corpus in collection($config:corpora-root)//tei:teiCorpus
+  (: DEPRECATED: remove teiCorpus support in v2 :)
+    for $corpus in collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)
     let $info := dutil:get-corpus-info($corpus)
     let $name := $info?name
     order by $name
@@ -256,11 +257,8 @@ function api:corpora($include) {
 (:~
  : Add new corpus
  :
- : @param $data corpus.xml containing teiCorpus element.
- : @result XML document
- :
- : FIXME: create utility function that can be used both here and in
- : api:corpora-post-json() below.
+ : @param $data corpus.xml containing dracorCorpus element.
+ : @result JSON
  :)
 declare
   %rest:POST("{$data}")
@@ -269,69 +267,40 @@ declare
   %rest:consumes("application/xml", "text/xml")
   %rest:produces("application/json")
   %output:method("json")
-function api:corpora-post-tei($data, $auth) {
+function api:corpora-post-tei($data as document-node(), $auth) {
   if (not($auth)) then
     (
-      <rest:response>
-        <http:response status="401"/>
-      </rest:response>,
-      map {
-        "message": "authorization required"
-      }
+      <rest:response><http:response status="401"/></rest:response>,
+      map { "message": "authorization required" }
     )
-  else
-
-  let $header := if ($data) then $data//tei:teiCorpus/tei:teiHeader else ()
-  let $name := $header//tei:publicationStmt/tei:idno[
-    @type = "URI" and @xml:base = "https://dracor.org/"
-  ]/text()
-
-  let $title := $header//tei:titleStmt/tei:title[1]/text()
-
-  return if (not($header)) then
+  else try {
+    dutil:create-corpus-from-xml($data/*)
+  } catch dutil:invalid-corpus-document {
     (
-      <rest:response>
-        <http:response status="400"/>
-      </rest:response>,
-      map {
-        "error": "invalid document, expecting <teiCorpus>"
-      }
+      <rest:response><http:response status="400"/></rest:response>,
+      map { "error": "Invalid corpus document. " || $err:description }
     )
-  else if (not($name) or not($title)) then
+  } catch dutil:invalid-corpus-name {
     (
-      <rest:response>
-        <http:response status="400"/>
-      </rest:response>,
-      map {
-        "error": "missing name or title"
-      }
+      <rest:response><http:response status="400"/></rest:response>,
+      map { "error": $err:description }
     )
-  else if (not(matches($name, '^[-a-z0-1]+$'))) then
+  } catch dutil:corpus-exists {
     (
-      <rest:response>
-        <http:response status="400"/>
-      </rest:response>,
+      <rest:response><http:response status="409"/></rest:response>,
+      map { "error": $err:description }
+    )
+  } catch * {
+    (
+      <rest:response><http:response status="500"/></rest:response>,
       map {
-        "error": "invalid name",
-        "message": "Only lower case ASCII letters and digits are accepted."
+        "error": $err:description,
+        "module": $err:module,
+        "line": $err:line-number,
+        "code": $err:code
       }
     )
-  else
-    let $corpus := dutil:get-corpus($name)
-    return if ($corpus) then (
-      <rest:response>
-        <http:response status="409"/>
-      </rest:response>,
-      map {
-        "error": "corpus already exists"
-      }
-    ) else (
-      dutil:create-corpus($name, $data/tei:teiCorpus),
-      map {
-        "name": $name,
-        "title": $title
-      }
-    )
+  }
 };
 
 (:~
@@ -339,9 +308,6 @@ function api:corpora-post-tei($data, $auth) {
  :
  : @param $data JSON object describing corpus meta data
  : @result JSON object
- :
- : FIXME: create utility function that can be used both here and in
- : api:corpora-post-tei() above.
  :)
 declare
   %rest:POST("{$data}")
@@ -351,43 +317,30 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora-post-json($data) {
-  let $json := parse-json(util:base64-decode($data))
-  let $name := $json?name
-  let $description := $json?description
-  let $corpus := dutil:get-corpus($name)
-
-  return if ($corpus) then
+  if (not($auth)) then
     (
-      <rest:response>
-        <http:response status="409"/>
-      </rest:response>,
-      map {
-        "error": "corpus already exists"
-      }
+      <rest:response><http:response status="401"/></rest:response>,
+      map { "message": "authorization required" }
     )
-  else if (not($name) or not($json?title)) then
+  else try {
+    let $json := parse-json(util:base64-decode($data))
+    return dutil:create-corpus($json)
+  } catch dutil:invalid-corpus-name {
     (
-      <rest:response>
-        <http:response status="400"/>
-      </rest:response>,
-      map {
-        "error": "missing name or title"
-      }
+      <rest:response><http:response status="400"/></rest:response>,
+      map { "error": $err:description }
     )
-  else if (not(matches($name, '^[-a-z0-1]+$'))) then
+  } catch dutil:corpus-exists {
     (
-      <rest:response>
-        <http:response status="400"/>
-      </rest:response>,
-      map {
-        "error": "invalid name",
-        "message": "Only lower case ASCII letters and digits are accepted."
-      }
+      <rest:response><http:response status="409"/></rest:response>,
+      map { "error": $err:description }
     )
-  else (
-    dutil:create-corpus($json),
-    $json
-  )
+  } catch * {
+    (
+      <rest:response><http:response status="500"/></rest:response>,
+      map { "error": $err:description }
+    )
+  }
 };
 
 (:~
