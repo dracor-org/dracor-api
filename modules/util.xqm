@@ -1304,7 +1304,7 @@ declare function dutil:get-relations (
           "target": $target
         }
   ,
-    for $rel in $listRel/tei:relation[@active]
+    for $rel in $listRel/tei:relation[@active and @passive]
       for $source in local:tokenize($rel/@active)
          for  $target in local:tokenize($rel/@passive)
          return map {
