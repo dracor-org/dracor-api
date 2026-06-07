@@ -401,6 +401,7 @@ function api:corpus-index($corpusname) {
         let $titlesEng := dutil:get-titles($tei, 'en')
         let $years := dutil:get-years-iso($tei)
         let $authors := dutil:get-authors($tei)
+        let $editors := dutil:get-editors($tei)
         let $play-uri := $paths?uri
         let $metrics-url := $paths?files?metrics
         let $network-size := doc($metrics-url)//network/size/text()
@@ -418,6 +419,9 @@ function api:corpus-index($corpusname) {
           if ($titlesEng?main) then map:entry("titleEn", $titlesEng?main) else (),
           if ($titlesEng?sub) then map:entry("subtitleEn", $titlesEng?sub) else (),
           map:entry("authors", array { $authors }),
+          if (count($editors) > 0)
+            then map:entry("editors", array { $editors })
+            else (),
           if (count($source)) then map:entry("source", $source) else (),
           map:entry("yearNormalized", $yearNormalized),
           map:entry("yearPrinted", $years?print),

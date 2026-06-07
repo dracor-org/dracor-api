@@ -713,32 +713,32 @@ declare function dutil:get-corpus-meta-data(
 (:~
  : Extract full name from author element.
  :
- : @param $author author element
+ : @param $person author or editor element
  : @return string
  :)
-declare function dutil:get-full-name ($author as element(tei:author)) {
-  if ($author/tei:persName) then
-    normalize-space($author/tei:persName[1])
-  else if ($author/tei:name) then
-    normalize-space($author/tei:name[1])
-  else normalize-space($author)
+declare function dutil:get-full-name ($person as element()) {
+  if ($person/tei:persName) then
+    normalize-space($person/tei:persName[1])
+  else if ($person/tei:name) then
+    normalize-space($person/tei:name[1])
+  else normalize-space($person)
 };
 
 (:~
  : Extract full name from author element by language.
  :
- : @param $author author element
+ : @param $person author or editor element
  : @param $lang language code
  : @return string
  :)
 declare function dutil:get-full-name (
-  $author as element(tei:author),
+  $person as element(),
   $lang as xs:string
 ) {
-  if ($author/tei:persName[@xml:lang=$lang]) then
-    normalize-space($author/tei:persName[@xml:lang=$lang][1])
-  else if ($author/tei:name[@xml:lang=$lang]) then
-    normalize-space($author/tei:name[@xml:lang=$lang][1])
+  if ($person/tei:persName[@xml:lang=$lang]) then
+    normalize-space($person/tei:persName[@xml:lang=$lang][1])
+  else if ($person/tei:name[@xml:lang=$lang]) then
+    normalize-space($person/tei:name[@xml:lang=$lang][1])
   else ()
 };
 
@@ -753,36 +753,36 @@ declare function local:build-short-name ($name as element()) {
 (:~
  : Extract short name from author element.
  :
- : @param $author author element
+ : @param $person author or editor element
  : @return string
  :)
-declare function dutil:get-short-name ($author as element(tei:author)) {
-  let $name := if ($author/tei:persName) then
-    $author/tei:persName[1]
-  else if ($author/tei:name) then
-    $author/tei:name[1]
+declare function dutil:get-short-name ($person as element()) {
+  let $name := if ($person/tei:persName) then
+    $person/tei:persName[1]
+  else if ($person/tei:name) then
+    $person/tei:name[1]
   else ()
 
   return if (not($name)) then
-    normalize-space($author)
+    normalize-space($person)
   else local:build-short-name($name)
 };
 
 (:~
  : Extract short name from author element by language.
  :
- : @param $author author element
+ : @param $person author or editor element
  : @param $lang language code
  : @return string
  :)
 declare function dutil:get-short-name (
-  $author as element(tei:author),
+  $person as element(),
   $lang as xs:string
 ) {
-  let $name := if ($author/tei:persName[@xml:lang=$lang]) then
-    $author/tei:persName[@xml:lang=$lang][1]
-  else if ($author/tei:name[@xml:lang=$lang]) then
-    $author/tei:name[@xml:lang=$lang][1]
+  let $name := if ($person/tei:persName[@xml:lang=$lang]) then
+    $person/tei:persName[@xml:lang=$lang][1]
+  else if ($person/tei:name[@xml:lang=$lang]) then
+    $person/tei:name[@xml:lang=$lang][1]
   else ()
 
   return if (not($name)) then () else local:build-short-name($name)
@@ -811,39 +811,75 @@ declare function local:build-sort-name ($name as element()) {
 (:~
  : Extract name from author element that is suitable for sorting.
  :
- : @param $author author element
+ : @param $person author or editor element
  : @return string
  :)
-declare function dutil:get-sort-name ($author as element(tei:author) ) {
-  let $name := if ($author/tei:persName) then
-    $author/tei:persName[1]
-  else if ($author/tei:name) then
-    $author/tei:name[1]
+declare function dutil:get-sort-name ($person as element() ) {
+  let $name := if ($person/tei:persName) then
+    $person/tei:persName[1]
+  else if ($person/tei:name) then
+    $person/tei:name[1]
   else ()
 
   return if (not($name)) then
-    normalize-space($author)
+    normalize-space($person)
   else local:build-sort-name($name)
 };
 
 (:~
  : Extract name by language from author element that is suitable for sorting.
  :
- : @param $author author element
+ : @param $person author or editor element
  : @param $lang language code
  : @return string
  :)
 declare function dutil:get-sort-name (
-  $author as element(tei:author),
+  $person as element(),
   $lang as xs:string
 ) {
-  let $name := if ($author/tei:persName[@xml:lang=$lang]) then
-    $author/tei:persName[@xml:lang=$lang][1]
-  else if ($author/tei:name[@xml:lang=$lang]) then
-    $author/tei:name[@xml:lang=$lang][1]
+  let $name := if ($person/tei:persName[@xml:lang=$lang]) then
+    $person/tei:persName[@xml:lang=$lang][1]
+  else if ($person/tei:name[@xml:lang=$lang]) then
+    $person/tei:name[@xml:lang=$lang][1]
   else ()
 
   return if (not($name)) then () else local:build-sort-name($name)
+};
+
+declare function local:get-person-record($person as element()) as map() {
+  let $name := dutil:get-sort-name($person)
+  let $fullname := dutil:get-full-name($person)
+  let $shortname := dutil:get-short-name($person)
+  let $nameEn := dutil:get-sort-name($person, 'en')
+  let $fullnameEn := dutil:get-full-name($person, 'en')
+  let $shortnameEn := dutil:get-short-name($person, 'en')
+  let $refs := array {
+    for $idno in $person/tei:idno[@type]
+    let $ref := $idno => normalize-space()
+    let $type := string($idno/@type)
+    return map {
+      "ref": $ref,
+      "type": $type
+    }
+  }
+  let $aka := array {
+    for $name in $person/tei:persName[position() > 1]
+    return $name => normalize-space()
+  }
+
+  return map:merge((
+    map {
+      "name": $name,
+      "fullname": $fullname,
+      "shortname": $shortname,
+      "refs": $refs
+    },
+    if ($person/@role) then map {"role": $person/@role/string()} else (),
+    if ($nameEn) then map {"nameEn": $nameEn} else (),
+    if ($fullnameEn) then map {"fullnameEn": $fullnameEn} else (),
+    if ($shortnameEn) then map {"shortnameEn": $shortnameEn} else (),
+    if (array:size($aka) > 0) then map {"alsoKnownAs": $aka} else ()
+  ))
 };
 
 (:~
@@ -855,38 +891,12 @@ declare function dutil:get-authors($tei as node()) as map()* {
   for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author[
     not(@role="illustrator")
   ]
-  let $name := dutil:get-sort-name($author)
-  let $fullname := dutil:get-full-name($author)
-  let $shortname := dutil:get-short-name($author)
-  let $nameEn := dutil:get-sort-name($author, 'en')
-  let $fullnameEn := dutil:get-full-name($author, 'en')
-  let $shortnameEn := dutil:get-short-name($author, 'en')
-  let $refs := array {
-    for $idno in $author/tei:idno[@type]
-    let $ref := $idno => normalize-space()
-    let $type := string($idno/@type)
-    return map {
-      "ref": $ref,
-      "type": $type
-    }
-  }
-  let $aka := array {
-    for $name in $author/tei:persName[position() > 1]
-    return $name => normalize-space()
-  }
+  return local:get-person-record($author)
+};
 
-  return map:merge((
-    map {
-      "name": $name,
-      "fullname": $fullname,
-      "shortname": $shortname,
-      "refs": $refs
-    },
-    if ($nameEn) then map {"nameEn": $nameEn} else (),
-    if ($fullnameEn) then map {"fullnameEn": $fullnameEn} else (),
-    if ($shortnameEn) then map {"shortnameEn": $shortnameEn} else (),
-    if (array:size($aka) > 0) then map {"alsoKnownAs": $aka} else ()
-  ))
+declare function dutil:get-editors($tei as element(tei:TEI)) as map()* {
+  for $editor in $tei//tei:fileDesc/tei:titleStmt/tei:editor
+  return local:get-person-record($editor)
 };
 
 (:~
@@ -1074,6 +1084,7 @@ declare function dutil:get-play-info(
     }
 
     let $authors := dutil:get-authors($tei)
+    let $editors := dutil:get-editors($tei)
 
     let $text-classes := dutil:get-text-classes($tei)
 
@@ -1094,7 +1105,12 @@ declare function dutil:get-play-info(
         "name": $playname,
         "corpus": $corpusname,
         "title": $titles?main,
-        "authors": array { for $author in $authors return $author },
+        "authors": array { for $author in $authors return $author }
+      },
+      if (count($editors) > 0)
+        then map:entry("editors", array { for $editor in $editors return $editor })
+        else (),
+      map {
         "normalizedGenre": dutil:get-genre($text-classes),
         "libretto": $text-classes = 'Libretto',
         "allInSegment": $all-in-segment,

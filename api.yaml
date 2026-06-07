@@ -1630,7 +1630,7 @@ components:
         - type
         - ref
     Author:
-      # see dutil:get-authors
+      # see dutil:get-authors, dutil:get-editors
       type: object
       properties:
         name:
@@ -1661,6 +1661,8 @@ components:
         shortnameEn:
           type: string
           x-dracor-feature: play_author_shortname_en
+        role:
+          type: string
       required:
         - name
         - fullname
@@ -1694,6 +1696,10 @@ components:
         authors:
           type: array
           x-dracor-feature: contains_play_author_data
+          items:
+            $ref: '#/components/schemas/Author'
+        editors:
+          type: array
           items:
             $ref: '#/components/schemas/Author'
         yearNormalized:
@@ -2085,6 +2091,10 @@ components:
         authors:
           type: array
           x-dracor-feature: contains_play_author_data
+          items:
+            $ref: '#/components/schemas/Author'
+        editors:
+          type: array
           items:
             $ref: '#/components/schemas/Author'
         yearNormalized:
