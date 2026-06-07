@@ -1,8 +1,13 @@
 CLAUDE.md
 build/
 devel/
+node_modules/
+.hypothesis/
+compose*.yml
 .ant-targets-build.xml
-.existdb.json
+.existdb.json*
+.prettierignore
+.yamllint
 expath-pkg.xml
 *.xar
 local.build.properties
