@@ -32,9 +32,10 @@ paths:
                   "name": "DraCor",
                   "version": "1.0.0",
                   "status": "stable",
-                  "existdb": "6.2.0",
+                  "existdb": "6.4.0",
                   "base": "https://dracor.org/api/v1",
-                  "openapi": "https://dracor.org/api/v1/openapi.yaml"
+                  "openapi": "https://dracor.org/api/v1/openapi.yaml",
+                  "lastModified": "2026-06-07T14:23:11.456Z"
                 }
               schema:
                 $ref: '#/components/schemas/Info'
@@ -1490,6 +1491,10 @@ components:
         openapi:
           type: string
           format: url
+        lastModified:
+          type: string
+          format: date-time
+          x-dracor-feature: service_last_modified
       required:
         - name
         - version

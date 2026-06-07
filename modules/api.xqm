@@ -97,14 +97,34 @@ declare
 function api:info() {
   let $expath := config:expath-descriptor()
   let $repo := config:repo-descriptor()
-  return map {
-    "name": $expath/expath:title/string(),
-    "version": $expath/@version/string(),
-    "status": $repo/repo:status/string(),
-    "existdb": system:get-version(),
-    "base": $config:api-base,
-    "openapi": $config:api-base || "/openapi.yaml"
-  }
+  let $lastModified := max(
+    for $doc in collection($config:corpora-root)
+    let $uri := document-uri($doc)
+    return xmldb:last-modified(
+      replace($uri, '/[^/]+$', ''),
+      tokenize($uri, '/')[last()]
+    )
+  )
+  return (
+    <rest:response>
+      <http:response>
+        <http:header name="Cache-Control" value="no-store"/>
+      </http:response>
+    </rest:response>,
+    map:merge((
+      map {
+        "name": $expath/expath:title/string(),
+        "version": $expath/@version/string(),
+        "status": $repo/repo:status/string(),
+        "existdb": system:get-version(),
+        "base": $config:api-base,
+        "openapi": $config:api-base || "/openapi.yaml"
+      },
+      if (exists($lastModified))
+        then map:entry("lastModified", string($lastModified))
+        else ()
+    ))
+  )
 };
 
 (:~
