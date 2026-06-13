@@ -191,6 +191,10 @@ declare
   %output:method("json")
 function ddts:collections($id as xs:string*, $page as xs:string*, $nav as xs:string*)
 as item()+ {
+  let $id := $id[1]
+  let $page := $page[1]
+  let $nav := $nav[1]
+  return
   (: check, if param $id is set -- request a certain collection :)
   if ( $id ) then
 
@@ -925,6 +929,12 @@ declare
   %output:media-type("application/xml")
   %output:method("xml")
 function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
+  let $resource := $resource[1]
+  let $ref := $ref[1]
+  let $start := $start[1]
+  let $end := $end[1]
+  let $media-type := $media-type[1]
+  return
 
     (: TODO: to properly implement a possibility to request a document or fragment in a different media type
     we would need to set the serialization parameters rest:produces, output: ... dynamically :)
@@ -1788,6 +1798,12 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
   %output:media-type("application/ld+json")
   %output:method("json")
  function ddts:navigation($resource, $ref, $start, $end, $level, $down) {
+  let $resource := $resource[1]
+  let $ref := $ref[1]
+  let $start := $start[1]
+  let $end := $end[1]
+  let $down := $down[1]
+  return
     (: parameter $id is mandatory :)
     if ( not($resource) ) then
         (

@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 env:
   COMPOSE_FILE: compose.yml:compose.t.yml
@@ -46,21 +47,13 @@ jobs:
         run: curl --verbose http://localhost:8081/exist/restxq/v1/corpora/test
 
       - name: Test API with schemathesis
-        # Refs:
-        # https://github.com/schemathesis/action#configuration
-        # https://schemathesis.readthedocs.io/en/stable/cli.html
-        uses: schemathesis/action@95849c1d1e806909cca98b7bf031bf47d552cd5b # v1.1.1
+        uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
         with:
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
-          # OPTIONAL. List of Schemathesis checks to run. Defaults to `all`
-          # if multiple checks should be used, use a comma seperated string,
-          # e.g. "not_a_server_error,status_code_conformance"
-          checks: not_a_server_error,content_type_conformance,response_headers_conformance,response_schema_conformance
-          # OPTIONAL. Maximum number of generated examples for each endpoint
+          authorization: 'Basic YWRtaW46'
           max-examples: 100
-          # OPTIONAL. Extra arguments to pass to Schemathesis
-          args: "--auth=admin: --workers=2 --include-method=GET"
+          args: "--include-method GET"
 
       - name: Stop the docker-compose stack
         run: docker compose down
