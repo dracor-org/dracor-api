@@ -31,8 +31,12 @@ declare function local:entry-data(
     let $filename := tokenize($path, "/")[last()]
     let $name := replace($filename, "\.xml$", "")
     let $log := util:log-system-out("LOADING " || $path)
-    let $res := if ($name = "corpus") then
+    let $res := if (
+      $name = "corpus" and $data/(tei:teiCorpus|tei:dracorCorpus)
+    ) then
       xmldb:store($collection, "corpus.xml", $data)
+    else if (not($data/tei:TEI)) then
+      util:log-system-out("Skipping non-TEI document: " || $path)
     else
       let $play-collection := xmldb:create-collection($collection, $name)
       return try {
