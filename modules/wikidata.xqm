@@ -51,6 +51,7 @@ SELECT ?author ?authorLabel ?birthDate ?deathDate ?gender ?genderLabel
   ?img ?gnd
 WHERE {
   BIND (wd:' || $id || ' AS ?author)
+  ?author wdt:P31 wd:Q5 .
   OPTIONAL { ?author wdt:P569 ?birthDate. }
   OPTIONAL { ?author wdt:P570 ?deathDate. }
   OPTIONAL { ?author wdt:P21 ?gender. }
