@@ -925,57 +925,7 @@ function api:networkdata-csv($corpusname, $playname) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $speakers := dutil:distinct-speakers($doc//tei:body)
-      let $segments :=
-        <segments>
-          {
-            for $seg in dutil:get-segments($doc//tei:TEI)
-            return
-              <sgm>
-                {
-                  for $id in dutil:distinct-speakers($seg)
-                  return <spkr>{$id}</spkr>
-                }
-              </sgm>
-          }
-        </segments>
-
-      let $links := map:merge(
-        for $spkr in $speakers
-        let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
-        return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
-      )
-
-      let $rows :=
-        for $spkr at $pos in $speakers
-          for $cooc in $links($spkr)
-          where index-of($speakers, $cooc)[1] gt $pos
-          let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
-          return string-join(($spkr, 'Undirected',$cooc, $weight), ",")
-
-      return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
-};
-
-declare function local:make-gexf-nodes($speakers, $doc) as element()* {
-  for $n in $speakers?*
-  let $id := $n?id
-  let $label := $n?name
-  let $sex := $n?sex
-  let $group := if ($n?isGroup) then 1 else 0
-  let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
-  return
-    <node xmlns="http://www.gexf.net/1.2draft"
-      id="{$id}" label="{$label}">
-      <attvalues>
-        <attvalue for="person-group" value="{$group}" />
-        <attvalue for="number-of-words" value="{$wc}" />
-      {
-        if ($sex) then
-          <attvalue for="sex" value="{$sex}"></attvalue>
-        else ()
-      }
-      </attvalues>
-    </node>
+      dutil:networkdata-csv($doc)
 };
 
 (:~
@@ -998,59 +948,7 @@ function api:networkdata-gexf($corpusname, $playname) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $speakers := dutil:distinct-speakers($doc//tei:body)
-      let $segments :=
-        <segments>
-          {
-            for $seg in dutil:get-segments($doc//tei:TEI)
-            return
-              <sgm>
-                {
-                  for $id in dutil:distinct-speakers($seg)
-                  return <spkr>{$id}</spkr>
-                }
-              </sgm>
-          }
-        </segments>
-
-      let $info := dutil:get-play-info($corpusname, $playname)
-      let $authors := string-join($info?authors?*?name, ' · ')
-      let $title := $info?title
-
-      let $links := map:merge(
-        for $spkr in $speakers
-        let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
-        return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
-      )
-
-      let $nodes := local:make-gexf-nodes($info?characters, $doc)
-
-      let $edges :=
-        for $spkr at $pos in $speakers
-          for $cooc in $links($spkr)
-          where index-of($speakers, $cooc)[1] gt $pos
-          let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
-          return
-            <edge xmlns="http://www.gexf.net/1.2draft"
-            id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}"
-            weight="{$weight}"/>
-
-      return
-        <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
-          <meta>
-            <creator>dracor.org</creator>
-            <description>{$authors}: {$title}</description>
-          </meta>
-          <graph mode="static" defaultedgetype="undirected">
-            <attributes class="node" mode="static">
-              <attribute id="sex" title="Sex" type="string"/>
-              <attribute id="person-group" title="Person group" type="boolean"/>
-              <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
-            </attributes>
-            <nodes>{$nodes}</nodes>
-            <edges>{$edges}</edges>
-          </graph>
-        </gexf>
+      dutil:networkdata-gexf($doc, $corpusname, $playname)
 };
 
 (:~
@@ -1073,68 +971,7 @@ function api:networkdata-graphml($corpusname, $playname) {
         <http:response status="404"/>
       </rest:response>
     else
-      let $speakers := dutil:distinct-speakers($doc//tei:body)
-      let $segments :=
-        <segments>
-          {
-            for $seg in dutil:get-segments($doc//tei:TEI)
-            return
-              <sgm>
-                {
-                  for $id in dutil:distinct-speakers($seg)
-                  return <spkr>{$id}</spkr>
-                }
-              </sgm>
-          }
-        </segments>
-
-      let $info := dutil:get-play-info($corpusname, $playname)
-
-      let $links := map:merge(
-        for $spkr in $speakers
-        let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
-        return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
-      )
-
-      let $edges :=
-        for $spkr at $pos in $speakers
-          for $cooc in $links($spkr)
-          where index-of($speakers, $cooc)[1] gt $pos
-          let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
-          return
-            <edge xmlns="http://graphml.graphdrawing.org/xmlns"
-             id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}">
-             <data key="weight">{$weight}</data>
-           </edge>
-
-      return
-        <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
-          <key attr.name="label" attr.type="string" for="node" id="label"/>
-          <key attr.name="Edge Label" attr.type="string" for="edge" id="edgelabel"/>
-          <key attr.name="weight" attr.type="double" for="edge" id="weight"/>
-          <key attr.name="Sex" attr.type="string" for="node" id="sex"/>
-          <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
-          <key attr.name="Number of spoken words" attr.type="int" for="node" id="number-of-words"/>
-          <graph edgedefault="undirected">
-            {
-              for $n in $info?characters?*
-              let $id := $n?id
-              let $label := $n?name
-              let $sex := $n?sex
-              let $wc := dutil:num-of-spoken-words($doc//tei:body, $id)
-              return
-                <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
-                  <data key="label">{$label}</data>
-                  {if ($sex) then <data key="sex">{$sex}</data> else ()}
-                  <data key="person-group">
-                    {if ($n?isGroup) then "true" else "false"}
-                  </data>
-                  <data key="number-of-words">{$wc}</data>
-                </node>
-            }
-            {$edges}
-          </graph>
-        </graphml>
+      dutil:networkdata-graphml($doc, $corpusname, $playname)
 };
 
 (:~
@@ -1219,7 +1056,7 @@ function api:relations-gexf($corpusname, $playname) {
       let $authors := string-join($info?authors?*?name, ' · ')
       let $title := $info?title
 
-      let $nodes := local:make-gexf-nodes($info?characters, $doc)
+      let $nodes := dutil:gexf-nodes($doc, $info?characters?*)
 
       let $edges :=
         for $rel at $pos in $info?relations?*
