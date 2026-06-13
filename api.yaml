@@ -1629,8 +1629,8 @@ components:
       required:
         - type
         - ref
-    AuthorInPlayInCorpus:
-      # see dutil:get-authors
+    Author:
+      # see dutil:get-authors, dutil:get-editors
       type: object
       properties:
         name:
@@ -1654,13 +1654,15 @@ components:
             type: string
         nameEn:
           type: string
-          x-dracor-feture: play_author_name_en
+          x-dracor-feature: play_author_name_en
         fullnameEn:
           type: string
           x-dracor-feature: play_author_fullname_en
         shortnameEn:
           type: string
           x-dracor-feature: play_author_shortname_en
+        role:
+          type: string
       required:
         - name
         - fullname
@@ -1695,7 +1697,11 @@ components:
           type: array
           x-dracor-feature: contains_play_author_data
           items:
-            $ref: '#/components/schemas/AuthorInPlayInCorpus'
+            $ref: '#/components/schemas/Author'
+        editors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
         yearNormalized:
           type: integer
           nullable: true
@@ -1986,43 +1992,6 @@ components:
       required:
         - type
         - number
-    AuthorInPlayMetadata:
-      # FIXME: this schema seems to be identical to AuthorInPlayInCorpus, can we
-      # eliminate it?
-      type: object
-      properties:
-        refs:
-          type: array
-          items:
-            $ref: '#/components/schemas/ExternalReferenceResourceId'
-        alsoKnownAs:
-          type: array
-          x-dracor-feature: play_author_also_known_as
-          items:
-            type: string
-        fullnameEn:
-          type: string
-          x-dracor-feature: play_author_fullname_en
-        name:
-          type: string
-          x-dracor-feature: play_author_name
-        shortnameEn:
-          type: string
-          x-dracor-feature: play_author_shortname_en
-        nameEn:
-          type: string
-          x-dracor-feature: play_author_name_en
-        fullname:
-          type: string
-          x-dracor-feature: play_author_fullname
-        shortname:
-          type: string
-          x-dracor-feature: play_author_shortname
-      required:
-        - name
-        - fullname
-        - shortname
-        - refs
     CharacterInPlayMetadata:
       # see dutil:get-play-info
       type: object
@@ -2123,7 +2092,11 @@ components:
           type: array
           x-dracor-feature: contains_play_author_data
           items:
-            $ref: '#/components/schemas/AuthorInPlayMetadata'
+            $ref: '#/components/schemas/Author'
+        editors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
         yearNormalized:
           type: integer
           nullable: true
