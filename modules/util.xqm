@@ -1626,3 +1626,233 @@ declare function dutil:remove-sha(
     $config:corpora-root || "/" || $corpusname || "/" || $playname
   return local:remove-sha($collection)
 };
+
+declare function local:network-graph($doc as document-node()) as map(*) {
+  let $speakers := dutil:distinct-speakers($doc//tei:body)
+  let $segments :=
+    <segments>
+      {
+        for $seg in dutil:get-segments($doc//tei:TEI)
+        return
+          <sgm>
+            {
+              for $id in dutil:distinct-speakers($seg)
+              return <spkr>{$id}</spkr>
+            }
+          </sgm>
+      }
+    </segments>
+  let $links := map:merge(
+    for $spkr in $speakers
+    let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
+    return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
+  )
+  return map {
+    "speakers": $speakers,
+    "segments": $segments,
+    "links": $links
+  }
+};
+
+(:~
+ : Build network data for a play as CSV.
+ :
+ : @param $doc Play TEI document
+ : @result CSV string
+ :)
+declare function dutil:networkdata-csv(
+  $doc as document-node()
+) as xs:string {
+  let $graph := local:network-graph($doc)
+  let $speakers := $graph?speakers
+  let $segments := $graph?segments
+  let $links := $graph?links
+  let $rows :=
+    for $spkr at $pos in $speakers
+      for $cooc in $links($spkr)
+      where index-of($speakers, $cooc)[1] gt $pos
+      let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
+      return string-join(($spkr, 'Undirected', $cooc, $weight), ",")
+  return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
+};
+
+(:~
+ : Build a map of spoken word counts per speaker ID in a single pass.
+ :
+ : Uses tei:w elements when present (direct children of tei:body only),
+ : otherwise tokenizes text excluding stage directions and notes.
+ :
+ : @param $doc Play TEI document
+ : @param $ids Speaker IDs to include in the map
+ : @result map of speaker ID to word count
+ :)
+declare function dutil:word-count-map(
+  $doc as document-node(),
+  $ids as xs:string*
+) as map(*) {
+  if (exists($doc//tei:body/tei:sp//tei:w)) then
+    map:merge(
+      for $sp in $doc//tei:body//tei:sp
+      let $wc := count($sp//(tei:l|tei:p)//tei:w[not(ancestor::tei:stage)])
+      for $who in tokenize($sp/@who)[starts-with(., '#')] ! substring(., 2)
+      where $who = $ids
+      group by $who
+      return map:entry($who, sum($wc))
+    )
+  else
+    map:merge(
+      for $sp in $doc//tei:body//tei:sp
+      let $wc := count(
+        tokenize(
+          string-join(
+            $sp//(tei:l|tei:p)//text()
+              [not(ancestor::tei:stage)][not(ancestor::tei:note)],
+            ' '),
+          '\W+')[not(.='')]
+      )
+      for $who in tokenize($sp/@who)[starts-with(., '#')] ! substring(., 2)
+      where $who = $ids
+      group by $who
+      return map:entry($who, sum($wc))
+    )
+};
+
+(:~
+ : Build GEXF node elements for a play's characters, including word counts.
+ :
+ : @param $doc Play TEI document
+ : @param $characters Sequence of character maps (from dutil:get-play-info)
+ : @result Sequence of GEXF node elements
+ :)
+declare function dutil:gexf-nodes(
+  $doc as document-node(),
+  $characters as item()*
+) as element()* {
+  let $wc-map := dutil:word-count-map($doc, $characters?id)
+  for $n in $characters
+  let $id := $n?id
+  let $label := $n?name
+  let $sex := $n?sex
+  let $group := if ($n?isGroup) then 1 else 0
+  let $wc := ($wc-map($id), 0)[1]
+  return
+    <node xmlns="http://www.gexf.net/1.2draft"
+      id="{$id}" label="{$label}">
+      <attvalues>
+        <attvalue for="person-group" value="{$group}" />
+        <attvalue for="number-of-words" value="{$wc}" />
+        {
+          if ($sex) then
+            <attvalue for="sex" value="{$sex}"></attvalue>
+          else ()
+        }
+      </attvalues>
+    </node>
+};
+
+(:~
+ : Build network data for a play as GEXF.
+ :
+ : @param $doc Play TEI document
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result GEXF root element
+ :)
+declare function dutil:networkdata-gexf(
+  $doc as document-node(),
+  $corpusname as xs:string,
+  $playname as xs:string
+) as element() {
+  let $graph := local:network-graph($doc)
+  let $speakers := $graph?speakers
+  let $segments := $graph?segments
+  let $links := $graph?links
+  let $info := dutil:get-play-info($corpusname, $playname)
+  let $authors := string-join($info?authors?*?name, ' · ')
+  let $title := $info?title
+  let $nodes := dutil:gexf-nodes($doc, $info?characters?*)
+  let $edges :=
+    for $spkr at $pos in $speakers
+      for $cooc in $links($spkr)
+      where index-of($speakers, $cooc)[1] gt $pos
+      let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
+      return
+        <edge xmlns="http://www.gexf.net/1.2draft"
+          id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}"
+          weight="{$weight}"/>
+  return
+    <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
+      <meta>
+        <creator>dracor.org</creator>
+        <description>{$authors}: {$title}</description>
+      </meta>
+      <graph mode="static" defaultedgetype="undirected">
+        <attributes class="node" mode="static">
+          <attribute id="sex" title="Sex" type="string"/>
+          <attribute id="person-group" title="Person group" type="boolean"/>
+          <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
+        </attributes>
+        <nodes>{$nodes}</nodes>
+        <edges>{$edges}</edges>
+      </graph>
+    </gexf>
+};
+
+(:~
+ : Build network data for a play as GraphML.
+ :
+ : @param $doc Play TEI document
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @result GraphML root element
+ :)
+declare function dutil:networkdata-graphml(
+  $doc as document-node(),
+  $corpusname as xs:string,
+  $playname as xs:string
+) as element() {
+  let $graph := local:network-graph($doc)
+  let $speakers := $graph?speakers
+  let $segments := $graph?segments
+  let $links := $graph?links
+  let $info := dutil:get-play-info($corpusname, $playname)
+  let $wc-map := dutil:word-count-map($doc, $info?characters?*?id)
+  let $edges :=
+    for $spkr at $pos in $speakers
+      for $cooc in $links($spkr)
+      where index-of($speakers, $cooc)[1] gt $pos
+      let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
+      return
+        <edge xmlns="http://graphml.graphdrawing.org/xmlns"
+          id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}">
+          <data key="weight">{$weight}</data>
+        </edge>
+  return
+    <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+      <key attr.name="label" attr.type="string" for="node" id="label"/>
+      <key attr.name="Edge Label" attr.type="string" for="edge" id="edgelabel"/>
+      <key attr.name="weight" attr.type="double" for="edge" id="weight"/>
+      <key attr.name="Sex" attr.type="string" for="node" id="sex"/>
+      <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
+      <key attr.name="Number of spoken words" attr.type="int" for="node" id="number-of-words"/>
+      <graph edgedefault="undirected">
+        {
+          for $n in $info?characters?*
+          let $id := $n?id
+          let $label := $n?name
+          let $sex := $n?sex
+          let $wc := ($wc-map($id), 0)[1]
+          return
+            <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
+              <data key="label">{$label}</data>
+              {if ($sex) then <data key="sex">{$sex}</data> else ()}
+              <data key="person-group">
+                {if ($n?isGroup) then "true" else "false"}
+              </data>
+              <data key="number-of-words">{$wc}</data>
+            </node>
+        }
+        {$edges}
+      </graph>
+    </graphml>
+};
