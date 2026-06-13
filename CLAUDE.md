@@ -137,5 +137,18 @@ GitHub push → POST /webhook/github
 - `Dockerfile` is a multi-stage build: Ant builds the XAR, then it's installed into an eXist-db image
 - `compose.yml` — production-like orchestration (API + frontend + metrics + Fuseki)
 - `compose.t.yml` — overlay for CI test runs
-- `compose.dev.yml` — development overlay
+- `compose.dev.yml` — development overlay (builds locally; uses hardcoded dev secrets `qwerty`)
 - eXist-db dependencies (`expath-crypto-module`, `openapi`, `functx`) are auto-deployed via `/opt/exist/autodeploy`
+- `post-install.xq` runs after XAR deployment: creates `/db/dracor/config-v1.xml` and `secrets.xml` from environment variables, and sets SETUID permissions on webhook and sitelinks modules
+
+### XQuery Coding Patterns
+
+**RESTXQ endpoint return shape**: Endpoints returning 200 with no custom headers can return the response body directly (JSON map/array or XML). A leading `<rest:response><http:response status="NNN"/></rest:response>` is only needed when setting a non-200 status code or emitting custom headers.
+
+**JSON output**: Endpoints returning JSON require the `%output:method("json")` function annotation. XQuery 3.1 map/array constructors serialize directly — no `serialize()` call needed.
+
+**Error handling**: Modules raise typed errors using `error(QName, message)` with namespace-qualified codes (e.g., `$dutil:invalid-corpus-document`). Callers catch specific codes via `catch $dutil:invalid-corpus-document { ... }` before a wildcard `catch * { ... }` fallback.
+
+**Logging**: Use `util:log("info", $message)` for application logs (written to eXist log files) and `util:log-system-out($message)` for container stdout (visible in `docker compose logs`).
+
+**OpenAPI spec**: `api.yaml` is the static source; when served at `/v1/openapi.yaml`, `api.xqm` dynamically replaces hardcoded server URLs with `$config:api-base` and injects the current package version.
