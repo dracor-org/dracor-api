@@ -332,11 +332,12 @@ function api:corpora-post-tei($data as document-node(), $auth) {
 declare
   %rest:POST("{$data}")
   %rest:path("/v1/corpora")
+  %rest:header-param("Authorization", "{$auth}")
   %rest:consumes("application/json")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
-function api:corpora-post-json($data) {
+function api:corpora-post-json($data, $auth) {
   if (not($auth)) then
     (
       <rest:response><http:response status="401"/></rest:response>,
