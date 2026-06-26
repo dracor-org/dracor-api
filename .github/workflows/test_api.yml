@@ -32,7 +32,7 @@ jobs:
             --url http://localhost:8081/exist/restxq/v1/corpora \
             --user admin: \
             --header 'Content-Type: application/json' \
-            --data @./corpora/test.json
+            --data @./test/test.json
       - name: Load data for test corpus
         run: |
           curl \
