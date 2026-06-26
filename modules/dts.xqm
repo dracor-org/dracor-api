@@ -898,7 +898,7 @@ as item() {
  : $tree
  : $mediaType
  :
- : Params used in POST, PUT, DELETE requests are not availiable
+ : Params used in POST, PUT, DELETE requests are not available
 
  :)
 
@@ -1415,7 +1415,7 @@ declare function local:collections-self-describe() {
         </rest:response>,
         <error statusCode="400" xmlns="https://w3id.org/dts/api#">
             <title>Bad Request</title>
-            <description>Should at least use the required parameter 'id'. Automatic self description is not availiable.</description>
+            <description>Should at least use the required parameter 'id'. Automatic self description is not available.</description>
         </error>
         )
 };
@@ -2537,7 +2537,7 @@ declare function local:snippet($tei-fragment as element()) {
 
         (: end of level2 :)
      else
-        (: this level is not implemented/not availiable :)
+        (: this level is not implemented/not available :)
         (
             <rest:response>
                 <http:response status="400"/>
