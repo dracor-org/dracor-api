@@ -5,5 +5,6 @@ devel/
 expath-pkg.xml
 local.build.properties
 *.xar
+schemathesis-results.*
 .hypothesis
 .claude

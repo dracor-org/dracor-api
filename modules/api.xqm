@@ -257,6 +257,12 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora($include) {
+  if ($include[1] and not($include[1] = "metrics")) then
+    (
+      <rest:response><http:response status="400"/></rest:response>,
+      map {"error": "invalid value for parameter 'include'"}
+    )
+  else
   array {
   (: DEPRECATED: remove teiCorpus support in v2 :)
     for $corpus in collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)

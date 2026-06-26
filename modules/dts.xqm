@@ -195,6 +195,12 @@ as item()+ {
   let $page := $page[1]
   let $nav := $nav[1]
   return
+  if ($nav and $nav != "parents") then
+    (
+      <rest:response><http:response status="400"/></rest:response>,
+      "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
+    )
+  else
   (: check, if param $id is set -- request a certain collection :)
   if ( $id ) then
 
@@ -353,9 +359,9 @@ as item()+ {
     (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger12345 :)
         (
             <rest:response>
-                <http:response status="400"/>
+                <http:response status="404"/>
             </rest:response>,
-                    "The value '" || $id || "' of the parameter 'id' is not in a valid format: Either provide the id or URI of a corpus or play."
+                    "The value '" || $id || "' of the parameter 'id' does not identify a known collection. Provide the name or URI of a corpus."
         )
 
   else
@@ -656,28 +662,35 @@ as item()+
 
  :)
 declare function local:child-readable-collection-with-parent-by-id($id as xs:string)
-as map()
+as item()+
 {
-    let $self := local:child-readable-collection-by-id($id)
-
-    (: get parent collection and remove the members :)
-
-    (: TODO: maybe use a dutil:function instead; this is very custom; not sure how this will
-    work when something is changed in the general API code
-     :)
     let $file-db-path := util:collection-name(collection($config:corpora-root)/tei:TEI[@xml:id eq $id])
     let $corpusname := tokenize(replace($file-db-path, "/db/dracor/corpora/",""),"/")[1]
-
-    (: get the parent by the function to generate a collection :)
-    let $parent := local:corpus-to-collection($corpusname)
-
-    (: remove "members" and "@context" :)
-    let $parent-without-members := map:remove($parent,"member")
-    let $parent-without-context := map:remove($parent-without-members, "@context")
-    let $members := map {"member" : array { $parent-without-context }}
-
     return
-        map:merge(($self, $members))
+        if (not($corpusname)) then
+            (
+                <rest:response><http:response status="404"/></rest:response>,
+                "Resource '" || $id || "' does not exist!"
+            )
+        else
+            let $self := local:child-readable-collection-by-id($id)
+
+            (: get parent collection and remove the members :)
+
+            (: TODO: maybe use a dutil:function instead; this is very custom; not sure how this will
+            work when something is changed in the general API code
+             :)
+
+            (: get the parent by the function to generate a collection :)
+            let $parent := local:corpus-to-collection($corpusname)
+
+            (: remove "members" and "@context" :)
+            let $parent-without-members := map:remove($parent,"member")
+            let $parent-without-context := map:remove($parent-without-members, "@context")
+            let $members := map {"member" : array { $parent-without-context }}
+
+            return
+                map:merge(($self, $members))
 };
 
 
@@ -931,8 +944,12 @@ declare
 function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
   let $resource := $resource[1]
   let $ref := $ref[1]
-  let $start := $start[1]
-  let $end := $end[1]
+  (: ref takes precedence: if ref is set, start and end are ignored :)
+  let $start := if ($ref) then () else $start[1]
+  let $end := if ($ref) then () else $end[1]
+  (: start and end must both be present for a range; if only one is given, ignore both :)
+  let $start := if ($start and $end) then $start else ()
+  let $end := if ($start and $end) then $end else ()
   let $media-type := $media-type[1]
   return
 
@@ -940,18 +957,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
     we would need to set the serialization parameters rest:produces, output: ... dynamically :)
     (: check, if valid request :)
 
-    (: In GET requests one may either provide a ref parameter or a pair of start and end parameters. A request cannot combine ref with the other two. If, say, a ref and a start are both provided this should cause the request to fail. :)
-    if ( $ref and ( $start or $end ) ) then
-        (
-        <rest:response>
-            <http:response status="400"/>
-        </rest:response>,
-        <error statusCode="400" xmlns="https://w3id.org/dts/api#">
-            <title>Bad Request</title>
-            <description>GET requests may either have a 'ref' parameter or a pair of 'start' and 'end' parameters. A request cannot combine 'ref' with the other two.</description>
-        </error>
-        )
-    else if ( ($start and not($end) ) or ( $end and not($start) ) ) then
+    if ( ($start and not($end) ) or ( $end and not($start) ) ) then
         (: requesting a range, should check, if start and end is present :)
         (
         <rest:response>
@@ -1800,9 +1806,14 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
  function ddts:navigation($resource, $ref, $start, $end, $level, $down) {
   let $resource := $resource[1]
   let $ref := $ref[1]
-  let $start := $start[1]
-  let $end := $end[1]
-  let $down := $down[1]
+  (: ref takes precedence: if ref is set, start and end are ignored :)
+  let $start := if ($ref) then () else $start[1]
+  let $end := if ($ref) then () else $end[1]
+  (: start and end must both be present for a range; if only one is given, ignore both :)
+  let $start := if ($start and $end) then $start else ()
+  let $end := if ($start and $end) then $end else ()
+  (: default to top-level navigation when no navigation parameter is specified :)
+  let $down := if ($down[1]) then $down[1] else if (not($ref) and not($start)) then "1" else ()
   return
     (: parameter $id is mandatory :)
     if ( not($resource) ) then
@@ -1811,14 +1822,6 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
             <http:response status="400"/>
         </rest:response>,
         "Mandatory parameter 'resource' is missing."
-        )
-    (: both ref and either start or end is specified should return an error :)
-    else if ( $ref and ($start or $end) ) then
-        (
-        <rest:response>
-            <http:response status="400"/>
-        </rest:response>,
-        "Bad Request: Use of both parameters 'ref' and 'start' or 'end' is not allowed."
         )
     (: should not use start without end or vice versa :)
     else if ( ($start and not($end)) or ($end and not($start)) ) then

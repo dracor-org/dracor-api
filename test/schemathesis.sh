@@ -2,5 +2,9 @@
 
 schemathesis run http://localhost:8081/exist/restxq/v1/openapi.yaml \
   --include-method GET \
+  --mode positive \
   --max-examples 50 \
-  --auth admin:
+  --request-timeout 30 \
+  --auth admin: \
+  --report junit \
+  --report-junit-path schemathesis-results.xml
