@@ -1075,7 +1075,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^Q[0-9]+'
+            pattern: '^Q[0-9]+$'
           example: Q131351
       responses:
         '200':
