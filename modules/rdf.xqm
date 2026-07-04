@@ -355,6 +355,8 @@ as element(rdf:RDF) {
     let $characterDescriptions :=
       for $character in $characters
       let $character-uri := $play-uri || "/character/" || $character/@xml:id/string()
+      let $wikidata-idno := $character/tei:idno[@type eq 'wikidata']
+        [matches(normalize-space(.), '^Q[1-9]\d*$')][1]
       return
         <rdf:Description rdf:about="{$character-uri}">
           <rdf:type rdf:resource="http://iflastandards.info/ns/fr/frbr/frbroo/F38_Character"/>
@@ -370,7 +372,10 @@ as element(rdf:RDF) {
                 </rdfs:label>
               }
               {
-                if ($character/@ana) then
+                if ($wikidata-idno) then
+                  <owl:sameAs rdf:resource="http://www.wikidata.org/entity/{normalize-space($wikidata-idno)}"/>
+                (: DEPRECATED: @ana fallback — remove in v2 :)
+                else if ($character/@ana) then
                   if (matches($character/@ana/string(), 'https://wikidata.org/wiki/'))
                   then
                     let $wd :=
