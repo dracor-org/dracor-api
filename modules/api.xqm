@@ -1464,6 +1464,22 @@ function api:stage-directions-with-speakers($corpusname, $playname) {
 };
 
 (:~
+ : List all characters with a Wikidata ID across all corpora, grouped by
+ : Q-number and sorted by play count descending.
+ :
+ : @result Array of JSON objects
+ :)
+declare
+  %rest:GET
+  %rest:path("/v1/characters")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:get-all-characters-with-wikidata-id() {
+  dutil:get-all-characters-with-wikidata-id()
+};
+
+(:~
  : List plays with character identified by Wikidata ID
  :
  : @param $id Wikidata ID

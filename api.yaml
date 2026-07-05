@@ -969,6 +969,26 @@ paths:
         '404':
           description: No play found by this ID
 
+  /characters:
+    get:
+      summary: List all characters with a Wikidata ID across all corpora
+      description: >-
+        Returns all characters that have an assigned Wikidata ID, grouped by
+        Q-number and sorted by the number of plays they appear in (descending).
+        Wikidata IDs are read from `<idno type="wikidata">` on `person` and
+        `personGrp` elements, with a deprecated fallback to `@ana` URIs.
+      operationId: get-all-characters-with-wikidata-id
+      tags: [public]
+      responses:
+        '200':
+          description: List of characters grouped by Wikidata Q-number.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WikidataCharacterWithPlays'
+
   /character/{id}:
     get:
       summary: List plays having a character identified by Wikidata ID
@@ -2390,6 +2410,25 @@ components:
         - sex
         - roles
         - text
+    WikidataCharacterWithPlays:
+      # see dutil:get-all-characters-with-wikidata-id
+      type: object
+      properties:
+        id:
+          type: string
+          description: Wikidata Q-number (e.g. Q130890)
+          pattern: '^Q[1-9][0-9]*$'
+        count:
+          type: integer
+          description: Number of plays containing this character
+        plays:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayWithWikidataCharacter'
+      required:
+        - id
+        - count
+        - plays
     PlayWithWikidataCharacter:
       # see dutil:get-plays-with-character
       type: object
@@ -2405,6 +2444,8 @@ components:
           type: array
           items:
             type: string
+        characterId:
+          type: string
         characterName:
           type: string
       required:
@@ -2412,6 +2453,7 @@ components:
         - uri
         - title
         - authors
+        - characterId
         - characterName
     DtsEntrypoint:
       # see ddts:entry-point
