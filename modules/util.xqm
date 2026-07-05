@@ -1026,6 +1026,7 @@ declare function dutil:get-play-wikidata-ids ($corpus as xs:string) {
  : consider to change this after stricter schematron rules are in place. See
  : https://github.com/dracor-org/dracor-schema/issues/16#issuecomment-887005105.
  :)
+(: DEPRECATED: @ana on person/personGrp for Wikidata IDs — remove in v2 :)
 declare function dutil:get-wikidata-id-from-ana(
   $e as element()?
 ) as xs:string* {
@@ -1033,6 +1034,18 @@ declare function dutil:get-wikidata-id-from-ana(
     substring($e/@ana, 32)
   else
     ()
+};
+
+declare function dutil:get-character-wikidata-id(
+  $e as element()?
+) as xs:string? {
+  let $idno := $e/tei:idno[@type eq 'wikidata']
+    [matches(normalize-space(.), '^Q[1-9]\d*$')]
+  return if ($idno) then
+    normalize-space($idno[1])
+  else
+    (: DEPRECATED: fallback to @ana — remove in v2 :)
+    dutil:get-wikidata-id-from-ana($e)
 };
 
 (:~
@@ -1126,7 +1139,7 @@ declare function dutil:get-play-info(
           let $role := $node/@role/string()
           let $isGroup := if ($node/name() eq 'personGrp')
             then true() else false()
-          let $wikidata-id := dutil:get-wikidata-id-from-ana($node)
+          let $wikidata-id := dutil:get-character-wikidata-id($node)
           return map:merge((
             map {
               "id": $id,
@@ -1265,7 +1278,7 @@ declare function dutil:characters-info (
       let $metrics-node := $metrics//node[@id=$id]
       let $eigenvector := if ($metrics-node/eigenvector[text()]) then
         number($metrics-node/eigenvector) else 0
-      let $wikidata-id := dutil:get-wikidata-id-from-ana($node)
+      let $wikidata-id := dutil:get-character-wikidata-id($node)
       return map:merge((
         map {
           "id": $id,
@@ -1341,20 +1354,27 @@ declare function dutil:get-relations (
 declare function dutil:get-plays-with-character ($id as xs:string) {
   let $wd-uri := "http://www.wikidata.org/entity/" || $id
   let $plays := collection($config:corpora-root)
-    /tei:TEI[.//tei:person[@ana=$wd-uri]]
+    /tei:TEI[.//tei:particDesc//(tei:person|tei:personGrp)[
+      tei:idno[@type eq 'wikidata'][normalize-space(.) eq $id]
+      or @ana eq $wd-uri (: DEPRECATED: remove @ana branch in v2 :)
+    ]]
   return array {
     for $tei in $plays
-    let $id := dutil:get-dracor-id($tei)
+    let $play-id := dutil:get-dracor-id($tei)
     let $titles := dutil:get-titles($tei)
     let $authors := dutil:get-authors($tei)
+    let $character := (
+      $tei//tei:particDesc//(tei:person|tei:personGrp)[
+        tei:idno[@type eq 'wikidata'][normalize-space(.) eq $id]
+        or @ana eq $wd-uri (: DEPRECATED: remove @ana branch in v2 :)
+      ]
+    )[1]
     return map {
-      "id": $id,
-      "uri": "https://dracor.org/id/" || $id,
+      "id": $play-id,
+      "uri": "https://dracor.org/id/" || $play-id,
       "title": $titles?main,
       "authors": array { for $author in $authors return $author?fullname },
-      "characterName": normalize-space(
-        $tei//tei:particDesc/tei:listPerson/tei:person[@ana=$wd-uri]/tei:persName[1]
-      )
+      "characterName": normalize-space($character/tei:persName[1])
     }
   }
 };
