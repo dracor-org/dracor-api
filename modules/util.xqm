@@ -1375,7 +1375,7 @@ declare function dutil:get-plays-with-character ($id as xs:string) {
       "title": $titles?main,
       "authors": array { for $author in $authors return $author?fullname },
       "characterId": $character/@xml:id/string(),
-      "characterName": normalize-space($character/tei:persName[1])
+      "characterName": normalize-space($character/(tei:persName|tei:name)[1])
     }
   }
 };
@@ -1407,7 +1407,7 @@ declare function dutil:get-all-characters-with-wikidata-id () {
         "title": $titles?main,
         "authors": $author-names,
         "characterId": $c/@xml:id/string(),
-        "characterName": normalize-space($c/tei:persName[1])
+        "characterName": normalize-space($c/(tei:persName|tei:name)[1])
       }
     }
   return array {
