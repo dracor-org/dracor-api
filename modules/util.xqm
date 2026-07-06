@@ -1382,7 +1382,7 @@ declare function dutil:get-plays-with-character ($id as xs:string) {
 
 (:~
  : Get all characters with a Wikidata ID across all corpora, grouped by
- : Q-number, sorted by play count descending.
+ : QID, sorted by play count descending.
  :
  : Reads QIDs from <idno type="wikidata"> on tei:person and tei:personGrp,
  : with a deprecated fallback to @ana URIs (see dutil:get-character-wikidata-id).

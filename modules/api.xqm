@@ -1465,7 +1465,7 @@ function api:stage-directions-with-speakers($corpusname, $playname) {
 
 (:~
  : List all characters with a Wikidata ID across all corpora, grouped by
- : Q-number and sorted by play count descending.
+ : QID and sorted by play count descending.
  :
  : @result Array of JSON objects
  :)

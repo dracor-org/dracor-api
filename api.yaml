@@ -977,7 +977,7 @@ paths:
         releases. Do not rely on this endpoint for stable integrations.**
 
         Returns all characters that have an assigned Wikidata ID, grouped by
-        Q-number and sorted by the number of plays they appear in (descending).
+        QID and sorted by the number of plays they appear in (descending).
         Wikidata IDs are read from `<idno type="wikidata">` on `person` and
         `personGrp` elements.
       operationId: get-all-characters-with-wikidata-id
@@ -985,7 +985,7 @@ paths:
       x-dracor-experimental: true
       responses:
         '200':
-          description: List of characters grouped by Wikidata Q-number.
+          description: List of characters grouped by Wikidata ID.
           content:
             application/json:
               schema:
@@ -2420,7 +2420,7 @@ components:
       properties:
         id:
           type: string
-          description: Wikidata Q-number (e.g. Q130890)
+          description: Wikidata ID (e.g. Q130890)
           pattern: '^Q[1-9][0-9]*$'
         count:
           type: integer
