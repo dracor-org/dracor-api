@@ -303,13 +303,111 @@ declare function dutil:num-of-spoken-words (
 };
 
 (:~
+ : Return the `citeStructure` element that declares scene-level segmentation
+ : within the given element tree, if any. Only `citeStructure` elements with
+ : `@unit = "scene"` are considered — other citation units (act, page, line,
+ : ...) are not appropriate as segments for co-occurrence networks.
+ :
+ : @param $context Any element that may contain teiHeader/encodingDesc
+ :)
+declare function dutil:get-scene-cite-structure (
+  $context as element()*
+) as element()? {
+  $context//tei:encodingDesc/tei:refsDecl
+    /tei:citeStructure[@match][@unit = "scene"][1]
+};
+
+(:~
+ : Return the corpus-level `citeStructure` for the play $tei by looking it up
+ : in the sibling `corpus.xml`. Returns empty-sequence if $tei is not backed
+ : by a stored document or the corpus.xml has no citeStructure.
+ :)
+declare function dutil:get-corpus-scene-cite-structure (
+  $tei as element()*
+) as element()? {
+  let $base := base-uri($tei[1])
+  return
+    if (not($base)) then ()
+    else
+      let $corpus-url :=
+        dutil:filepaths($base)?collections?corpus || "/corpus.xml"
+      return
+        if (not(doc-available($corpus-url))) then ()
+        else dutil:get-scene-cite-structure(doc($corpus-url)/*)
+};
+
+(:~
+ : Return true when a citeStructure/@match XPath expression only uses
+ : constructs from a narrow allow-list of pure, side-effect-free XPath.
+ : Blocks doc(), util:*, xmldb:*, direct constructors, and other risky
+ : constructs before the value is fed to `util:eval`.
+ :)
+declare function dutil:is-safe-cite-match ($xpath as xs:string) as xs:boolean {
+  let $allowed-functions := (
+    "position", "last", "not", "name", "local-name",
+    "text", "node", "true", "false",
+    "starts-with", "ends-with", "contains", "matches",
+    "string", "string-length", "normalize-space",
+    "count", "boolean", "number"
+  )
+  (: strip string literals so their contents cannot be mistaken for
+   : function calls or reserved characters :)
+  let $stripped := replace(replace($xpath, "'[^']*'", "''"), '"[^"]*"', '""')
+  return
+    if (matches($stripped, "[;{}`\\]")) then false()
+    (: any prefixed function call is rejected (element steps like `tei:div`
+     : are never followed by "(", so this only matches actual calls) :)
+    else if (
+      matches($stripped, "[A-Za-z_][\w-]*:[A-Za-z_][\w-]*\s*\(")
+    ) then false()
+    else
+      let $calls :=
+        for $m in analyze-string(
+          $stripped, "([A-Za-z_][\w-]*)\s*\("
+        )//*[local-name() = "group"]
+        return $m/string()
+      return every $fn in $calls satisfies $fn = $allowed-functions
+};
+
+(:~
  : Retrieve `div` elements considered a segment. These are usually `div`s
  : containing `sp` elements. However, also included are 'empty' scenes with no
  : speakers, e.g. those consisting only of stage directions.
  :
+ : Precedence for choosing segments:
+ :  1. `refsDecl/citeStructure` declared in the play's TEI header
+ :  2. `refsDecl/citeStructure` declared in the corpus's `corpus.xml`
+ :  3. Hand-written heuristic based on `div`/`div1`/`div2` conventions
+ :
  : @param $tei The TEI root element of a play
  :)
 declare function dutil:get-segments ($tei as element()*) as element()* {
+  let $cite-structure := (
+    dutil:get-scene-cite-structure($tei),
+    dutil:get-corpus-scene-cite-structure($tei)
+  )[1]
+  let $match := $cite-structure/@match/string()
+  return
+    if ($cite-structure and dutil:is-safe-cite-match($match)) then
+      (: replace the "/tei:TEI" anchor with "." so the remainder is
+       : evaluated from $tei as context. Preserves any following "/"
+       : or "//" so descendant steps stay descendant steps. :)
+      let $relative := replace($match, "^\s*/tei:TEI", ".")
+      return util:eval-inline($tei, $relative)
+    else
+      let $_ :=
+        if ($cite-structure) then
+          util:log-system-out(
+            "dutil:get-segments: refusing unsafe citeStructure/@match: "
+              || $match
+          )
+        else ()
+      return dutil:get-segments-heuristic($tei)
+};
+
+declare function dutil:get-segments-heuristic (
+  $tei as element()*
+) as element()* {
   if(not($tei//tei:body//(tei:div|tei:div1))) then
     (: missing segmentation :)
     $tei//tei:body
