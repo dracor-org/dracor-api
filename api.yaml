@@ -969,6 +969,101 @@ paths:
         '404':
           description: No play found by this ID
 
+  /characters:
+    get:
+      summary: "[Experimental] List all characters with a Wikidata ID across all corpora"
+      description: |
+        **⚠ Experimental — response shape and semantics may change in future
+        releases. Do not rely on this endpoint for stable integrations.**
+
+        Returns all characters that have an assigned Wikidata ID, grouped by
+        QID and sorted by the number of plays they appear in (descending).
+        Wikidata IDs are read from `<idno type="wikidata">` on `person` and
+        `personGrp` elements.
+      operationId: get-all-characters-with-wikidata-id
+      tags: [public]
+      x-dracor-experimental: true
+      responses:
+        '200':
+          description: List of characters grouped by Wikidata ID.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WikidataCharacterWithPlays'
+              example: |
+                [
+                  {
+                    "id": "Q170779",
+                    "count": 5,
+                    "plays": [
+                      {
+                        "id": "rom000029",
+                        "uri": "https://dracor.org/id/rom000029",
+                        "authors": ["Seneca"],
+                        "title": "Agamemnon",
+                        "characterId": "cassandra",
+                        "characterName": "Cassandra"
+                      },
+                      {
+                        "id": "gersh000035",
+                        "uri": "https://dracor.org/id/gersh000035",
+                        "authors": ["William Shakespeare"],
+                        "title": "Troilus und Cressida",
+                        "characterId": "kassandra",
+                        "characterName": "Kassandra"
+                      },
+                      {
+                        "id": "greek000019",
+                        "uri": "https://dracor.org/id/greek000019",
+                        "authors": ["Εὐριπίδης"],
+                        "title": "Τρῳάδες",
+                        "characterId": "kasandra",
+                        "characterName": "Κασάνδρα"
+                      },
+                      {
+                        "id": "greek000026",
+                        "uri": "https://dracor.org/id/greek000026",
+                        "authors": ["Αἰσχύλος"],
+                        "title": "Ἀγαμέμνων",
+                        "characterId": "kasandra",
+                        "characterName": "Κασάνδρα"
+                      },
+                      {
+                        "id": "shake000025",
+                        "uri": "https://dracor.org/id/shake000025",
+                        "authors": ["William Shakespeare"],
+                        "title": "Troilus and Cressida",
+                        "characterId": "Cassandra_Tro",
+                        "characterName": "Cassandra"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "Q210372",
+                    "count": 2,
+                    "plays": [
+                      {
+                        "id": "ita000055",
+                        "uri": "https://dracor.org/id/ita000055",
+                        "authors": ["Lorenzo Da Ponte"],
+                        "title": "Don Giovanni",
+                        "characterId": "don_giovanni",
+                        "characterName": "Don Giovanni"
+                      },
+                      {
+                        "id": "rus000021",
+                        "uri": "https://dracor.org/id/rus000021",
+                        "authors": ["Александр Сергеевич Пушкин"],
+                        "title": "Каменный гость",
+                        "characterId": "don_guan",
+                        "characterName": "Дон Гуан"
+                      }
+                    ]
+                  }
+                ]
+
   /character/{id}:
     get:
       summary: List plays having a character identified by Wikidata ID
@@ -980,7 +1075,7 @@ paths:
           required: true
           schema:
             type: string
-          example: Q131412
+          example: Q131351
       responses:
         '200':
           description: List of plays.
@@ -990,6 +1085,73 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PlayWithWikidataCharacter'
+              example: |
+                [
+                  {
+                    "id": "ita000001",
+                    "uri": "https://dracor.org/id/ita000001",
+                    "authors": ["Luigi Alamanni"],
+                    "title": "Tragedia di Antigone",
+                    "characterId": "antigone",
+                    "characterName": "Antigone"
+                  },
+                  {
+                    "id": "ita000014",
+                    "uri": "https://dracor.org/id/ita000014",
+                    "authors": ["Vittorio Alfieri"],
+                    "title": "Polinice",
+                    "characterId": "antigone",
+                    "characterName": "Antigone"
+                  },
+                  {
+                    "id": "rom000015",
+                    "uri": "https://dracor.org/id/rom000015",
+                    "authors": ["Seneca"],
+                    "title": "Phoenissae",
+                    "characterId": "antigona",
+                    "characterName": "Antigona"
+                  },
+                  {
+                    "id": "rus000114",
+                    "uri": "https://dracor.org/id/rus000114",
+                    "authors": ["Василий Васильевич Капнист"],
+                    "title": "Антигона",
+                    "characterId": "antigona",
+                    "characterName": "Антигона"
+                  },
+                  {
+                    "id": "greek000005",
+                    "uri": "https://dracor.org/id/greek000005",
+                    "authors": ["Αἰσχύλος"],
+                    "title": "Ἑπτὰ ἐπὶ Θήβας",
+                    "characterId": "antigone",
+                    "characterName": "Ἀντιγόνη"
+                  },
+                  {
+                    "id": "greek000030",
+                    "uri": "https://dracor.org/id/greek000030",
+                    "authors": ["Εὐριπίδης"],
+                    "title": "Φοίνισσαι",
+                    "characterId": "antigone",
+                    "characterName": "Ἀντιγόνη"
+                  },
+                  {
+                    "id": "greek000025",
+                    "uri": "https://dracor.org/id/greek000025",
+                    "authors": ["Σοφοκλῆς"],
+                    "title": "Ἀντιγόνη",
+                    "characterId": "antigone",
+                    "characterName": "Ἀντιγόνη"
+                  },
+                  {
+                    "id": "greek000036",
+                    "uri": "https://dracor.org/id/greek000036",
+                    "authors": ["Σοφοκλῆς"],
+                    "title": "Οἰδίπους ἐπὶ Κολωνῷ",
+                    "characterId": "antigone",
+                    "characterName": "Ἀντιγόνη"
+                  }
+                ]
         '400':
           description: Invalid character ID.
         '404':
@@ -2390,6 +2552,25 @@ components:
         - sex
         - roles
         - text
+    WikidataCharacterWithPlays:
+      # see dutil:get-all-characters-with-wikidata-id
+      type: object
+      properties:
+        id:
+          type: string
+          description: Wikidata ID (e.g. Q130890)
+          pattern: '^Q[1-9][0-9]*$'
+        count:
+          type: integer
+          description: Number of plays containing this character
+        plays:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayWithWikidataCharacter'
+      required:
+        - id
+        - count
+        - plays
     PlayWithWikidataCharacter:
       # see dutil:get-plays-with-character
       type: object
@@ -2405,6 +2586,8 @@ components:
           type: array
           items:
             type: string
+        characterId:
+          type: string
         characterName:
           type: string
       required:
@@ -2412,6 +2595,7 @@ components:
         - uri
         - title
         - authors
+        - characterId
         - characterName
     DtsEntrypoint:
       # see ddts:entry-point

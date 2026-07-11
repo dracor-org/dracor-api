@@ -1418,7 +1418,57 @@ declare function dutil:get-plays-with-character ($id as xs:string) {
       "uri": "https://dracor.org/id/" || $play-id,
       "title": $titles?main,
       "authors": array { for $author in $authors return $author?fullname },
-      "characterName": normalize-space($character/tei:persName[1])
+      "characterId": $character/@xml:id/string(),
+      "characterName": normalize-space($character/(tei:persName|tei:name)[1])
+    }
+  }
+};
+
+(:~
+ : Get all characters with a Wikidata ID across all corpora, grouped by
+ : QID, sorted by play count descending.
+ :
+ : Reads QIDs from <idno type="wikidata"> on tei:person and tei:personGrp,
+ : with a deprecated fallback to @ana URIs (see dutil:get-character-wikidata-id).
+ :)
+declare function dutil:get-all-characters-with-wikidata-id () {
+  let $tuples :=
+    for $tei in collection($config:corpora-root)/tei:TEI
+    let $play-id := dutil:get-dracor-id($tei)
+    let $titles := dutil:get-titles($tei)
+    let $author-names := array {
+      for $a in dutil:get-authors($tei) return $a?fullname
+    }
+    for $c in $tei//tei:particDesc//(tei:person|tei:personGrp)
+    let $q-id := dutil:get-character-wikidata-id($c)
+    where $q-id
+    return map {
+      "q": $q-id,
+      "pid": $play-id,
+      "play": map {
+        "id": $play-id,
+        "uri": "https://dracor.org/id/" || $play-id,
+        "title": $titles?main,
+        "authors": $author-names,
+        "characterId": $c/@xml:id/string(),
+        "characterName": normalize-space($c/(tei:persName|tei:name)[1])
+      }
+    }
+  return array {
+    for $t in $tuples
+    let $q := $t?q
+    group by $q
+    let $plays :=
+      for $u in $t
+      let $pid := $u?pid
+      group by $pid
+      return ($u[1])?play
+    let $count := count($plays)
+    order by $count descending, $q ascending
+    return map {
+      "id": $q,
+      "count": $count,
+      "plays": array { $plays }
     }
   }
 };
