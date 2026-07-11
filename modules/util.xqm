@@ -1251,31 +1251,75 @@ declare function dutil:characters-info (
     let $tei := $doc//tei:TEI
     let $speakers := dutil:distinct-speakers($doc//tei:body)
 
-    let $segments := array {
-      for $segment at $pos in dutil:get-segments($tei)
+    let $person-map := map:merge(
+      for $p in $doc//tei:particDesc//(tei:person|tei:personGrp)
+      return map:entry($p/@xml:id/string(), $p)
+    )
+
+    let $sps := $tei//tei:sp
+    let $has-w := exists($sps//tei:w)
+
+    let $sp-refs :=
+      for $sp in $sps
+      let $refs := tokenize(normalize-space($sp/@who), '\s+')
+        [string-length(.) > 1]
+      let $words :=
+        if ($has-w) then
+          count($sp//(tei:l|tei:p)//tei:w[not(ancestor::tei:stage)])
+        else
+          let $lines := $sp//(tei:p|tei:l)
+          let $stripped :=
+            functx:remove-elements-deep($lines, ('*:stage', '*:note'))
+          let $txt := string-join($stripped/normalize-space(), ' ')
+          return count(tokenize($txt, '\W+')[not(.='')])
+      let $single := count($refs) eq 1
+      for $ref in $refs
       return map {
-        "number": $pos,
-        "speakers": array {
-          for $sp in dutil:distinct-speakers($segment) return $sp
-        }
+        "id": substring($ref, 2),
+        "words": $words,
+        "single": $single
       }
-    }
+
+    (: numOfSpeechActs preserves legacy semantics: only sp elements whose
+       @who references exactly one speaker are counted (matches the old
+       string equality `@who = '#id'`). :)
+    let $speech-counts := map:merge(
+      for $r in $sp-refs
+      where $r?single
+      let $id := $r?id
+      group by $id
+      return map:entry($id, count($r))
+    )
+    let $word-counts := map:merge(
+      for $r in $sp-refs
+      let $id := $r?id
+      group by $id
+      return map:entry($id, sum($r?words))
+    )
+
+    let $scene-counts := map:merge(
+      for $segment in dutil:get-segments($tei)
+      for $id in dutil:distinct-speakers($segment)
+      group by $id
+      return map:entry($id, count($segment))
+    )
 
     let $metrics := doc(dutil:filepaths($corpusname, $playname)?files?metrics)
+    let $metrics-map := map:merge(
+      for $n in $metrics//node
+      return map:entry($n/@id/string(), $n)
+    )
 
     return array {
       for $id in $speakers
-      let $node := $doc//tei:particDesc//(
-        tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
-      )
+      let $node := $person-map($id)
       let $name := $node/(tei:persName | tei:name)[1]/text()
       let $sex := $node/@sex/string()
       let $gender := $node/@gender/string()
       let $role := $node/@role/string()
       let $isGroup := if ($node/name() eq 'personGrp')
         then true() else false()
-      let $num-of-speech := $tei//tei:sp[@who='#'||$id]
-      let $metrics-node := $metrics//node[@id=$id]
+      let $metrics-node := $metrics-map($id)
       let $eigenvector := if ($metrics-node/eigenvector[text()]) then
         number($metrics-node/eigenvector) else 0
       let $wikidata-id := dutil:get-character-wikidata-id($node)
@@ -1285,9 +1329,9 @@ declare function dutil:characters-info (
           "name": $name,
           "isGroup": $isGroup,
           "sex": if($sex) then $sex else (),
-          "numOfScenes": count($segments?*[?speakers = $id]),
-          "numOfSpeechActs": count($tei//tei:sp[@who = '#'||$id]),
-          "numOfWords": dutil:num-of-spoken-words($tei, $id),
+          "numOfScenes": ($scene-counts($id), 0)[1],
+          "numOfSpeechActs": ($speech-counts($id), 0)[1],
+          "numOfWords": ($word-counts($id), 0)[1],
           "degree": $metrics-node/degree/xs:integer(.),
           "weightedDegree": if ($metrics-node/weightedDegree) then
             $metrics-node/weightedDegree/xs:integer(.) else 0,
