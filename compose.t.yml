@@ -22,3 +22,35 @@ services:
       - fulltest
     ports:
       - 8089:80
+  loadtest:
+    image: curlimages/curl:latest
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./test/test.json:/test.json:ro
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        echo "Registering test corpus..."
+        curl -sf -X POST -u admin: \
+          -H 'Content-Type: application/json' \
+          --data @/test.json \
+          http://api:8080/exist/restxq/v1/corpora
+        echo "Loading TEI data for test corpus..."
+        curl -sf -X POST -u admin: \
+          -H 'Content-Type: application/json' \
+          -d '{"load": true}' \
+          http://api:8080/exist/restxq/v1/corpora/test
+        echo "Waiting for corpus contents to be available..."
+        for i in $$(seq 1 60); do
+          if curl -sf http://api:8080/exist/restxq/v1/corpora/test | grep -q '"plays":\[{'; then
+            echo "Test corpus loaded."
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "Timed out waiting for test corpus to load." >&2
+        exit 1

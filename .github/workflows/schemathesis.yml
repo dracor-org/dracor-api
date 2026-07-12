@@ -26,24 +26,6 @@ jobs:
         run: docker compose up --detach --wait
       - name: Test if /info returns a response
         run: curl --verbose http://localhost:8081/exist/restxq/v1/info
-      - name: Add test corpus
-        run: |
-          curl \
-            --request POST \
-            --url http://localhost:8081/exist/restxq/v1/corpora \
-            --user admin: \
-            --header 'Content-Type: application/json' \
-            --data @./test/test.json
-      - name: Load data for test corpus
-        run: |
-          curl \
-            --request POST \
-            --url http://localhost:8081/exist/restxq/v1/corpora/test \
-            --user admin: \
-            --header 'Content-Type: application/json' \
-            --data '{"load": true}'
-      - name: Wait 10 seconds for corpus data loading to complete
-        run: sleep 10
       - name: Test if corpus returns a response
         run: curl --verbose http://localhost:8081/exist/restxq/v1/corpora/test
 
