@@ -1063,6 +1063,12 @@ paths:
                     ]
                   }
                 ]
+          links:
+            PlaysWithCharacter:
+              operationId: plays-with-character
+              parameters:
+                id: $response.body#/0/id
+              description: The Wikidata ID of a character in the response can be used to fetch the list of plays containing that character.
 
   /character/{id}:
     get:
