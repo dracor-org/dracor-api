@@ -1,0 +1,43 @@
+name: Schemathesis Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  COMPOSE_FILE: compose.yml:compose.t.yml
+  DOCKER_BUILDKIT: 1
+  FORCE_COLOR: 1
+
+jobs:
+  schemathesis:
+    name: Schemathesis
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - run: docker --version
+      - name: Start the docker-compose stack
+        run: docker compose up --detach --wait
+      - name: Test if /info returns a response
+        run: curl --verbose http://localhost:8081/exist/restxq/v1/info
+      - name: Test if corpus returns a response
+        run: curl --verbose http://localhost:8081/exist/restxq/v1/corpora/test
+
+      - name: Test API with schemathesis
+        uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
+        with:
+          schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
+          base-url: http://localhost:8081/exist/restxq/v1/
+          authorization: 'Basic YWRtaW46'
+          max-examples: 100
+          args: "--include-method GET --exclude-tag DTS --exclude-operation-id wikidata-author-info --mode positive --request-timeout 30"
+
+      - name: Stop the docker-compose stack
+        run: docker compose down
+        if: always()

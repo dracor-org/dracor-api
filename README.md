@@ -91,6 +91,51 @@ JSON output like this:
 curl http://localhost:8088/api/v1/corpora/test | jq
 ```
 
+## Test Setup
+
+For running the schemathesis test suite (see [test/schemathesis.sh](test/schemathesis.sh))
+or for iterating on the code with a small, reproducible dataset, use the test
+compose overlay [compose.t.yml](compose.t.yml). Unlike the default setup, this
+one builds the API image locally from the current working tree and
+automatically loads the test corpus.
+
+```sh
+COMPOSE_FILE=compose.yml:compose.t.yml docker compose up --build --wait
+```
+
+- `--build` forces a rebuild of the API image from the current sources.
+- `--wait` blocks until the `loadtest` service has finished registering and
+  loading the [testdracor](https://github.com/dracor-org/testdracor) corpus,
+  so the stack is only reported ready once test data is available.
+
+In this setup the API is served on port **8081** (not 8088):
+
+```sh
+curl http://localhost:8081/exist/restxq/v1/info
+curl http://localhost:8081/exist/restxq/v1/corpora/test
+```
+
+Once the stack is up you can run the schemathesis suite locally:
+
+```sh
+./test/schemathesis.sh
+```
+
+### Reset from scratch
+
+The API image built by the test overlay is tagged `dracor/api-test` and may
+persist across runs, along with the eXist-db data volume. To start over with a
+freshly compiled image and an empty database:
+
+```sh
+COMPOSE_FILE=compose.yml:compose.t.yml docker compose down --volumes --rmi local
+COMPOSE_FILE=compose.yml:compose.t.yml docker compose up --build --wait
+```
+
+- `--volumes` deletes the named volumes (including the eXist-db data volume).
+- `--rmi local` removes the locally built `dracor/api-test` image so the next
+  `up` recompiles it from scratch.
+
 ## VS Code Integration
 
 For the [Visual Studio Code](https://code.visualstudio.com) editor an [eXist-db

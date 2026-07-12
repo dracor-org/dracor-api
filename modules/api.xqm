@@ -257,6 +257,12 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora($include) {
+  if ($include[1] and not($include[1] = "metrics")) then
+    (
+      <rest:response><http:response status="400"/></rest:response>,
+      map {"error": "invalid value for parameter 'include'"}
+    )
+  else
   array {
   (: DEPRECATED: remove teiCorpus support in v2 :)
     for $corpus in collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)
@@ -266,7 +272,7 @@ function api:corpora($include) {
     return map:merge ((
       $info,
       map:entry("uri", $config:api-base || '/corpora/' || $name),
-      if ($include = "metrics") then (
+      if ($include[1] = "metrics") then (
         map:entry("metrics", local:get-corpus-metrics($name))
       ) else ()
 
@@ -1270,6 +1276,11 @@ function api:spoken-text(
   $corpusname, $playname, $sex, $role, $relation, $relation-active,
   $relation-passive
 ) {
+  let $sex := $sex[1]
+  let $role := $role[1]
+  let $relation := $relation[1]
+  let $relation-active := $relation-active[1]
+  let $relation-passive := $relation-passive[1]
   let $doc := dutil:get-doc($corpusname, $playname)
   let $sexes := tokenize($sex, ',')
   return
@@ -1516,6 +1527,8 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:authorInfo($id, $lang) {
+  let $lang := $lang[1]
+  return
   if (not(matches($id, '^Q[0-9]+$'))) then
     (
       <rest:response>

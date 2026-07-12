@@ -132,6 +132,14 @@ paths:
                     }
                   }
                 ]
+          links:
+            ListCorpusContent:
+              operationId: list-corpus-content
+              parameters:
+                corpusname: $response.body#/0/name
+              description: | 
+                The `name` of a corpus in the response can be used to list its
+                contents.
     post:
       summary: Add new corpus
       operationId: post-corpora
@@ -1063,6 +1071,12 @@ paths:
                     ]
                   }
                 ]
+          links:
+            PlaysWithCharacter:
+              operationId: plays-with-character
+              parameters:
+                id: $response.body#/0/id
+              description: The Wikidata ID of a character in the response can be used to fetch the list of plays containing that character.
 
   /character/{id}:
     get:
@@ -1075,6 +1089,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: '^Q[0-9]+$'
           example: Q131351
       responses:
         '200':
