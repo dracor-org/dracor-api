@@ -132,6 +132,14 @@ paths:
                     }
                   }
                 ]
+          links:
+            ListCorpusContent:
+              operationId: list-corpus-content
+              parameters:
+                corpusname: $response.body#/0/name
+              description: | 
+                The `name` of a corpus in the response can be used to list its
+                contents.
     post:
       summary: Add new corpus
       operationId: post-corpora
