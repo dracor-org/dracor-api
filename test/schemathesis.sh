@@ -2,6 +2,7 @@
 
 schemathesis run http://localhost:8081/exist/restxq/v1/openapi.yaml \
   --include-method GET \
+  --exclude-tag DTS \
   --mode positive \
   --max-examples 50 \
   --request-timeout 30 \

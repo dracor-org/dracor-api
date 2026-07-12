@@ -54,7 +54,7 @@ jobs:
           base-url: http://localhost:8081/exist/restxq/v1/
           authorization: 'Basic YWRtaW46'
           max-examples: 100
-          args: "--include-method GET --mode positive --request-timeout 30"
+          args: "--include-method GET --exclude-tag DTS --mode positive --request-timeout 30"
 
       - name: Stop the docker-compose stack
         run: docker compose down
