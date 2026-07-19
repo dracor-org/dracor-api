@@ -3,7 +3,21 @@ name: Schemathesis Tests
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - LICENSE
+      - .gitignore
+      - .existdb.json.tmpl
+      - dracor.drawio.*
+      - icon.png
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - LICENSE
+      - .gitignore
+      - .existdb.json.tmpl
+      - dracor.drawio.*
+      - icon.png
   workflow_dispatch:
 
 permissions:
