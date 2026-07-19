@@ -103,7 +103,7 @@
       </filterset>
     </copy>
     <zip basedir="." destfile="${xarfile}"
-      excludes="${build.dir}/ ${devel.dir}/ test/ .* *build.properties expath-pkg.xml.tmpl"/>
+      excludes="${build.dir}/ ${devel.dir}/ test/ node_modules/ .hypothesis/ .* *build.properties expath-pkg.xml.tmpl"/>
     <symlink
       resource="${build.dir}/${project.abbrev}-${package.version}.xar"
       link="${symlink}"
