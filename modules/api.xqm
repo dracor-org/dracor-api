@@ -105,6 +105,12 @@ function api:info() {
       tokenize($uri, '/')[last()]
     )
   )
+  let $active-loads :=
+    for $job in scheduler:get-scheduled-jobs()//scheduler:job[
+      starts-with(@name, 'load-corpus-')
+      and scheduler:trigger/state != 'COMPLETE'
+    ]
+    return substring-after($job/@name, 'load-corpus-')
   return (
     <rest:response>
       <http:response>
@@ -122,6 +128,9 @@ function api:info() {
       },
       if (exists($lastModified))
         then map:entry("lastModified", string($lastModified))
+        else (),
+      if (exists($active-loads))
+        then map:entry("activeLoads", array {$active-loads})
         else ()
     ))
   )

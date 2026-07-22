@@ -1672,6 +1672,16 @@ components:
           type: string
           format: date-time
           x-dracor-feature: service_last_modified
+        activeLoads:
+          type: array
+          description: >-
+            Names of corpora currently being loaded via the scheduler.
+            Only present when at least one load job is running; while
+            present the database is under increased write load and
+            content may keep changing for some time.
+          items:
+            type: string
+          x-dracor-feature: service_active_loads
       required:
         - name
         - version
