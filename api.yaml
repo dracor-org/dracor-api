@@ -1208,7 +1208,7 @@ paths:
         - name: id
           in: query
           required: false
-          description: Identifier for a collection or document. Preferably the full URI of a corpus or a play, but shorter DraCor IDs are also supported.
+          description: Identifier for a collection. Preferably the full URI of a corpus, but shorter DraCor corpus IDs are also supported.
           schema:
             type: string
           examples:
@@ -1290,6 +1290,7 @@ paths:
           description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
           schema:
             type: string
+            minLength: 1
           example: https://dracor.org/id/ger000088
         - name: ref
           in: query
@@ -1358,6 +1359,7 @@ paths:
           description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
           schema:
             type: string
+            minLength: 1
           example: https://dracor.org/id/ger000088
         - name: ref
           in: query
