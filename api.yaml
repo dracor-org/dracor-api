@@ -1,4 +1,4 @@
-openapi: "3.0.0"
+openapi: "3.1.0"
 
 info:
   version: 1.1.4
@@ -1532,9 +1532,13 @@ components:
       required: true
       description: >
         Short name of the corpus as provided in the `name` property of the result
-        objects from the [/corpora](#/public/list-corpora) endpoint
+        objects from the [/corpora](#tag/public/GET/corpora) endpoint
       schema:
         type: string
+        # offered as a dropdown in the Scalar API client
+        examples: [ger, greek, ita, rom, rus, shake, span]
+      # The keys of these examples are shared with the `playname` examples so
+      # that selecting one fills in a matching corpus/play pair.
       examples:
         GerDraCor:
           value: ger
@@ -1561,32 +1565,55 @@ components:
       name: playname
       in: path
       required: true
-      description: >
+      description: |
         Name parameter (or "slug") of the play as provided in the `name`
         property of the result objects of the
-        [/corpora/{corpusname}](#/public/list-corpus-content) endpoint.
+        [/corpora/{corpusname}](#tag/public/GET/corpora/{corpusname}) endpoint.
+
+        Example plays and the corpora they belong to:
+
+        | corpusname | playname |
+        |---|---|
+        | `ger` | `lessing-emilia-galotti` |
+        | `greek` | `aeschylus-persians` |
+        | `ita` | `goldoni-il-servitore-di-due-padroni` |
+        | `rom` | `seneca-medea` |
+        | `rus` | `gogol-revizor` |
+        | `shake` | `hamlet` |
+        | `span` | `munoz-refugio` |
       schema:
         type: string
+        # offered as a dropdown in the Scalar API client
+        examples:
+          - lessing-emilia-galotti
+          - aeschylus-persians
+          - goldoni-il-servitore-di-due-padroni
+          - seneca-medea
+          - gogol-revizor
+          - hamlet
+          - munoz-refugio
+      # The keys of these examples are shared with the `corpusname` examples
+      # so that selecting one fills in a matching corpus/play pair.
       examples:
-        lessing_galotti:
+        GerDraCor:
           value: lessing-emilia-galotti
           summary: "G.E. Lessing: Emilia Galotti (GerDraCor)"
-        aeschylus_persians:
+        GreekDraCor:
           value: aeschylus-persians
           summary: "Aeschylus: Persians (GreekDraCor)"
-        goldoni_servitore:
+        ItaDraCor:
           value: goldoni-il-servitore-di-due-padroni
           summary: "C. Goldoni: Il servitore di due padroni (ItaDraCor)"
-        seneca_medea:
+        RomDraCor:
           value: seneca-medea
           summary: "Seneca: Medea (RomDraCor)"
-        gogol_revizor:
+        RusDraCor:
           value: gogol-revizor
           summary: "N. Gogol: Revizor (RusDraCor)"
-        shakespeare_hamlet:
+        ShakeDraCor:
           value: hamlet
           summary: "W. Shakespeare: Hamlet (ShakeDraCor)"
-        munoz_refugio:
+        SpanDraCor:
           value: munoz-refugio
           summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
     relationMutual:
@@ -1807,13 +1834,11 @@ components:
         # currently neither name nor url is required, but we omit the source
         # object if none of the properties is available
         name:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_digital_source_name
         url:
-          type: string
+          type: [string, "null"]
           format: url
-          nullable: true
           x-dracor-feature: play_digital_source_url
     ExternalReferenceResourceId:
       # see dutil:get-authors
@@ -1902,20 +1927,16 @@ components:
           items:
             $ref: '#/components/schemas/Author'
         yearNormalized:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_year_normalized
         yearWritten:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_written
         yearPremiered:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_premiered
         yearPrinted:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_printed
         datePremiered:
           type: string
@@ -1931,8 +1952,7 @@ components:
           type: integer
           x-dracor-feature: play_network_size
         wikidataId:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_wikidata_id
       required:
         - id
@@ -1999,39 +2019,31 @@ components:
           type: string
           x-dracor-feature: play_title
         subtitle:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_subtitle
         wikidataId:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_wikidata_id
         firstAuthor:
           type: string
           x-dracor-feature: play_first_author_shortname
         yearNormalized:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_year_normalized
         yearWritten:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_written
         yearPremiered:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_premiered
         yearPrinted:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_printed
         datePremiered:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_date_premiered
         normalizedGenre:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_genre_normalized
         libretto:
           type: boolean
@@ -2040,22 +2052,18 @@ components:
           type: number
           x-dracor-feature: play_network_density
         digitalSource:
-          nullable: true
+          type: [string, "null"]
         originalSourceNumberOfPages:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_original_source_num_of_pages
         originalSourcePubPlace:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_original_source_publication_place
         originalSourcePublisher:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_original_source_publisher
         originalSourceYear:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_original_source_publication_year
         averageClustering:
           type: number
@@ -2115,8 +2123,7 @@ components:
           type: integer
           x-dracor-feature: play_network_size
         wikipediaLinkCount:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_num_of_wikipedia_links
         wordCountSp:
           type: integer
@@ -2175,8 +2182,7 @@ components:
       type: object
       properties:
         type:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: segment_type
         number:
           type: integer
@@ -2199,19 +2205,18 @@ components:
           type: string
           x-dracor-feature: character_id
         name:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: character_name
         isGroup:
           type: boolean
           x-dracor-feature: character_is_group
         sex:
-          type: string
-          nullable: true
+          type: [string, "null"]
           enum:
             - MALE
             - FEMALE
             - UNKNOWN
+            - null
           x-dracor-feature: character_sex
         gender:
           type: string
@@ -2276,8 +2281,7 @@ components:
           type: string
           x-dracor-feature: play_title
         subtitle:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_subtitle
         titleEn:
           type: string
@@ -2297,40 +2301,33 @@ components:
           items:
             $ref: '#/components/schemas/Author'
         yearNormalized:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_year_normalized
         yearWritten:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_written
         yearPremiered:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_premiered
         yearPrinted:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_year_printed
         datePremiered:
           type: string
           x-dracor-feature: play_date_premiered
         normalizedGenre:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_genre_normalized
         libretto:
           type: boolean
           x-dracor-feature: play_is_libretto
         allInIndex:
-          type: number
-          nullable: true
+          type: [number, "null"]
           minimum: 0.0
           maximum: 1.0
           x-dracor-feature: play_all_in_index
         allInSegment:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_all_in_segment
         characters:
           type: array
@@ -2354,8 +2351,7 @@ components:
           type: string
           x-dracor-feature: play_original_source_full_citation
         wikidataId:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: play_wikidata_id
       required:
         - id
@@ -2391,8 +2387,7 @@ components:
           type: integer
           x-dracor-feature: character_node_degree
         eigenvector:
-          type: number
-          nullable: true
+          type: [number, "null"]
           x-dracor-feature: character_node_eigenvector
         weightedDegree:
           type: integer
@@ -2455,8 +2450,7 @@ components:
           type: integer
           x-dracor-feature: play_network_size
         wikipediaLinkCount:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: play_num_of_wikipedia_links
       required:
         - id
@@ -2481,19 +2475,18 @@ components:
           type: string
           x-dracor-feature: character_id
         name:
-          type: string
-          nullable: true
+          type: [string, "null"]
           x-dracor-feature: character_name
         isGroup:
           type: boolean
           x-dracor-feature: character_is_group
         sex:
-          type: string
+          type: [string, "null"]
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
-          nullable: true
+          - null
           x-dracor-feature: character_sex
         gender:
           type: string
@@ -2502,20 +2495,16 @@ components:
           type: string
           x-dracor-feature: character_role
         betweenness:
-          type: number
-          nullable: true
+          type: [number, "null"]
           x-dracor-feature: character_node_betweenness
         closeness:
-          type: number
-          nullable: true
+          type: [number, "null"]
           x-dracor-feature: character_node_closeness
         degree:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: character_node_degree
         eigenvector:
-          type: number
-          nullable: true
+          type: [number, "null"]
           x-dracor-feature: character_node_eigenvector
         numOfScenes:
           type: integer
@@ -2527,8 +2516,7 @@ components:
           type: integer
           x-dracor-feature: character_num_of_word_tokens
         weightedDegree:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           x-dracor-feature: character_node_weighted_degree
         wikidataId:
           type: string
@@ -2561,19 +2549,18 @@ components:
           type: boolean
           x-dracor-feature: character_is_group
         sex:
-          type: string
+          type: [string, "null"]
           enum:
           - MALE
           - FEMALE
           - UNKNOWN
-          nullable: true
+          - null
           x-dracor-feature: character_sex
         gender:
           type: string
           x-dracor-feature: character_gender
         roles:
-          type: array
-          nullable: true
+          type: [array, "null"]
           items:
             type: string
           x-dracor-feature: character_role
