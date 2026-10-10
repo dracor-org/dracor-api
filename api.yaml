@@ -1575,7 +1575,7 @@ components:
         | corpusname | playname |
         |---|---|
         | `ger` | `lessing-emilia-galotti` |
-        | `greek` | `aeschylus-persians` |
+        | `greek` | `aeschylus-persae` |
         | `ita` | `goldoni-il-servitore-di-due-padroni` |
         | `rom` | `seneca-medea` |
         | `rus` | `gogol-revizor` |
@@ -1586,7 +1586,7 @@ components:
         # offered as a dropdown in the Scalar API client
         examples:
           - lessing-emilia-galotti
-          - aeschylus-persians
+          - aeschylus-persae
           - goldoni-il-servitore-di-due-padroni
           - seneca-medea
           - gogol-revizor
@@ -1599,7 +1599,7 @@ components:
           value: lessing-emilia-galotti
           summary: "G.E. Lessing: Emilia Galotti (GerDraCor)"
         GreekDraCor:
-          value: aeschylus-persians
+          value: aeschylus-persae
           summary: "Aeschylus: Persians (GreekDraCor)"
         ItaDraCor:
           value: goldoni-il-servitore-di-due-padroni
