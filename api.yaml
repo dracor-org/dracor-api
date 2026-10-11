@@ -13,6 +13,25 @@ info:
 servers:
   - url: https://dracor.org/api/v1
 
+tags:
+  - name: public
+    description: |
+      Read-only endpoints for corpora, plays, characters and their
+      metrics, texts and network data. No authentication needed.
+  - name: DTS
+    description: |
+      Implementation of the
+      [Distributed Text Services](https://distributed-text-services.github.io/specifications/)
+      API for addressing plays and their parts.
+    externalDocs:
+      url: https://distributed-text-services.github.io/specifications/
+  - name: wikidata
+    description: Endpoints providing data for or from Wikidata.
+  - name: admin
+    description: Endpoints for managing corpora. They require authentication.
+  - name: webhook
+    description: GitHub webhook that triggers corpus updates.
+
 paths:
   /info:
     get:
