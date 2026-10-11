@@ -447,7 +447,7 @@ paths:
         - $ref: "#/components/parameters/playname"
       responses:
         '200':
-          description: Returns TEI document. See [Encoding Guidelines](https://github.com/dracor-org/dracor-schema/tree/main/odd).
+          description: Returns TEI document. See [Encoding Guidelines](/doc/odd).
           content:
             application/xml:
               schema:
