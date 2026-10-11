@@ -3,6 +3,34 @@ openapi: "3.1.0"
 info:
   version: 1.1.4
   title: DraCor API
+  description: |
+    The DraCor API gives programmatic access to the drama corpora hosted
+    on [DraCor](https://dracor.org). It lists corpora and their plays and
+    provides, for each play, its metadata, its full text as TEI or plain
+    text, its characters and network metrics, and its character network
+    in several formats (CSV, GEXF, GraphML). Most responses are JSON.
+
+    The public endpoints need no authentication. Each one can be tried
+    out right here with the "Test Request" button. For use in scripts
+    there are client libraries for Python
+    ([pydracor](https://github.com/dracor-org/pydracor)) and R
+    ([rdracor](https://github.com/dracor-org/rdracor)).
+
+    #### Examples
+
+    Many endpoints take a `corpusname` and a `playname`. Their examples
+    include one play from each corpus. A play is only found in its own
+    corpus, so use one of these pairs:
+
+    | corpusname | playname |
+    |---|---|
+    | `ger` | `lessing-emilia-galotti` |
+    | `greek` | `aeschylus-persae` |
+    | `ita` | `goldoni-il-servitore-di-due-padroni` |
+    | `rom` | `seneca-medea` |
+    | `rus` | `gogol-revizor` |
+    | `shake` | `hamlet` |
+    | `span` | `munoz-refugio` |
   contact:
     email: "fr.fischer@fu-berlin.de"
   termsOfService: "https://dracor.org"
@@ -1588,18 +1616,8 @@ components:
         Name parameter (or "slug") of the play as provided in the `name`
         property of the result objects of the
         [/corpora/{corpusname}](#tag/public/GET/corpora/{corpusname}) endpoint.
-
-        Example plays and the corpora they belong to:
-
-        | corpusname | playname |
-        |---|---|
-        | `ger` | `lessing-emilia-galotti` |
-        | `greek` | `aeschylus-persae` |
-        | `ita` | `goldoni-il-servitore-di-due-padroni` |
-        | `rom` | `seneca-medea` |
-        | `rus` | `gogol-revizor` |
-        | `shake` | `hamlet` |
-        | `span` | `munoz-refugio` |
+        A play only exists in its own corpus, see the
+        [example pairs](#description/examples) in the introduction.
       schema:
         type: string
         # offered as a dropdown in the Scalar API client
