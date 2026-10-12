@@ -4,7 +4,7 @@ name: Deploy
 # through an SSH tunnel (see deploy.sh):
 #
 # - dev: on demand
-# - staging: on push to main
+# - staging: on push to main if the package (or its build) changed
 # - production: when a release is published (not for pre-releases)
 #
 # The SSH connection uses the organization secrets DRACOR_ORG_DEPLOY_KEY and
@@ -15,6 +15,27 @@ name: Deploy
 on:
   push:
     branches: [main]
+    paths:
+      # package contents, see build.sh
+      - repo.xml
+      - expath-pkg.xml.tmpl
+      - pre-install.xq
+      - post-install.xq
+      - controller.xql
+      - collection.xconf
+      - data.xconf
+      - api.yaml
+      - openapi-config.xml
+      - index.html
+      - icon.png
+      - tei-to-txt.xsl
+      - speakers.xq
+      - modules/**
+      - jobs/**
+      # build and deployment
+      - build.sh
+      - deploy.sh
+      - .github/workflows/deploy.yml
   release:
     types: [released]
   workflow_dispatch:
