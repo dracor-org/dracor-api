@@ -49,6 +49,7 @@ CI runs schemathesis against a Docker Compose test stack (see [.github/workflows
 ```sh
 prettier --write "**/*.xq"   # Format XQuery files (requires node_modules)
 yamllint .                   # Lint YAML files
+npx @redocly/cli lint api.yaml   # Lint the OpenAPI document (config: redocly.yaml)
 ```
 
 ### VS Code Integration

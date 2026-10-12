@@ -136,6 +136,17 @@ COMPOSE_FILE=compose.yml:compose.t.yml docker compose up --build --wait
 - `--rmi local` removes the locally built `dracor/api-test` image so the next
   `up` recompiles it from scratch.
 
+## Linting the OpenAPI Document
+
+Changes to [api.yaml](api.yaml) are checked with
+[Redocly CLI](https://redocly.com/docs/cli/) in CI (see
+[lint-openapi.yml](.github/workflows/lint-openapi.yml)). The rules are
+configured in [redocly.yaml](redocly.yaml). To run the linter locally:
+
+```sh
+npx @redocly/cli lint api.yaml
+```
+
 ## VS Code Integration
 
 For the [Visual Studio Code](https://code.visualstudio.com) editor an [eXist-db

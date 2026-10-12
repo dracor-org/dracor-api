@@ -1,0 +1,12 @@
+# Configuration for `redocly lint` (see .github/workflows/lint-openapi.yml)
+extends:
+  - minimal
+
+rules:
+  # The API is public and defines no security schemes.
+  security-defined: off
+  # Body examples are written as `example: |` block scalars (strings) by
+  # convention, so they never match object or array schemas.
+  no-invalid-media-type-examples: off
+  # /id/{id} intentionally responds with a 303 redirect.
+  operation-2xx-response: off
