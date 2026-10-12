@@ -32,6 +32,7 @@ sed -e "s/@package.version@/$version/" expath-pkg.xml.tmpl > expath-pkg.xml
 
 mkdir -p $build_dir
 rm -f "$xar"
+# keep in sync with the push paths in .github/workflows/deploy.yml
 zip -q -r "$xar" \
   repo.xml \
   expath-pkg.xml \

@@ -1,0 +1,169 @@
+name: Deploy
+
+# Builds the XAR package and installs it into the eXist-db of a DraCor server
+# through an SSH tunnel (see deploy.sh):
+#
+# - dev: on demand
+# - staging: on push to main if the package (or its build) changed
+# - production: when a release is published (not for pre-releases)
+#
+# The SSH connection uses the organization secrets DRACOR_ORG_DEPLOY_KEY and
+# DRACOR_ORG_DEPLOY_USER. Each target is a GitHub environment providing the
+# secret EXIST_PASSWORD and the variables DEPLOY_HOST and DEPLOY_KNOWN_HOSTS
+# (and optionally EXIST_PORT).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # package contents, see build.sh
+      - repo.xml
+      - expath-pkg.xml.tmpl
+      - pre-install.xq
+      - post-install.xq
+      - controller.xql
+      - collection.xconf
+      - data.xconf
+      - api.yaml
+      - openapi-config.xml
+      - index.html
+      - icon.png
+      - tei-to-txt.xsl
+      - speakers.xq
+      - modules/**
+      - jobs/**
+      # build and deployment
+      - build.sh
+      - deploy.sh
+      - .github/workflows/deploy.yml
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+        default: dev
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build XAR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to attach the XAR to a release
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+      xar: ${{ steps.build.outputs.xar }}
+      version: ${{ steps.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Determine target environment
+        id: target
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT: ${{ inputs.environment }}
+        run: |
+          case $EVENT in
+            release) environment=production ;;
+            push) environment=staging ;;
+            *) environment=$INPUT ;;
+          esac
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+
+      - name: Build XAR
+        id: build
+        run: |
+          xar=$(./build.sh)
+          version=$(basename "$xar" .xar | sed -e 's/^dracor-v1-//')
+          echo "xar=$(basename "$xar")" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: xar
+          path: build/${{ steps.build.outputs.xar }}
+          if-no-files-found: error
+
+      - name: Attach XAR to release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          XAR: build/${{ steps.build.outputs.xar }}
+        run: gh release upload "$TAG" "$XAR" --clobber
+
+  deploy:
+    name: Deploy to ${{ needs.build.outputs.environment }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.build.outputs.environment }}
+      url: https://${{ vars.DEPLOY_HOST }}/api/v1/info
+    concurrency:
+      group: deploy-${{ needs.build.outputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: xar
+          path: build
+
+      - name: Open SSH tunnel to eXist-db
+        env:
+          DEPLOY_KEY: ${{ secrets.DRACOR_ORG_DEPLOY_KEY }}
+          DEPLOY_USER: ${{ secrets.DRACOR_ORG_DEPLOY_USER }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          EXIST_PORT: ${{ vars.EXIST_PORT }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            -o ExitOnForwardFailure=yes -M -S ~/.ssh/tunnel -f -N \
+            -L "8080:localhost:${EXIST_PORT:-8080}" "$DEPLOY_USER@$DEPLOY_HOST"
+
+      - name: Install XAR
+        env:
+          EXIST_USER: ${{ secrets.EXIST_USER }}
+          EXIST_PASSWORD: ${{ secrets.EXIST_PASSWORD }}
+        run: ./deploy.sh "build/${{ needs.build.outputs.xar }}" http://localhost:8080/exist
+
+      - name: Close SSH tunnel
+        if: always()
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        run: |
+          if [ -S ~/.ssh/tunnel ]; then
+            ssh -S ~/.ssh/tunnel -O exit "$DEPLOY_HOST"
+          fi
+          rm -f ~/.ssh/deploy_key
+
+      - name: Check deployed version
+        env:
+          API_BASE: https://${{ vars.DEPLOY_HOST }}/api/v1
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          for _ in $(seq 1 12); do
+            deployed=$(curl -fsS "$API_BASE/info" | jq -r .version || true)
+            echo "Deployed version: $deployed"
+            if [ "$deployed" = "$VERSION" ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Expected version $VERSION at $API_BASE/info"
+          exit 1
