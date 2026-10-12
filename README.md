@@ -172,8 +172,14 @@ editor window.
 ## XAR Package
 
 To build a `dracor-api` XAR [EXPath](http://expath.org/spec/pkg) package that
-can be installed via the dashboard of any eXist DB instance you can just run
-`ant`.
+can be installed via the dashboard of any eXist DB instance you can just run:
+
+```sh
+./build.sh
+```
+
+The package is written to the `build` directory. It only requires `git`, `sed`
+and `zip`.
 
 ## Webhook
 

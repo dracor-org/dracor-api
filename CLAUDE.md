@@ -11,8 +11,8 @@ DraCor API is an [eXist-db](http://exist-db.org/) application providing a REST A
 ### Build
 
 ```sh
-ant          # Build XAR (EXPath package) for deployment to eXist-db
-ant clean    # Clean build artifacts
+./build.sh          # Build XAR (EXPath package) into build/ for deployment to eXist-db
+./build.sh clean    # Clean build artifacts
 ```
 
 ### Development (Docker)
@@ -134,8 +134,8 @@ GitHub push → POST /webhook/github
 
 ### Build & Deployment
 
-- `ant` produces a `.xar` EXPath package deployable to any eXist-db instance
-- `Dockerfile` is a multi-stage build: Ant builds the XAR, then it's installed into an eXist-db image
+- `build.sh` produces a `.xar` EXPath package deployable to any eXist-db instance (requires only `git`, `sed` and `zip`; the version comes from `git describe` or the `VERSION` env var). Files to include in the package are listed explicitly in the script
+- `Dockerfile` is a multi-stage build: `build.sh` builds the XAR, then it's installed into an eXist-db image
 - `compose.yml` — production-like orchestration (API + frontend + metrics + Fuseki)
 - `compose.t.yml` — overlay for CI test runs
 - `compose.dev.yml` — development overlay (builds locally; uses hardcoded dev secrets `qwerty`)

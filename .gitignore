@@ -1,9 +1,6 @@
 build/
-devel/
-.ant-targets-build.xml
 .existdb.json
 expath-pkg.xml
-local.build.properties
 *.xar
 schemathesis-results.*
 .hypothesis
