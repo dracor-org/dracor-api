@@ -1,29 +1,13 @@
 ARG BASE_IMAGE=eclipse-temurin:17-jre
 
 # START STAGE 1
-FROM ${BASE_IMAGE} AS builder
+FROM alpine:3 AS builder
 
-USER root
-
-ENV ANT_VERSION=1.10.18
-ENV ANT_HOME=/etc/ant-${ANT_VERSION}
-
-WORKDIR /tmp
-
-RUN apt update && apt install -y git curl
-
-RUN curl -L -o apache-ant-${ANT_VERSION}-bin.tar.gz https://downloads.apache.org/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
-    && tar -zxvf apache-ant-${ANT_VERSION}-bin.tar.gz \
-    && mv apache-ant-${ANT_VERSION} ${ANT_HOME} \
-    && rm apache-ant-${ANT_VERSION}-bin.tar.gz \
-    && rm -rf ${ANT_HOME}/manual \
-    && unset ANT_VERSION
-
-ENV PATH=${PATH}:${ANT_HOME}/bin
+RUN apk add --no-cache git zip curl
 
 WORKDIR /tmp/dracor-api
 COPY . .
-RUN ant \
+RUN ./build.sh \
     && curl -L -o /tmp/0-crypto.xar https://github.com/eXist-db/expath-crypto-module/releases/download/6.0.1/expath-crypto-module-6.0.1.xar \
     && curl -L -o /tmp/0-openapi.xar https://ci.de.dariah.eu/exist-repo/public/openapi-1.7.0.xar
 
