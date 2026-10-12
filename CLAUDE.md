@@ -13,6 +13,7 @@ DraCor API is an [eXist-db](http://exist-db.org/) application providing a REST A
 ```sh
 ./build.sh          # Build XAR (EXPath package) into build/ for deployment to eXist-db
 ./build.sh clean    # Clean build artifacts
+EXIST_PASSWORD= ./deploy.sh build/dracor-v1-latest.xar [http://localhost:8080/exist]   # Install XAR via eXist REST
 ```
 
 ### Development (Docker)
@@ -135,6 +136,8 @@ GitHub push → POST /webhook/github
 ### Build & Deployment
 
 - `build.sh` produces a `.xar` EXPath package deployable to any eXist-db instance (requires only `git`, `sed` and `zip`; the version comes from `git describe` or the `VERSION` env var). Files to include in the package are listed explicitly in the script
+- `deploy.sh` installs a XAR into a running eXist-db via its REST interface (PUT the XAR to `/db/system/deploy`, then a REST query that undeploys/removes every installed version of the package and calls `repo:install-and-deploy-from-db`). Credentials come from `EXIST_USER`/`EXIST_PASSWORD`
+- `.github/workflows/deploy.yml` builds the XAR and runs `deploy.sh` through an SSH tunnel: `dev` on manual dispatch, `staging` on push to `main`, `production` on release (not pre-release). SSH uses the org secrets `DRACOR_ORG_DEPLOY_KEY`/`DRACOR_ORG_DEPLOY_USER`; per-server settings (`EXIST_PASSWORD`, `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS`) live in GitHub environments of the same names (see README)
 - `Dockerfile` is a multi-stage build: `build.sh` builds the XAR, then it's installed into an eXist-db image
 - `compose.yml` — production-like orchestration (API + frontend + metrics + Fuseki)
 - `compose.t.yml` — overlay for CI test runs

@@ -181,6 +181,58 @@ can be installed via the dashboard of any eXist DB instance you can just run:
 The package is written to the `build` directory. It only requires `git`, `sed`
 and `zip`.
 
+## Deployment
+
+The `deploy.sh` script installs a XAR package into a running eXist DB using its
+REST interface, replacing any installed version of `dracor-api`. The corpus data
+remains untouched. To deploy to a local instance:
+
+```sh
+EXIST_PASSWORD= ./deploy.sh build/dracor-v1-latest.xar
+```
+
+For a remote server open an SSH tunnel to its eXist port first and pass the
+tunnel URL:
+
+```sh
+ssh -N -L 8888:localhost:8080 user@dev.dracor.org &
+EXIST_PASSWORD=secret ./deploy.sh build/dracor-v1-latest.xar http://localhost:8888/exist
+```
+
+The [Deploy](.github/workflows/deploy.yml) GitHub workflow does the same for the
+DraCor servers:
+
+| Environment  | Deployed when                              |
+| ------------ | ------------------------------------------ |
+| `dev`        | run manually from the Actions tab          |
+| `staging`    | pushed to `main`                           |
+| `production` | a release is published (not a pre-release) |
+
+The SSH connection uses the deploy key and user shared across the dracor-org
+repositories (the organization secrets `DRACOR_ORG_DEPLOY_KEY` and
+`DRACOR_ORG_DEPLOY_USER`). Everything specific to a server is configured in a
+[GitHub environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+of the same name:
+
+| Name                 | Type     | Description                                          |
+| -------------------- | -------- | ---------------------------------------------------- |
+| `EXIST_PASSWORD`     | secret   | eXist DB password                                    |
+| `EXIST_USER`         | secret   | eXist DB user (optional, default `admin`)            |
+| `DEPLOY_HOST`        | variable | server host name, e.g. `dev.dracor.org`              |
+| `DEPLOY_KNOWN_HOSTS` | variable | the server's SSH host key(s) in `known_hosts` format |
+| `EXIST_PORT`         | variable | eXist port on the server (default `8080`)            |
+
+They can be set in the repository settings under _Environments_ or with the
+GitHub CLI, e.g.:
+
+```sh
+gh api -X PUT repos/dracor-org/dracor-api/environments/staging # create it
+gh secret set EXIST_PASSWORD --env staging
+gh variable set DEPLOY_HOST --env staging --body staging.dracor.org
+gh variable set DEPLOY_KNOWN_HOSTS --env staging \
+  --body "$(ssh-keygen -F staging.dracor.org | grep -v "^#")"
+```
+
 ## Webhook
 
 The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
