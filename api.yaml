@@ -63,71 +63,83 @@ paths:
                 items:
                   $ref: '#/components/schemas/CorpusInCorpora'
 
-              example:
+              example: |
                 [
                   {
                     "name": "ger",
+                    "acronym": "GerDraCor",
                     "title": "German Drama Corpus",
                     "repository": "https://github.com/dracor-org/gerdracor",
                     "uri": "https://dracor.org/api/v1/corpora/ger",
-                    "description": "Edited by Frank Fischer and Peer Trilcke. Features 501 German-language plays from the 1730s to the 1940s.",
+                    "description": "Edited by Frank Fischer and Peer Trilcke. Features more than 750 German-language plays from the 1500s to the 1940s. For a corpus description and full credits please see the [README on GitHub](https://github.com/dracor-org/gerdracor).",
                     "licence": "CC0",
                     "licenceUrl": "https://creativecommons.org/share-your-work/public-domain/cc0/",
+                    "commit": "7a7a3147b57aed70393facd12cacd69d05f58091",
                     "metrics": {
-                      "characters": 10001,
-                      "female": 1308,
-                      "male": 3953,
-                      "plays": 471,
-                      "sp": 327696,
-                      "stage": 139169,
-                      "text": 471,
-                      "updated": "2019-01-12T00:55:59.145+01:00",
+                      "characters": 16671,
+                      "female": 3502,
+                      "male": 11767,
+                      "plays": 783,
+                      "sp": 477613,
+                      "stage": 227638,
+                      "text": 783,
+                      "updated": "2026-10-07T03:32:39.834+02:00",
                       "wordcount": {
-                        "sp": 7909927.0,
-                        "stage": 880356,
-                        "text": 8275863.0
+                        "sp": 11533573,
+                        "stage": 1404678,
+                        "text": 12103803
                       }
-                    },
+                    }
                   },
                   {
                     "name": "rus",
+                    "acronym": "RusDraCor",
                     "title": "Russian Drama Corpus",
                     "repository": "https://github.com/dracor-org/rusdracor",
                     "uri": "https://dracor.org/api/v1/corpora/rus",
+                    "description": "Edited by Frank Fischer and Daniil Skorinkin. Features more than 200 Russian plays from the 1740s to the 1940s. For a corpus description and full credits please see the [README on GitHub](https://github.com/dracor-org/rusdracor).",
+                    "licence": "CC0",
+                    "licenceUrl": "https://creativecommons.org/share-your-work/public-domain/cc0/",
+                    "commit": "f602fad375643254837a66efeda2baa2f043ccb5",
                     "metrics": {
-                      "characters": 2440,
-                      "female": 564,
-                      "male": 1789,
-                      "plays": 141,
-                      "sp": 73485,
-                      "stage": 31949,
-                      "text": 141,
-                      "updated": "2019-01-11T22:48:53.865+01:00",
+                      "characters": 3707,
+                      "female": 871,
+                      "male": 2608,
+                      "plays": 212,
+                      "sp": 119333,
+                      "stage": 49440,
+                      "text": 212,
+                      "updated": "2026-02-01T16:39:25.828+01:00",
                       "wordcount": {
-                        "sp": 1388515.0,
-                        "stage": 140415,
-                        "text": 1468669.0
+                        "sp": 2191657,
+                        "stage": 215112,
+                        "text": 2316995
                       }
                     }
                   },
                   {
                     "name": "shake",
+                    "acronym": "ShakeDraCor",
                     "title": "Shakespeare Drama Corpus",
                     "repository": "https://github.com/dracor-org/shakedracor",
                     "uri": "https://dracor.org/api/v1/corpora/shake",
+                    "description": "Derived from the [Folger Shakespeare Library](https://shakespeare.folger.edu/). Enhancements documented in our [README at GitHub](https://github.com/dracor-org/shakedracor).",
+                    "licence": "CC BY-NC 3.0",
+                    "licenceUrl": "https://creativecommons.org/licenses/by-nc/3.0/deed.en_US",
+                    "commit": "66efae847ba80c1d66cb346665117b1be3b790e5",
                     "metrics": {
                       "characters": 1433,
-                      "female": 0,
-                      "male": 0,
+                      "female": 119,
+                      "male": 818,
                       "plays": 37,
                       "sp": 31066,
                       "stage": 10450,
                       "text": 37,
-                      "updated": "2019-01-11T22:53:29.419+01:00",
+                      "updated": "2026-02-01T18:17:40.429+01:00",
                       "wordcount": {
                         "sp": 876744,
-                        "stage": 41230,
-                        "text": 908286
+                        "stage": 41199,
+                        "text": 908287
                       }
                     }
                   }
