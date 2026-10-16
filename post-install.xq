@@ -18,6 +18,8 @@ declare function local:store ($file-path, $content) {
  : following environment variables:
  :
  : - DRACOR_API_BASE: base URI the DraCor API will be available under
+ : - DRACOR_ID_BASE: base of identifier URIs, e.g. https://dracor.org/id
+ :   (optional, derived from DRACOR_API_BASE if not set)
  : - FUSEKI_SERVER: base URI of the fuseki server
  : - METRICS_SERVER: DraCor metrics service URI
  :)
@@ -37,6 +39,11 @@ as item()? {
           else "https://dracor.org/api/v1"
         }
         </api-base>
+        {
+          if (environment-variable("DRACOR_ID_BASE")) then
+            <id-base>{environment-variable("DRACOR_ID_BASE")}</id-base>
+          else ()
+        }
         <services>
           <fuseki>
           {

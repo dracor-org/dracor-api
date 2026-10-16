@@ -102,6 +102,51 @@ declare function dutil:get-dracor-id($tei as element(tei:TEI)) as xs:string* {
 };
 
 (:~
+ : Return the identifier URI of a play, e.g. https://dracor.org/id/ger000088.
+ :
+ : @param $id DraCor ID of the play
+ :)
+declare function dutil:play-uri($id as xs:string) as xs:string {
+  $config:id-base || "/" || $id
+};
+
+(:~
+ : Return the identifier URI of a corpus, e.g. https://dracor.org/id/ger.
+ :
+ : @param $corpusname Name of the corpus
+ :)
+declare function dutil:corpus-uri($corpusname as xs:string) as xs:string {
+  $config:id-base || "/" || $corpusname
+};
+
+(:~
+ : Return the play ID or corpus name identified by a DraCor identifier URI.
+ :
+ : Besides the configured identifier base, URIs based on the origin of the API
+ : base (e.g. http://localhost:8088/id/ger000088) are accepted as well. Any
+ : legal XML ID is accepted after the base.
+ :
+ : @param $uri Identifier URI
+ : @return ID or corpus name, empty if the URI is not a DraCor identifier
+ :)
+declare function dutil:uri-to-id($uri as xs:string) as xs:string? {
+  let $ids :=
+    for $base in distinct-values(($config:id-base, $config:api-origin || "/id"))
+    where starts-with($uri, $base || "/")
+    return substring-after($uri, $base || "/")
+  return $ids[. castable as xs:NCName][1]
+};
+
+(:~
+ : Return the TEI document of a play by its DraCor ID.
+ :
+ : @param $id DraCor ID of the play
+ :)
+declare function dutil:get-play-by-id($id as xs:string) as element(tei:TEI)? {
+  collection($config:corpora-root)/tei:TEI[@xml:id = $id][1]
+};
+
+(:~
  : Retrieve the speaker children of a given element and return the distinct IDs
  : referenced in @who attributes of those elements.
  :)
@@ -1513,7 +1558,7 @@ declare function dutil:get-plays-with-character ($id as xs:string) {
     )[1]
     return map {
       "id": $play-id,
-      "uri": "https://dracor.org/id/" || $play-id,
+      "uri": dutil:play-uri($play-id),
       "title": $titles?main,
       "authors": array { for $author in $authors return $author?fullname },
       "characterId": $character/@xml:id/string(),
@@ -1545,7 +1590,7 @@ declare function dutil:get-all-characters-with-wikidata-id () {
       "pid": $play-id,
       "play": map {
         "id": $play-id,
-        "uri": "https://dracor.org/id/" || $play-id,
+        "uri": dutil:play-uri($play-id),
         "title": $titles?main,
         "authors": $author-names,
         "characterId": $c/@xml:id/string(),
@@ -1591,7 +1636,7 @@ declare function dutil:id-to-url (
   $id as xs:string,
   $accept as xs:string*
 ) {
-  let $tei := collection($config:corpora-root)/tei:TEI[@xml:id = $id][1]
+  let $tei := dutil:get-play-by-id($id)
 
   return if ($tei) then
     let $paths := dutil:filepaths(base-uri($tei))
@@ -1604,8 +1649,7 @@ declare function dutil:id-to-url (
     else if ($accept = "application/rdf+xml") then
       $url || "/rdf"
     else
-      let $p := tokenize($config:api-base, '/')
-      return $p[1] || '//' || $p[3] || '/' || $corpus || "/" || $play
+      $config:api-origin || '/' || $corpus || "/" || $play
   else ()
 };
 
