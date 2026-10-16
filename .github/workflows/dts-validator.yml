@@ -1,0 +1,48 @@
+name: DTS Validator
+
+# Validate a deployed DTS API, e.g. after a deployment to staging. The DTS
+# endpoints of the test stack are validated on every pull request as part of
+# the Schemathesis workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      entry-endpoint:
+        description: URL of the DTS entry endpoint
+        default: https://staging.dracor.org/api/v1/dts
+        required: true
+      corpus:
+        description: >-
+          Also run the DraCor DTS contract tests for this corpus
+          (leave empty to run the DTS validator only)
+        default: ''
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate DTS API
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Run the DTS validator
+        env:
+          ENTRY_ENDPOINT: ${{ inputs.entry-endpoint }}
+          CORPUS: ${{ inputs.corpus }}
+        run: |
+          if [ -n "$CORPUS" ]; then
+            ./test/dts-validator.sh "$ENTRY_ENDPOINT" --corpus "$CORPUS"
+          else
+            DTS_SKIP_CONTRACT=1 ./test/dts-validator.sh "$ENTRY_ENDPOINT"
+          fi
+      - name: Upload DTS test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dts-reports
+          path: dts-reports/

@@ -5,3 +5,6 @@ expath-pkg.xml
 schemathesis-results.*
 .hypothesis
 .claude
+test/.dts-validator/
+dts-reports/
+__pycache__/
