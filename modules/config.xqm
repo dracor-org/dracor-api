@@ -53,10 +53,12 @@ declare variable $config:api-origin :=
 
 (:
   The base of DraCor identifier URIs. Identifiers of plays and corpora are
-  formed by appending the play ID or corpus name. They are the same on all
-  dracor.org servers (production, staging, development), so the default
+  formed by appending the play ID or corpus name. For now they are the same on
+  all dracor.org servers (production, staging, development), so the default
   https://dracor.org/id only needs to be changed for installations publishing
-  their own corpora.
+  their own corpora. This is an interim default until the discussion on
+  canonical vs. per-environment identifiers is settled, see
+  https://github.com/dracor-org/dracor-api/discussions/391
 :)
 declare variable $config:id-base :=
   (
