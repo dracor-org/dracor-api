@@ -8,3 +8,4 @@ schemathesis-results.*
 test/.dts-validator/
 dts-reports/
 __pycache__/
+node_modules/

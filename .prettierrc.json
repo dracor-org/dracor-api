@@ -1,0 +1,5 @@
+{
+  "plugins": ["prettier-plugin-xquery"],
+  "tabWidth": 2,
+  "printWidth": 80
+}
