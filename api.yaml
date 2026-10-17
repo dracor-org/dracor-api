@@ -41,6 +41,9 @@ info:
 servers:
   - url: https://dracor.org/api/v1
 
+# Endpoints are public unless they declare their own security requirement.
+security: []
+
 tags:
   - name: public
     description: |
@@ -56,7 +59,9 @@ tags:
   - name: wikidata
     description: Endpoints providing data for or from Wikidata.
   - name: admin
-    description: Endpoints for managing corpora. They require authentication.
+    description: |
+      Endpoints for managing corpora. They require HTTP Basic authentication
+      with the credentials of an eXist-db user.
   - name: webhook
     description: GitHub webhook that triggers corpus updates.
 
@@ -203,6 +208,8 @@ paths:
       summary: Add new corpus
       operationId: post-corpora
       tags: [admin]
+      security:
+        - basicAuth: []
       requestBody:
         description: |
           The meta data for the new corpus can be provided in either JSON or XML
@@ -273,6 +280,8 @@ paths:
           description: Corpus already exists
         '400':
           description: Posted data lacks required properties or is malformed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /corpora/{corpusname}:
     get:
@@ -296,12 +305,12 @@ paths:
     post:
       summary: Load corpus data from its repository
       description: >-
-        This endpoint requires authorization.
-
         Posting `{"load": true}` to the corpus URI reloads the data for this
         corpus from its repository (if defined).
       operationId: load-corpus
       tags: [admin]
+      security:
+        - basicAuth: []
       parameters:
         - $ref: "#/components/parameters/corpusname"
       requestBody:
@@ -327,6 +336,8 @@ paths:
                 {
                   "message": "corpus update scheduled"
                 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: Unknown corpus
         '409':
@@ -338,11 +349,15 @@ paths:
       summary: Remove corpus from database
       operationId: delete-corpus
       tags: [admin]
+      security:
+        - basicAuth: []
       parameters:
         - $ref: "#/components/parameters/corpusname"
       responses:
         '200':
           description: Corpus deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: Unknown corpus
 
@@ -410,12 +425,16 @@ paths:
       summary: Remove a single play from the corpus
       operationId: play-delete
       tags: [admin]
+      security:
+        - basicAuth: []
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
       responses:
         '200':
           description: Play has been removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: Unknown play (or corpus)
 
@@ -466,6 +485,8 @@ paths:
         characters, digits and/or dashes only.
       operationId: play-tei-put
       tags: [admin]
+      security:
+        - basicAuth: []
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - name: playname
@@ -491,6 +512,8 @@ paths:
           description: >-
             The request body is not a valid TEI document or the `playname` is
             invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: >-
             There is no corpus with the given `corpusname`.
@@ -1960,6 +1983,17 @@ components:
         which is used when `tree` is omitted.
       schema:
         type: string
+  responses:
+    Unauthorized:
+      description: >-
+        Credentials are missing or invalid.
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: >-
+        HTTP Basic authentication with the credentials of an eXist-db user
+        that has write access to the DraCor data.
   schemas:
     Info:
       type: object
