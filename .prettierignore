@@ -1,1 +1,4 @@
 api.yaml
+build/
+# excluded until the planned rewrite of the module
+modules/dts.xqm

@@ -2,12 +2,6 @@ xquery version "3.1";
 
 module namespace api = "http://dracor.org/ns/exist/v1/api";
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
-import module namespace load = "http://dracor.org/ns/exist/v1/load" at "load.xqm";
-import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikidata.xqm";
-import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
-
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
@@ -18,6 +12,12 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace jsn = "http://www.json.org";
 declare namespace test = "http://exist-db.org/xquery/xqsuite";
 declare namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+import module namespace load = "http://dracor.org/ns/exist/v1/load" at "load.xqm";
+import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikidata.xqm";
+import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
 declare variable $api:metadata-columns := (
   "name",
@@ -101,38 +101,44 @@ function api:info() {
     for $doc in collection($config:corpora-root)
     let $uri := document-uri($doc)
     return xmldb:last-modified(
-      replace($uri, '/[^/]+$', ''),
-      tokenize($uri, '/')[last()]
+      replace($uri, "/[^/]+$", ""),
+      tokenize($uri, "/")[last()]
     )
   )
   let $active-loads :=
-    for $job in scheduler:get-scheduled-jobs()//scheduler:job[
-      starts-with(@name, 'load-corpus-')
-      and scheduler:trigger/state != 'COMPLETE'
-    ]
-    return substring-after($job/@name, 'load-corpus-')
+    for $job in
+      scheduler:get-scheduled-jobs()//scheduler:job[starts-with(
+        @name,
+        "load-corpus-"
+      ) and
+        scheduler:trigger/state != "COMPLETE"]
+    return substring-after($job/@name, "load-corpus-")
   return (
     <rest:response>
       <http:response>
-        <http:header name="Cache-Control" value="no-store"/>
+        <http:header name="Cache-Control" value="no-store" />
       </http:response>
     </rest:response>,
-    map:merge((
-      map {
-        "name": $expath/expath:title/string(),
-        "version": $expath/@version/string(),
-        "status": $repo/repo:status/string(),
-        "existdb": system:get-version(),
-        "base": $config:api-base,
-        "openapi": $config:api-base || "/openapi.yaml"
-      },
-      if (exists($lastModified))
-        then map:entry("lastModified", string($lastModified))
-        else (),
-      if (exists($active-loads))
-        then map:entry("activeLoads", array {$active-loads})
-        else ()
-    ))
+    map:merge(
+      (
+        map {
+          "name": $expath/expath:title/string(),
+          "version": $expath/@version/string(),
+          "status": $repo/repo:status/string(),
+          "existdb": system:get-version(),
+          "base": $config:api-base,
+          "openapi": $config:api-base || "/openapi.yaml"
+        },
+        if (exists($lastModified)) then
+          map:entry("lastModified", string($lastModified))
+        else (
+        ),
+        if (exists($active-loads)) then
+          map:entry("activeLoads", array { $active-loads })
+        else (
+        )
+      )
+    )
   )
 };
 
@@ -167,9 +173,9 @@ function api:openapi-yaml() {
   let $expath := config:expath-descriptor()
   let $yaml := util:base64-decode(xs:string(util:binary-doc($path)))
   return replace(
-    replace($yaml, 'https://dracor.org/api/v1', $config:api-base),
-    'version: [0-9.]+',
-    'version: ' || $expath/@version/string()
+    replace($yaml, "https://dracor.org/api/v1", $config:api-base),
+    "version: [0-9.]+",
+    "version: " || $expath/@version/string()
   )
 };
 
@@ -181,13 +187,21 @@ function api:resources() {
   rest:resource-functions()
 };
 
-declare function local:get-index-keys ($collection as xs:string, $elem as xs:string) {
-  <terms element="{$elem}" collection="{$collection}">
+declare function local:get-index-keys(
+  $collection as xs:string,
+  $elem as xs:string
+) {
+  <terms collection="{ $collection }" element="{ $elem }">
     {
       util:index-keys(
-        collection($collection)//tei:*[name() eq $elem], "",
-        function($key, $count) {
-          <term name="{$key}" count="{$count[1]}"docs="{$count[2]}" pos="{$count[3]}"/>
+        collection($collection)//tei:*[name() eq $elem],
+        "",
+        function ($key, $count) {
+          <term
+            count="{ $count[1] }"
+            docs="{ $count[2] }"
+            name="{ $key }"
+            pos="{ $count[3] }" />
         },
         -1,
         "lucene-index"
@@ -208,31 +222,27 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
  : @result redirect
  :)
 declare
-  %rest:GET
-  %rest:path("/v1/id/{$id}")
-  %rest:header-param("Accept", "{$accept}")
+  %rest:GET %rest:path("/v1/id/{$id}") %rest:header-param("Accept", "{$accept}")
 function api:id-to-url($id, $accept) {
   let $url := dutil:id-to-url($id, $accept)
   return if (not($url)) then
-    <rest:response>
-      <http:response status="404"/>
-    </rest:response>
+    <rest:response><http:response status="404" /></rest:response>
   else
     <rest:response>
       <http:response status="303">
-        <http:header name="location" value="{$url}"/>
+        <http:header name="location" value="{ $url }" />
       </http:response>
     </rest:response>
 };
 
-declare function local:get-corpus-metrics ($corpus as xs:string) {
+declare function local:get-corpus-metrics($corpus as xs:string) {
   let $collection-uri := concat($config:corpora-root, "/", $corpus)
   let $col := collection($collection-uri)
   let $num-plays := count($col/tei:TEI)
   let $list := $col//tei:particDesc/tei:listPerson
-  let $num-characters := count($list/(tei:person|tei:personGrp))
-  let $num-male := count($list/(tei:person|tei:personGrp)[@sex="MALE"])
-  let $num-female := count($list/(tei:person|tei:personGrp)[@sex="FEMALE"])
+  let $num-characters := count($list/(tei:person | tei:personGrp))
+  let $num-male := count($list/(tei:person | tei:personGrp)[@sex = "MALE"])
+  let $num-female := count($list/(tei:person | tei:personGrp)[@sex = "FEMALE"])
   let $num-text := count($col//tei:text)
   let $num-stage := count($col//tei:stage)
   let $num-sp := count($col//tei:sp)
@@ -244,11 +254,12 @@ declare function local:get-corpus-metrics ($corpus as xs:string) {
     "text": $num-text,
     "sp": $num-sp,
     "stage": $num-stage,
-    "wordcount": map {
-      "text": sum($col/metrics/text),
-      "sp": sum($col/metrics/sp),
-      "stage": sum($col/metrics/stage)
-    },
+    "wordcount":
+      map {
+        "text": sum($col/metrics/text),
+        "sp": sum($col/metrics/sp),
+        "stage": sum($col/metrics/stage)
+      },
     "updated": max($col/metrics/xs:dateTime(@updated))
   }
 };
@@ -266,27 +277,29 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora($include) {
-  if ($include[1] and not($include[1] = "metrics")) then
-    (
-      <rest:response><http:response status="400"/></rest:response>,
-      map {"error": "invalid value for parameter 'include'"}
-    )
-  else
-  array {
-  (: DEPRECATED: remove teiCorpus support in v2 :)
-    for $corpus in collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)
-    let $info := dutil:get-corpus-info($corpus)
-    let $name := $info?name
-    order by $name
-    return map:merge ((
-      $info,
-      map:entry("uri", $config:api-base || '/corpora/' || $name),
-      if ($include[1] = "metrics") then (
-        map:entry("metrics", local:get-corpus-metrics($name))
-      ) else ()
-
-    ))
-  }
+  if ($include[1] and not($include[1] = "metrics")) then (
+    <rest:response><http:response status="400" /></rest:response>,
+    map {"error": "invalid value for parameter 'include'"}
+  ) else
+    array
+      {
+        (: DEPRECATED: remove teiCorpus support in v2 :)
+        for $corpus in
+          collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
+        let $info := dutil:get-corpus-info($corpus)
+        let $name := $info?name
+        order by $name
+        return map:merge(
+          (
+            $info,
+            map:entry("uri", $config:api-base || "/corpora/" || $name),
+            if ($include[1] = "metrics") then (
+              map:entry("metrics", local:get-corpus-metrics($name))
+            ) else (
+            )
+          )
+        )
+      }
 };
 
 (:~
@@ -303,39 +316,38 @@ declare
   %rest:produces("application/json")
   %output:method("json")
 function api:corpora-post-tei($data as document-node(), $auth) {
-  if (not($auth)) then
-    (
-      <rest:response><http:response status="401"/></rest:response>,
-      map { "message": "authorization required" }
-    )
-  else try {
-    dutil:create-corpus-from-xml($data/*)
-  } catch dutil:invalid-corpus-document {
-    (
-      <rest:response><http:response status="400"/></rest:response>,
-      map { "error": "Invalid corpus document. " || $err:description }
-    )
-  } catch dutil:invalid-corpus-name {
-    (
-      <rest:response><http:response status="400"/></rest:response>,
-      map { "error": $err:description }
-    )
-  } catch dutil:corpus-exists {
-    (
-      <rest:response><http:response status="409"/></rest:response>,
-      map { "error": $err:description }
-    )
-  } catch * {
-    (
-      <rest:response><http:response status="500"/></rest:response>,
-      map {
-        "error": $err:description,
-        "module": $err:module,
-        "line": $err:line-number,
-        "code": $err:code
-      }
-    )
-  }
+  if (not($auth)) then (
+    <rest:response><http:response status="401" /></rest:response>,
+    map {"message": "authorization required"}
+  ) else
+    try {
+      dutil:create-corpus-from-xml($data/*)
+    } catch dutil:invalid-corpus-document {
+      (
+        <rest:response><http:response status="400" /></rest:response>,
+        map {"error": "Invalid corpus document. " || $err:description}
+      )
+    }catch dutil:invalid-corpus-name {
+      (
+        <rest:response><http:response status="400" /></rest:response>,
+        map {"error": $err:description}
+      )
+    }catch dutil:corpus-exists {
+      (
+        <rest:response><http:response status="409" /></rest:response>,
+        map {"error": $err:description}
+      )
+    }catch * {
+      (
+        <rest:response><http:response status="500" /></rest:response>,
+        map {
+          "error": $err:description,
+          "module": $err:module,
+          "line": $err:line-number,
+          "code": $err:code
+        }
+      )
+    }
 };
 
 (:~
@@ -353,30 +365,29 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora-post-json($data, $auth) {
-  if (not($auth)) then
-    (
-      <rest:response><http:response status="401"/></rest:response>,
-      map { "message": "authorization required" }
-    )
-  else try {
-    let $json := parse-json(util:base64-decode($data))
-    return dutil:create-corpus($json)
-  } catch dutil:invalid-corpus-name {
-    (
-      <rest:response><http:response status="400"/></rest:response>,
-      map { "error": $err:description }
-    )
-  } catch dutil:corpus-exists {
-    (
-      <rest:response><http:response status="409"/></rest:response>,
-      map { "error": $err:description }
-    )
-  } catch * {
-    (
-      <rest:response><http:response status="500"/></rest:response>,
-      map { "error": $err:description }
-    )
-  }
+  if (not($auth)) then (
+    <rest:response><http:response status="401" /></rest:response>,
+    map {"message": "authorization required"}
+  ) else
+    try {
+      let $json := parse-json(util:base64-decode($data))
+      return dutil:create-corpus($json)
+    } catch dutil:invalid-corpus-name {
+      (
+        <rest:response><http:response status="400" /></rest:response>,
+        map {"error": $err:description}
+      )
+    }catch dutil:corpus-exists {
+      (
+        <rest:response><http:response status="409" /></rest:response>,
+        map {"error": $err:description}
+      )
+    }catch * {
+      (
+        <rest:response><http:response status="500" /></rest:response>,
+        map {"error": $err:description}
+      )
+    }
 };
 
 (:~
@@ -400,56 +411,86 @@ function api:corpus-index($corpusname) {
   let $description := $corpus?description
   let $collection := $config:corpora-root || "/" || $corpusname
   let $col := collection($collection)
-  return
-    if (not($corpus?name) or not(xmldb:collection-available($collection))) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else map:merge((
-      $corpus,
-      map:entry("plays", array {
-        for $tei in $col//tei:TEI
-        let $paths := dutil:filepaths(base-uri($tei))
-        let $sha := doc($paths?files?git)/git/sha/text()
-        let $name := $paths?playname
-        let $id := dutil:get-dracor-id($tei)
-        let $titles := dutil:get-titles($tei)
-        let $titlesEng := dutil:get-titles($tei, 'en')
-        let $years := dutil:get-years-iso($tei)
-        let $authors := dutil:get-authors($tei)
-        let $editors := dutil:get-editors($tei)
-        let $play-uri := $paths?uri
-        let $metrics-url := $paths?files?metrics
-        let $network-size := doc($metrics-url)//network/size/text()
-        let $yearNormalized := dutil:get-normalized-year($tei)
-        let $premiere-date := dutil:get-premiere-date($tei)
-        let $source := dutil:get-source($tei)
-        order by $authors[1]?name
-        return map:merge((
-          map:entry("id", $id),
-          map:entry("uri", $play-uri),
-          if ($sha) then map:entry("commit", $sha) else (),
-          map:entry("name", $name),
-          map:entry("title", $titles?main),
-          if ($titles?sub) then map:entry("subtitle", $titles?sub) else (),
-          if ($titlesEng?main) then map:entry("titleEn", $titlesEng?main) else (),
-          if ($titlesEng?sub) then map:entry("subtitleEn", $titlesEng?sub) else (),
-          map:entry("authors", array { $authors }),
-          if (count($editors) > 0)
-            then map:entry("editors", array { $editors })
-            else (),
-          if (count($source)) then map:entry("source", $source) else (),
-          map:entry("yearNormalized", $yearNormalized),
-          map:entry("yearPrinted", $years?print),
-          map:entry("yearPremiered", $years?premiere),
-          if($premiere-date) then map:entry("datePremiered", $premiere-date) else (),
-          map:entry("yearWritten", $years?written),
-          map:entry("networkSize", xs:integer($network-size)),
-          map:entry("networkdataCsvUrl", $play-uri || "/networkdata/csv"),
-          map:entry("wikidataId", dutil:get-play-wikidata-id($tei))
-        ))
-      })
-    ))
+  return if (
+    not($corpus?name) or not(xmldb:collection-available($collection))
+  ) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    map:merge(
+      (
+        $corpus,
+        map:entry(
+          "plays",
+          array
+            {
+              for $tei in $col//tei:TEI
+              let $paths := dutil:filepaths(base-uri($tei))
+              let $sha := doc($paths?files?git)/git/sha/text()
+              let $name := $paths?playname
+              let $id := dutil:get-dracor-id($tei)
+              let $titles := dutil:get-titles($tei)
+              let $titlesEng := dutil:get-titles($tei, "en")
+              let $years := dutil:get-years-iso($tei)
+              let $authors := dutil:get-authors($tei)
+              let $editors := dutil:get-editors($tei)
+              let $play-uri := $paths?uri
+              let $metrics-url := $paths?files?metrics
+              let $network-size := doc($metrics-url)//network/size/text()
+              let $yearNormalized := dutil:get-normalized-year($tei)
+              let $premiere-date := dutil:get-premiere-date($tei)
+              let $source := dutil:get-source($tei)
+              order by $authors[1]?name
+              return map:merge(
+                (
+                  map:entry("id", $id),
+                  map:entry("uri", $play-uri),
+                  if ($sha) then
+                    map:entry("commit", $sha)
+                  else (
+                  ),
+                  map:entry("name", $name),
+                  map:entry("title", $titles?main),
+                  if ($titles?sub) then
+                    map:entry("subtitle", $titles?sub)
+                  else (
+                  ),
+                  if ($titlesEng?main) then
+                    map:entry("titleEn", $titlesEng?main)
+                  else (
+                  ),
+                  if ($titlesEng?sub) then
+                    map:entry("subtitleEn", $titlesEng?sub)
+                  else (
+                  ),
+                  map:entry("authors", array { $authors }),
+                  if (count($editors) > 0) then
+                    map:entry("editors", array { $editors })
+                  else (
+                  ),
+                  if (count($source)) then
+                    map:entry("source", $source)
+                  else (
+                  ),
+                  map:entry("yearNormalized", $yearNormalized),
+                  map:entry("yearPrinted", $years?print),
+                  map:entry("yearPremiered", $years?premiere),
+                  if ($premiere-date) then
+                    map:entry("datePremiered", $premiere-date)
+                  else (
+                  ),
+                  map:entry("yearWritten", $years?written),
+                  map:entry("networkSize", xs:integer($network-size)),
+                  map:entry(
+                    "networkdataCsvUrl",
+                    $play-uri || "/networkdata/csv"
+                  ),
+                  map:entry("wikidataId", dutil:get-play-wikidata-id($tei))
+                )
+              )
+            }
+        )
+      )
+    )
 };
 
 (:~
@@ -475,70 +516,60 @@ declare
   %test:arg("data", '{"load": true}')
   %test:arg("auth", "Basic YWRtaW46")
 function api:post-corpus($corpusname, $data, $auth) {
-  if (not($auth)) then
-    (
-      <rest:response>
-        <http:response status="401"/>
-      </rest:response>,
-      map {
-        "message": "authorization required"
-      }
-    )
-  else
+  if (not($auth)) then (
+    <rest:response><http:response status="401" /></rest:response>,
+    map {"message": "authorization required"}
+  ) else
+    let $json := parse-json(util:base64-decode($data))
+    let $corpus := dutil:get-corpus-info-by-name($corpusname)
 
-  let $json := parse-json(util:base64-decode($data))
-  let $corpus := dutil:get-corpus-info-by-name($corpusname)
-
-  return
-    if (not($corpus?name)) then
-      (
-        <rest:response><http:response status="404"/></rest:response>,
-        map {"message": "no such corpus"}
-      )
-    else if (count($json) = 0) then
-      (
-        <rest:response><http:response status="400"/></rest:response>,
-        map {"message": "missing payload"}
-      )
-    else if ($json?load) then
+    return if (not($corpus?name)) then (
+      <rest:response><http:response status="404" /></rest:response>,
+      map {"message": "no such corpus"}
+    ) else if (count($json) = 0) then (
+      <rest:response><http:response status="400" /></rest:response>,
+      map {"message": "missing payload"}
+    ) else if ($json?load) then
       let $job-name := "load-corpus-" || $corpusname
       let $params := (
         <parameters>
-          <param name="corpusname" value="{$corpusname}"/>
+          <param name="corpusname" value="{ $corpusname }" />
         </parameters>
       )
 
-      (: delete completed job before scheduling new one :)
-      (: NB: usually this seems to happen automatically but apparently we
-       : cannot rely on it. :)
+      (: delete completed job before scheduling new one :)(:
+       : NB: usually this seems to happen automatically but apparently we
+       : cannot rely on it.
+       :)
       let $jobs := scheduler:get-scheduled-jobs()
-      let $complete := $jobs//scheduler:job
-        [@name=$job-name and scheduler:trigger/state = 'COMPLETE']
+      let $complete := $jobs//scheduler:job[@name = $job-name and
+        scheduler:trigger/state = "COMPLETE"]
       let $log := if ($complete) then (
         util:log("info", "deleting completed job"),
         scheduler:delete-scheduled-job($job-name)
-      ) else ()
+      ) else (
+      )
 
       let $result := scheduler:schedule-xquery-periodic-job(
         $config:app-root || "/jobs/load-corpus.xq",
-        1, $job-name, $params, 0, 0
+        1,
+        $job-name,
+        $params,
+        0,
+        0
       )
 
-      return if ($result) then
-        (
-          <rest:response><http:response status="202"/></rest:response>,
-          map {"message": "corpus update scheduled"}
-        )
-      else
-        (
-          <rest:response><http:response status="409"/></rest:response>,
-          map {"message": "cannot schedule update"}
-        )
-    else
-      (
-        <rest:response><http:response status="400"/></rest:response>,
-        map {"message": "invalid payload"}
+      return if ($result) then (
+        <rest:response><http:response status="202" /></rest:response>,
+        map {"message": "corpus update scheduled"}
+      ) else (
+        <rest:response><http:response status="409" /></rest:response>,
+        map {"message": "cannot schedule update"}
       )
+    else (
+      <rest:response><http:response status="400" /></rest:response>,
+      map {"message": "invalid payload"}
+    )
 };
 
 (:~
@@ -556,41 +587,22 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:delete-corpus($corpusname, $auth) {
-  if (not($auth)) then
-    (
-      <rest:response>
-        <http:response status="401"/>
-      </rest:response>,
-      map {
-        "message": "authorization required"
-      }
-    )
-  else
+  if (not($auth)) then (
+    <rest:response><http:response status="401" /></rest:response>,
+    map {"message": "authorization required"}
+  ) else
+    let $corpus := dutil:get-corpus($corpusname)
 
-  let $corpus := dutil:get-corpus($corpusname)
-
-  return
-    if (not($corpus)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+    return if (not($corpus)) then
+      <rest:response><http:response status="404" /></rest:response>
     else
       let $url := $config:corpora-root || "/" || $corpusname || "/corpus.xml"
-      return
-        if ($url = $corpus/base-uri()) then
-        (
-          xmldb:remove($config:corpora-root || "/" || $corpusname),
-          map {
-            "message": "corpus deleted",
-            "uri": $url
-          }
-        )
-        else
-        (
-          <rest:response>
-            <http:response status="404"/>
-          </rest:response>
-        )
+      return if ($url = $corpus/base-uri()) then (
+        xmldb:remove($config:corpora-root || "/" || $corpusname),
+        map {"message": "corpus deleted", "uri": $url}
+      ) else (
+        <rest:response><http:response status="404" /></rest:response>
+      )
 };
 
 (:~
@@ -607,35 +619,38 @@ declare
   %output:method("json")
 function api:corpus-meta-data($corpusname) {
   let $corpus := dutil:get-corpus($corpusname)
-  return
-    if (not($corpus)) then
-      (
-        <rest:response><http:response status="404"/></rest:response>,
-        map {"message": "no such corpus"}
-      )
-    else
-      let $meta := dutil:get-corpus-meta-data($corpusname)
-      return array { $meta }
+  return if (not($corpus)) then (
+    <rest:response><http:response status="404" /></rest:response>,
+    map {"message": "no such corpus"}
+  ) else
+    let $meta := dutil:get-corpus-meta-data($corpusname)
+    return array { $meta }
 };
 
 declare function api:get-corpus-meta-data-csv($corpusname) {
   let $corpus := dutil:get-corpus($corpusname)
-  return
-    if (not($corpus)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      let $meta := dutil:get-corpus-meta-data($corpusname)
-      let $header := concat(string-join($api:metadata-columns, ","), "&#10;")
-      let $rows :=
-        for $m in $meta return concat(
-          '"',
-          string-join((
+  return if (not($corpus)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    let $meta := dutil:get-corpus-meta-data($corpusname)
+    let $header := concat(string-join($api:metadata-columns, ","), "&#10;")
+    let $rows :=
+      for $m in $meta
+      return concat(
+        '"',
+        string-join(
+          (
             for $c in $api:metadata-columns
-            return if (count($m($c)) = 0) then '' else dutil:csv-escape($m($c))
-          ), '","'), '"&#10;')
-      return ($header, $rows)
+            return if (count($m($c)) = 0) then
+              ""
+            else
+              dutil:csv-escape($m($c))
+          ),
+          '","'
+        ),
+        '"&#10;'
+      )
+    return ($header, $rows)
 };
 
 (:~
@@ -709,13 +724,10 @@ declare
   %output:method("json")
 function api:play-info($corpusname, $playname) {
   let $info := dutil:get-play-info($corpusname, $playname)
-  return
-    if (count($info)) then
-      $info
-    else
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+  return if (count($info)) then
+    $info
+  else
+    <rest:response><http:response status="404" /></rest:response>
 };
 
 (:~
@@ -733,18 +745,12 @@ declare
   %output:method("json")
 function api:play-delete($corpusname, $playname, $data, $auth) {
   if (not($auth)) then
-    <rest:response>
-      <http:response status="401"/>
-    </rest:response>
+    <rest:response><http:response status="401" /></rest:response>
   else
+    let $paths := dutil:filepaths($corpusname, $playname)
 
-  let $paths := dutil:filepaths($corpusname, $playname)
-
-  return
-    if (not(doc($paths?files?tei))) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+    return if (not(doc($paths?files?tei))) then
+      <rest:response><http:response status="404" /></rest:response>
     else (
       dutil:remove-corpus-sha($corpusname),
       xmldb:remove($paths?collections?play)
@@ -766,13 +772,10 @@ declare
   %output:method("json")
 function api:play-metrics($corpusname, $playname) {
   let $metrics := dutil:get-play-metrics($corpusname, $playname)
-  return
-    if (count($metrics)) then
-      $metrics
-    else
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+  return if (count($metrics)) then
+    $metrics
+  else
+    <rest:response><http:response status="404" /></rest:response>
 };
 
 (:~
@@ -789,20 +792,17 @@ declare
   %output:media-type("application/xml")
 function api:play-tei($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    let $tei := $doc//tei:TEI
+    let $model-pi := $doc/processing-instruction(xml-model)
+    return if ($model-pi) then
+      document {
+        processing-instruction {"xml-model"} { $model-pi/string() }, $tei
+      }
     else
-      let $tei := $doc//tei:TEI
-      let $model-pi := $doc/processing-instruction(xml-model)
-      return if ($model-pi) then
-        document {
-          processing-instruction {'xml-model'} {$model-pi/string()},
-          $tei
-        }
-      else $tei
+      $tei
 };
 
 (:~
@@ -819,13 +819,10 @@ declare
   %output:media-type("text/plain")
 function api:play-txt($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      dutil:extract-text($doc)
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    dutil:extract-text($doc)
 };
 
 (:~
@@ -852,43 +849,28 @@ declare
   %output:method("xml")
 function api:play-tei-put($corpusname, $playname, $data, $auth) {
   if (not($auth)) then
-    <rest:response>
-      <http:response status="401"/>
-    </rest:response>
+    <rest:response><http:response status="401" /></rest:response>
   else
+    let $corpus := dutil:get-corpus($corpusname)
+    let $doc := dutil:get-doc($corpusname, $playname)
 
-  let $corpus := dutil:get-corpus($corpusname)
-  let $doc := dutil:get-doc($corpusname, $playname)
-
-  return
-    if (not($corpus)) then
-      (
-        <rest:response>
-          <http:response status="404"/>
-        </rest:response>,
-        <message>No such corpus</message>
-      )
-    else if (
-      not($doc) and
-      not(matches($playname, "^[a-z0-9]+(-?[a-z0-9]+)*$"))
-    )
-    then
-      (
-        <rest:response>
-          <http:response status="400"/>
-        </rest:response>,
-        <message>Unacceptable play name '{$playname}'. Use lower case ASCII characters, digits and dashes only.</message>
-      )
-    else if (not($data/tei:TEI)) then
-      (
-        <rest:response>
-          <http:response status="400"/>
-        </rest:response>,
-        <message>TEI document required</message>
-      )
-    else
+    return if (not($corpus)) then (
+      <rest:response><http:response status="404" /></rest:response>,
+      <message>No such corpus</message>
+    ) else if (
+      not($doc) and not(matches($playname, "^[a-z0-9]+(-?[a-z0-9]+)*$"))
+    ) then (
+      <rest:response><http:response status="400" /></rest:response>,
+      <message>Unacceptable play name '{
+          $playname
+        }'. Use lower case ASCII characters, digits and dashes only.</message>
+    ) else if (not($data/tei:TEI)) then (
+      <rest:response><http:response status="400" /></rest:response>,
+      <message>TEI document required</message>
+    ) else
       let $collection := xmldb:create-collection(
-        $config:corpora-root || "/" || $corpusname, $playname
+        $config:corpora-root || "/" || $corpusname,
+        $playname
       )
       let $result := xmldb:store($collection, "tei.xml", $data/tei:TEI)
       let $_ := (
@@ -912,12 +894,10 @@ declare
 function api:play-rdf($corpusname, $playname) {
   let $paths := dutil:filepaths($corpusname, $playname)
   let $doc := doc($paths?files?rdf)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else $doc
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    $doc
 };
 
 (:~
@@ -935,13 +915,10 @@ declare
   %output:method("text")
 function api:networkdata-csv($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      dutil:networkdata-csv($doc)
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    dutil:networkdata-csv($doc)
 };
 
 (:~
@@ -958,13 +935,10 @@ declare
   %output:omit-xml-declaration("no")
 function api:networkdata-gexf($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      dutil:networkdata-gexf($doc, $corpusname, $playname)
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    dutil:networkdata-gexf($doc, $corpusname, $playname)
 };
 
 (:~
@@ -981,13 +955,10 @@ declare
   %output:omit-xml-declaration("no")
 function api:networkdata-graphml($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      dutil:networkdata-graphml($doc, $corpusname, $playname)
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    dutil:networkdata-graphml($doc, $corpusname, $playname)
 };
 
 (:~
@@ -1007,38 +978,38 @@ function api:relations-csv($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
   let $info := dutil:get-play-info($corpusname, $playname)
   let $relations := dutil:get-relations($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else if (count($relations) = 0) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      let $rows :=
-        for $rel in $relations
-        return string-join((
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else if (count($relations) = 0) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    let $rows :=
+      for $rel in $relations
+      return string-join(
+        (
           $rel?source,
-          if ($rel?directed) then 'Directed' else 'Undirected',
+          if ($rel?directed) then
+            "Directed"
+          else
+            "Undirected",
           $rel?target,
           $rel?type
-        ), ",")
-
-      let $filename := $info?id || '-' || $info?name || '-relations.csv'
-
-      return (
-        <rest:response>
-          <http:response status="200">
-            <http:header
-              name="Content-disposition"
-              value="inline; filename={$filename}"
-            />
-          </http:response>
-        </rest:response>,
-        string-join(("Source,Type,Target,Label", $rows, ""), "&#10;")
+        ),
+        ","
       )
+
+    let $filename := $info?id || "-" || $info?name || "-relations.csv"
+
+    return (
+      <rest:response>
+        <http:response status="200">
+          <http:header
+            name="Content-disposition"
+            value="inline; filename={ $filename }" />
+        </http:response>
+      </rest:response>,
+      string-join(("Source,Type,Target,Label", $rows, ""), "&#10;")
+    )
 };
 
 (:~
@@ -1056,62 +1027,63 @@ declare
 function api:relations-gexf($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
   let $info := dutil:get-play-info($corpusname, $playname)
-  return
-    if (not($doc)) then
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else if (count($info?relations?*) = 0) then (
+    <rest:response><http:response status="404" /></rest:response>,
+    <message>No relations available.</message>
+  ) else
+    let $authors := string-join($info?authors?*?name, " · ")
+    let $title := $info?title
+
+    let $nodes := dutil:gexf-nodes($doc, $info?characters?*)
+
+    let $edges :=
+      for $rel at $pos in $info?relations?*
+      let $type := if ($rel?directed) then
+        "directed"
+      else
+        "undirected"
+      return <edge
+        xmlns="http://www.gexf.net/1.2draft"
+        id="{ $pos }"
+        label="{ $rel?type }"
+        source="{ $rel?source }"
+        target="{ $rel?target }"
+        type="{ $type }" />
+
+    let $filename := $info?id || "-" || $info?name || "-relations.gexf"
+
+    return (
       <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else if (count($info?relations?*) = 0) then
-      (
-        <rest:response>
-          <http:response status="404"/>
-        </rest:response>,
-        <message>No relations available.</message>
-      )
-    else
-      let $authors := string-join($info?authors?*?name, ' · ')
-      let $title := $info?title
-
-      let $nodes := dutil:gexf-nodes($doc, $info?characters?*)
-
-      let $edges :=
-        for $rel at $pos in $info?relations?*
-          let $type := if ($rel?directed) then "directed" else "undirected"
-          return
-            <edge xmlns="http://www.gexf.net/1.2draft"
-            id="{$pos}" source="{$rel?source}" target="{$rel?target}"
-            type="{$type}" label="{$rel?type}"/>
-
-      let $filename := $info?id || '-' || $info?name || '-relations.gexf'
-
-      return (
-        <rest:response>
-          <http:response status="200">
-            <http:header
-              name="Content-disposition"
-              value="inline; filename={$filename}"
-            />
-          </http:response>
-        </rest:response>,
-        <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
-          <meta>
-            <creator>dracor.org</creator>
-            <description>Relations for {$authors}: {$title}</description>
-          </meta>
-          <graph mode="static">
-            <attributes class="node" mode="static">
-              <attribute id="sex" title="Sex" type="string"/>
-              <attribute id="person-group" title="Person group" type="boolean"/>
-              <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
-            </attributes>
-            <attributes class="edge" mode="static">
-              <attribute id="label" title="Label" type="string"/>
-            </attributes>
-            <nodes>{$nodes}</nodes>
-            <edges>{$edges}</edges>
-          </graph>
-        </gexf>
-      )
+        <http:response status="200">
+          <http:header
+            name="Content-disposition"
+            value="inline; filename={ $filename }" />
+        </http:response>
+      </rest:response>,
+      <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
+        <meta>
+          <creator>dracor.org</creator>
+          <description>Relations for { $authors }: { $title }</description>
+        </meta>
+        <graph mode="static">
+          <attributes class="node" mode="static">
+            <attribute id="sex" title="Sex" type="string" />
+            <attribute id="person-group" title="Person group" type="boolean" />
+            <attribute
+              id="number-of-words"
+              title="Number of spoken words"
+              type="integer" />
+          </attributes>
+          <attributes class="edge" mode="static">
+            <attribute id="label" title="Label" type="string" />
+          </attributes>
+          <nodes>{ $nodes }</nodes>
+          <edges>{ $edges }</edges>
+        </graph>
+      </gexf>
+    )
 };
 
 (:~
@@ -1129,68 +1101,76 @@ declare
 function api:relations-graphml($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
   let $info := dutil:get-play-info($corpusname, $playname)
-  return
-    if (not($doc)) then
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else if (count($info?relations?*) = 0) then (
+    <rest:response><http:response status="404" /></rest:response>,
+    <message>No relations available.</message>
+  ) else
+    let $edges :=
+      for $rel at $pos in $info?relations?*
+      let $directed := if ($rel?directed) then
+        "true"
+      else
+        "false"
+      return <edge
+        xmlns="http://graphml.graphdrawing.org/xmlns"
+        directed="{ $directed }"
+        id="{ $pos }"
+        source="{ $rel?source }"
+        target="{ $rel?target }"
+      ><data key="relation">{ $rel?type }</data></edge>
+
+    let $filename := $info?id || "-" || $info?name || "-relations.graphml"
+
+    return (
       <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else if (count($info?relations?*) = 0) then
-      (
-        <rest:response>
-          <http:response status="404"/>
-        </rest:response>,
-        <message>No relations available.</message>
-      )
-    else
-      let $edges :=
-        for $rel at $pos in $info?relations?*
-          let $directed := if ($rel?directed) then "true" else "false"
-          return
-            <edge
+        <http:response status="200">
+          <http:header
+            name="Content-disposition"
+            value="inline; filename={ $filename }" />
+        </http:response>
+      </rest:response>,
+      <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+        <key attr.name="label" attr.type="string" for="node" id="label" />
+        <key attr.name="Relation" attr.type="string" for="edge" id="relation" />
+        <key attr.name="Sex" attr.type="string" for="node" id="sex" />
+        <key
+          attr.name="Person group"
+          attr.type="boolean"
+          for="node"
+          id="person-group" />
+        <graph edgedefault="undirected">
+          {
+            for $n in $info?characters?*
+            let $id := $n?id
+            let $label := $n?name
+            let $sex := $n?sex
+            return <node
               xmlns="http://graphml.graphdrawing.org/xmlns"
-              id="{$pos}"
-              directed="{$directed}"
-              source="{$rel?source}"
-              target="{$rel?target}"
+              id="{ $id }"
             >
-              <data key="relation">{$rel?type}</data>
-            </edge>
-
-      let $filename := $info?id || '-' || $info?name || '-relations.graphml'
-
-      return (
-        <rest:response>
-          <http:response status="200">
-            <http:header
-              name="Content-disposition"
-              value="inline; filename={$filename}"
-            />
-          </http:response>
-        </rest:response>,
-        <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
-          <key attr.name="label" attr.type="string" for="node" id="label"/>
-          <key attr.name="Relation" attr.type="string" for="edge" id="relation"/>
-          <key attr.name="Sex" attr.type="string" for="node" id="sex"/>
-          <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
-          <graph edgedefault="undirected">
-            {
-              for $n in $info?characters?*
-              let $id := $n?id
-              let $label := $n?name
-              let $sex := $n?sex
-              return
-                <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
-                  <data key="label">{$label}</data>
-                  {if ($sex) then <data key="sex">{$sex}</data> else ()}
-                  <data key="person-group">
-                    {if ($n?isGroup) then "true" else "false"}
-                  </data>
-                </node>
-            }
-            {$edges}
-          </graph>
-        </graphml>
-      )
+              <data key="label">{ $label }</data>
+              {
+                if ($sex) then
+                  <data key="sex">{ $sex }</data>
+                else (
+                )
+              }
+              <data key="person-group">
+                {
+                  if ($n?isGroup) then
+                    "true"
+                  else
+                    "false"
+                }
+              </data>
+            </node>
+          }
+          { $edges }
+        </graph>
+      </graphml>
+    )
 };
 
 (:~
@@ -1208,13 +1188,10 @@ declare
   %output:method("json")
 function api:characters-info($corpusname, $playname) {
   let $info := dutil:characters-info($corpusname, $playname)
-  return
-    if (count($info) > 0) then
-      $info
-    else
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+  return if (count($info) > 0) then
+    $info
+  else
+    <rest:response><http:response status="404" /></rest:response>
 };
 
 (:~
@@ -1233,21 +1210,34 @@ declare
 function api:characters-info-csv($corpusname, $playname) {
   let $info := dutil:characters-info($corpusname, $playname)
   let $keys := (
-    "id", "name", "sex", "isGroup",
-    "numOfScenes", "numOfSpeechActs", "numOfWords", "wikidataId",
-    "degree", "weightedDegree", "betweenness", "closeness", "eigenvector"
+    "id",
+    "name",
+    "sex",
+    "isGroup",
+    "numOfScenes",
+    "numOfSpeechActs",
+    "numOfWords",
+    "wikidataId",
+    "degree",
+    "weightedDegree",
+    "betweenness",
+    "closeness",
+    "eigenvector"
   )
   return if (count($info) = 0) then
-    <rest:response>
-      <http:response status="404"/>
-    </rest:response>
+    <rest:response><http:response status="404" /></rest:response>
   else (
     string-join($keys, ",") || "&#10;",
     for $c in $info?*
-    let $row := for $key in $keys
+    let $row :=
+      for $key in $keys
       let $val := map:get($c, $key)
-      return if (empty($val)) then ('') else ('"' || $val || '"')
-    return string-join($row, ',') || '&#10;'
+      return if (empty($val)) then (
+        ""
+      ) else (
+        '"' || $val || '"'
+      )
+    return string-join($row, ",") || "&#10;"
   )
 };
 
@@ -1282,7 +1272,12 @@ declare
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:spoken-text(
-  $corpusname, $playname, $sex, $role, $relation, $relation-active,
+  $corpusname,
+  $playname,
+  $sex,
+  $role,
+  $relation,
+  $relation-active,
   $relation-passive
 ) {
   let $sex := $sex[1]
@@ -1291,74 +1286,80 @@ function api:spoken-text(
   let $relation-active := $relation-active[1]
   let $relation-passive := $relation-passive[1]
   let $doc := dutil:get-doc($corpusname, $playname)
-  let $sexes := tokenize($sex, ',')
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else if (
-      $sex and
-      $sexes[.!="MALE" and .!="FEMALE" and .!="UNKNOWN"]
+  let $sexes := tokenize($sex, ",")
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else if (
+    $sex and $sexes[. != "MALE" and . != "FEMALE" and . != "UNKNOWN"]
+  ) then (
+    <rest:response><http:response status="400" /></rest:response>,
+    'sex must be "FEMALE", "MALE", or "UNKNOWN"'
+  ) else
+    let $sp := if (
+      $sex or $relation or $relation-active or $relation-passive or $role
     ) then
-      (
-        <rest:response>
-          <http:response status="400"/>
-        </rest:response>,
-        "sex must be ""FEMALE"", ""MALE"", or ""UNKNOWN"""
+      dutil:get-speech-filtered(
+        $doc//tei:body,
+        $sex,
+        $role,
+        $relation,
+        $relation-active,
+        $relation-passive
       )
     else
-      let $sp := if (
-        $sex or $relation or $relation-active or $relation-passive or $role
-        ) then
-        dutil:get-speech-filtered(
-          $doc//tei:body, $sex, $role, $relation, $relation-active,
-          $relation-passive
-        )
-      else
-        dutil:get-speech($doc//tei:body, ())
-      let $txt := string-join(($sp/normalize-space(), ""), '&#10;')
-      return $txt
+      dutil:get-speech($doc//tei:body, ())
+    let $txt := string-join(($sp/normalize-space(), ""), "&#10;")
+    return $txt
 };
 
-declare function local:get-text-by-character ($doc) {
+declare function local:get-text-by-character($doc) {
   let $characters := dutil:distinct-speakers($doc//tei:body)
-  return array {
-    for $id in $characters
-    let $label := $doc//tei:particDesc//(
-      tei:person[@xml:id=$id]/tei:persName[1] |
-      tei:personGrp[@xml:id=$id]/tei:name[1] |
-      tei:persName[@xml:id=$id]
-    )
-    let $sex := $label/parent::*/@sex/string()
-    let $gender := $label/parent::*/@gender/string()
-    let $role := $label/parent::*/@role/string()
-    let $isGroup := if ($label/parent::tei:personGrp)
-    then true() else false()
-    let $sp := dutil:get-speech($doc//tei:body, $id)
-    return map:merge((
-      map {
-        "id": $id,
-        "label": $label/text(),
-        "isGroup": $isGroup,
-        "sex": $sex,
-        "roles": array {tokenize($role, '\s+')},
-        "text": array {for $l in $sp return $l/normalize-space()}
-      },
-      if ($gender) then map:entry("gender", $gender) else ()
-    ))
-  }
+  return array
+    {
+      for $id in $characters
+      let $label := $doc//tei:particDesc//(
+        tei:person[@xml:id = $id]/tei:persName[1] |
+          tei:personGrp[@xml:id = $id]/tei:name[1] |
+          tei:persName[@xml:id = $id]
+      )
+      let $sex := $label/parent::*/@sex/string()
+      let $gender := $label/parent::*/@gender/string()
+      let $role := $label/parent::*/@role/string()
+      let $isGroup := if ($label/parent::tei:personGrp) then
+        true()
+      else
+        false()
+      let $sp := dutil:get-speech($doc//tei:body, $id)
+      return map:merge(
+        (
+          map {
+            "id": $id,
+            "label": $label/text(),
+            "isGroup": $isGroup,
+            "sex": $sex,
+            "roles": array { tokenize($role, "\s+") },
+            "text":
+              array
+                {
+                  for $l in $sp
+                  return $l/normalize-space()
+                }
+          },
+          if ($gender) then
+            map:entry("gender", $gender)
+          else (
+          )
+        )
+      )
+    }
 };
 
 declare function api:get-spoken-text-by-character($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      local:get-text-by-character($doc)
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    local:get-text-by-character($doc)
 };
 
 (:~
@@ -1370,7 +1371,9 @@ declare function api:get-spoken-text-by-character($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text-by-character")
+  %rest:path(
+    "/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text-by-character"
+  )
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
@@ -1406,28 +1409,37 @@ function api:spoken-text-by-character-json($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text-by-character")
+  %rest:path(
+    "/v1/corpora/{$corpusname}/plays/{$playname}/spoken-text-by-character"
+  )
   %rest:produces("text/csv", "text/plain")
   %output:media-type("text/csv")
   %output:method("text")
 function api:spoken-text-by-character-csv($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      let $texts := local:get-text-by-character($doc)
-      return (
-        "ID,Label,Type,Sex,Text&#10;",
-        for $t in $texts?*
-        let $type := if ($t?isGroup) then "personGrp" else "person"
-        let $text := string-join($t?text?*, '&#10;')
-        return $t?id || ',"' || dutil:csv-escape($t?label) || '","' ||
-          $type  || '","' || $t?sex || '","' ||
-          dutil:csv-escape($text) || '"&#10;'
-      )
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    let $texts := local:get-text-by-character($doc)
+    return (
+      "ID,Label,Type,Sex,Text&#10;",
+      for $t in $texts?*
+      let $type := if ($t?isGroup) then
+        "personGrp"
+      else
+        "person"
+      let $text := string-join($t?text?*, "&#10;")
+      return $t?id ||
+        ',"' ||
+        dutil:csv-escape($t?label) ||
+        '","' ||
+        $type ||
+        '","' ||
+        $t?sex ||
+        '","' ||
+        dutil:csv-escape($text) ||
+        '"&#10;'
+    )
 };
 
 (:~
@@ -1444,15 +1456,12 @@ declare
   %output:media-type("text/plain")
 function api:stage-directions($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
-    else
-      let $stage := $doc//tei:body//tei:stage
-      let $txt := string-join($stage/normalize-space(), '&#10;')
-      return $txt
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    let $stage := $doc//tei:body//tei:stage
+    let $txt := string-join($stage/normalize-space(), "&#10;")
+    return $txt
 };
 
 (:~
@@ -1464,23 +1473,23 @@ function api:stage-directions($corpusname, $playname) {
  :)
 declare
   %rest:GET
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/stage-directions-with-speakers")
+  %rest:path(
+    "/v1/corpora/{$corpusname}/plays/{$playname}/stage-directions-with-speakers"
+  )
   %rest:produces("text/plain")
   %output:media-type("text/plain")
 function api:stage-directions-with-speakers($corpusname, $playname) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return
-    if (not($doc)) then
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>
+  return if (not($doc)) then
+    <rest:response><http:response status="404" /></rest:response>
+  else
+    for $stage in $doc//tei:body//tei:stage
+    let $speaker := $stage/preceding-sibling::tei:speaker
+    let $line := if ($speaker) then
+      $speaker || "  " || normalize-space($stage)
     else
-      for $stage in $doc//tei:body//tei:stage
-      let $speaker := $stage/preceding-sibling::tei:speaker
-      let $line := if ($speaker) then
-        $speaker || "  " || normalize-space($stage)
-      else normalize-space($stage)
-      return $line || '&#10;'
+      normalize-space($stage)
+    return $line || "&#10;"
 };
 
 (:~
@@ -1512,14 +1521,11 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:plays-with-character($id) {
-  if (not(matches($id, '^Q[0-9]+$'))) then
-    (
-      <rest:response>
-        <http:response status="400"/>
-      </rest:response>,
-      map {"error": "invalid character ID"}
-    )
-  else dutil:get-plays-with-character($id)
+  if (not(matches($id, "^Q[0-9]+$"))) then (
+    <rest:response><http:response status="400" /></rest:response>,
+    map {"error": "invalid character ID"}
+  ) else
+    dutil:get-plays-with-character($id)
 };
 
 (:~
@@ -1537,22 +1543,14 @@ declare
   %output:method("json")
 function api:authorInfo($id, $lang) {
   let $lang := $lang[1]
-  return
-  if (not(matches($id, '^Q[0-9]+$'))) then
-    (
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>,
-      map {"error": "invalid author ID"}
-    )
-  else if ($lang and not(matches($lang, '^[a-z]{2}$'))) then
-    (
-      <rest:response>
-        <http:response status="404"/>
-      </rest:response>,
-      map {"error": "invalid language code"}
-    )
-  else wd:get-author-info($id, $lang)
+  return if (not(matches($id, "^Q[0-9]+$"))) then (
+    <rest:response><http:response status="404" /></rest:response>,
+    map {"error": "invalid author ID"}
+  ) else if ($lang and not(matches($lang, "^[a-z]{2}$"))) then (
+    <rest:response><http:response status="404" /></rest:response>,
+    map {"error": "invalid language code"}
+  ) else
+    wd:get-author-info($id, $lang)
 };
 
 (:~

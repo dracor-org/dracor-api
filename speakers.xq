@@ -12,14 +12,12 @@ xquery version "3.1";
  : curl http://localhost:8080/exist/rest/db/apps/dracor-v1/speakers.xq?id=ep000148
  :)
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config"
-  at "modules/config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/v1/util"
-  at "modules/util.xqm";
-
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace ep = "http://earlyprint.org/ns/1.0";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "modules/config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "modules/util.xqm";
 
 declare option output:method "json";
 declare option output:media-type "application/json";
@@ -28,47 +26,67 @@ let $col := request:get-parameter("collection", $config:corpora-root)
 let $id := request:get-parameter("id", "")
 
 return if (not($id)) then (
-  response:set-status-code(400),
-  map {
-    "error": "missing query parameter 'id'"
-  }
+  response:set-status-code(400), map {"error": "missing query parameter 'id'"}
 ) else
   let $tei := collection($col)//tei:TEI[@xml:id = $id]
   let $id := $tei/@xml:id/string()
   let $source := dutil:get-source($tei)
   let $epid := replace(
     tokenize(
-      if (starts-with($source?url, 'https://texts.earlyprint.org/works/')) then
-        $source?url else '',
-      '/'
+      if (starts-with($source?url, "https://texts.earlyprint.org/works/")) then
+        $source?url
+      else
+        "",
+      "/"
     )[last()],
-    '.xml',
-    ''
+    ".xml",
+    ""
   )
   return map {
     "id": $id,
     "epid": $epid,
-    "particDesc": array {
-      for $item in $tei//tei:profileDesc/tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)[@xml:id]
-      return map:merge((
-        map:entry("id", replace($item/@xml:id/string(), $id || '-', '')),
-        map:entry("name", $item/(tei:name|tei:persName)/text()),
-        map:entry("isGroup", if($item/local-name() eq 'personGrp') then true() else false()),
-        if ($item/@sex) then map:entry("sex", $item/@sex/string()) else ()
-      ))
-    },
-    "speeches": map:merge ((
-      for $sp in $tei//tei:body//tei:sp[@xml:id and @who]
-      let $key := replace($sp/@xml:id/string(), $id, $epid)
-      return map:entry($key, array {
-        tokenize($sp/@who, '\s+') ! replace(., '#' || $id || '-', '')
-      })
-    )),
-    "changes": array {
-      for $change in $tei//tei:teiHeader/tei:revisionDesc/tei:listChange/tei:change
-      return map {
-        "when": $change/@when/string(),
-        "text": $change/text()
-      }
-    }
+    "particDesc":
+      array
+        {
+          for $item in
+            $tei//tei:profileDesc/tei:particDesc/tei:listPerson/(
+              tei:person | tei:personGrp
+            )[@xml:id]
+          return map:merge(
+            (
+              map:entry("id", replace($item/@xml:id/string(), $id || "-", "")),
+              map:entry("name", $item/(tei:name | tei:persName)/text()),
+              map:entry(
+                "isGroup",
+                if ($item/local-name() eq "personGrp") then
+                  true()
+                else
+                  false()
+              ),
+              if ($item/@sex) then
+                map:entry("sex", $item/@sex/string())
+              else (
+              )
+            )
+          )
+        },
+    "speeches":
+      map:merge(
+        (
+          for $sp in $tei//tei:body//tei:sp[@xml:id and @who]
+          let $key := replace($sp/@xml:id/string(), $id, $epid)
+          return map:entry(
+            $key,
+            array
+              { tokenize($sp/@who, "\s+")!replace(., "#" || $id || "-", "") }
+          )
+        )
+      ),
+    "changes":
+      array
+        {
+          for $change in
+            $tei//tei:teiHeader/tei:revisionDesc/tei:listChange/tei:change
+          return map {"when": $change/@when/string(), "text": $change/text()}
+        }
   }

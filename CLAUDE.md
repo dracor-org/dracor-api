@@ -49,7 +49,9 @@ CI runs schemathesis against a Docker Compose test stack (see [.github/workflows
 ### Formatting
 
 ```sh
-prettier --write "**/*.xq"   # Format XQuery files (requires node_modules)
+pnpm install                 # Install prettier + prettier-plugin-xquery (dev tooling only, not part of the XAR)
+pnpm format                  # Format all XQuery files (.xq, .xqm, .xql); config in .prettierrc.json
+pnpm format:check            # Check formatting without writing
 yamllint .                   # Lint YAML files
 npx @redocly/cli lint api.yaml   # Lint the OpenAPI document (config: redocly.yaml)
 ```

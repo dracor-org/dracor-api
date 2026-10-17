@@ -87,7 +87,7 @@ declare
   %output:media-type("application/ld+json")
   %output:method("json")
 function ddts:entry-point()
-as map() {
+as map(*) {
     let $collection-template := $ddts:collections-base || "{?id,nav}"
     let $document-template := $ddts:documents-base || "{?resource,ref,start,end,mediaType}"
     let $navigation-template := $ddts:navigation-base || "{?resource,ref,start,end,down,tree}"
@@ -279,7 +279,7 @@ as item()+ {
  :
  :)
 declare function local:root-collection()
-as map() {
+as map(*) {
   (: Get the corpora, get info needed for the member-array :)
   (: DEPRECATED: remove teiCorpus support in v2 :)
   let $corpora := collection($config:corpora-root)//(tei:dracorCorpus|tei:teiCorpus)
@@ -321,7 +321,7 @@ as map() {
  :
  :)
 declare function local:collection-member-by-id($id as xs:string)
-as map() {
+as map(*) {
     let $corpusname := $id
     (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($corpusname)
@@ -354,7 +354,7 @@ as map() {
  :
  :)
 declare function local:corpus-to-collection($id as xs:string)
-as map() {
+as map(*) {
     let $corpusname := $id
     (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($corpusname)
@@ -402,7 +402,7 @@ as map() {
  :
  :)
 declare function local:teidoc-to-collection-member($tei as element(tei:TEI) )
-as map() {
+as map(*) {
     let $id := dutil:get-dracor-id($tei)
     let $uri := dutil:play-uri($id)
     let $titles := dutil:get-titles($tei)
@@ -450,7 +450,7 @@ as map() {
 : @param $tei TEI of the play
 :)
 declare function local:play_metadata_to_extensions($tei as element(tei:TEI))
-as map() {
+as map(*) {
 
     (: Useful would be to have year_normalized because this would allow for filtering, and
     wikidata as an external identifier:)
@@ -500,7 +500,7 @@ as map() {
 
 :)
 declare function local:play_metadata_to_dc($tei as element(tei:TEI))
-as map() {
+as map(*) {
 
     let $titles := dutil:get-titles($tei)
     let $lang := $tei/@xml:lang/string()
@@ -603,7 +603,7 @@ as item()+
  :
  :)
 declare function local:corpus-to-collection-with-parent-as-member($id as xs:string)
-as map() {
+as map(*) {
     let $self := local:corpus-to-collection($id)
     let $self-without-members := map:remove($self, "member")
 
