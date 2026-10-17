@@ -143,7 +143,7 @@ declare function dutil:uri-to-id($uri as xs:string) as xs:string? {
  : @param $id DraCor ID of the play
  :)
 declare function dutil:get-play-by-id($id as xs:string) as element(tei:TEI)? {
-  collection($config:corpora-root)/tei:TEI[@xml:id = $id][1]
+  (collection($config:corpora-root)/tei:TEI[@xml:id = $id])[1]
 };
 
 (:~

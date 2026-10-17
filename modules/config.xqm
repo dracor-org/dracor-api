@@ -52,14 +52,16 @@ declare variable $config:api-origin :=
   replace($config:api-base, '^(https?://[^/]+).*$', '$1');
 
 (:
-  The base of DraCor identifier URIs, e.g. https://dracor.org/id. Identifiers
-  of plays and corpora are formed by appending the play ID or corpus name.
-  Unless configured explicitly, it is derived from the origin of the API base.
+  The base of DraCor identifier URIs. Identifiers of plays and corpora are
+  formed by appending the play ID or corpus name. They are the same on all
+  dracor.org servers (production, staging, development), so the default
+  https://dracor.org/id only needs to be changed for installations publishing
+  their own corpora.
 :)
 declare variable $config:id-base :=
   (
     doc($config:file)//id-base/normalize-space()[.],
-    $config:api-origin || "/id"
+    "https://dracor.org/id"
   )[1];
 
 declare variable $config:webhook-secret :=

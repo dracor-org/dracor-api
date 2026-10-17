@@ -128,7 +128,7 @@ GitHub push → POST /webhook/github
 |----------|---------|
 | `EXIST_PASSWORD` | eXist-db admin password |
 | `DRACOR_API_BASE` | Public API base URL |
-| `DRACOR_ID_BASE` | Base of identifier URIs, e.g. `https://dracor.org/id` (optional; derived from the origin of `DRACOR_API_BASE`) |
+| `DRACOR_ID_BASE` | Base of identifier URIs (optional; defaults to `https://dracor.org/id`, also on staging and dev) |
 | `FUSEKI_SERVER` | Fuseki triple store URI |
 | `FUSEKI_SECRET` | Fuseki admin password |
 | `METRICS_SERVER` | Metrics service URI |
