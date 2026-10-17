@@ -1,0 +1,10 @@
+# Schemathesis configuration, used by test/schemathesis.sh and the
+# Schemathesis workflow
+
+# The DTS navigation and document endpoints have parameters that exclude
+# each other (`ref` and `start`/`end`) or require each other (`start` and
+# `end`), which OpenAPI cannot express. Requests combining them correctly
+# get 400 as required by the DTS specification.
+[[operations]]
+include-path-regex = "^/dts/(navigation|document)$"
+checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "404"]

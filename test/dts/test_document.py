@@ -39,6 +39,8 @@ def assert_collection_link(response, resource_id):
 def plain_text(response):
     assert response.headers["Content-Type"].startswith("text/plain")
     assert response.text.strip(), "text is empty"
+    for escaped in ("&amp;", "&lt;", "&gt;"):
+        assert escaped not in response.text, f"text contains {escaped!r}"
     return response.text
 
 
@@ -47,6 +49,30 @@ def test_full_document(dts, resource_id):
     root = tei(response)
     assert root.find(f"{{{TEI_NS}}}teiHeader") is not None
     assert_collection_link(response, resource_id)
+
+
+BROWSER_ACCEPT = (
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+)
+
+
+@pytest.mark.parametrize(
+    "accept,content_type",
+    [
+        (None, "application/tei+xml"),
+        ("*/*", "application/tei+xml"),
+        ("application/tei+xml", "application/tei+xml"),
+        (BROWSER_ACCEPT, "application/xml"),
+    ],
+)
+def test_content_negotiation(dts, first_resource, accept, content_type):
+    """TEI is sent as application/tei+xml unless the client prefers
+    application/xml, as web browsers do."""
+    headers = {"Accept": accept} if accept else {}
+    response = dts.get(dts.url("document", resource=first_resource), headers=headers)
+    assert response.status_code == 200
+    assert response.headers["Content-Type"].startswith(content_type)
+    assert "Accept" in response.headers.get("Vary", "")
 
 
 def test_ref_fragments(dts, resource_id, max_units):
@@ -90,6 +116,8 @@ def test_plain_text(dts, resource_id):
     [
         ({"ref": "body/div[9999]"}, 404),
         ({"mediaType": "application/x-nothing"}, 404),
+        ({"tree": "no-such-tree"}, 404),
+        ({"ref": "body", "tree": "no-such-tree"}, 404),
     ],
 )
 def test_document_errors(dts, first_resource, params, status):
