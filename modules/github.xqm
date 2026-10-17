@@ -15,7 +15,7 @@ module namespace gh = "http://dracor.org/ns/exist/v1/github";
  : @param $url Repository URL
  : @return map
  :)
-declare function gh:parse-repo-url($url as xs:string) as map()? {
+declare function gh:parse-repo-url($url as xs:string) as map(*)? {
   let $regex := "^https://github\.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)(?:\.git)?(?:#([-_a-zA-Z0-9]+))?$"
   let $match := analyze-string($url, $regex)
   let $account := $match//fn:group[@nr=1]/string()
@@ -31,7 +31,7 @@ declare function gh:parse-repo-url($url as xs:string) as map()? {
 };
 
 
-declare function local:get-head-sha($repo as map()) as xs:string* {
+declare function local:get-head-sha($repo as map(*)) as xs:string* {
   let $ref-url := "https://api.github.com/repos/" || $repo?account || "/" ||
     $repo?reponame || "/git/refs/heads/" || $repo?branch
   let $response := hc:send-request(
@@ -69,7 +69,7 @@ declare function gh:get-head-sha($url as xs:string) as xs:string* {
  : @param $url Repository URL
  : @return Map
  :)
-declare function gh:get-archive($url as xs:string) as map()* {
+declare function gh:get-archive($url as xs:string) as map(*)* {
   let $repo := gh:parse-repo-url($url)
   return if(count($repo)) then
     let $sha := local:get-head-sha($repo)

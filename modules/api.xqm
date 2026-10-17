@@ -187,7 +187,7 @@ declare function local:get-index-keys ($collection as xs:string, $elem as xs:str
       util:index-keys(
         collection($collection)//tei:*[name() eq $elem], "",
         function($key, $count) {
-          <term name="{$key}" count="{$count[1]}"docs="{$count[2]}" pos="{$count[3]}"/>
+          <term name="{$key}" count="{$count[1]}" docs="{$count[2]}" pos="{$count[3]}"/>
         },
         -1,
         "lucene-index"

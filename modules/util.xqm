@@ -17,9 +17,9 @@ declare namespace transform = "http://exist-db.org/xquery/transform";
  : Provide map of files and paths related to a play.
  :
  : @param $url DB URL to play TEI document
- : @return map()
+ : @return map(*)
  :)
-declare function dutil:filepaths ($url as xs:string) as map() {
+declare function dutil:filepaths ($url as xs:string) as map(*) {
   let $segments := tokenize($url, "/")
   let $corpusname := $segments[last() - 2]
   let $playname := $segments[last() - 1]
@@ -32,12 +32,12 @@ declare function dutil:filepaths ($url as xs:string) as map() {
  :
  : @param $corpusname
  : @param $playname
- : @return map()
+ : @return map(*)
  :)
 declare function dutil:filepaths (
   $corpusname as xs:string,
   $playname as xs:string
-) as map() {
+) as map(*) {
   dutil:filepaths($corpusname, $playname, "tei.xml")
 };
 
@@ -47,13 +47,13 @@ declare function dutil:filepaths (
  : @param $corpusname
  : @param $playname
  : @param $filename
- : @return map()
+ : @return map(*)
  :)
 declare function dutil:filepaths (
   $corpusname as xs:string,
   $playname as xs:string,
   $filename as xs:string
-) as map() {
+) as map(*) {
   let $playpath := $config:corpora-root || "/" || $corpusname || "/" || $playname
   let $url := $playpath || "/" || $filename
   let $uri :=
@@ -989,7 +989,7 @@ declare function dutil:get-sort-name (
   return if (not($name)) then () else local:build-sort-name($name)
 };
 
-declare function local:get-person-record($person as element()) as map() {
+declare function local:get-person-record($person as element()) as map(*) {
   let $name := dutil:get-sort-name($person)
   let $fullname := dutil:get-full-name($person)
   let $shortname := dutil:get-short-name($person)
@@ -1030,14 +1030,14 @@ declare function local:get-person-record($person as element()) as map() {
  :
  : @param $tei
  :)
-declare function dutil:get-authors($tei as node()) as map()* {
+declare function dutil:get-authors($tei as node()) as map(*)* {
   for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author[
     not(@role="illustrator")
   ]
   return local:get-person-record($author)
 };
 
-declare function dutil:get-editors($tei as element(tei:TEI)) as map()* {
+declare function dutil:get-editors($tei as element(tei:TEI)) as map(*)* {
   for $editor in $tei//tei:fileDesc/tei:titleStmt/tei:editor
   return local:get-person-record($editor)
 };
@@ -1049,7 +1049,7 @@ declare function dutil:get-editors($tei as element(tei:TEI)) as map()* {
  :)
 declare function dutil:get-titles(
   $tei as element(tei:TEI)
-) as map() {
+) as map(*) {
   let $title := $tei//tei:fileDesc/tei:titleStmt
     /tei:title[not(@type = 'sub')][1]/normalize-space()
   let $subtitle :=
@@ -1069,7 +1069,7 @@ declare function dutil:get-titles(
 declare function dutil:get-titles(
   $tei as element(tei:TEI),
   $lang as xs:string
-) as map() {
+) as map(*) {
   if($lang = $tei/@xml:lang) then
     dutil:get-titles($tei)
   else
@@ -1091,7 +1091,7 @@ declare function dutil:get-titles(
  :
  : @param $tei
  :)
-declare function dutil:get-source($tei as element(tei:TEI)) as map()? {
+declare function dutil:get-source($tei as element(tei:TEI)) as map(*)? {
   let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"][1]
   return if (count($source)) then map:merge((
     if ($source/tei:ref[@target]) then
@@ -1200,7 +1200,7 @@ declare function dutil:get-character-wikidata-id(
 declare function dutil:get-play-info(
   $corpusname as xs:string,
   $playname as xs:string
-) as map()? {
+) as map(*)? {
   let $doc := dutil:get-doc($corpusname, $playname)
   return if (not($doc)) then
     ()
@@ -1504,7 +1504,7 @@ declare function local:tokenize($idrefs as node()) as item()* {
 declare function dutil:get-relations (
   $corpusname as xs:string,
   $playname as xs:string
-) as map()* {
+) as map(*)* {
   let $doc := dutil:get-doc($corpusname, $playname)
   let $listRel := $doc//tei:particDesc/tei:listPerson/tei:listRelation
   let $relations := (
@@ -1671,7 +1671,7 @@ declare function local:create-corpus(
  :
  : @param $corpus Map with corpus description
  :)
-declare function dutil:create-corpus($corpus as map()) {
+declare function dutil:create-corpus($corpus as map(*)) {
   let $name := $corpus?name
 
   return if (not($name) or not($corpus?title)) then
