@@ -2943,8 +2943,7 @@ components:
           type: integer
           minimum: 1
         parent:
-          type: string
-          nullable: true
+          type: [string, "null"]
         citeType:
           type: string
         dublinCore:
