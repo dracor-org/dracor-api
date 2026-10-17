@@ -14,10 +14,10 @@ declare namespace expath="http://expath.org/ns/pkg";
 (:
     Determine the application root collection from the current module load path.
 :)
-declare variable $config:app-root :=
+declare variable $config:app-root := (
     let $rawPath := system:get-module-load-path()
+    (: strip the xmldb: part :)
     let $modulePath :=
-        (: strip the xmldb: part :)
         if (starts-with($rawPath, "xmldb:exist://")) then
             if (starts-with($rawPath, "xmldb:exist://embedded-eXist-server")) then
                 substring($rawPath, 36)
@@ -29,7 +29,7 @@ declare variable $config:app-root :=
             $rawPath
     return
         substring-before($modulePath, "/modules")
-;
+);
 
 declare variable $config:dracor-root := "/db/dracor";
 declare variable $config:corpora-root := $config:dracor-root || "/corpora";

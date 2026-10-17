@@ -1539,11 +1539,12 @@ declare function dutil:get-relations (
  : @param $id Wikidata ID
  :)
 declare function dutil:get-plays-with-character ($id as xs:string) {
+  (: DEPRECATED: remove $wd-uri and the @ana branches below in v2 :)
   let $wd-uri := "http://www.wikidata.org/entity/" || $id
   let $plays := collection($config:corpora-root)
     /tei:TEI[.//tei:particDesc//(tei:person|tei:personGrp)[
       tei:idno[@type eq 'wikidata'][normalize-space(.) eq $id]
-      or @ana eq $wd-uri (: DEPRECATED: remove @ana branch in v2 :)
+      or @ana eq $wd-uri
     ]]
   return array {
     for $tei in $plays
@@ -1553,7 +1554,7 @@ declare function dutil:get-plays-with-character ($id as xs:string) {
     let $character := (
       $tei//tei:particDesc//(tei:person|tei:personGrp)[
         tei:idno[@type eq 'wikidata'][normalize-space(.) eq $id]
-        or @ana eq $wd-uri (: DEPRECATED: remove @ana branch in v2 :)
+        or @ana eq $wd-uri
       ]
     )[1]
     return map {
