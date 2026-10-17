@@ -121,6 +121,23 @@ Once the stack is up you can run the schemathesis suite locally:
 ./test/schemathesis.sh
 ```
 
+The DTS endpoints are additionally tested with the
+[DTS validator](https://github.com/distributed-text-services/validator) and
+with DraCor's own DTS contract tests in [test/dts](test/dts), which check rules
+of the DTS 1.0 specification the validator does not cover. Both need Python
+3.10 or newer; the script installs the validator into `test/.dts-validator`
+and writes HTML and JUnit reports to `dts-reports/`:
+
+```sh
+./test/dts-validator.sh
+# or against another DTS API; the contract tests check the `test` corpus
+# unless other corpora are given with --corpus (or --all-corpora)
+./test/dts-validator.sh http://localhost:8088/api/v1/dts --corpus bash
+```
+
+A deployed API (staging by default) can be validated with the manually
+triggered [DTS Validator](.github/workflows/dts-validator.yml) workflow.
+
 ### Reset from scratch
 
 The API image built by the test overlay is tagged `dracor/api-test` and may

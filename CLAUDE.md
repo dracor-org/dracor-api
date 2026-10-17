@@ -40,6 +40,7 @@ curl -X POST -u admin: -H 'Content-type: application/json' -d '{"load":true}' ht
 
 ```sh
 ./test/schemathesis.sh   # OpenAPI schema-based API tests (requires running stack)
+./test/dts-validator.sh  # DTS validator + DTS 1.0 contract tests in test/dts (requires running stack)
 ./test/webhook.sh        # Test GitHub webhook integration
 ```
 

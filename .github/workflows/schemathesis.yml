@@ -52,6 +52,22 @@ jobs:
           max-examples: 100
           args: "--include-method GET --exclude-operation-id wikidata-author-info --mode positive --request-timeout 30"
 
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        if: ${{ !cancelled() }}
+        with:
+          python-version: '3.12'
+      - name: Test DTS endpoints with the DTS validator and contract tests
+        if: ${{ !cancelled() }}
+        # FIXME: make this step blocking once DTS 1.0 is implemented
+        continue-on-error: true
+        run: ./test/dts-validator.sh http://localhost:8081/exist/restxq/v1/dts
+      - name: Upload DTS test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dts-reports
+          path: dts-reports/
+
       - name: Stop the docker-compose stack
         run: docker compose down
         if: always()
