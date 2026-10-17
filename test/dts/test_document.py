@@ -39,6 +39,8 @@ def assert_collection_link(response, resource_id):
 def plain_text(response):
     assert response.headers["Content-Type"].startswith("text/plain")
     assert response.text.strip(), "text is empty"
+    for escaped in ("&amp;", "&lt;", "&gt;"):
+        assert escaped not in response.text, f"text contains {escaped!r}"
     return response.text
 
 
@@ -114,6 +116,8 @@ def test_plain_text(dts, resource_id):
     [
         ({"ref": "body/div[9999]"}, 404),
         ({"mediaType": "application/x-nothing"}, 404),
+        ({"tree": "no-such-tree"}, 404),
+        ({"ref": "body", "tree": "no-such-tree"}, 404),
     ],
 )
 def test_document_errors(dts, first_resource, params, status):

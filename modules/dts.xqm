@@ -361,9 +361,10 @@ declare function local:citation-trees($tei as element(tei:TEI)) as array(*) {
  :)
 declare function local:snippet($unit as element()) as xs:string {
   (:
-   : excluded text: notes, and speaker labels and stage directions in speeches
-   : (written as a FLWOR expression, as eXist fails on the equivalent
-   : predicate with not())
+   : excluded text: notes, and speaker labels and stage directions in speeches,
+   : including text nested in further elements inside them; the ancestors
+   : following the unit in document order are those inside it (written as a
+   : FLWOR expression, as eXist fails on the equivalent predicate with not())
    :)
   let $excluded := if ($unit/self::tei:sp) then (
     "note", "speaker", "stage"
@@ -371,7 +372,7 @@ declare function local:snippet($unit as element()) as xs:string {
     "note"
   let $text :=
     for $node in $unit//text()
-    where not(local-name($node/parent::*) = $excluded)
+    where not($node/ancestor::*[. >> $unit]!local-name() = $excluded)
     return $node
   let $tokens := tokenize(normalize-space(string-join($text, " ")), " ")
   return if (count($tokens) > 5) then
@@ -1174,7 +1175,7 @@ function ddts:document(
     local:error(404, "Resource '" || $resource || "' not found.")
   else if (not($media-type = $ddts:media-types)) then
     local:error(404, "Media type '" || $media-type || "' is not available.")
-  else if ($tree and ($ref or $start)) then
+  else if ($tree) then
     local:error(404, "Citation tree '" || $tree || "' not found.")
   else
     let $ref-unit := if ($ref) then
@@ -1221,6 +1222,15 @@ function ddts:document(
         dutil:play-uri(dutil:get-dracor-id($tei))
       return (
         <rest:response>
+          {
+            (: the function's XML output method would escape plain text :)
+            if ($media-type eq "text/plain") then
+              <output:serialization-parameters>
+                <output:method value="text" />
+              </output:serialization-parameters>
+            else (
+            )
+          }
           <http:response status="200">
             <http:header name="Content-Type" value="{ $content-type }" />
             <http:header
