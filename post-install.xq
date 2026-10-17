@@ -27,7 +27,7 @@ as empty-sequence() {
       update value $config/id-base with $id-base
     ) else (
       util:log-system-out("Adding id-base " || $id-base),
-      update insert <id-base>{$id-base}</id-base> following $config/api-base
+      update insert <id-base>{$id-base}</id-base> into $config
     )
 };
 

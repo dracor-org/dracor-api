@@ -59,12 +59,18 @@ declare variable $config:api-origin :=
   their own corpora. This is an interim default until the discussion on
   canonical vs. per-environment identifiers is settled, see
   https://github.com/dracor-org/dracor-api/discussions/391
+
+  A trailing slash in the configured value is ignored.
 :)
 declare variable $config:id-base :=
-  (
-    doc($config:file)//id-base/normalize-space()[.],
-    "https://dracor.org/id"
-  )[1];
+  replace(
+    (
+      doc($config:file)//id-base/normalize-space()[.],
+      "https://dracor.org/id"
+    )[1],
+    "/+$",
+    ""
+  );
 
 declare variable $config:webhook-secret :=
   doc($config:secrets-file)//gh-webhook/normalize-space();
