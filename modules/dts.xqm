@@ -33,7 +33,8 @@ declare namespace dc = "http://purl.org/dc/terms/";
 : which are not in use here :)
 
 (: Variables used in responses :)
-declare variable $ddts:base-uri := replace($config:api-base, "/api/v1","") ;
+(: identifier of the root collection, e.g. https://dracor.org :)
+declare variable $ddts:root-uri := replace($config:id-base, "/id$", "") ;
 declare variable $ddts:api-base := $config:api-base || "/dts";
 declare variable $ddts:collections-base := $ddts:api-base || "/collection"  ;
 declare variable $ddts:documents-base := $ddts:api-base || "/document" ;
@@ -124,35 +125,32 @@ as xs:integer {
 };
 
 (:~
- : Convert DraCor URIs to DraCor IDs
+ : Resolve a DTS identifier to a DraCor ID or corpus name
  :
- : The DTS Spec seems to favor the use of real URIs as identifiers. DraCor already resolve URIs
- : of plays, https://dracor.org/id/gerXXXXXX; it would be logical to use them here as well
+ : Identifiers are DraCor URIs (see dutil:uri-to-id), e.g. https://dracor.org/id/ger000088 for
+ : a play or https://dracor.org/id/ger for a corpus. For backwards compatibility the bare play
+ : ID or corpus name is accepted as well.
  :
- : @param $uri DraCor URI (can not work with /entity/ pattern!)
+ : @param $id Identifier
  :
- : @result DraCor ID
+ : @result DraCor ID or corpus name, empty if $id is neither a DraCor URI nor a legal XML ID
  :)
-declare function local:uri-to-id($uri as xs:string)
-as xs:string {
-    (:this might not be the best option, hope it works for now:)
-    tokenize($uri,"/id/")[last()]
+declare function local:resolve-id($id as xs:string)
+as xs:string? {
+    (dutil:uri-to-id($id), $id[. castable as xs:NCName])[1]
 };
 
 (:~
- : Covert IDs to URIs
+ : Retrieve the TEI document of a play by its identifier
  :
- : see local:uri-to-id, this does the inverse, e.g. identifiers playname (and corpusname) are turned
- : into URIs, e.g. gerXXXXXX becomes https://dracor.org/id/gerXXXXXX.
+ : @param $resource Identifier of the play (URI or bare DraCor ID)
  :
- : @param $id DraCor ID
- :
- : @result URI
+ : @result TEI document, empty if there is no such play
  :)
-declare function local:id-to-uri($id as xs:string)
-as xs:string {
-    (: might not be the ultimate best solution, hope it works for now :)
-    $ddts:base-uri || "/id/" || $id
+declare function local:get-tei($resource as xs:string)
+as element(tei:TEI)? {
+    let $id := local:resolve-id($resource)
+    return if ($id) then dutil:get-play-by-id($id) else ()
 };
 
 
@@ -206,51 +204,20 @@ as item()+ {
 
     (: if root-collection "corpora" is explicitly requested by id = 'corpora' :)
     (: this is somewhat a legacy behaviour before switching to 1-alpha and adressing everything by URIs :)
-    (: we can still support it because, still, it feels natural to use only the corpusname to get a corpus :)
     if ( $id eq "corpora") then
         (: http://localhost:8088/api/v1/dts/collection?id=corpora :)
         local:root-collection()
-    else if ( $id eq $ddts:base-uri ) then
+    else if ( $id = ($ddts:root-uri, $config:api-origin) ) then
         (: this would be the default to address the root collection :)
         (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088:)
         local:root-collection()
-
-    else if ( matches($id, "^[a-z]+$") ) then
-    (: this is a collection only, e.g. "ger" or "test" :)
-        let $corpus := dutil:get-corpus($id)
+    else
+        (: the identifier is a URI (as it should be) or, for backwards compatibility,
+         : a bare corpus name or play ID, e.g. https://dracor.org/id/ger, ger,
+         : https://dracor.org/id/ger000171 or ger000171 :)
+        let $name := local:resolve-id($id)
         return
-            if ( $page ) then
-            (: Paging is currently not supported :)
-            (: test: http://localhost:8088/api/v1/dts/collection?id=rus&page=1 :)
-            (
-                    <rest:response>
-                    <http:response status="400"/>
-                    </rest:response>,
-                    "Paging is not possible on a single resource. Try without parameter 'page'!"
-            )
-
-            (: DEPRECATED: remove teiCorpus support in v2 :)
-            else if ($corpus/name() = ("dracorCorpus", "teiCorpus")) then
-                if ( $nav eq 'parents') then
-                    local:corpus-to-collection-with-parent-as-member($id)
-                else
-                    local:corpus-to-collection($id)
-            else
-            (: A corpus with this ID does not exist :)
-            (: test: http://localhost:8088/api/v1/dts/collection?id=foo :)
-            (
-                    <rest:response>
-                        <http:response status="404"/>
-                    </rest:response>,
-                    "The requested resource (corpus) '" || $id ||  "' is not available."
-            )
-    else if ( matches($id, concat("^", $ddts:base-uri, "/id/","[a-z]+$" ) ) ) then
-        (: A corpus = collection requested with URI as value of the id param :)
-        let $corpusname := local:uri-to-id($id)
-        let $corpus := dutil:get-corpus($corpusname)
-        return
-            (: DEPRECATED: remove teiCorpus support in v2 :)
-            if ($corpus/name() = ("dracorCorpus", "teiCorpus")) then
+            if ( $name and dutil:get-corpus($name) ) then
                 if ( $page ) then
                 (: paging is currently not supported :)
                 (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/rus&page=1 :)
@@ -260,109 +227,42 @@ as item()+ {
                     </rest:response>,
                     "Paging is not possible on a single resource (corpus). Try without parameter 'page'!"
                 )
-
-
                 else if ( $nav eq 'parents') then
-
                 (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger&nav=parents :)
-                    local:corpus-to-collection-with-parent-as-member($id)
-
-                else if ($nav and $nav != "parents" ) then
-                (: sanity check the parameter "nav"; this could only be "parents" :)
-                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger&nav=foo :)
-                    (
-                        <rest:response>
-                        <http:response status="400"/>
-                        </rest:response>,
-                        "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
-                    )
+                    local:corpus-to-collection-with-parent-as-member($name)
                 else
-                (: the default behaviour :)
                 (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger :)
-                    local:corpus-to-collection($id)
-            else
-            (
-                    <rest:response>
-                        <http:response status="404"/>
-                    </rest:response>,
-                    "The requested resource (corpus) '" || $id ||  "' is not available."
-            )
+                    local:corpus-to-collection($name)
 
-    (: in pre-alpha we used normal DraCor playnames or so; now everything should be adressed with real uris
-     : this is somewhat legacy behaviour, but will handle the original ids to be backwards
-     : compatible, e.g. if someone request e.g. ger000001
-    :)
-    (: could also be a single document :)
-    else if ( matches($id, "^[a-z]+[0-9]{6}$") ) then
-          if ( $page ) then
-            (: paging on readable collection = single document is not supported :)
-            (: test: http://localhost:8088/api/v1/dts/collection?id=ger000171&page=1 :)
-            (
+            else if ( $name and dutil:get-play-by-id($name) ) then
+                if ( $page ) then
+                (: paging on readable collection = single document is not supported :)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&page=1 :)
+                (
                     <rest:response>
                     <http:response status="400"/>
                     </rest:response>,
                     "Paging is not possible on a single resource. Try without parameter 'page'!"
-            )
-            else if ( $nav eq 'parents') then
-            (: requested the parent collection of a document :)
-            (: test: http://localhost:8088/api/v1/dts/collection?id=ger000171&nav=parents :)
-              local:child-readable-collection-with-parent-by-id($id)
-            else if ( $nav and $nav != "parents") then
-                (: Sanity Check $nav param, see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
-                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&nav=foo :)
-                (
-                        <rest:response>
-                        <http:response status="400"/>
-                        </rest:response>,
-                    "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
                 )
-            else
-                (: display as a readable collection :)
-                (: test: http://localhost:8088/api/v1/dts/collection?id=ger000171 :)
-                local:child-readable-collection-by-id($id)
-
-    else if ( matches($id, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then
-    (: requested a single play with full URI – as it should be done :)
-        let $playname := local:uri-to-id($id)
-        return
-            if ( $page ) then
-            (: paging on readable collection = single document is not supported :)
-            (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&page=1 :)
-            (
-                    <rest:response>
-                    <http:response status="400"/>
-                    </rest:response>,
-                    "Paging is not possible on a single resource. Try without parameter 'page'!"
-            )
-            else if ( $nav eq 'parents') then
-            (: requested the parent collection of a document :)
-            (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&nav=parents :)
-            local:child-readable-collection-with-parent-by-id($playname)
-            else
-                (: Sanity Check $nav param, see https://github.com/mromanello/DTS-validator/blob/main/NOTES.md#validation-reports-explained :)
-                if ( $nav and $nav != 'parents' ) then
-                (
-                        <rest:response>
-                        <http:response status="400"/>
-                        </rest:response>,
-                    "The value '" || $nav || "' of the parameter 'nav' is not allowed. Use the single allowed value 'parents' if you want to request the parent collection."
-                )
+                else if ( $nav eq 'parents') then
+                (: requested the parent collection of a document :)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171&nav=parents :)
+                    local:child-readable-collection-with-parent-by-id($name)
                 else
                 (: display as a readable collection :)
-                local:child-readable-collection-by-id($playname)
+                (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger000171 :)
+                    local:child-readable-collection-by-id($name)
 
-
-
-    else
-    (: Parameter id is set, but it is not a valid ID (not covered by the regexes) :)
-    (: test: http://localhost:8088/api/v1/dts/collection?id=ger12345 :)
-    (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger12345 :)
-        (
-            <rest:response>
-                <http:response status="404"/>
-            </rest:response>,
-                    "The value '" || $id || "' of the parameter 'id' does not identify a known collection. Provide the name or URI of a corpus."
-        )
+            else
+            (: Parameter id is set, but does not identify a corpus or play :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=foo :)
+            (: test: http://localhost:8088/api/v1/dts/collection?id=http://localhost:8088/id/ger12345 :)
+            (
+                <rest:response>
+                    <http:response status="404"/>
+                </rest:response>,
+                "The value '" || $id || "' of the parameter 'id' does not identify a known collection. Provide the name or URI of a corpus."
+            )
 
   else
   (: id is not set, return root-collection "corpora" :)
@@ -402,7 +302,7 @@ as map() {
   return
     map {
       "@context": $ddts:dts-jsonld-context-url ,
-      "@id": $ddts:base-uri,
+      "@id": $ddts:root-uri,
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
       "totalParents": $totalParents ,
@@ -417,12 +317,12 @@ as map() {
  :
  : Helper function to generate the collection members to put into the "member" array, e.g. of the root collection
  :
- : @param $id Identifier (This is actually a URI)
+ : @param $id Name of the corpus, e.g. "ger"
  :
  :)
 declare function local:collection-member-by-id($id as xs:string)
 as map() {
-    let $corpusname := local:uri-to-id($id)
+    let $corpusname := $id
     (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($corpusname)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
@@ -435,7 +335,7 @@ as map() {
     order by $name
       return
         map {
-          "@id" : local:id-to-uri($id) , (: was name :)
+          "@id" : dutil:corpus-uri($id) , (: was name :)
           "@type" : "Collection" ,
           "title" : $info?title ,
           "description" : $info?description ,
@@ -455,7 +355,7 @@ as map() {
  :)
 declare function local:corpus-to-collection($id as xs:string)
 as map() {
-    let $corpusname := local:uri-to-id($id)
+    let $corpusname := $id
     (: get metadata on the corpus by util-function :)
     let $info :=  dutil:get-corpus-info-by-name($corpusname)
     (: there is no function to get number of files in a collection and dutil:get-corpus-meta-data is very slow, so get the TEIs and count.. :)
@@ -481,7 +381,7 @@ as map() {
   return
     map {
       "@context" : $ddts:dts-jsonld-context-url ,
-      "@id": local:id-to-uri($corpusname),
+      "@id": dutil:corpus-uri($corpusname),
       "@type": "Collection" ,
       "dtsVersion": $ddts:spec-version ,
       (: removed totalItems here for "unstable" :)
@@ -504,7 +404,7 @@ as map() {
 declare function local:teidoc-to-collection-member($tei as element(tei:TEI) )
 as map() {
     let $id := dutil:get-dracor-id($tei)
-    let $uri := local:id-to-uri($id)
+    let $uri := dutil:play-uri($id)
     let $titles := dutil:get-titles($tei)
 
     let $filename := util:document-name($tei)
@@ -998,12 +898,7 @@ function ddts:document($resource, $ref, $start, $end, $tree, $media-type) {
         (: handled common errors, should check, if document with a certain $id exists :)
     else
         (: valid request :)
-        (: need to check here if "short ID"/playname or full URI :)
-        let $tei :=
-            if ( matches($resource, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then
-                collection($config:corpora-root)/tei:TEI[@xml:id = local:uri-to-id($resource)]
-            else
-                collection($config:corpora-root)/tei:TEI[@xml:id = $resource]
+        let $tei := local:get-tei($resource)
 
         return
             (: check, if document exists! :)
@@ -1156,7 +1051,7 @@ declare function local:get-plaintext-fragment-of-doc($tei as element(tei:TEI), $
 declare function local:get-fragment-range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
 
     let $id := $tei/@xml:id/string()
-    let $uri := local:id-to-uri($id)
+    let $uri := dutil:play-uri($id)
 
     let $links := '<' || $ddts:collections-base  ||'?id=' || $uri || '>; rel="collection"'
     (: 1-alpha suggests that the Content-Type SHOULD be application/tei+xml . This could be implemented, but at least Chrome downloads the file and does not
@@ -1430,7 +1325,7 @@ declare function local:collections-self-describe() {
  : Return full document requested via the documents endpoint :)
 declare function local:get-full-doc($tei as element(tei:TEI)) {
     let $id := $tei/@xml:id/string()
-    let $uri := local:id-to-uri($id)
+    let $uri := dutil:play-uri($id)
     (: requested complete document, just return the TEI File:)
                 (: must include the link header as well :)
                 (: The link header is smaller since the 1-alpha :)
@@ -1468,7 +1363,7 @@ declare function local:get-full-doc($tei as element(tei:TEI)) {
  : :)
 declare function local:get-fragment-of-doc($tei as element(tei:TEI), $ref as xs:string) {
     let $id := $tei/@xml:id/string()
-    let $uri := local:id-to-uri($id)
+    let $uri := dutil:play-uri($id)
 
     let $fragment :=
         switch($ref)
@@ -1841,10 +1736,7 @@ declare function local:link-header-of-fragment($tei as element(tei:TEI), $ref as
         )
     else
         (: check, if there is a resource with this identifier :)
-        let $tei := if ( matches($resource, concat("^", $ddts:base-uri, "/id/","[a-z]+[0-9]{6}$" ) ) ) then
-            collection($config:corpora-root)/tei:TEI[@xml:id = local:uri-to-id($resource)]
-        else
-            collection($config:corpora-root)/tei:TEI[@xml:id = $resource]
+        let $tei := local:get-tei($resource)
 
         return
             (: check, if document exists! :)
@@ -2126,7 +2018,7 @@ declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI))
  declare function local:navigation-level1($tei as element(tei:TEI)) {
 
      let $doc-id := $tei/@xml:id/string()
-     let $doc-uri := local:id-to-uri($doc-id)
+     let $doc-uri := dutil:play-uri($doc-id)
      (:Will add down parameter here:)
      let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=1"
 
@@ -2158,7 +2050,7 @@ declare function local:validate-ref($ref as xs:string, $tei as element(tei:TEI))
 declare function local:navigation-level2($tei as element(tei:TEI)) {
 
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     (:Will add down parameter here:)
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=2"
@@ -2206,7 +2098,7 @@ declare function local:navigation-level2($tei as element(tei:TEI)) {
 declare function local:navigation-level3($tei as element(tei:TEI)) {
 
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     (:Will add down parameter here:)
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=3"
@@ -2249,7 +2141,7 @@ declare function local:navigation-level3($tei as element(tei:TEI)) {
 declare function local:navigation-level4($tei as element(tei:TEI)) {
 
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     (:Will add down parameter here:)
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=4"
@@ -2292,7 +2184,7 @@ declare function local:navigation-level4($tei as element(tei:TEI)) {
 declare function local:navigation-whole-citeTree($tei as element(tei:TEI)) {
 
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     (:Will add down parameter here:)
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;down=-1"
@@ -2559,7 +2451,7 @@ declare function local:snippet($tei-fragment as element()) {
 declare function local:descendants-of-subdivision($tei, $ref, $down) {
 
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref || "&amp;down=" || $down
 
@@ -2741,7 +2633,7 @@ declare function local:citeable-unit-by-ref($tei, $ref) {
 
     (:re-use some object returned by this endpoint already :)
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     let $ref-object := local:citable-unit($ref, $level, $parent, $cite-type, $tei-fragment, $doc-uri )
 
@@ -2799,7 +2691,7 @@ declare function local:get-parent-from-ref($ref as xs:string) as xs:string {
 declare function local:navigation-basic-response($tei as element(tei:TEI), $request-id as xs:string, $passage-url as xs:string, $collection-url as xs:string, $navigation-url as xs:string) {
 
      let $doc-id := $tei/@xml:id/string()
-     let $doc-uri := local:id-to-uri($doc-id)
+     let $doc-uri := dutil:play-uri($doc-id)
 
     (: URI templates :)
     (: QUESTION: do I need to set them dynamically, i.e. overwrite as uncommented, or are they staying the same no matter what the request is :)
@@ -2850,7 +2742,7 @@ declare function local:navigation-basic-response($tei as element(tei:TEI), $requ
 :)
  declare function local:siblings-of-citeable-unit-by-ref($tei as element(tei:TEI), $ref as xs:string) {
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;ref=" || $ref || "&amp;down=0"
 
@@ -2926,7 +2818,7 @@ declare function local:bordering-citeable-unit-of-range($tei, $ref, $doc-uri) {
  :)
  declare function local:citeable-units-by-start-end($tei, $start, $end) {
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end
 
@@ -2991,7 +2883,7 @@ start=body/div[x]/stage[y]&end=body/div[z]/sp[a]
 :)
  declare function local:sp_stage_level3_members_of_range($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
     let $start-object := local:bordering-citeable-unit-of-range($tei, $start, $doc-uri)
     let $end-object := local:bordering-citeable-unit-of-range($tei, $end, $doc-uri)
 
@@ -3037,7 +2929,7 @@ but would not work for mixed element range, e.g. sp/stage
 declare function local:top_level_members_of_range($tei, $start as xs:string, $end as xs:string) {
 
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     (: This also should include member! :)
     (: assume that the fragment returned by the document endpoint is already useable and just use
@@ -3087,7 +2979,7 @@ Produce response if start/end and down
 :)
 declare function local:citeable-units-by-start-end-with-members-down-1($tei, $start as xs:string, $end as xs:string, $down as xs:string) {
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end || "&amp;down=" || $down
 
@@ -3176,7 +3068,7 @@ declare function local:xpathish-id-to-xpath($id) {
 :)
 declare function local:citeable-units-by-start-end-with-members-down-2($tei, $start as xs:string, $end as xs:string, $down as xs:string) {
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end || "&amp;down=" || $down
 
@@ -3240,7 +3132,7 @@ for a range of front to body ... don't really know who would ever want to do thi
 :)
 declare function local:citeable-units-by-start-end-with-members-down-3($tei as element(tei:TEI), $start as xs:string, $end as xs:string, $down as xs:string) {
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end || "&amp;down=" || $down
 
@@ -3303,7 +3195,7 @@ declare function local:citeable-units-by-start-end-with-members-down-3($tei as e
 :)
 declare function local:navigation-range-whole-citeTree($tei as element(tei:TEI), $start as xs:string, $end as xs:string) {
     let $doc-id := $tei/@xml:id/string()
-    let $doc-uri := local:id-to-uri($doc-id)
+    let $doc-uri := dutil:play-uri($doc-id)
 
     (:Will add down parameter here:)
     let $request-id := $ddts:navigation-base || "?resource=" || $doc-uri || "&amp;start=" || $start || "&amp;end=" || $end || "&amp;down=-1"

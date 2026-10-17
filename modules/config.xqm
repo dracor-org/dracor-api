@@ -47,6 +47,31 @@ declare variable $config:secrets-file := $config:dracor-root || "/secrets.xml";
 declare variable $config:api-base :=
   doc($config:file)//api-base/normalize-space();
 
+(: scheme and authority of the API base, e.g. https://dracor.org :)
+declare variable $config:api-origin :=
+  replace($config:api-base, '^(https?://[^/]+).*$', '$1');
+
+(:
+  The base of DraCor identifier URIs. Identifiers of plays and corpora are
+  formed by appending the play ID or corpus name. For now they are the same on
+  all dracor.org servers (production, staging, development), so the default
+  https://dracor.org/id only needs to be changed for installations publishing
+  their own corpora. This is an interim default until the discussion on
+  canonical vs. per-environment identifiers is settled, see
+  https://github.com/dracor-org/dracor-api/discussions/391
+
+  A trailing slash in the configured value is ignored.
+:)
+declare variable $config:id-base :=
+  replace(
+    (
+      doc($config:file)//id-base/normalize-space()[.],
+      "https://dracor.org/id"
+    )[1],
+    "/+$",
+    ""
+  );
+
 declare variable $config:webhook-secret :=
   doc($config:secrets-file)//gh-webhook/normalize-space();
 

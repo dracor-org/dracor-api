@@ -14,18 +14,42 @@ declare function local:store ($file-path, $content) {
   return xmldb:store($col, $name, $content)
 };
 
+(: Set the identifier base in an existing config file from DRACOR_ID_BASE, so
+ : that the variable takes effect on servers set up before it existed. :)
+declare function local:update-id-base ()
+as empty-sequence() {
+  let $id-base := environment-variable("DRACOR_ID_BASE")
+  let $config := doc($config:file)/config
+  return
+    if (not($id-base)) then ()
+    else if ($config/id-base) then (
+      util:log-system-out("Setting id-base to " || $id-base),
+      update value $config/id-base with $id-base
+    ) else (
+      util:log-system-out("Adding id-base " || $id-base),
+      update insert <id-base>{$id-base}</id-base> into $config
+    )
+};
+
 (: We create an initial config file the values of which can be passed by the
  : following environment variables:
  :
  : - DRACOR_API_BASE: base URI the DraCor API will be available under
+ : - DRACOR_ID_BASE: base of identifier URIs (optional, defaults to
+ :   https://dracor.org/id; only needed for installations publishing their
+ :   own corpora)
  : - FUSEKI_SERVER: base URI of the fuseki server
  : - METRICS_SERVER: DraCor metrics service URI
+ :
+ : If the config file already exists, only the identifier base is updated
+ : from DRACOR_ID_BASE (when set).
  :)
 declare function local:create-config-file ()
 as item()? {
-  if(doc($config:file)/config) then
-    (util:log-system-out("Config file exists at " || $config:file))
-  else (
+  if(doc($config:file)/config) then (
+    util:log-system-out("Config file exists at " || $config:file),
+    local:update-id-base()
+  ) else (
     util:log-system-out("Creating " || $config:file),
     local:store(
       $config:file,
@@ -37,6 +61,11 @@ as item()? {
           else "https://dracor.org/api/v1"
         }
         </api-base>
+        {
+          if (environment-variable("DRACOR_ID_BASE")) then
+            <id-base>{environment-variable("DRACOR_ID_BASE")}</id-base>
+          else ()
+        }
         <services>
           <fuseki>
           {
