@@ -5,13 +5,12 @@ xquery version "3.1";
  :)
 module namespace dutil = "http://dracor.org/ns/exist/v1/util";
 
-import module namespace functx="http://www.functx.com";
-import module namespace config = "http://dracor.org/ns/exist/v1/config"
-  at "config.xqm";
-
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 declare namespace json = "http://www.w3.org/2013/XSL/json";
 declare namespace transform = "http://exist-db.org/xquery/transform";
+
+import module namespace functx = "http://www.functx.com";
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 
 (:~
  : Provide map of files and paths related to a play.
@@ -19,7 +18,7 @@ declare namespace transform = "http://exist-db.org/xquery/transform";
  : @param $url DB URL to play TEI document
  : @return map(*)
  :)
-declare function dutil:filepaths ($url as xs:string) as map(*) {
+declare function dutil:filepaths($url as xs:string) as map(*) {
   let $segments := tokenize($url, "/")
   let $corpusname := $segments[last() - 2]
   let $playname := $segments[last() - 1]
@@ -34,7 +33,7 @@ declare function dutil:filepaths ($url as xs:string) as map(*) {
  : @param $playname
  : @return map(*)
  :)
-declare function dutil:filepaths (
+declare function dutil:filepaths(
   $corpusname as xs:string,
   $playname as xs:string
 ) as map(*) {
@@ -49,32 +48,41 @@ declare function dutil:filepaths (
  : @param $filename
  : @return map(*)
  :)
-declare function dutil:filepaths (
+declare function dutil:filepaths(
   $corpusname as xs:string,
   $playname as xs:string,
   $filename as xs:string
 ) as map(*) {
-  let $playpath := $config:corpora-root || "/" || $corpusname || "/" || $playname
+  let $playpath := $config:corpora-root ||
+    "/" ||
+    $corpusname ||
+    "/" ||
+    $playname
   let $url := $playpath || "/" || $filename
-  let $uri :=
-    $config:api-base || "/corpora/" || $corpusname || "/plays/" || $playname
+  let $uri := $config:api-base ||
+    "/corpora/" ||
+    $corpusname ||
+    "/plays/" ||
+    $playname
   return map {
     "uri": $uri,
     "url": $url,
     "filename": $filename,
     "playname": $playname,
     "corpusname": $corpusname,
-    "collections": map {
-      "corpus": $config:corpora-root || "/" || $corpusname,
-      "play": $playpath
-    },
-    "files": map {
-      "tei": $playpath || "/tei.xml",
-      "metrics": $playpath || "/metrics.xml",
-      "rdf": $playpath || "/rdf.xml",
-      "git": $playpath || "/git.xml",
-      "sitelinks": $playpath || "/sitelinks.xml"
-    }
+    "collections":
+      map {
+        "corpus": $config:corpora-root || "/" || $corpusname,
+        "play": $playpath
+      },
+    "files":
+      map {
+        "tei": $playpath || "/tei.xml",
+        "metrics": $playpath || "/metrics.xml",
+        "rdf": $playpath || "/rdf.xml",
+        "git": $playpath || "/git.xml",
+        "sitelinks": $playpath || "/sitelinks.xml"
+      }
   }
 };
 
@@ -150,15 +158,14 @@ declare function dutil:get-play-by-id($id as xs:string) as element(tei:TEI)? {
  : Retrieve the speaker children of a given element and return the distinct IDs
  : referenced in @who attributes of those elements.
  :)
-declare function dutil:distinct-speakers ($parent as element()*) as item()* {
-    let $whos :=
-      for $w in $parent//tei:sp/@who
-      return tokenize(normalize-space($w), '\s+')
-    for $ref in distinct-values($whos)
-    (: catch invalid references :)
-    (: (see https://github.com/dracor-org/gerdracor/issues/6) :)
-    where string-length($ref) > 1
-    return substring($ref, 2)
+declare function dutil:distinct-speakers($parent as element()*) as item()* {
+  let $whos :=
+    for $w in $parent//tei:sp/@who
+    return tokenize(normalize-space($w), "\s+")
+  for $ref in distinct-values($whos)
+  (: catch invalid references :)(: (see https://github.com/dracor-org/gerdracor/issues/6) :)
+  where string-length($ref) > 1
+  return substring($ref, 2)
 };
 
 (:~
@@ -183,7 +190,7 @@ declare function dutil:distinct-speakers ($parent as element()*) as item()* {
  : @param $relation-active Relation of speakers (active participants).
  : @param $relation-passive Relation of speakers (passive participants).
  :)
-declare function dutil:get-filtered-speakers (
+declare function dutil:get-filtered-speakers(
   $tei as element(tei:TEI),
   $gender as xs:string*,
   $role as xs:string*,
@@ -191,41 +198,52 @@ declare function dutil:get-filtered-speakers (
   $relation-active as xs:string*,
   $relation-passive as xs:string*
 ) as xs:string* {
-  let $genders := tokenize($gender, ',')
-  let $roles := tokenize($role, ',')
+  let $genders := tokenize($gender, ",")
+  let $roles := tokenize($role, ",")
 
   (: extract possible relation role from $relation :)
   let $ana := analyze-string($relation, "_(active|passive)$")
   let $rel := $ana//fn:non-match/text()
-  let $suffix := $ana//fn:group[@nr="1"]/text()
+  let $suffix := $ana//fn:group[@nr = "1"]/text()
 
-  let $mutual := if (not($suffix)) then $rel else ()
-  let $active := if ($relation-active) then $relation-active else
-    if ($suffix eq 'active') then $rel else ()
-  let $passive := if ($relation-passive) then $relation-passive else
-    if ($suffix eq 'passive') then $rel else ()
+  let $mutual := if (not($suffix)) then
+    $rel
+  else (
+  )
+  let $active := if ($relation-active) then
+    $relation-active
+  else if ($suffix eq "active") then
+    $rel
+  else (
+  )
+  let $passive := if ($relation-passive) then
+    $relation-passive
+  else if ($suffix eq "passive") then
+    $rel
+  else (
+  )
 
   let $listPerson := $tei//tei:particDesc/tei:listPerson
   let $relations := $listPerson/tei:listRelation
-  let $ids := $listPerson/(tei:person|tei:personGrp)
-    [
-      (not($gender) or @sex = $genders) and
-      (not($role) or tokenize(@role, '\s+') = $roles)
-    ]/@xml:id/string()
+  let $ids := $listPerson/(tei:person | tei:personGrp)[(
+    not($gender) or @sex = $genders
+  ) and
+    (not($role) or tokenize(@role, "\s+") = $roles)]/@xml:id/string()
 
-  let $filtered := for $id in $ids
+  let $filtered :=
+    for $id in $ids
     return if (not($mutual) and not($active) and not($passive)) then
       $id
     else if (
-      $relations/tei:relation
-        [
-          (@name = $mutual and contains(@mutual||' ', '#'||$id||' ')) or
-          (@name = $active and contains(@active||' ', '#'||$id||' ')) or
-          (@name = $passive and contains(@passive||' ', '#'||$id||' '))
-        ]
+      $relations/tei:relation[(
+        @name = $mutual and contains(@mutual || " ", "#" || $id || " ")
+      ) or
+        (@name = $active and contains(@active || " ", "#" || $id || " ")) or
+        (@name = $passive and contains(@passive || " ", "#" || $id || " "))]
     ) then
       $id
-    else ()
+    else (
+    )
 
   return $filtered
 };
@@ -240,7 +258,7 @@ declare function dutil:extract-text($node as node()) as xs:string {
   let $xsl := doc("/db/apps/dracor-v1/tei-to-txt.xsl")
   let $text := transform:transform($node, $xsl, ())
   (: trim leading spaces :)
-  return replace($text, '\n +', '&#10;') => replace('^\s+', '')
+  return replace($text, "\n +", "&#10;") => replace("^\s+", "")
 };
 
 (:~
@@ -254,13 +272,13 @@ declare function dutil:extract-text($node as node()) as xs:string {
  : @param $parent Element to search in
  : @param $speaker Speaker ID
  :)
-declare function dutil:get-speech (
+declare function dutil:get-speech(
   $parent as element(),
   $speaker as xs:string?
 ) as item()* {
-  let $lines := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
-                //(tei:p|tei:l)
-  return functx:remove-elements-deep($lines, ('*:stage', '*:note'))
+  let $lines := $parent//tei:sp[not($speaker) or
+    tokenize(@who) = "#" || $speaker]//(tei:p | tei:l)
+  return functx:remove-elements-deep($lines, ("*:stage", "*:note"))
 };
 
 (:~
@@ -274,16 +292,18 @@ declare function dutil:get-speech (
  : @param $parent Element to search in
  : @param $sex Sex of speaker
  :)
-declare function dutil:get-speech-by-sex (
+declare function dutil:get-speech-by-sex(
   $parent as element(),
   $sex as xs:string+
 ) as item()* {
-  let $ids := $parent/ancestor::tei:TEI//tei:particDesc
-              /tei:listPerson/(tei:person|tei:personGrp)[@sex = $sex]
-              /@xml:id/string()
-  let $refs := for $id in $ids return '#'||$id
-  let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
-  return functx:remove-elements-deep($sp, ('*:stage', '*:note'))
+  let $ids := $parent/ancestor::tei:TEI//tei:particDesc/tei:listPerson/(
+    tei:person | tei:personGrp
+  )[@sex = $sex]/@xml:id/string()
+  let $refs :=
+    for $id in $ids
+    return "#" || $id
+  let $sp := $parent//tei:sp[@who = $refs]//(tei:p | tei:l)
+  return functx:remove-elements-deep($sp, ("*:stage", "*:note"))
 };
 
 (:~
@@ -303,7 +323,7 @@ declare function dutil:get-speech-by-sex (
  : @param $relation-active Relation of speakers (active participants)
  : @param $relation-passive Relation of speakers (passive participants)
  :)
-declare function dutil:get-speech-filtered (
+declare function dutil:get-speech-filtered(
   $parent as element(),
   $sex as xs:string*,
   $role as xs:string*,
@@ -312,13 +332,19 @@ declare function dutil:get-speech-filtered (
   $relation-passive as xs:string*
 ) as item()* {
   let $speakers := dutil:get-filtered-speakers(
-    $parent/ancestor::tei:TEI, $sex, $role, $relation, $relation-active,
+    $parent/ancestor::tei:TEI,
+    $sex,
+    $role,
+    $relation,
+    $relation-active,
     $relation-passive
   )
 
-  let $refs := for $id in $speakers return '#'||$id
-  let $sp := $parent//tei:sp[@who = $refs]//(tei:p|tei:l)
-  return functx:remove-elements-deep($sp, ('*:stage', '*:note'))
+  let $refs :=
+    for $id in $speakers
+    return "#" || $id
+  let $sp := $parent//tei:sp[@who = $refs]//(tei:p | tei:l)
+  return functx:remove-elements-deep($sp, ("*:stage", "*:note"))
 };
 
 (:~
@@ -333,18 +359,20 @@ declare function dutil:get-speech-filtered (
  : @param $parent Element to search in
  : @param $speaker Speaker ID
  :)
-declare function dutil:num-of-spoken-words (
+declare function dutil:num-of-spoken-words(
   $parent as element(),
   $speaker as xs:string?
 ) as item()* {
-  if($parent//tei:sp//tei:w) then
-    let $words := $parent//tei:sp[not($speaker) or tokenize(@who)='#'||$speaker]
-                  //(tei:l|tei:p)//tei:w[not(ancestor::tei:stage)]
+  if ($parent//tei:sp//tei:w) then
+    let $words := $parent//tei:sp[not($speaker) or
+      tokenize(@who) = "#" || $speaker]//(tei:l | tei:p)//tei:w[not(
+      ancestor::tei:stage
+    )]
     return count($words)
   else
     let $sp := dutil:get-speech($parent, $speaker)
-    let $txt := string-join($sp/normalize-space(), ' ')
-    return count(tokenize($txt, '\W+')[not(.='')])
+    let $txt := string-join($sp/normalize-space(), " ")
+    return count(tokenize($txt, "\W+")[not(. = "")])
 };
 
 (:~
@@ -355,11 +383,11 @@ declare function dutil:num-of-spoken-words (
  :
  : @param $context Any element that may contain teiHeader/encodingDesc
  :)
-declare function dutil:get-scene-cite-structure (
+declare function dutil:get-scene-cite-structure(
   $context as element()*
 ) as element()? {
-  $context//tei:encodingDesc/tei:refsDecl
-    /tei:citeStructure[@match][@unit = "scene"][1]
+  $context//tei:encodingDesc/tei:refsDecl/tei:citeStructure[@match][@unit =
+    "scene"][1]
 };
 
 (:~
@@ -367,18 +395,17 @@ declare function dutil:get-scene-cite-structure (
  : in the sibling `corpus.xml`. Returns empty-sequence if $tei is not backed
  : by a stored document or the corpus.xml has no citeStructure.
  :)
-declare function dutil:get-corpus-scene-cite-structure (
+declare function dutil:get-corpus-scene-cite-structure(
   $tei as element()*
 ) as element()? {
   let $base := base-uri($tei[1])
-  return
-    if (not($base)) then ()
-    else
-      let $corpus-url :=
-        dutil:filepaths($base)?collections?corpus || "/corpus.xml"
-      return
-        if (not(doc-available($corpus-url))) then ()
-        else dutil:get-scene-cite-structure(doc($corpus-url)/*)
+  return if (not($base)) then (
+  ) else
+    let $corpus-url := dutil:filepaths($base)?collections?corpus ||
+      "/corpus.xml"
+    return if (not(doc-available($corpus-url))) then (
+    ) else
+      dutil:get-scene-cite-structure(doc($corpus-url)/*)
 };
 
 (:~
@@ -387,31 +414,48 @@ declare function dutil:get-corpus-scene-cite-structure (
  : Blocks doc(), util:*, xmldb:*, direct constructors, and other risky
  : constructs before the value is fed to `util:eval`.
  :)
-declare function dutil:is-safe-cite-match ($xpath as xs:string) as xs:boolean {
+declare function dutil:is-safe-cite-match($xpath as xs:string) as xs:boolean {
   let $allowed-functions := (
-    "position", "last", "not", "name", "local-name",
-    "text", "node", "true", "false",
-    "starts-with", "ends-with", "contains", "matches",
-    "string", "string-length", "normalize-space",
-    "count", "boolean", "number"
+    "position",
+    "last",
+    "not",
+    "name",
+    "local-name",
+    "text",
+    "node",
+    "true",
+    "false",
+    "starts-with",
+    "ends-with",
+    "contains",
+    "matches",
+    "string",
+    "string-length",
+    "normalize-space",
+    "count",
+    "boolean",
+    "number"
   )
-  (: strip string literals so their contents cannot be mistaken for
-   : function calls or reserved characters :)
+  (:
+   : strip string literals so their contents cannot be mistaken for
+   : function calls or reserved characters
+   :)
   let $stripped := replace(replace($xpath, "'[^']*'", "''"), '"[^"]*"', '""')
-  return
-    if (matches($stripped, "[;{}`\\]")) then false()
-    (: any prefixed function call is rejected (element steps like `tei:div`
-     : are never followed by "(", so this only matches actual calls) :)
-    else if (
-      matches($stripped, "[A-Za-z_][\w-]*:[A-Za-z_][\w-]*\s*\(")
-    ) then false()
-    else
-      let $calls :=
-        for $m in analyze-string(
-          $stripped, "([A-Za-z_][\w-]*)\s*\("
-        )//*[local-name() = "group"]
-        return $m/string()
-      return every $fn in $calls satisfies $fn = $allowed-functions
+  return if (matches($stripped, "[;{}`\\]")) then
+    false()
+  (:
+   : any prefixed function call is rejected (element steps like `tei:div`
+   : are never followed by "(", so this only matches actual calls)
+   :)
+  else if (matches($stripped, "[A-Za-z_][\w-]*:[A-Za-z_][\w-]*\s*\(")) then
+    false()
+  else
+    let $calls :=
+      for $m in
+        analyze-string($stripped, "([A-Za-z_][\w-]*)\s*\(")//*[local-name() =
+          "group"]
+      return $m/string()
+    return every $fn in $calls satisfies $fn = $allowed-functions
 };
 
 (:~
@@ -420,54 +464,57 @@ declare function dutil:is-safe-cite-match ($xpath as xs:string) as xs:boolean {
  : speakers, e.g. those consisting only of stage directions.
  :
  : Precedence for choosing segments:
- :  1. `refsDecl/citeStructure` declared in the play's TEI header
- :  2. `refsDecl/citeStructure` declared in the corpus's `corpus.xml`
- :  3. Hand-written heuristic based on `div`/`div1`/`div2` conventions
+ : 1. `refsDecl/citeStructure` declared in the play's TEI header
+ : 2. `refsDecl/citeStructure` declared in the corpus's `corpus.xml`
+ : 3. Hand-written heuristic based on `div`/`div1`/`div2` conventions
  :
  : @param $tei The TEI root element of a play
  :)
-declare function dutil:get-segments ($tei as element()*) as element()* {
+declare function dutil:get-segments($tei as element()*) as element()* {
   let $cite-structure := (
     dutil:get-scene-cite-structure($tei),
     dutil:get-corpus-scene-cite-structure($tei)
   )[1]
   let $match := $cite-structure/@match/string()
-  return
-    if ($cite-structure and dutil:is-safe-cite-match($match)) then
-      (: replace the "/tei:TEI" anchor with "." so the remainder is
-       : evaluated from $tei as context. Preserves any following "/"
-       : or "//" so descendant steps stay descendant steps. :)
-      let $relative := replace($match, "^\s*/tei:TEI", ".")
-      return util:eval-inline($tei, $relative)
-    else
-      let $_ :=
-        if ($cite-structure) then
-          util:log-system-out(
-            "dutil:get-segments: refusing unsafe citeStructure/@match: "
-              || $match
-          )
-        else ()
-      return dutil:get-segments-heuristic($tei)
+  return if ($cite-structure and dutil:is-safe-cite-match($match)) then
+    (:
+     : replace the "/tei:TEI" anchor with "." so the remainder is
+     : evaluated from $tei as context. Preserves any following "/"
+     : or "//" so descendant steps stay descendant steps.
+     :)
+    let $relative := replace($match, "^\s*/tei:TEI", ".")
+    return util:eval-inline($tei, $relative)
+  else
+    let $_ := if ($cite-structure) then
+      util:log-system-out(
+        "dutil:get-segments: refusing unsafe citeStructure/@match: " || $match
+      )
+    else (
+    )
+    return dutil:get-segments-heuristic($tei)
 };
 
-declare function dutil:get-segments-heuristic (
+declare function dutil:get-segments-heuristic(
   $tei as element()*
 ) as element()* {
-  if(not($tei//tei:body//(tei:div|tei:div1))) then
+  if (not($tei//tei:body//(tei:div | tei:div1))) then
     (: missing segmentation :)
     $tei//tei:body
-  else if($tei//tei:body//tei:div2[@type="scene"]) then
+  else if ($tei//tei:body//tei:div2[@type = "scene"]) then
     (: romdracor :)
-    (: plautus-trinummus has the prologue coded as div1 which is why we
+    (:
+     : plautus-trinummus has the prologue coded as div1 which is why we
      : recognize div1 without div2 children as segment
      :)
-    $tei//tei:body//(tei:div2[@type="scene"]|tei:div1[tei:sp and not(tei:div2)])
+    $tei//tei:body//(
+      tei:div2[@type = "scene"] | tei:div1[tei:sp and not(tei:div2)]
+    )
   else if ($tei//tei:body//tei:div1) then
     (: greekdracor :)
     $tei//tei:body//tei:div1
   else
     (: for all others we rely on divs having sp children :)
-    $tei//tei:body//tei:div[tei:sp or (@type="scene" and not(.//tei:sp))]
+    $tei//tei:body//tei:div[tei:sp or (@type = "scene" and not(.//tei:sp))]
 };
 
 declare function local:get-year($iso-date as xs:string) as xs:string* {
@@ -477,7 +524,10 @@ declare function local:get-year($iso-date as xs:string) as xs:string* {
     year and prepend it with "-". Otherwise we consider the first part a CE
     year.
   :)
-  return if ($parts[1] eq "") then "-" || $parts[2] else $parts[1]
+  return if ($parts[1] eq "") then
+    "-" || $parts[2]
+  else
+    $parts[1]
 };
 
 (:~
@@ -487,12 +537,13 @@ declare function local:get-year($iso-date as xs:string) as xs:string* {
  : @param $tei The TEI root element of a play
  : @return Map of years
  :)
-declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
+declare function dutil:get-years-iso($tei as element(tei:TEI)*) as map(*) {
   (: DEPRECATED: remove standOff support in v2 :)
-  let $dates := $tei/(tei:standOff|tei:teiHeader//tei:sourceDesc)
-    /tei:listEvent/tei:event
-    [@type = ("print", "premiere", "written")]
-    [@when or @notAfter or @notBefore]
+  let $dates := $tei/(
+    tei:standOff | tei:teiHeader//tei:sourceDesc
+  )/tei:listEvent/tei:event[@type = ("print", "premiere", "written")][@when or
+    @notAfter or
+    @notBefore]
 
   let $years := map:merge(
     for $d in $dates
@@ -501,12 +552,12 @@ declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
       local:get-year($d/@when/string())
     else if ($d/@notBefore and $d/@notAfter) then
       local:get-year($d/@notBefore/string()) ||
-      '/' ||
-      local:get-year($d/@notAfter/string())
+        "/" ||
+        local:get-year($d/@notAfter/string())
     else if ($d/@notAfter) then
-      '<' || local:get-year($d/@notAfter/string())
+      "<" || local:get-year($d/@notAfter/string())
     else
-      '>' || local:get-year($d/@notBefore/string())
+      ">" || local:get-year($d/@notBefore/string())
     return map:entry($type, $year)
   )
 
@@ -519,12 +570,13 @@ declare function dutil:get-years-iso ($tei as element(tei:TEI)*) as map(*) {
  : @param $tei The TEI root element of a play
  : @return Map of years
  :)
-declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
+declare function dutil:get-years($tei as element(tei:TEI)*) as map(*) {
   (: DEPRECATED: remove standOff support in v2 :)
-  let $dates := $tei/(tei:standOff|tei:teiHeader//tei:sourceDesc)
-    /tei:listEvent/tei:event
-    [@type = ("print", "premiere", "written")]
-    [@when or @notAfter or @notBefore]
+  let $dates := $tei/(
+    tei:standOff | tei:teiHeader//tei:sourceDesc
+  )/tei:listEvent/tei:event[@type = ("print", "premiere", "written")][@when or
+    @notAfter or
+    @notBefore]
 
   let $years := map:merge(
     for $d in $dates
@@ -537,13 +589,17 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
     else
       $d/@notBefore/string()
 
-    let $year := if(matches($date, "^[0-9]{4}")) then
+    let $year := if (matches($date, "^[0-9]{4}")) then
       substring($date, 1, 4)
     else if (matches($date, "^-[0-9]{4}")) then
       substring($date, 1, 5)
-    else ()
+    else (
+    )
 
-    return if ($year) then map:entry($type, $year) else ()
+    return if ($year) then
+      map:entry($type, $year)
+    else (
+    )
   )
 
   return $years
@@ -558,11 +614,17 @@ declare function dutil:get-years ($tei as element(tei:TEI)*) as map(*) {
  : @param $tei The TEI root element of a play
  : @return ISO date string
  :)
-declare function dutil:get-premiere-date ($tei as element(tei:TEI)*) as xs:string* {
+declare function dutil:get-premiere-date(
+  $tei as element(tei:TEI)*
+) as xs:string* {
   (: DEPRECATED: remove standOff support in v2 :)
-  let $date := $tei/(tei:standOff|tei:teiHeader//tei:sourceDesc)
-    /tei:listEvent/tei:event[@type = "premiere"]/@when
-  return if (matches($date[1], "^-?[0-9]{4}-[0-9]{2}-[0-9]{2}")) then $date[1] else ()
+  let $date := $tei/(
+    tei:standOff | tei:teiHeader//tei:sourceDesc
+  )/tei:listEvent/tei:event[@type = "premiere"]/@when
+  return if (matches($date[1], "^-?[0-9]{4}-[0-9]{2}-[0-9]{2}")) then
+    $date[1]
+  else (
+  )
 };
 
 (:~
@@ -571,7 +633,7 @@ declare function dutil:get-premiere-date ($tei as element(tei:TEI)*) as xs:strin
  :
  : @param $tei The TEI root element of a play
  :)
-declare function dutil:get-normalized-year (
+declare function dutil:get-normalized-year(
   $tei as element(tei:TEI)*
 ) as xs:integer* {
   let $years := dutil:get-years($tei)
@@ -580,22 +642,25 @@ declare function dutil:get-normalized-year (
   let $premiere := $years?premiere
   let $print := $years?print
 
-  let $published := if ($print and $premiere)
-    then (
-      if (xs:integer($premiere) < xs:integer($print))
-      then $premiere
-      else $print
-    )
-    else if ($premiere) then $premiere
-    else $print
+  let $published := if ($print and $premiere) then (
+    if (xs:integer($premiere) < xs:integer($print)) then
+      $premiere
+    else
+      $print
+  ) else if ($premiere) then
+    $premiere
+  else
+    $print
 
-  let $year := if ($written and $published)
-    then
-      if (xs:integer($published) - xs:integer($written) > 10)
-      then $written
-      else $published
-    else if ($written) then $written
-    else $published
+  let $year := if ($written and $published) then
+    if (xs:integer($published) - xs:integer($written) > 10) then
+      $written
+    else
+      $published
+  else if ($written) then
+    $written
+  else
+    $published
 
   return xs:integer($year)
 };
@@ -610,9 +675,10 @@ declare function dutil:count-sitelinks(
   $corpusname as xs:string
 ) {
   let $col := concat($config:corpora-root, "/", $corpusname)
-  return if($wikidata-id) then
-    count(collection($col)/sitelinks[@id=$wikidata-id]/uri)
-  else ()
+  return if ($wikidata-id) then
+    count(collection($col)/sitelinks[@id = $wikidata-id]/uri)
+  else (
+  )
 };
 
 (:~
@@ -621,34 +687,31 @@ declare function dutil:count-sitelinks(
  : @param $corpusname
  : @return dracorCorpus element
  :)
-declare function dutil:get-corpus(
-  $corpusname as xs:string
-) as element()* {
+declare function dutil:get-corpus($corpusname as xs:string) as element()* {
   (: DEPRECATED: remove teiCorpus support in v2 :)
-  collection($config:corpora-root)/(tei:dracorCorpus|tei:teiCorpus)[
-    tei:teiHeader//tei:publicationStmt/tei:idno[
-      (not(@type) or
-        (@type="URI" and @xml:base="https://dracor.org/")
-      ) and . = $corpusname
-    ]
-  ]
+  collection($config:corpora-root)/(
+    tei:dracorCorpus | tei:teiCorpus
+  )[tei:teiHeader//tei:publicationStmt/tei:idno[(
+    not(@type) or (@type = "URI" and @xml:base = "https://dracor.org/")
+  ) and
+    . = $corpusname]]
 };
 
 declare function local:to-markdown($input as element()) as item()* {
   for $child in $input/node()
-  return
-    if ($child instance of element())
-    then (
-      if (name($child) = 'ref')
-      then "[" || $child/text() || "](" || $child/@target || ")"
-      else if (name($child) = 'hi')
-      then "**" || $child/text() || "**"
-      else local:to-markdown($child)
-    )
-    else $child
+  return if ($child instance of element()) then (
+    if (name($child) = "ref") then
+      "[" || $child/text() || "](" || $child/@target || ")"
+    else if (name($child) = "hi") then
+      "**" || $child/text() || "**"
+    else
+      local:to-markdown($child)
+  ) else
+    $child
 };
+
 declare function local:markdown($input as element()) as item()* {
-  normalize-space(string-join(local:to-markdown($input), ''))
+  normalize-space(string-join(local:to-markdown($input), ""))
 };
 
 (:~
@@ -663,42 +726,63 @@ declare function dutil:get-corpus-info($corpus as element()*) as map(*)* {
     break load:load-corpus(). (the "recreating null" problem)
   :)
   let $header := $corpus[1]/tei:teiHeader
-  let $name := $header//tei:publicationStmt/tei:idno[
-    not(@type) or (@type="URI" and @xml:base="https://dracor.org/")
-  ][1]/string()
+  let $name := $header//tei:publicationStmt/tei:idno[not(@type) or
+    (@type = "URI" and @xml:base = "https://dracor.org/")][1]/string()
   let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/string()
-  let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type="acronym"][1]/string()
+  let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type =
+    "acronym"][1]/string()
   let $repo := $header//tei:publicationStmt/(
-    tei:idno[@type="repo"][1]|tei:ref[@type="repo"]/@target
-    )/string()
+    tei:idno[@type = "repo"][1] | tei:ref[@type = "repo"]/@target
+  )/string()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:publicationStmt/tei:availability/tei:licence
   let $description := if ($projectDesc) then (
-    let $paras := for $p in $projectDesc/tei:p return local:markdown($p)
+    let $paras :=
+      for $p in $projectDesc/tei:p
+      return local:markdown($p)
     return string-join($paras, "&#10;&#10;")
-  ) else ()
+  ) else (
+  )
   let $git-file := $config:corpora-root || "/" || $name || "/git.xml"
   let $sha := doc($git-file)/git/sha/string()
 
   return if ($header) then (
-    map:merge((
-      map:entry("name", $name),
-      map:entry("title", $title),
-      map:entry(
-        "acronym",
-        if ($acronym)
-          then $acronym
-          else (functx:capitalize-first($name) || "DraCor")
-      ),
-      if ($sha) then map:entry("commit", $sha) else (),
-      if ($repo) then map:entry("repository", $repo) else (),
-      if ($description) then map:entry("description", $description) else (),
-      if ($licence)
-        then map:entry("licence", normalize-space($licence[1])) else (),
-      if ($licence/@target)
-        then map:entry("licenceUrl", $licence/@target/string()) else ()
-    ))
-  ) else ()
+    map:merge(
+      (
+        map:entry("name", $name),
+        map:entry("title", $title),
+        map:entry(
+          "acronym",
+          if ($acronym) then
+            $acronym
+          else (
+            functx:capitalize-first($name) || "DraCor"
+          )
+        ),
+        if ($sha) then
+          map:entry("commit", $sha)
+        else (
+        ),
+        if ($repo) then
+          map:entry("repository", $repo)
+        else (
+        ),
+        if ($description) then
+          map:entry("description", $description)
+        else (
+        ),
+        if ($licence) then
+          map:entry("licence", normalize-space($licence[1]))
+        else (
+        ),
+        if ($licence/@target) then
+          map:entry("licenceUrl", $licence/@target/string())
+        else (
+        )
+      )
+    )
+  ) else (
+  )
 };
 
 (:~
@@ -723,8 +807,9 @@ declare function dutil:get-corpus-info-by-name(
  : @return sequence of strings (see $config:wd-text-classes for possible values)
  :)
 declare function dutil:get-text-classes($tei as node()) as xs:string* {
-  for $id in $tei//tei:textClass
-    /tei:classCode[@scheme="http://www.wikidata.org/entity/"]/string()
+  for $id in
+    $tei//tei:textClass/tei:classCode[@scheme =
+      "http://www.wikidata.org/entity/"]/string()
   where map:contains($config:wd-text-classes, $id)
   return $config:wd-text-classes($id)
 };
@@ -737,7 +822,10 @@ declare function dutil:get-text-classes($tei as node()) as xs:string* {
  :)
 declare function dutil:get-genre($text-classes as xs:string*) as xs:string? {
   (: return the first non-libretto text class if any :)
-  if($text-classes[1] = 'Libretto') then $text-classes[2] else $text-classes[1]
+  if ($text-classes[1] = "Libretto") then
+    $text-classes[2]
+  else
+    $text-classes[1]
 };
 
 (:~
@@ -763,11 +851,13 @@ declare function dutil:get-corpus-meta-data(
 
   let $num-speakers := count(dutil:distinct-speakers($tei))
 
-  let $characters := $tei//tei:particDesc/tei:listPerson/(tei:person|tei:personGrp)
-  let $num-male := count($characters[@sex="MALE"])
-  let $num-female := count($characters[@sex="FEMALE"])
-  let $num-unknown := count($characters[@sex="UNKNOWN"])
-  let $num-groups := count($characters[name()="personGrp"])
+  let $characters := $tei//tei:particDesc/tei:listPerson/(
+    tei:person | tei:personGrp
+  )
+  let $num-male := count($characters[@sex = "MALE"])
+  let $num-female := count($characters[@sex = "FEMALE"])
+  let $num-unknown := count($characters[@sex = "UNKNOWN"])
+  let $num-groups := count($characters[name() = "personGrp"])
 
   let $num-p := count($tei//tei:body//tei:sp//tei:p)
   (: for antilabe (i.e. lines with a 'part' attribute) we count only the initial
@@ -784,47 +874,65 @@ declare function dutil:get-corpus-meta-data(
     let $v := $s/text()
     return map:entry(
       $s/name(),
-      if(xs:string(number($v)) != "NaN") then number($v) else $v
+      if (xs:string(number($v)) != "NaN") then
+        number($v)
+      else
+        $v
     )
   )
 
   let $digitalSource := dutil:get-source($tei)?url
 
-  let $origSource := $tei//tei:sourceDesc//
-    tei:bibl[@type="originalSource"][1]
+  let $origSource := $tei//tei:sourceDesc//tei:bibl[@type = "originalSource"][1]
   let $origSourcePublisher := string-join(
-    $origSource/tei:publisher ! normalize-space(), ", "
+    $origSource/tei:publisher!normalize-space(),
+    ", "
   )
   let $origSourcePubPlace := string-join(
-    $origSource/tei:pubPlace ! normalize-space(), ", "
+    $origSource/tei:pubPlace!normalize-space(),
+    ", "
   )
   let $year := $origSource/tei:date
-  let $origSourceYear := if (number($year)) then xs:integer($year) else ()
+  let $origSourceYear := if (number($year)) then
+    xs:integer($year)
+  else (
+  )
   (: NB: we currently do not support multiple biblScope elements as in
     https://dracor.org/id/ger000758 :)
-  let $scope := $origSource/tei:biblScope[@unit="page" and @from and @to][1]
-  let $origSourceNumPages :=
-    if ($scope and number($scope/@to) and number($scope/@from))
-    then number($scope/@to) - number($scope/@from) + 1
-    else ()
+  let $scope := $origSource/tei:biblScope[@unit = "page" and @from and @to][1]
+  let $origSourceNumPages := if (
+    $scope and number($scope/@to) and number($scope/@from)
+  ) then
+    number($scope/@to) - number($scope/@from) + 1
+  else (
+  )
 
   let $meta := map {
     "id": $id,
     "name": $name,
     "wikidataId": $wikidata-id,
     "normalizedGenre": dutil:get-genre($text-classes),
-    "libretto": $text-classes = 'Libretto',
+    "libretto": $text-classes = "Libretto",
     "firstAuthor": $authors[1]?shortname,
     "title": $titles?main,
-    "subtitle": if ($titles?sub) then $titles?sub else (),
-    "numOfCoAuthors": if(count($authors) > 0) then count($authors) - 1 else 0,
-    "maxDegreeIds": if(count($max-degree-ids) < 4) then
-      string-join($max-degree-ids, "|")
-    else
-      "several characters",
+    "subtitle":
+      if ($titles?sub) then
+        $titles?sub
+      else (
+      ),
+    "numOfCoAuthors":
+      if (count($authors) > 0) then
+        count($authors) - 1
+      else
+        0,
+    "maxDegreeIds":
+      if (count($max-degree-ids) < 4) then
+        string-join($max-degree-ids, "|")
+      else
+        "several characters",
     "numOfSegments": count(dutil:get-segments($tei)),
-    "numOfActs": count($tei//tei:body//tei:div[@type="act"]),
-    "numOfScenes": count($tei//tei:body//tei:div[@type="scene"]),
+    "numOfActs": count($tei//tei:body//tei:div[@type = "act"]),
+    "numOfScenes": count($tei//tei:body//tei:div[@type = "scene"]),
     "numOfSpeakers": $num-speakers,
     "numOfSpeakersMale": $num-male,
     "numOfSpeakersFemale": $num-female,
@@ -842,10 +950,16 @@ declare function dutil:get-corpus-meta-data(
     "yearPrinted": $years?print,
     "yearNormalized": xs:integer(dutil:get-normalized-year($tei)),
     "digitalSource": $digitalSource,
-    "originalSourcePublisher": if ($origSourcePublisher) then
-      $origSourcePublisher else (),
-    "originalSourcePubPlace": if ($origSourcePubPlace) then
-      $origSourcePubPlace else (),
+    "originalSourcePublisher":
+      if ($origSourcePublisher) then
+        $origSourcePublisher
+      else (
+      ),
+    "originalSourcePubPlace":
+      if ($origSourcePubPlace) then
+        $origSourcePubPlace
+      else (
+      ),
     "originalSourceYear": $origSourceYear,
     "originalSourceNumberOfPages": $origSourceNumPages
   }
@@ -859,12 +973,13 @@ declare function dutil:get-corpus-meta-data(
  : @param $person author or editor element
  : @return string
  :)
-declare function dutil:get-full-name ($person as element()) {
+declare function dutil:get-full-name($person as element()) {
   if ($person/tei:persName) then
     normalize-space($person/tei:persName[1])
   else if ($person/tei:name) then
     normalize-space($person/tei:name[1])
-  else normalize-space($person)
+  else
+    normalize-space($person)
 };
 
 (:~
@@ -874,23 +989,24 @@ declare function dutil:get-full-name ($person as element()) {
  : @param $lang language code
  : @return string
  :)
-declare function dutil:get-full-name (
-  $person as element(),
-  $lang as xs:string
-) {
-  if ($person/tei:persName[@xml:lang=$lang]) then
-    normalize-space($person/tei:persName[@xml:lang=$lang][1])
-  else if ($person/tei:name[@xml:lang=$lang]) then
-    normalize-space($person/tei:name[@xml:lang=$lang][1])
-  else ()
+declare function dutil:get-full-name($person as element(), $lang as xs:string) {
+  if ($person/tei:persName[@xml:lang = $lang]) then
+    normalize-space($person/tei:persName[@xml:lang = $lang][1])
+  else if ($person/tei:name[@xml:lang = $lang]) then
+    normalize-space($person/tei:name[@xml:lang = $lang][1])
+  else (
+  )
 };
 
-declare function local:build-short-name ($name as element()) {
+declare function local:build-short-name($name as element()) {
   if ($name/tei:surname) then
-    let $n := if ($name/tei:surname[@sort="1"]) then
-      $name/tei:surname[@sort="1"] else $name/tei:surname[1]
+    let $n := if ($name/tei:surname[@sort = "1"]) then
+      $name/tei:surname[@sort = "1"]
+    else
+      $name/tei:surname[1]
     return normalize-space($n)
-  else normalize-space($name)
+  else
+    normalize-space($name)
 };
 
 (:~
@@ -899,16 +1015,18 @@ declare function local:build-short-name ($name as element()) {
  : @param $person author or editor element
  : @return string
  :)
-declare function dutil:get-short-name ($person as element()) {
+declare function dutil:get-short-name($person as element()) {
   let $name := if ($person/tei:persName) then
     $person/tei:persName[1]
   else if ($person/tei:name) then
     $person/tei:name[1]
-  else ()
+  else (
+  )
 
   return if (not($name)) then
     normalize-space($person)
-  else local:build-short-name($name)
+  else
+    local:build-short-name($name)
 };
 
 (:~
@@ -918,37 +1036,44 @@ declare function dutil:get-short-name ($person as element()) {
  : @param $lang language code
  : @return string
  :)
-declare function dutil:get-short-name (
+declare function dutil:get-short-name(
   $person as element(),
   $lang as xs:string
 ) {
-  let $name := if ($person/tei:persName[@xml:lang=$lang]) then
-    $person/tei:persName[@xml:lang=$lang][1]
-  else if ($person/tei:name[@xml:lang=$lang]) then
-    $person/tei:name[@xml:lang=$lang][1]
-  else ()
+  let $name := if ($person/tei:persName[@xml:lang = $lang]) then
+    $person/tei:persName[@xml:lang = $lang][1]
+  else if ($person/tei:name[@xml:lang = $lang]) then
+    $person/tei:name[@xml:lang = $lang][1]
+  else (
+  )
 
-  return if (not($name)) then () else local:build-short-name($name)
+  return if (not($name)) then (
+  ) else
+    local:build-short-name($name)
 };
 
-declare function local:build-sort-name ($name as element()) {
+declare function local:build-sort-name($name as element()) {
   (:
    : If there is a surname and it is not the first element in the name we
    : rearrange the name to put it first. Otherwise we just return the normalized
    : text as written in the document.
    :)
   if ($name/tei:surname and not($name/tei:*[1] = $name/tei:surname)) then
-    let $start := if ($name/tei:surname[@sort="1"]) then
-      $name/tei:surname[@sort="1"] else $name/tei:surname[1]
+    let $start := if ($name/tei:surname[@sort = "1"]) then
+      $name/tei:surname[@sort = "1"]
+    else
+      $name/tei:surname[1]
 
     return string-join(
-      ($start, $start/(following-sibling::text()|following-sibling::*)), ""
-    ) => normalize-space()
-    || ", "
-    || string-join(
-      $start/(preceding-sibling::text()|preceding-sibling::*), ""
-    ) => normalize-space()
-  else normalize-space($name)
+      ($start, $start/(following-sibling::text() | following-sibling::*)),
+      ""
+    )
+      => normalize-space() ||
+      ", " ||
+      string-join($start/(preceding-sibling::text() | preceding-sibling::*), "")
+        => normalize-space()
+  else
+    normalize-space($name)
 };
 
 (:~
@@ -957,16 +1082,18 @@ declare function local:build-sort-name ($name as element()) {
  : @param $person author or editor element
  : @return string
  :)
-declare function dutil:get-sort-name ($person as element() ) {
+declare function dutil:get-sort-name($person as element()) {
   let $name := if ($person/tei:persName) then
     $person/tei:persName[1]
   else if ($person/tei:name) then
     $person/tei:name[1]
-  else ()
+  else (
+  )
 
   return if (not($name)) then
     normalize-space($person)
-  else local:build-sort-name($name)
+  else
+    local:build-sort-name($name)
 };
 
 (:~
@@ -976,53 +1103,69 @@ declare function dutil:get-sort-name ($person as element() ) {
  : @param $lang language code
  : @return string
  :)
-declare function dutil:get-sort-name (
-  $person as element(),
-  $lang as xs:string
-) {
-  let $name := if ($person/tei:persName[@xml:lang=$lang]) then
-    $person/tei:persName[@xml:lang=$lang][1]
-  else if ($person/tei:name[@xml:lang=$lang]) then
-    $person/tei:name[@xml:lang=$lang][1]
-  else ()
+declare function dutil:get-sort-name($person as element(), $lang as xs:string) {
+  let $name := if ($person/tei:persName[@xml:lang = $lang]) then
+    $person/tei:persName[@xml:lang = $lang][1]
+  else if ($person/tei:name[@xml:lang = $lang]) then
+    $person/tei:name[@xml:lang = $lang][1]
+  else (
+  )
 
-  return if (not($name)) then () else local:build-sort-name($name)
+  return if (not($name)) then (
+  ) else
+    local:build-sort-name($name)
 };
 
 declare function local:get-person-record($person as element()) as map(*) {
   let $name := dutil:get-sort-name($person)
   let $fullname := dutil:get-full-name($person)
   let $shortname := dutil:get-short-name($person)
-  let $nameEn := dutil:get-sort-name($person, 'en')
-  let $fullnameEn := dutil:get-full-name($person, 'en')
-  let $shortnameEn := dutil:get-short-name($person, 'en')
-  let $refs := array {
-    for $idno in $person/tei:idno[@type]
-    let $ref := $idno => normalize-space()
-    let $type := string($idno/@type)
-    return map {
-      "ref": $ref,
-      "type": $type
+  let $nameEn := dutil:get-sort-name($person, "en")
+  let $fullnameEn := dutil:get-full-name($person, "en")
+  let $shortnameEn := dutil:get-short-name($person, "en")
+  let $refs := array
+    {
+      for $idno in $person/tei:idno[@type]
+      let $ref := $idno => normalize-space()
+      let $type := string($idno/@type)
+      return map {"ref": $ref, "type": $type}
     }
-  }
-  let $aka := array {
-    for $name in $person/tei:persName[position() > 1]
-    return $name => normalize-space()
-  }
+  let $aka := array
+    {
+      for $name in $person/tei:persName[position() > 1]
+      return $name => normalize-space()
+    }
 
-  return map:merge((
-    map {
-      "name": $name,
-      "fullname": $fullname,
-      "shortname": $shortname,
-      "refs": $refs
-    },
-    if ($person/@role) then map {"role": $person/@role/string()} else (),
-    if ($nameEn) then map {"nameEn": $nameEn} else (),
-    if ($fullnameEn) then map {"fullnameEn": $fullnameEn} else (),
-    if ($shortnameEn) then map {"shortnameEn": $shortnameEn} else (),
-    if (array:size($aka) > 0) then map {"alsoKnownAs": $aka} else ()
-  ))
+  return map:merge(
+    (
+      map {
+        "name": $name,
+        "fullname": $fullname,
+        "shortname": $shortname,
+        "refs": $refs
+      },
+      if ($person/@role) then
+        map {"role": $person/@role/string()}
+      else (
+      ),
+      if ($nameEn) then
+        map {"nameEn": $nameEn}
+      else (
+      ),
+      if ($fullnameEn) then
+        map {"fullnameEn": $fullnameEn}
+      else (
+      ),
+      if ($shortnameEn) then
+        map {"shortnameEn": $shortnameEn}
+      else (
+      ),
+      if (array:size($aka) > 0) then
+        map {"alsoKnownAs": $aka}
+      else (
+      )
+    )
+  )
 };
 
 (:~
@@ -1031,9 +1174,8 @@ declare function local:get-person-record($person as element()) as map(*) {
  : @param $tei
  :)
 declare function dutil:get-authors($tei as node()) as map(*)* {
-  for $author in $tei//tei:fileDesc/tei:titleStmt/tei:author[
-    not(@role="illustrator")
-  ]
+  for $author in
+    $tei//tei:fileDesc/tei:titleStmt/tei:author[not(@role = "illustrator")]
   return local:get-person-record($author)
 };
 
@@ -1047,17 +1189,24 @@ declare function dutil:get-editors($tei as element(tei:TEI)) as map(*)* {
  :
  : @param $tei
  :)
-declare function dutil:get-titles(
-  $tei as element(tei:TEI)
-) as map(*) {
-  let $title := $tei//tei:fileDesc/tei:titleStmt
-    /tei:title[not(@type = 'sub')][1]/normalize-space()
-  let $subtitle :=
-    $tei//tei:titleStmt/tei:title[@type='sub'][1]/normalize-space()
-  return map:merge((
-    if ($title) then map {'main': $title} else (),
-    if ($subtitle) then map {'sub': $subtitle} else ()
-  ))
+declare function dutil:get-titles($tei as element(tei:TEI)) as map(*) {
+  let $title := $tei//tei:fileDesc/tei:titleStmt/tei:title[not(
+    @type = "sub"
+  )][1]/normalize-space()
+  let $subtitle := $tei//tei:titleStmt/tei:title[@type =
+    "sub"][1]/normalize-space()
+  return map:merge(
+    (
+      if ($title) then
+        map {"main": $title}
+      else (
+      ),
+      if ($subtitle) then
+        map {"sub": $subtitle}
+      else (
+      )
+    )
+  )
 };
 
 (:~
@@ -1070,20 +1219,26 @@ declare function dutil:get-titles(
   $tei as element(tei:TEI),
   $lang as xs:string
 ) as map(*) {
-  if($lang = $tei/@xml:lang) then
+  if ($lang = $tei/@xml:lang) then
     dutil:get-titles($tei)
   else
-  let $title :=
-    $tei//tei:fileDesc/tei:titleStmt
-      /tei:title[@xml:lang = $lang and (not(@type) or @type = 'main')][1]
-      /normalize-space()
-  let $subtitle :=
-    $tei//tei:titleStmt/tei:title[@type = 'sub' and @xml:lang = $lang][1]
-      /normalize-space()
-  return map:merge((
-    if ($title) then map {'main': $title} else (),
-    if ($subtitle) then map {'sub': $subtitle} else ()
-  ))
+    let $title := $tei//tei:fileDesc/tei:titleStmt/tei:title[@xml:lang =
+      $lang and
+      (not(@type) or @type = "main")][1]/normalize-space()
+    let $subtitle := $tei//tei:titleStmt/tei:title[@type = "sub" and
+      @xml:lang = $lang][1]/normalize-space()
+    return map:merge(
+      (
+        if ($title) then
+          map {"main": $title}
+        else (
+        ),
+        if ($subtitle) then
+          map {"sub": $subtitle}
+        else (
+        )
+      )
+    )
 };
 
 (:~
@@ -1092,21 +1247,28 @@ declare function dutil:get-titles(
  : @param $tei
  :)
 declare function dutil:get-source($tei as element(tei:TEI)) as map(*)? {
-  let $source := $tei//tei:sourceDesc/tei:bibl[@type="digitalSource"][1]
-  return if (count($source)) then map:merge((
-    if ($source/tei:ref[@target]) then
-      map {'name': $source/tei:ref[@target][1]/normalize-space()}
-    (: deprecated :)
-    else if ($source/tei:name) then
-      map {'name': $source/tei:name[1]/normalize-space()}
-    else (),
-    if ($source/tei:ref[@target]) then
-      map {'url': $source/tei:ref[@target][1]/@target/string()}
-    (: deprecated :)
-    else if ($source/tei:idno[@type="URL"]) then
-      map {'url': $source/tei:idno[@type="URL"][1]/normalize-space()}
-    else ()
-  )) else ()
+  let $source := $tei//tei:sourceDesc/tei:bibl[@type = "digitalSource"][1]
+  return if (count($source)) then
+    map:merge(
+      (
+        if ($source/tei:ref[@target]) then
+          map {"name": $source/tei:ref[@target][1]/normalize-space()}
+        (: deprecated :)
+        else if ($source/tei:name) then
+          map {"name": $source/tei:name[1]/normalize-space()}
+        else (
+        ),
+        if ($source/tei:ref[@target]) then
+          map {"url": $source/tei:ref[@target][1]/@target/string()}
+        (: deprecated :)
+        else if ($source/tei:idno[@type = "URL"]) then
+          map {"url": $source/tei:idno[@type = "URL"][1]/normalize-space()}
+        else (
+        )
+      )
+    )
+  else (
+  )
 };
 
 (:~
@@ -1115,22 +1277,22 @@ declare function dutil:get-source($tei as element(tei:TEI)) as map(*)? {
  : @param $tei TEI element
  : @see https://dracor.org/doc/odd#section-play-wikidata
  :)
-declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
-  let $idno := $tei/tei:teiHeader/tei:fileDesc/tei:sourceDesc
-    /tei:bibl[@type eq 'wikidata']
-    /tei:idno[matches(normalize-space(.), '^Q[1-9]\d*$')]
+declare function dutil:get-play-wikidata-id($tei as element(tei:TEI)) {
+  let $idno := $tei/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl[@type eq
+    "wikidata"]/tei:idno[matches(normalize-space(.), "^Q[1-9]\d*$")]
   (: DEPRECATED: remove standOff support in v2 :)
-  let $uri := $tei/tei:standOff/tei:listRelation
-    /tei:relation[@name="wikidata"][1]/@passive/string()
+  let $uri := $tei/tei:standOff/tei:listRelation/tei:relation[@name =
+    "wikidata"][1]/@passive/string()
 
   return if (count($idno)) then
     normalize-space($idno[1])
   else if (
-    starts-with($uri, 'http://www.wikidata.org/entity/')
-    and matches($uri, '/Q[1-9]\d*$')
+    starts-with($uri, "http://www.wikidata.org/entity/") and
+      matches($uri, "/Q[1-9]\d*$")
   ) then
-    tokenize($uri, '/')[last()]
-  else ()
+    tokenize($uri, "/")[last()]
+  else (
+  )
 };
 
 (:~
@@ -1138,24 +1300,28 @@ declare function dutil:get-play-wikidata-id ($tei as element(tei:TEI)) {
  :
  : @param $corpus Corpus name
  :)
-declare function dutil:get-play-wikidata-ids ($corpus as xs:string) {
-  let $collection := $config:corpora-root || '/' || $corpus
+declare function dutil:get-play-wikidata-ids($corpus as xs:string) {
+  let $collection := $config:corpora-root || "/" || $corpus
   return (
-    for $idno in collection($collection)
-      /tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc
-      /tei:bibl[@type="wikidata"]
-      /tei:idno[matches(normalize-space(.), '^Q[1-9]\d*$')]
+    for $idno in
+      collection(
+        $collection
+      )/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl[@type =
+        "wikidata"]/tei:idno[matches(normalize-space(.), "^Q[1-9]\d*$")]
     return normalize-space($idno),
     (: DEPRECATED: remove standOff support in v2 :)
-    for $uri in collection($collection)
-      /tei:TEI/tei:standOff/tei:listRelation
-      /tei:relation[@name="wikidata"]/@passive/string()
+    for $uri in
+      collection(
+        $collection
+      )/tei:TEI/tei:standOff/tei:listRelation/tei:relation[@name =
+        "wikidata"]/@passive/string()
     return if (
-      starts-with($uri, 'http://www.wikidata.org/entity/')
-      and matches($uri, '/Q[1-9]\d*$')
+      starts-with($uri, "http://www.wikidata.org/entity/") and
+        matches($uri, "/Q[1-9]\d*$")
     ) then
-      tokenize($uri, '/')[last()]
-    else ()
+      tokenize($uri, "/")[last()]
+    else (
+    )
   )
 };
 
@@ -1173,17 +1339,19 @@ declare function dutil:get-play-wikidata-ids ($corpus as xs:string) {
 declare function dutil:get-wikidata-id-from-ana(
   $e as element()?
 ) as xs:string* {
-  if(starts-with($e/@ana, 'http://www.wikidata.org/entity/')) then
+  if (starts-with($e/@ana, "http://www.wikidata.org/entity/")) then
     substring($e/@ana, 32)
-  else
-    ()
+  else (
+  )
 };
 
 declare function dutil:get-character-wikidata-id(
   $e as element()?
 ) as xs:string? {
-  let $idno := $e/tei:idno[@type eq 'wikidata']
-    [matches(normalize-space(.), '^Q[1-9]\d*$')]
+  let $idno := $e/tei:idno[@type eq "wikidata"][matches(
+    normalize-space(.),
+    "^Q[1-9]\d*$"
+  )]
   return if ($idno) then
     normalize-space($idno[1])
   else
@@ -1202,42 +1370,49 @@ declare function dutil:get-play-info(
   $playname as xs:string
 ) as map(*)? {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return if (not($doc)) then
-    ()
-  else
+  return if (not($doc)) then (
+  ) else
     let $paths := dutil:filepaths($corpusname, $playname)
     let $sha := doc($paths?files?git)/git/sha/text()
     let $tei := $doc//tei:TEI
     let $id := dutil:get-dracor-id($tei)
     let $uri := $paths?uri
     let $titles := dutil:get-titles($tei)
-    let $titlesEn := dutil:get-titles($tei, 'en')
+    let $titlesEn := dutil:get-titles($tei, "en")
     let $source := dutil:get-source($tei)
-    let $orig-source := $tei//tei:bibl[@type="originalSource"][1]/normalize-space(.)
+    let $orig-source := $tei//tei:bibl[@type =
+      "originalSource"][1]/normalize-space(.)
     let $speakers := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $speakers[last()]
 
-    let $segments := array {
-      for $segment at $pos in dutil:get-segments($tei)
-      let $heads :=
-        $segment/(ancestor::tei:div/tei:head,tei:head)
-          ! functx:remove-elements-deep(., ('*:note'))
-          ! normalize-space(.)
-      let $speakers := dutil:distinct-speakers($segment)
-      return map:merge((
-        map {
-          "type": $segment/@type/string(),
-          "number": $pos
-        },
-        if(count($heads)) then
-          map {"title": string-join($heads, ' | ')}
-        else (),
-        if(count($speakers)) then map:entry(
-          "speakers",
-          array { for $sp in $speakers return $sp }
-        ) else ()
-      ))
-    }
+    let $segments := array
+      {
+        for $segment at $pos in dutil:get-segments($tei)
+        let $heads := $segment/(
+          ancestor::tei:div/tei:head, tei:head
+        )!functx:remove-elements-deep(., ("*:note"))!normalize-space(.)
+        let $speakers := dutil:distinct-speakers($segment)
+        return map:merge(
+          (
+            map {"type": $segment/@type/string(), "number": $pos},
+            if (count($heads)) then
+              map {"title": string-join($heads, " | ")}
+            else (
+            ),
+            if (count($speakers)) then
+              map:entry(
+                "speakers",
+                array
+                  {
+                    for $sp in $speakers
+                    return $sp
+                  }
+              )
+            else (
+            )
+          )
+        )
+      }
 
     let $authors := dutil:get-authors($tei)
     let $editors := dutil:get-editors($tei)
@@ -1247,76 +1422,131 @@ declare function dutil:get-play-info(
     let $years := dutil:get-years-iso($tei)
     let $premiere-date := dutil:get-premiere-date($tei)
 
-    let $all-in-segment := $segments?*[?speakers=$lastone][1]?number
+    let $all-in-segment := $segments?*[?speakers = $lastone][1]?number
     let $all-in-index := $all-in-segment div count($segments?*)
 
     let $wikidata-id := dutil:get-play-wikidata-id($tei)
 
     let $relations := dutil:get-relations($corpusname, $playname)
 
-    return map:merge((
-      map {
-        "id": $id,
-        "uri": $uri,
-        "name": $playname,
-        "corpus": $corpusname,
-        "title": $titles?main,
-        "authors": array { for $author in $authors return $author }
-      },
-      if (count($editors) > 0)
-        then map:entry("editors", array { for $editor in $editors return $editor })
-        else (),
-      map {
-        "normalizedGenre": dutil:get-genre($text-classes),
-        "libretto": $text-classes = 'Libretto',
-        "allInSegment": $all-in-segment,
-        "allInIndex": $all-in-index,
-        "characters": array {
-          for $id in $speakers
-          let $node := $doc//tei:particDesc//(
-            tei:person[@xml:id=$id] | tei:personGrp[@xml:id=$id]
-          )
-          let $name := $node/(tei:persName | tei:name)[1]/text()
-          let $sex := $node/@sex/string()
-          let $gender := $node/@gender/string()
-          let $role := $node/@role/string()
-          let $isGroup := if ($node/name() eq 'personGrp')
-            then true() else false()
-          let $wikidata-id := dutil:get-character-wikidata-id($node)
-          return map:merge((
-            map {
-              "id": $id,
-              "name": $name,
-              "isGroup": $isGroup,
-              "sex": if($sex) then $sex else ()
-            },
-            if ($gender) then map:entry("gender", $gender) else (),
-            if ($role) then map:entry("role", $role) else (),
-            if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
-          ))
+    return map:merge(
+      (
+        map {
+          "id": $id,
+          "uri": $uri,
+          "name": $playname,
+          "corpus": $corpusname,
+          "title": $titles?main,
+          "authors":
+            array
+              {
+                for $author in $authors
+                return $author
+              }
         },
-        "segments": $segments,
-        "yearWritten": $years?written,
-        "yearPremiered": $years?premiere,
-        "yearPrinted": $years?print,
-        "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
-      },
-      if($titlesEn?main) then map:entry("titleEn", $titlesEn?main) else (),
-      if($titles?sub) then map:entry("subtitle", $titles?sub) else (),
-      if($titlesEn?sub) then map:entry("subtitleEn", $titlesEn?sub) else (),
-      if($sha) then map:entry("commit", $sha) else (),
-      if($wikidata-id) then
-        map:entry("wikidataId", $wikidata-id)
-      else (),
-      if($orig-source) then
-        map:entry("originalSource", $orig-source)
-      else (),
-      if(count($source)) then map:entry("source", $source) else (),
-      if($premiere-date) then map:entry("datePremiered", $premiere-date) else (),
-      if(count($relations)) then
-        map:entry("relations", array{$relations})
-      else ()
-    ))
+        if (count($editors) > 0) then
+          map:entry(
+            "editors",
+            array
+              {
+                for $editor in $editors
+                return $editor
+              }
+          )
+        else (
+        ),
+        map {
+          "normalizedGenre": dutil:get-genre($text-classes),
+          "libretto": $text-classes = "Libretto",
+          "allInSegment": $all-in-segment,
+          "allInIndex": $all-in-index,
+          "characters":
+            array
+              {
+                for $id in $speakers
+                let $node := $doc//tei:particDesc//(
+                  tei:person[@xml:id = $id] | tei:personGrp[@xml:id = $id]
+                )
+                let $name := $node/(tei:persName | tei:name)[1]/text()
+                let $sex := $node/@sex/string()
+                let $gender := $node/@gender/string()
+                let $role := $node/@role/string()
+                let $isGroup := if ($node/name() eq "personGrp") then
+                  true()
+                else
+                  false()
+                let $wikidata-id := dutil:get-character-wikidata-id($node)
+                return map:merge(
+                  (
+                    map {
+                      "id": $id,
+                      "name": $name,
+                      "isGroup": $isGroup,
+                      "sex":
+                        if ($sex) then
+                          $sex
+                        else (
+                        )
+                    },
+                    if ($gender) then
+                      map:entry("gender", $gender)
+                    else (
+                    ),
+                    if ($role) then
+                      map:entry("role", $role)
+                    else (
+                    ),
+                    if ($wikidata-id) then
+                      map:entry("wikidataId", $wikidata-id)
+                    else (
+                    )
+                  )
+                )
+              },
+          "segments": $segments,
+          "yearWritten": $years?written,
+          "yearPremiered": $years?premiere,
+          "yearPrinted": $years?print,
+          "yearNormalized": xs:integer(dutil:get-normalized-year($tei))
+        },
+        if ($titlesEn?main) then
+          map:entry("titleEn", $titlesEn?main)
+        else (
+        ),
+        if ($titles?sub) then
+          map:entry("subtitle", $titles?sub)
+        else (
+        ),
+        if ($titlesEn?sub) then
+          map:entry("subtitleEn", $titlesEn?sub)
+        else (
+        ),
+        if ($sha) then
+          map:entry("commit", $sha)
+        else (
+        ),
+        if ($wikidata-id) then
+          map:entry("wikidataId", $wikidata-id)
+        else (
+        ),
+        if ($orig-source) then
+          map:entry("originalSource", $orig-source)
+        else (
+        ),
+        if (count($source)) then
+          map:entry("source", $source)
+        else (
+        ),
+        if ($premiere-date) then
+          map:entry("datePremiered", $premiere-date)
+        else (
+        ),
+        if (count($relations)) then
+          map:entry("relations", array { $relations })
+        else (
+        )
+      )
+    )
 };
 
 (:~
@@ -1328,11 +1558,10 @@ declare function dutil:get-play-info(
 declare function dutil:get-play-metrics(
   $corpusname as xs:string,
   $playname as xs:string
-)  {
+) {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return if (not($doc)) then
-    ()
-  else
+  return if (not($doc)) then (
+  ) else
     let $tei := $doc//tei:TEI
     let $paths := dutil:filepaths($corpusname, $playname)
     let $metrics := doc($paths?files?metrics)//metrics
@@ -1341,18 +1570,24 @@ declare function dutil:get-play-metrics(
     let $wikidata-id := dutil:get-play-wikidata-id($tei)
     let $sitelink-count := dutil:count-sitelinks($wikidata-id, $corpusname)
 
-    let $nodes := array {
-      for $n in $metrics/network/nodes/node
-      return map:merge((
-        map:entry("id", $n/@id/string()),
-        for $s in $n/*
-        let $v := $s/text()
-        return map:entry(
-          $s/name(),
-          if(xs:string(number($v)) != "NaN") then number($v) else $v
+    let $nodes := array
+      {
+        for $n in $metrics/network/nodes/node
+        return map:merge(
+          (
+            map:entry("id", $n/@id/string()),
+            for $s in $n/*
+            let $v := $s/text()
+            return map:entry(
+              $s/name(),
+              if (xs:string(number($v)) != "NaN") then
+                number($v)
+              else
+                $v
+            )
+          )
         )
-      ))
-    }
+      }
 
     let $meta := map {
       "id": $id,
@@ -1364,13 +1599,16 @@ declare function dutil:get-play-metrics(
 
     let $networkmetrics := map:merge(
       for $e in $metrics/network/*[not(name() = "nodes")]
-      let $v := if($e/name() = "maxDegreeIds") then
-        array {tokenize($e)}
+      let $v := if ($e/name() = "maxDegreeIds") then
+        array { tokenize($e) }
       else
         $e/text()
       return map:entry(
         $e/name(),
-        if(xs:string(number($v)) != "NaN") then number($v) else $v
+        if (xs:string(number($v)) != "NaN") then
+          number($v)
+        else
+          $v
       )
     )
 
@@ -1383,19 +1621,18 @@ declare function dutil:get-play-metrics(
  : @param $corpusname
  : @param $playname
  :)
-declare function dutil:characters-info (
+declare function dutil:characters-info(
   $corpusname as xs:string,
   $playname as xs:string
 ) as item()? {
   let $doc := dutil:get-doc($corpusname, $playname)
-  return if (not($doc)) then
-    ()
-  else
+  return if (not($doc)) then (
+  ) else
     let $tei := $doc//tei:TEI
     let $speakers := dutil:distinct-speakers($doc//tei:body)
 
     let $person-map := map:merge(
-      for $p in $doc//tei:particDesc//(tei:person|tei:personGrp)
+      for $p in $doc//tei:particDesc//(tei:person | tei:personGrp)
       return map:entry($p/@xml:id/string(), $p)
     )
 
@@ -1404,24 +1641,21 @@ declare function dutil:characters-info (
 
     let $sp-refs :=
       for $sp in $sps
-      let $refs := tokenize(normalize-space($sp/@who), '\s+')
-        [string-length(.) > 1]
-      let $words :=
-        if ($has-w) then
-          count($sp//(tei:l|tei:p)//tei:w[not(ancestor::tei:stage)])
-        else
-          let $lines := $sp//(tei:p|tei:l)
-          let $stripped :=
-            functx:remove-elements-deep($lines, ('*:stage', '*:note'))
-          let $txt := string-join($stripped/normalize-space(), ' ')
-          return count(tokenize($txt, '\W+')[not(.='')])
+      let $refs := tokenize(normalize-space($sp/@who), "\s+")[string-length(.) >
+        1]
+      let $words := if ($has-w) then
+        count($sp//(tei:l | tei:p)//tei:w[not(ancestor::tei:stage)])
+      else
+        let $lines := $sp//(tei:p | tei:l)
+        let $stripped := functx:remove-elements-deep(
+          $lines,
+          ("*:stage", "*:note")
+        )
+        let $txt := string-join($stripped/normalize-space(), " ")
+        return count(tokenize($txt, "\W+")[not(. = "")])
       let $single := count($refs) eq 1
       for $ref in $refs
-      return map {
-        "id": substring($ref, 2),
-        "words": $words,
-        "single": $single
-      }
+      return map {"id": substring($ref, 2), "words": $words, "single": $single}
 
     (: numOfSpeechActs preserves legacy semantics: only sp elements whose
        @who references exactly one speaker are counted (matches the old
@@ -1453,44 +1687,67 @@ declare function dutil:characters-info (
       return map:entry($n/@id/string(), $n)
     )
 
-    return array {
-      for $id in $speakers
-      let $node := $person-map($id)
-      let $name := $node/(tei:persName | tei:name)[1]/text()
-      let $sex := $node/@sex/string()
-      let $gender := $node/@gender/string()
-      let $role := $node/@role/string()
-      let $isGroup := if ($node/name() eq 'personGrp')
-        then true() else false()
-      let $metrics-node := $metrics-map($id)
-      let $eigenvector := if ($metrics-node/eigenvector[text()]) then
-        number($metrics-node/eigenvector) else 0
-      let $wikidata-id := dutil:get-character-wikidata-id($node)
-      return map:merge((
-        map {
-          "id": $id,
-          "name": $name,
-          "isGroup": $isGroup,
-          "sex": if($sex) then $sex else (),
-          "numOfScenes": ($scene-counts($id), 0)[1],
-          "numOfSpeechActs": ($speech-counts($id), 0)[1],
-          "numOfWords": ($word-counts($id), 0)[1],
-          "degree": $metrics-node/degree/xs:integer(.),
-          "weightedDegree": if ($metrics-node/weightedDegree) then
-            $metrics-node/weightedDegree/xs:integer(.) else 0,
-          "closeness": $metrics-node/closeness/number(.),
-          "betweenness": $metrics-node/betweenness/number(.),
-          "eigenvector": $eigenvector
-        },
-        if ($gender) then map:entry("gender", $gender) else (),
-        if ($role) then map:entry("role", $role) else (),
-        if ($wikidata-id) then map:entry("wikidataId", $wikidata-id) else ()
-      ))
-    }
+    return array
+      {
+        for $id in $speakers
+        let $node := $person-map($id)
+        let $name := $node/(tei:persName | tei:name)[1]/text()
+        let $sex := $node/@sex/string()
+        let $gender := $node/@gender/string()
+        let $role := $node/@role/string()
+        let $isGroup := if ($node/name() eq "personGrp") then
+          true()
+        else
+          false()
+        let $metrics-node := $metrics-map($id)
+        let $eigenvector := if ($metrics-node/eigenvector[text()]) then
+          number($metrics-node/eigenvector)
+        else
+          0
+        let $wikidata-id := dutil:get-character-wikidata-id($node)
+        return map:merge(
+          (
+            map {
+              "id": $id,
+              "name": $name,
+              "isGroup": $isGroup,
+              "sex":
+                if ($sex) then
+                  $sex
+                else (
+                ),
+              "numOfScenes": ($scene-counts($id), 0)[1],
+              "numOfSpeechActs": ($speech-counts($id), 0)[1],
+              "numOfWords": ($word-counts($id), 0)[1],
+              "degree": $metrics-node/degree/xs:integer(.),
+              "weightedDegree":
+                if ($metrics-node/weightedDegree) then
+                  $metrics-node/weightedDegree/xs:integer(.)
+                else
+                  0,
+              "closeness": $metrics-node/closeness/number(.),
+              "betweenness": $metrics-node/betweenness/number(.),
+              "eigenvector": $eigenvector
+            },
+            if ($gender) then
+              map:entry("gender", $gender)
+            else (
+            ),
+            if ($role) then
+              map:entry("role", $role)
+            else (
+            ),
+            if ($wikidata-id) then
+              map:entry("wikidataId", $wikidata-id)
+            else (
+            )
+          )
+        )
+      }
 };
 
 declare function local:tokenize($idrefs as node()) as item()* {
-  for $ref in normalize-space($idrefs) => tokenize('\s+') => distinct-values()
+  for $ref in normalize-space($idrefs) => tokenize("\s+") => distinct-values()
   where string-length($ref) > 1
   return substring($ref, 2)
 };
@@ -1501,7 +1758,7 @@ declare function local:tokenize($idrefs as node()) as item()* {
  : @param $corpusname
  : @param $playname
  :)
-declare function dutil:get-relations (
+declare function dutil:get-relations(
   $corpusname as xs:string,
   $playname as xs:string
 ) as map(*)* {
@@ -1509,26 +1766,25 @@ declare function dutil:get-relations (
   let $listRel := $doc//tei:particDesc/tei:listPerson/tei:listRelation
   let $relations := (
     for $rel in $listRel/tei:relation[@mutual]
-      let $ids := local:tokenize($rel/@mutual)
-      for $source at $pos in $ids
-        for $target in $ids
-        where index-of($ids, $target) gt $pos
-        return map {
-          "directed": false(),
-          "type": string($rel/@name),
-          "source": $source,
-          "target": $target
-        }
-  ,
+    let $ids := local:tokenize($rel/@mutual)
+    for $source at $pos in $ids
+    for $target in $ids
+    where index-of($ids, $target) gt $pos
+    return map {
+      "directed": false(),
+      "type": string($rel/@name),
+      "source": $source,
+      "target": $target
+    },
     for $rel in $listRel/tei:relation[@active and @passive]
-      for $source in local:tokenize($rel/@active)
-         for  $target in local:tokenize($rel/@passive)
-         return map {
-           "directed": true(),
-           "type": string($rel/@name),
-           "source": $source,
-           "target": $target
-         }
+    for $source in local:tokenize($rel/@active)
+    for $target in local:tokenize($rel/@passive)
+    return map {
+      "directed": true(),
+      "type": string($rel/@name),
+      "source": $source,
+      "target": $target
+    }
   )
   return $relations
 };
@@ -1538,34 +1794,39 @@ declare function dutil:get-relations (
  :
  : @param $id Wikidata ID
  :)
-declare function dutil:get-plays-with-character ($id as xs:string) {
+declare function dutil:get-plays-with-character($id as xs:string) {
   (: DEPRECATED: remove $wd-uri and the @ana branches below in v2 :)
   let $wd-uri := "http://www.wikidata.org/entity/" || $id
-  let $plays := collection($config:corpora-root)
-    /tei:TEI[.//tei:particDesc//(tei:person|tei:personGrp)[
-      tei:idno[@type eq 'wikidata'][normalize-space(.) eq $id]
-      or @ana eq $wd-uri
-    ]]
-  return array {
-    for $tei in $plays
-    let $play-id := dutil:get-dracor-id($tei)
-    let $titles := dutil:get-titles($tei)
-    let $authors := dutil:get-authors($tei)
-    let $character := (
-      $tei//tei:particDesc//(tei:person|tei:personGrp)[
-        tei:idno[@type eq 'wikidata'][normalize-space(.) eq $id]
-        or @ana eq $wd-uri
-      ]
-    )[1]
-    return map {
-      "id": $play-id,
-      "uri": dutil:play-uri($play-id),
-      "title": $titles?main,
-      "authors": array { for $author in $authors return $author?fullname },
-      "characterId": $character/@xml:id/string(),
-      "characterName": normalize-space($character/(tei:persName|tei:name)[1])
+  let $plays := collection($config:corpora-root)/tei:TEI[.//tei:particDesc//(
+    tei:person | tei:personGrp
+  )[tei:idno[@type eq "wikidata"][normalize-space(.) eq $id] or
+    @ana eq $wd-uri]]
+  return array
+    {
+      for $tei in $plays
+      let $play-id := dutil:get-dracor-id($tei)
+      let $titles := dutil:get-titles($tei)
+      let $authors := dutil:get-authors($tei)
+      let $character := (
+        $tei//tei:particDesc//(tei:person | tei:personGrp)[tei:idno[@type eq
+          "wikidata"][normalize-space(.) eq $id] or
+          @ana eq $wd-uri]
+      )[1]
+      return map {
+        "id": $play-id,
+        "uri": dutil:play-uri($play-id),
+        "title": $titles?main,
+        "authors":
+          array
+            {
+              for $author in $authors
+              return $author?fullname
+            },
+        "characterId": $character/@xml:id/string(),
+        "characterName":
+          normalize-space($character/(tei:persName | tei:name)[1])
+      }
     }
-  }
 };
 
 (:~
@@ -1575,46 +1836,46 @@ declare function dutil:get-plays-with-character ($id as xs:string) {
  : Reads QIDs from <idno type="wikidata"> on tei:person and tei:personGrp,
  : with a deprecated fallback to @ana URIs (see dutil:get-character-wikidata-id).
  :)
-declare function dutil:get-all-characters-with-wikidata-id () {
+declare function dutil:get-all-characters-with-wikidata-id() {
   let $tuples :=
     for $tei in collection($config:corpora-root)/tei:TEI
     let $play-id := dutil:get-dracor-id($tei)
     let $titles := dutil:get-titles($tei)
-    let $author-names := array {
-      for $a in dutil:get-authors($tei) return $a?fullname
-    }
-    for $c in $tei//tei:particDesc//(tei:person|tei:personGrp)
+    let $author-names := array
+      {
+        for $a in dutil:get-authors($tei)
+        return $a?fullname
+      }
+    for $c in $tei//tei:particDesc//(tei:person | tei:personGrp)
     let $q-id := dutil:get-character-wikidata-id($c)
     where $q-id
     return map {
       "q": $q-id,
       "pid": $play-id,
-      "play": map {
-        "id": $play-id,
-        "uri": dutil:play-uri($play-id),
-        "title": $titles?main,
-        "authors": $author-names,
-        "characterId": $c/@xml:id/string(),
-        "characterName": normalize-space($c/(tei:persName|tei:name)[1])
-      }
+      "play":
+        map {
+          "id": $play-id,
+          "uri": dutil:play-uri($play-id),
+          "title": $titles?main,
+          "authors": $author-names,
+          "characterId": $c/@xml:id/string(),
+          "characterName": normalize-space($c/(tei:persName | tei:name)[1])
+        }
     }
-  return array {
-    for $t in $tuples
-    let $q := $t?q
-    group by $q
-    let $plays :=
-      for $u in $t
-      let $pid := $u?pid
-      group by $pid
-      return ($u[1])?play
-    let $count := count($plays)
-    order by $count descending, $q ascending
-    return map {
-      "id": $q,
-      "count": $count,
-      "plays": array { $plays }
+  return array
+    {
+      for $t in $tuples
+      let $q := $t?q
+      group by $q
+      let $plays :=
+        for $u in $t
+        let $pid := $u?pid
+        group by $pid
+        return ($u[1])?play
+      let $count := count($plays)
+      order by $count descending, $q ascending
+      return map {"id": $q, "count": $count, "plays": array { $plays }}
     }
-  }
 };
 
 (:~
@@ -1624,7 +1885,7 @@ declare function dutil:get-all-characters-with-wikidata-id () {
  :)
 declare function dutil:csv-escape($string as xs:string) as xs:string {
   replace($string, '"', '""')
-  (: replace($string, '\(', '((') :)
+(: replace($string, '\(', '((') :)
 };
 
 (:~
@@ -1633,10 +1894,7 @@ declare function dutil:csv-escape($string as xs:string) as xs:string {
  : @param $id DraCor ID
  : @param $accept MIME type
  :)
-declare function dutil:id-to-url (
-  $id as xs:string,
-  $accept as xs:string*
-) {
+declare function dutil:id-to-url($id as xs:string, $accept as xs:string*) {
   let $tei := dutil:get-play-by-id($id)
 
   return if ($tei) then
@@ -1650,8 +1908,9 @@ declare function dutil:id-to-url (
     else if ($accept = "application/rdf+xml") then
       $url || "/rdf"
     else
-      $config:api-origin || '/' || $corpus || "/" || $play
-  else ()
+      $config:api-origin || "/" || $corpus || "/" || $play
+  else (
+  )
 };
 
 declare function local:create-corpus(
@@ -1676,56 +1935,55 @@ declare function dutil:create-corpus($corpus as map(*)) {
   let $name := $corpus?name
 
   return if (not($name) or not($corpus?title)) then
-    error (
-      xs:QName('dutil:invalid-corpus-document'),
+    error(
+      xs:QName("dutil:invalid-corpus-document"),
       "Missing corpus name or title"
     )
-  else if (not(matches($name, '^[a-z]+$'))) then
-    error (
-      xs:QName('dutil:invalid-corpus-name'),
-      "Invalid name '" || $name
-        || "'. Only lower case ASCII letters are accepted"
+  else if (not(matches($name, "^[a-z]+$"))) then
+    error(
+      xs:QName("dutil:invalid-corpus-name"),
+      "Invalid name '" ||
+        $name ||
+        "'. Only lower case ASCII letters are accepted"
     )
   else (
     let $exists := dutil:get-corpus($name)
     return if ($exists) then
-      error (
-        xs:QName('dutil:corpus-exists'),
+      error(
+        xs:QName("dutil:corpus-exists"),
         "Corpus with name '" || $name || "' already exists"
       )
     else
-    let $xml :=
-      <dracorCorpus xmlns="http://www.tei-c.org/ns/1.0">
+      let $xml := <dracorCorpus xmlns="http://www.tei-c.org/ns/1.0">
         <teiHeader>
           <fileDesc>
-            <titleStmt>
-              <title>{$corpus?title}</title>
-            </titleStmt>
+            <titleStmt><title>{ $corpus?title }</title></titleStmt>
             <publicationStmt>
-              <idno>{$corpus?name}</idno>
+              <idno>{ $corpus?name }</idno>
               {
-                if ($corpus?repository)
-                then <ref type="repo" target="{$corpus?repository}"/>
-                else ()
+                if ($corpus?repository) then
+                  <ref target="{ $corpus?repository }" type="repo" />
+                else (
+                )
               }
             </publicationStmt>
           </fileDesc>
-          {if ($corpus?description) then (
-            <encodingDesc>
-              <projectDesc>
-                {
-                  for $p in tokenize($corpus?description, "&#10;&#10;")
-                  return <p>{$p}</p>
-                }
-              </projectDesc>
-            </encodingDesc>
-          ) else ()}
+          {
+            if ($corpus?description) then (
+              <encodingDesc>
+                <projectDesc>
+                  {
+                    for $p in tokenize($corpus?description, "&#10;&#10;")
+                    return <p>{ $p }</p>
+                  }
+                </projectDesc>
+              </encodingDesc>
+            ) else (
+            )
+          }
         </teiHeader>
       </dracorCorpus>
-    return (
-      local:create-corpus($name, $xml),
-      $corpus
-    )
+      return (local:create-corpus($name, $xml), $corpus)
   )
 };
 
@@ -1739,57 +1997,53 @@ declare function dutil:create-corpus($corpus as map(*)) {
  : @param $xml dracorCorpus document
  :)
 declare function dutil:create-corpus-from-xml($xml as element()) {
-  let $corpus := element {QName('http://www.tei-c.org/ns/1.0', 'dracorCorpus')} {
-    $xml/tei:teiHeader
-  }
+  let $corpus := element {
+    QName("http://www.tei-c.org/ns/1.0", "dracorCorpus")
+    } { $xml/tei:teiHeader }
 
   let $header := $corpus/tei:teiHeader[1]
   (: A document might (erroneously) have multiple idnos from which we extract
     the distinct values. Below we will throw an error if there is more than
     one unique name. :)
   let $name := distinct-values(
-    $header//tei:publicationStmt/tei:idno[
-      not(@type)
-      or (: DEPRECATED: drop support for <idno type="URI"> in v2 :)
-      @type = "URI" and @xml:base = "https://dracor.org/"
-    ]
+    $header//tei:publicationStmt/tei:idno[not(
+      @type
+    ) or (: DEPRECATED: drop support for <idno type="URI"> in v2 :)
+      @type = "URI" and @xml:base = "https://dracor.org/"]
   )
   let $title := $header//tei:titleStmt/tei:title[1]/text()
 
   return if (not($header)) then
-    error (
-      xs:QName('dutil:invalid-corpus-document'),
+    error(
+      xs:QName("dutil:invalid-corpus-document"),
       "Missing teiHeader element"
     )
   else if (count($name) > 1) then
-    error (
-      xs:QName('dutil:invalid-corpus-document'),
+    error(
+      xs:QName("dutil:invalid-corpus-document"),
       "Multiple corpus names found"
     )
   else if (not($name) or not($title)) then
-    error (
-      xs:QName('dutil:invalid-corpus-document'),
+    error(
+      xs:QName("dutil:invalid-corpus-document"),
       "Missing corpus name or title"
     )
-  else if (not(matches($name, '^[a-z]+$'))) then
-    error (
-      xs:QName('dutil:invalid-corpus-name'),
-      "Invalid name '" || $name
-        || "'. Only lower case ASCII letters are accepted"
+  else if (not(matches($name, "^[a-z]+$"))) then
+    error(
+      xs:QName("dutil:invalid-corpus-name"),
+      "Invalid name '" ||
+        $name ||
+        "'. Only lower case ASCII letters are accepted"
     )
   else
     let $exists := dutil:get-corpus($name)
     return if ($exists) then (
-      error (
-        xs:QName('dutil:corpus-exists'),
+      error(
+        xs:QName("dutil:corpus-exists"),
         "Corpus with name '" || $name || "' already exists"
       )
     ) else (
-      local:create-corpus($name, $corpus),
-      map {
-        "name": $name,
-        "title": $title
-      }
+      local:create-corpus($name, $corpus), map {"name": $name, "title": $title}
     )
 };
 
@@ -1805,7 +2059,10 @@ declare function dutil:get-corpus-sha($name as xs:string) as xs:string* {
   let $num-sha := count($col/git/sha)
   let $shas := distinct-values($col/git/sha)
 
-  return if($num-plays = $num-sha and count($shas) = 1) then $shas[1] else ()
+  return if ($num-plays = $num-sha and count($shas) = 1) then
+    $shas[1]
+  else (
+  )
 };
 
 declare function local:record-sha(
@@ -1813,10 +2070,8 @@ declare function local:record-sha(
   $sha as xs:string
 ) as xs:string* {
   try {
-    xmldb:store( $collection, "git.xml", <git><sha>{$sha}</sha></git>)
-  } catch * {
-    util:log-system-out($err:description)
-  }
+    xmldb:store($collection, "git.xml", <git><sha>{ $sha }</sha></git>)
+  } catch * { util:log-system-out($err:description) }
 };
 
 (:~
@@ -1853,7 +2108,8 @@ declare function local:remove-sha($collection as xs:string) {
   if (doc-available($collection || "/git.xml")) then (
     util:log-system-out("Removing git.xml for " || $collection),
     xmldb:remove($collection, "git.xml")
-  ) else ()
+  ) else (
+  )
 };
 
 (:~
@@ -1879,36 +2135,33 @@ declare function dutil:remove-sha(
   $corpusname as xs:string,
   $playname as xs:string
 ) {
-  let $collection :=
-    $config:corpora-root || "/" || $corpusname || "/" || $playname
+  let $collection := $config:corpora-root ||
+    "/" ||
+    $corpusname ||
+    "/" ||
+    $playname
   return local:remove-sha($collection)
 };
 
 declare function local:network-graph($doc as document-node()) as map(*) {
   let $speakers := dutil:distinct-speakers($doc//tei:body)
-  let $segments :=
-    <segments>
-      {
-        for $seg in dutil:get-segments($doc//tei:TEI)
-        return
-          <sgm>
-            {
-              for $id in dutil:distinct-speakers($seg)
-              return <spkr>{$id}</spkr>
-            }
-          </sgm>
-      }
-    </segments>
+  let $segments := <segments>
+    {
+      for $seg in dutil:get-segments($doc//tei:TEI)
+      return <sgm>
+        {
+          for $id in dutil:distinct-speakers($seg)
+          return <spkr>{ $id }</spkr>
+        }
+      </sgm>
+    }
+  </segments>
   let $links := map:merge(
     for $spkr in $speakers
-    let $cooccurences := $segments//sgm[spkr=$spkr]/spkr/text()
-    return map:entry($spkr, distinct-values($cooccurences)[.!=$spkr])
+    let $cooccurences := $segments//sgm[spkr = $spkr]/spkr/text()
+    return map:entry($spkr, distinct-values($cooccurences)[. != $spkr])
   )
-  return map {
-    "speakers": $speakers,
-    "segments": $segments,
-    "links": $links
-  }
+  return map {"speakers": $speakers, "segments": $segments, "links": $links}
 };
 
 (:~
@@ -1917,19 +2170,17 @@ declare function local:network-graph($doc as document-node()) as map(*) {
  : @param $doc Play TEI document
  : @result CSV string
  :)
-declare function dutil:networkdata-csv(
-  $doc as document-node()
-) as xs:string {
+declare function dutil:networkdata-csv($doc as document-node()) as xs:string {
   let $graph := local:network-graph($doc)
   let $speakers := $graph?speakers
   let $segments := $graph?segments
   let $links := $graph?links
   let $rows :=
     for $spkr at $pos in $speakers
-      for $cooc in $links($spkr)
-      where index-of($speakers, $cooc)[1] gt $pos
-      let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
-      return string-join(($spkr, 'Undirected', $cooc, $weight), ",")
+    for $cooc in $links($spkr)
+    where index-of($speakers, $cooc)[1] gt $pos
+    let $weight := $segments//sgm[spkr = $spkr][spkr = $cooc] => count()
+    return string-join(($spkr, "Undirected", $cooc, $weight), ",")
   return string-join(("Source,Type,Target,Weight", $rows, ""), "&#10;")
 };
 
@@ -1950,8 +2201,8 @@ declare function dutil:word-count-map(
   if (exists($doc//tei:body/tei:sp//tei:w)) then
     map:merge(
       for $sp in $doc//tei:body//tei:sp
-      let $wc := count($sp//(tei:l|tei:p)//tei:w[not(ancestor::tei:stage)])
-      for $who in tokenize($sp/@who)[starts-with(., '#')] ! substring(., 2)
+      let $wc := count($sp//(tei:l | tei:p)//tei:w[not(ancestor::tei:stage)])
+      for $who in tokenize($sp/@who)[starts-with(., "#")]!substring(., 2)
       where $who = $ids
       group by $who
       return map:entry($who, sum($wc))
@@ -1962,12 +2213,15 @@ declare function dutil:word-count-map(
       let $wc := count(
         tokenize(
           string-join(
-            $sp//(tei:l|tei:p)//text()
-              [not(ancestor::tei:stage)][not(ancestor::tei:note)],
-            ' '),
-          '\W+')[not(.='')]
+            $sp//(tei:l | tei:p)//text()[not(ancestor::tei:stage)][not(
+              ancestor::tei:note
+            )],
+            " "
+          ),
+          "\W+"
+        )[not(. = "")]
       )
-      for $who in tokenize($sp/@who)[starts-with(., '#')] ! substring(., 2)
+      for $who in tokenize($sp/@who)[starts-with(., "#")]!substring(., 2)
       where $who = $ids
       group by $who
       return map:entry($who, sum($wc))
@@ -1990,21 +2244,27 @@ declare function dutil:gexf-nodes(
   let $id := $n?id
   let $label := $n?name
   let $sex := $n?sex
-  let $group := if ($n?isGroup) then 1 else 0
+  let $group := if ($n?isGroup) then
+    1
+  else
+    0
   let $wc := ($wc-map($id), 0)[1]
-  return
-    <node xmlns="http://www.gexf.net/1.2draft"
-      id="{$id}" label="{$label}">
-      <attvalues>
-        <attvalue for="person-group" value="{$group}" />
-        <attvalue for="number-of-words" value="{$wc}" />
-        {
-          if ($sex) then
-            <attvalue for="sex" value="{$sex}"></attvalue>
-          else ()
-        }
-      </attvalues>
-    </node>
+  return <node
+    xmlns="http://www.gexf.net/1.2draft"
+    id="{ $id }"
+    label="{ $label }"
+  >
+    <attvalues>
+      <attvalue for="person-group" value="{ $group }" />
+      <attvalue for="number-of-words" value="{ $wc }" />
+      {
+        if ($sex) then
+          <attvalue for="sex" value="{ $sex }" />
+        else (
+        )
+      }
+    </attvalues>
+  </node>
 };
 
 (:~
@@ -2025,34 +2285,38 @@ declare function dutil:networkdata-gexf(
   let $segments := $graph?segments
   let $links := $graph?links
   let $info := dutil:get-play-info($corpusname, $playname)
-  let $authors := string-join($info?authors?*?name, ' · ')
+  let $authors := string-join($info?authors?*?name, " · ")
   let $title := $info?title
   let $nodes := dutil:gexf-nodes($doc, $info?characters?*)
   let $edges :=
     for $spkr at $pos in $speakers
-      for $cooc in $links($spkr)
-      where index-of($speakers, $cooc)[1] gt $pos
-      let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
-      return
-        <edge xmlns="http://www.gexf.net/1.2draft"
-          id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}"
-          weight="{$weight}"/>
-  return
-    <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
-      <meta>
-        <creator>dracor.org</creator>
-        <description>{$authors}: {$title}</description>
-      </meta>
-      <graph mode="static" defaultedgetype="undirected">
-        <attributes class="node" mode="static">
-          <attribute id="sex" title="Sex" type="string"/>
-          <attribute id="person-group" title="Person group" type="boolean"/>
-          <attribute id="number-of-words" title="Number of spoken words" type="integer"/>
-        </attributes>
-        <nodes>{$nodes}</nodes>
-        <edges>{$edges}</edges>
-      </graph>
-    </gexf>
+    for $cooc in $links($spkr)
+    where index-of($speakers, $cooc)[1] gt $pos
+    let $weight := $segments//sgm[spkr = $spkr][spkr = $cooc] => count()
+    return <edge
+      xmlns="http://www.gexf.net/1.2draft"
+      id="{ $spkr }|{ $cooc }"
+      source="{ $spkr }"
+      target="{ $cooc }"
+      weight="{ $weight }" />
+  return <gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
+    <meta>
+      <creator>dracor.org</creator>
+      <description>{ $authors }: { $title }</description>
+    </meta>
+    <graph defaultedgetype="undirected" mode="static">
+      <attributes class="node" mode="static">
+        <attribute id="sex" title="Sex" type="string" />
+        <attribute id="person-group" title="Person group" type="boolean" />
+        <attribute
+          id="number-of-words"
+          title="Number of spoken words"
+          type="integer" />
+      </attributes>
+      <nodes>{ $nodes }</nodes>
+      <edges>{ $edges }</edges>
+    </graph>
+  </gexf>
 };
 
 (:~
@@ -2076,40 +2340,57 @@ declare function dutil:networkdata-graphml(
   let $wc-map := dutil:word-count-map($doc, $info?characters?*?id)
   let $edges :=
     for $spkr at $pos in $speakers
-      for $cooc in $links($spkr)
-      where index-of($speakers, $cooc)[1] gt $pos
-      let $weight := $segments//sgm[spkr=$spkr][spkr=$cooc] => count()
-      return
-        <edge xmlns="http://graphml.graphdrawing.org/xmlns"
-          id="{$spkr}|{$cooc}" source="{$spkr}" target="{$cooc}">
-          <data key="weight">{$weight}</data>
-        </edge>
-  return
-    <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
-      <key attr.name="label" attr.type="string" for="node" id="label"/>
-      <key attr.name="Edge Label" attr.type="string" for="edge" id="edgelabel"/>
-      <key attr.name="weight" attr.type="double" for="edge" id="weight"/>
-      <key attr.name="Sex" attr.type="string" for="node" id="sex"/>
-      <key attr.name="Person group" attr.type="boolean" for="node" id="person-group"/>
-      <key attr.name="Number of spoken words" attr.type="int" for="node" id="number-of-words"/>
-      <graph edgedefault="undirected">
-        {
-          for $n in $info?characters?*
-          let $id := $n?id
-          let $label := $n?name
-          let $sex := $n?sex
-          let $wc := ($wc-map($id), 0)[1]
-          return
-            <node id="{$id}" xmlns="http://graphml.graphdrawing.org/xmlns">
-              <data key="label">{$label}</data>
-              {if ($sex) then <data key="sex">{$sex}</data> else ()}
-              <data key="person-group">
-                {if ($n?isGroup) then "true" else "false"}
-              </data>
-              <data key="number-of-words">{$wc}</data>
-            </node>
-        }
-        {$edges}
-      </graph>
-    </graphml>
+    for $cooc in $links($spkr)
+    where index-of($speakers, $cooc)[1] gt $pos
+    let $weight := $segments//sgm[spkr = $spkr][spkr = $cooc] => count()
+    return <edge
+      xmlns="http://graphml.graphdrawing.org/xmlns"
+      id="{ $spkr }|{ $cooc }"
+      source="{ $spkr }"
+      target="{ $cooc }"
+    ><data key="weight">{ $weight }</data></edge>
+  return <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+    <key attr.name="label" attr.type="string" for="node" id="label" />
+    <key attr.name="Edge Label" attr.type="string" for="edge" id="edgelabel" />
+    <key attr.name="weight" attr.type="double" for="edge" id="weight" />
+    <key attr.name="Sex" attr.type="string" for="node" id="sex" />
+    <key
+      attr.name="Person group"
+      attr.type="boolean"
+      for="node"
+      id="person-group" />
+    <key
+      attr.name="Number of spoken words"
+      attr.type="int"
+      for="node"
+      id="number-of-words" />
+    <graph edgedefault="undirected">
+      {
+        for $n in $info?characters?*
+        let $id := $n?id
+        let $label := $n?name
+        let $sex := $n?sex
+        let $wc := ($wc-map($id), 0)[1]
+        return <node xmlns="http://graphml.graphdrawing.org/xmlns" id="{ $id }">
+          <data key="label">{ $label }</data>
+          {
+            if ($sex) then
+              <data key="sex">{ $sex }</data>
+            else (
+            )
+          }
+          <data key="person-group">
+            {
+              if ($n?isGroup) then
+                "true"
+              else
+                "false"
+            }
+          </data>
+          <data key="number-of-words">{ $wc }</data>
+        </node>
+      }
+      { $edges }
+    </graph>
+  </graphml>
 };
