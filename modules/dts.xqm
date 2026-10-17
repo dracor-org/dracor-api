@@ -16,11 +16,6 @@ xquery version "3.1";
  :)
 module namespace ddts = "http://dracor.org/ns/exist/v1/dts";
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config"
-  at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/v1/util"
-  at "util.xqm";
-
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
@@ -28,7 +23,11 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 (: namespace of <dts:wrapper> in Document endpoint responses :)
 declare namespace dts = "https://w3id.org/api/dts#";
 
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+
 declare variable $ddts:spec-version := "1.0";
+
 declare variable $ddts:context := "https://dtsapi.org/context/v1.0.json";
 
 (: JSON-LD context defining the terms used in `extensions` :)
@@ -36,8 +35,11 @@ declare variable $ddts:extensions-context :=
   "https://raw.githubusercontent.com/dracor-org/dracor-ontology/refs/heads/main/json-ld-contexts/dts-extension-context.json";
 
 declare variable $ddts:base := $config:api-base || "/dts";
+
 declare variable $ddts:collection-endpoint := $ddts:base || "/collection";
+
 declare variable $ddts:navigation-endpoint := $ddts:base || "/navigation";
+
 declare variable $ddts:document-endpoint := $ddts:base || "/document";
 
 (: identifier of the root collection, e.g. https://dracor.org :)
@@ -61,11 +63,11 @@ declare variable $ddts:ref-pattern :=
  : @param $status HTTP status code
  : @param $message Error message
  :)
-declare function local:error($status as xs:integer, $message as xs:string)
-as item()+ {
-  <rest:response>
-    <http:response status="{$status}"/>
-  </rest:response>,
+declare function local:error(
+  $status as xs:integer,
+  $message as xs:string
+) as item()+ {
+  <rest:response><http:response status="{ $status }" /></rest:response>,
   $message
 };
 
@@ -83,8 +85,8 @@ declare function local:param($values as xs:string*) as xs:string? {
  : @return error response or empty sequence
  :)
 declare function local:check-page($page as xs:string?) as item()* {
-  if (empty($page) or $page = "1") then ()
-  else if (not($page castable as xs:positiveInteger)) then
+  if (empty($page) or $page = "1") then (
+  ) else if (not($page castable as xs:positiveInteger)) then
     local:error(400, "The parameter 'page' must be a positive integer.")
   else
     local:error(404, "Page " || $page || " does not exist.")
@@ -96,15 +98,23 @@ declare function local:check-page($page as xs:string?) as item()* {
  : @param $endpoint Endpoint URL
  : @param $params Maps with the name and value of each parameter
  :)
-declare function local:url($endpoint as xs:string, $params as map(*)*)
-as xs:string {
+declare function local:url(
+  $endpoint as xs:string,
+  $params as map(*)*
+) as xs:string {
   let $query := string-join(
     for $param in $params
     where exists($param?value)
     return $param?name || "=" || encode-for-uri($param?value),
     "&amp;"
   )
-  return $endpoint || (if ($query) then "?" || $query else "")
+  return $endpoint ||
+    (
+      if ($query) then
+        "?" || $query
+      else
+        ""
+    )
 };
 
 (:
@@ -123,7 +133,7 @@ as xs:string {
  :
  : @param $id Identifier
  : @return DraCor ID or corpus name, empty if $id is neither a DraCor URI nor
- :   a legal XML ID
+ : a legal XML ID
  :)
 declare function local:resolve-id($id as xs:string) as xs:string? {
   (dutil:uri-to-id($id), $id[. castable as xs:NCName])[1]
@@ -137,7 +147,10 @@ declare function local:resolve-id($id as xs:string) as xs:string? {
  :)
 declare function local:get-tei($resource as xs:string) as element(tei:TEI)? {
   let $id := local:resolve-id($resource)
-  return if ($id) then dutil:get-play-by-id($id) else ()
+  return if ($id) then
+    dutil:get-play-by-id($id)
+  else (
+  )
 };
 
 (:
@@ -149,8 +162,7 @@ declare function local:get-tei($resource as xs:string) as element(tei:TEI)? {
 (:~
  : Return the top-level CitableUnits of a play: front, body and back.
  :)
-declare function local:top-level-units($tei as element(tei:TEI))
-as element()* {
+declare function local:top-level-units($tei as element(tei:TEI)) as element()* {
   $tei/tei:text/(tei:front | tei:body | tei:back)
 };
 
@@ -158,10 +170,14 @@ as element()* {
  : Return the CitableUnits directly below a CitableUnit.
  :)
 declare function local:citable-children($unit as element()) as element()* {
-  if ($unit/(self::tei:front | self::tei:body | self::tei:back | self::tei:div))
-  then
-    $unit/(tei:div | tei:sp | tei:stage | tei:set | tei:castList | tei:titlePage)
-  else ()
+  if (
+    $unit/(self::tei:front | self::tei:body | self::tei:back | self::tei:div)
+  ) then
+    $unit/(
+      tei:div | tei:sp | tei:stage | tei:set | tei:castList | tei:titlePage
+    )
+  else (
+  )
 };
 
 (:~
@@ -172,8 +188,13 @@ declare function local:is-citable($el as element()) as xs:boolean {
     exists($el/(self::tei:front | self::tei:body | self::tei:back))
   else
     exists($el/parent::*) and
-    (some $child in local:citable-children($el/parent::*) satisfies $child is $el)
-    and local:is-citable($el/parent::*)
+      (
+        some
+          $child in
+          local:citable-children($el/parent::*) satisfies
+          $child is $el
+      ) and
+      local:is-citable($el/parent::*)
 };
 
 (:~
@@ -183,10 +204,12 @@ declare function local:is-citable($el as element()) as xs:boolean {
  : @param $unit CitableUnit
  : @param $depth Number of levels below $unit, -1 for all
  :)
-declare function local:descendants($unit as element(), $depth as xs:integer)
-as element()* {
-  if ($depth eq 0) then ()
-  else
+declare function local:descendants(
+  $unit as element(),
+  $depth as xs:integer
+) as element()* {
+  if ($depth eq 0) then (
+  ) else
     for $child in local:citable-children($unit)
     return ($child, local:descendants($child, $depth - 1))
 };
@@ -197,10 +220,12 @@ as element()* {
  : @param $tei TEI document of the play
  : @param $depth Maximum level, -1 for all
  :)
-declare function local:tree($tei as element(tei:TEI), $depth as xs:integer)
-as element()* {
-  if ($depth eq 0) then ()
-  else
+declare function local:tree(
+  $tei as element(tei:TEI),
+  $depth as xs:integer
+) as element()* {
+  if ($depth eq 0) then (
+  ) else
     for $unit in local:top-level-units($tei)
     return ($unit, local:descendants($unit, $depth - 1))
 };
@@ -209,11 +234,15 @@ as element()* {
  : Return the identifier of a CitableUnit, e.g. `body/div[2]/sp[3]`.
  :)
 declare function local:ref($unit as element()) as xs:string {
-  if ($unit/parent::tei:text) then local-name($unit)
+  if ($unit/parent::tei:text) then
+    local-name($unit)
   else
-    local:ref($unit/parent::*) || "/" || local-name($unit) || "[" ||
-    count($unit/preceding-sibling::*[node-name(.) eq node-name($unit)]) + 1 ||
-    "]"
+    local:ref($unit/parent::*) ||
+      "/" ||
+      local-name($unit) ||
+      "[" ||
+      count($unit/preceding-sibling::*[node-name(.) eq node-name($unit)]) + 1 ||
+      "]"
 };
 
 (:~
@@ -228,7 +257,9 @@ declare function local:level($unit as element()) as xs:integer {
  : level.
  :)
 declare function local:parent-ref($unit as element()) as xs:string? {
-  if ($unit/parent::tei:text) then () else local:ref($unit/parent::*)
+  if ($unit/parent::tei:text) then (
+  ) else
+    local:ref($unit/parent::*)
 };
 
 (:~
@@ -238,12 +269,19 @@ declare function local:cite-type($unit as element()) as xs:string {
   typeswitch ($unit)
     case element(tei:div) return
       (lower-case(normalize-space($unit/@type))[.], "div")[1]
-    case element(tei:sp) return "speech"
-    case element(tei:stage) return "stage_direction"
-    case element(tei:set) return "setting"
-    case element(tei:castList) return "cast_list"
-    case element(tei:titlePage) return "title_page"
-    default return local-name($unit)
+    case element(tei:sp) return
+      "speech"
+    case element(tei:stage) return
+      "stage_direction"
+    case element(tei:set) return
+      "setting"
+    case element(tei:castList) return
+      "cast_list"
+    case element(tei:titlePage) return
+      "title_page"
+
+    default return
+      local-name($unit)
 };
 
 (:~
@@ -254,28 +292,29 @@ declare function local:cite-type($unit as element()) as xs:string {
  : @param $ref Identifier, e.g. `body/div[2]/sp[3]`, or @xml:id
  : @return CitableUnit, empty if there is none
  :)
-declare function local:resolve-ref($tei as element(tei:TEI), $ref as xs:string)
-as element()? {
+declare function local:resolve-ref(
+  $tei as element(tei:TEI),
+  $ref as xs:string
+) as element()? {
   if (matches($ref, $ddts:ref-pattern)) then
     let $unit := fold-left(
       tokenize($ref, "/"),
       $tei/tei:text,
       function ($context, $step) {
         let $name := replace($step, "\[.*$", "")
-        let $pos :=
-          if (contains($step, "[")) then
-            xs:integer(replace($step, "^.*\[([0-9]+)\]$", "$1"))
-          else 1
-        return
-          $context/*[namespace-uri() eq "http://www.tei-c.org/ns/1.0"][
-            local-name() eq $name
-          ][$pos]
+        let $pos := if (contains($step, "[")) then
+          xs:integer(replace($step, "^.*\[([0-9]+)\]$", "$1"))
+        else
+          1
+        return $context/*[namespace-uri() eq
+          "http://www.tei-c.org/ns/1.0"][local-name() eq $name][$pos]
       }
     )
     return $unit[local:is-citable(.)]
   else if ($ref castable as xs:NCName) then
     ($tei/tei:text//*[@xml:id = $ref])[1][local:is-citable(.)]
-  else ()
+  else (
+  )
 };
 
 (:~
@@ -283,17 +322,21 @@ as element()? {
  : citeTypes found on each level.
  :)
 declare function local:cite-structure($units as element()*) as array(*) {
-  array {
-    for $type in distinct-values($units ! local:cite-type(.))
-    let $children :=
-      $units[local:cite-type(.) eq $type] ! local:citable-children(.)
-    return map:merge((
-      map {"@type": "CiteStructure", "citeType": $type},
-      if (exists($children)) then
-        map {"citeStructure": local:cite-structure($children)}
-      else ()
-    ))
-  }
+  array
+    {
+      for $type in distinct-values($units!local:cite-type(.))
+      let $children := $units[local:cite-type(.) eq
+        $type]!local:citable-children(.)
+      return map:merge(
+        (
+          map {"@type": "CiteStructure", "citeType": $type},
+          if (exists($children)) then
+            map {"citeStructure": local:cite-structure($children)}
+          else (
+          )
+        )
+      )
+    }
 };
 
 (:~
@@ -301,35 +344,40 @@ declare function local:cite-structure($units as element()*) as array(*) {
  :)
 declare function local:citation-trees($tei as element(tei:TEI)) as array(*) {
   let $top := local:top-level-units($tei)
-  return array {
-    if (exists($top)) then
-      map {
-        "@type": "CitationTree",
-        "citeStructure": local:cite-structure($top)
-      }
-    else ()
-  }
+  return array
+    {
+      if (exists($top)) then
+        map {
+          "@type": "CitationTree",
+          "citeStructure": local:cite-structure($top)
+        }
+      else (
+      )
+    }
 };
 
 (:~
  : Return a short snippet of the text of a speech or stage direction.
  :)
 declare function local:snippet($unit as element()) as xs:string {
-  (: excluded text: notes, and speaker labels and stage directions in speeches
+  (:
+   : excluded text: notes, and speaker labels and stage directions in speeches
    : (written as a FLWOR expression, as eXist fails on the equivalent
-   : predicate with not()) :)
-  let $excluded :=
-    if ($unit/self::tei:sp) then ("note", "speaker", "stage") else "note"
+   : predicate with not())
+   :)
+  let $excluded := if ($unit/self::tei:sp) then (
+    "note", "speaker", "stage"
+  ) else
+    "note"
   let $text :=
     for $node in $unit//text()
     where not(local-name($node/parent::*) = $excluded)
     return $node
   let $tokens := tokenize(normalize-space(string-join($text, " ")), " ")
-  return
-    if (count($tokens) > 5) then
-      string-join(($tokens[position() < 6], "[...]", $tokens[last()]), " ")
-    else
-      string-join($tokens, " ")
+  return if (count($tokens) > 5) then
+    string-join(($tokens[position() < 6], "[...]", $tokens[last()]), " ")
+  else
+    string-join($tokens, " ")
 };
 
 (:~
@@ -354,15 +402,19 @@ declare function local:citable-units($units as element()*) as map(*)* {
     function ($refs as map(*), $unit as element()) {
       let $parent := $unit/parent::*
       let $parent-id := util:node-id($parent)
-      let $parent-ref :=
-        if ($parent/self::tei:text) then ()
-        (: no sequence with a fallback here, eXist would evaluate both :)
-        else if (map:contains($refs, $parent-id)) then $refs($parent-id)?ref
-        else local:ref($parent)
-      let $ref :=
-        if ($parent/self::tei:text) then local-name($unit)
-        else
-          $parent-ref || "/" || local-name($unit) || "[" ||
+      (: no sequence with a fallback here, eXist would evaluate both :)
+      let $parent-ref := if ($parent/self::tei:text) then (
+      ) else if (map:contains($refs, $parent-id)) then
+        $refs($parent-id)?ref
+      else
+        local:ref($parent)
+      let $ref := if ($parent/self::tei:text) then
+        local-name($unit)
+      else
+        $parent-ref ||
+          "/" ||
+          local-name($unit) ||
+          "[" ||
           count($unit/preceding-sibling::*[node-name(.) eq node-name($unit)]) +
             1 ||
           "]"
@@ -389,46 +441,67 @@ declare function local:citable-unit(
 ) as map(*) {
   let $lang := ($unit/ancestor-or-self::*/@xml:lang)[last()]/string()
   let $head := normalize-space($unit/tei:head[1])
-  let $extensions := map:merge((
-    if ($unit/self::tei:sp) then
-      map {
-        "speakers": array {
-          tokenize(normalize-space($unit/@who), " ") ! replace(., "^#", "")
+  let $extensions := map:merge(
+    (
+      if ($unit/self::tei:sp) then
+        map {
+          "speakers":
+            array
+              {
+                tokenize(normalize-space($unit/@who), " ")!replace(., "^#", "")
+              }
         }
-      }
-    else (),
-    if ($unit/(self::tei:sp | self::tei:stage)) then
-      map {"snippet": local:snippet($unit)}
-    else (),
-    if ($unit/@xml:id) then map {"xmlId": $unit/@xml:id/string()} else ()
-  ))
-  return map:merge((
-    map {
-      "identifier": $ref,
-      "@type": "CitableUnit",
-      "level": local:level($unit),
-      "parent": $parent-ref,
-      "citeType": local:cite-type($unit)
-    },
-    if ($head) then
+      else (
+      ),
+      if ($unit/(self::tei:sp | self::tei:stage)) then
+        map {"snippet": local:snippet($unit)}
+      else (
+      ),
+      if ($unit/@xml:id) then
+        map {"xmlId": $unit/@xml:id/string()}
+      else (
+      )
+    )
+  )
+  return map:merge(
+    (
       map {
-        "dublinCore": map {
-          "title": array {
-            map:merge((
-              map {"value": $head},
-              if ($lang) then map {"lang": $lang} else ()
-            ))
-          }
+        "identifier": $ref,
+        "@type": "CitableUnit",
+        "level": local:level($unit),
+        "parent": $parent-ref,
+        "citeType": local:cite-type($unit)
+      },
+      if ($head) then
+        map {
+          "dublinCore":
+            map {
+              "title":
+                array
+                  {
+                    map:merge(
+                      (
+                        map {"value": $head},
+                        if ($lang) then
+                          map {"lang": $lang}
+                        else (
+                        )
+                      )
+                    )
+                  }
+            }
         }
-      }
-    else (),
-    if (map:size($extensions) gt 0) then
-      map {
-        "extensions":
-          map:merge((map {"@context": $ddts:extensions-context}, $extensions))
-      }
-    else ()
-  ))
+      else (
+      ),
+      if (map:size($extensions) gt 0) then
+        map {
+          "extensions":
+            map:merge((map {"@context": $ddts:extensions-context}, $extensions))
+        }
+      else (
+      )
+    )
+  )
 };
 
 (:
@@ -451,8 +524,9 @@ declare function local:corpus-names() as xs:string* {
 (:~
  : Return the TEI documents of the plays of a corpus.
  :)
-declare function local:corpus-plays($corpusname as xs:string)
-as element(tei:TEI)* {
+declare function local:corpus-plays(
+  $corpusname as xs:string
+) as element(tei:TEI)* {
   collection($config:corpora-root || "/" || $corpusname)/tei:TEI
 };
 
@@ -477,18 +551,23 @@ declare function local:root-object() as map(*) {
 declare function local:corpus-object($corpusname as xs:string) as map(*) {
   let $info := dutil:get-corpus-info-by-name($corpusname)
   let $uri := dutil:corpus-uri($corpusname)
-  return map:merge((
-    map {
-      "@id": $uri,
-      "@type": "Collection",
-      "title": ($info?title[.], $corpusname)[1],
-      "totalParents": 1,
-      "totalChildren": count(local:corpus-plays($corpusname)),
-      "collection":
-        $ddts:collection-endpoint || "?id=" || $uri || "{&amp;page,nav}"
-    },
-    if ($info?description) then map {"description": $info?description} else ()
-  ))
+  return map:merge(
+    (
+      map {
+        "@id": $uri,
+        "@type": "Collection",
+        "title": ($info?title[.], $corpusname)[1],
+        "totalParents": 1,
+        "totalChildren": count(local:corpus-plays($corpusname)),
+        "collection":
+          $ddts:collection-endpoint || "?id=" || $uri || "{&amp;page,nav}"
+      },
+      if ($info?description) then
+        map {"description": $info?description}
+      else (
+      )
+    )
+  )
 };
 
 (:~
@@ -499,20 +578,32 @@ declare function local:play-dublin-core($tei as element(tei:TEI)) as map(*) {
   let $titles := dutil:get-titles($tei)
   let $authors := dutil:get-authors($tei)
   let $localized := function ($value as xs:string) as map(*) {
-    map:merge((
-      map {"value": $value},
-      if ($lang) then map {"lang": $lang} else ()
-    ))
+    map:merge(
+      (
+        map {"value": $value},
+        if ($lang) then
+          map {"lang": $lang}
+        else (
+        )
+      )
+    )
   }
-  return map:merge((
-    if ($titles?main) then
-      map {"title": array {$localized($titles?main)}}
-    else (),
-    if (exists($authors)) then
-      map {"creator": array {$authors ! $localized(?name)}}
-    else (),
-    if ($lang) then map {"language": array {$lang}} else ()
-  ))
+  return map:merge(
+    (
+      if ($titles?main) then
+        map {"title": array { $localized($titles?main) }}
+      else (
+      ),
+      if (exists($authors)) then
+        map {"creator": array { $authors!$localized(?name) }}
+      else (
+      ),
+      if ($lang) then
+        map {"language": array { $lang }}
+      else (
+      )
+    )
+  )
 };
 
 (:~
@@ -523,20 +614,27 @@ declare function local:play-extensions($tei as element(tei:TEI)) as map(*) {
   let $year := dutil:get-normalized-year($tei)
   let $paths := dutil:filepaths(base-uri($tei))
   let $wordcount := doc($paths?files?metrics)/metrics/text/string()
-  return map:merge((
-    map {"@context": $ddts:extensions-context},
-    if (exists($year)) then map {"yearNormalized": $year[1]} else (),
-    if ($wikidata-id) then
-      map {"wikidataUri": "http://www.wikidata.org/entity/" || $wikidata-id}
-    else (),
-    map {
-      "numOfSpeakers": count(dutil:distinct-speakers($tei)),
-      "numOfSegments": count(dutil:get-segments($tei))
-    },
-    if ($wordcount castable as xs:integer) then
-      map {"wordCountText": xs:integer($wordcount)}
-    else ()
-  ))
+  return map:merge(
+    (
+      map {"@context": $ddts:extensions-context},
+      if (exists($year)) then
+        map {"yearNormalized": $year[1]}
+      else (
+      ),
+      if ($wikidata-id) then
+        map {"wikidataUri": "http://www.wikidata.org/entity/" || $wikidata-id}
+      else (
+      ),
+      map {
+        "numOfSpeakers": count(dutil:distinct-speakers($tei)),
+        "numOfSegments": count(dutil:get-segments($tei))
+      },
+      if ($wordcount castable as xs:integer) then
+        map {"wordCountText": xs:integer($wordcount)}
+      else (
+      )
+    )
+  )
 };
 
 (:~
@@ -552,40 +650,46 @@ declare function local:resource-object(
   let $id := dutil:get-dracor-id($tei)
   let $uri := dutil:play-uri($id)
   let $paths := dutil:filepaths(base-uri($tei))
-  return map:merge((
-    map {
-      "@id": $uri,
-      "@type": "Resource",
-      "title": (dutil:get-titles($tei)?main, $id)[1],
-      "totalParents": 1,
-      "totalChildren": 0,
-      "collection":
-        $ddts:collection-endpoint || "?id=" || $uri || "{&amp;nav}",
-      "navigation":
-        $ddts:navigation-endpoint || "?resource=" || $uri ||
-        "{&amp;ref,down,start,end,tree,page}",
-      "document":
-        $ddts:document-endpoint || "?resource=" || $uri ||
-        "{&amp;ref,start,end,tree,mediaType}",
-      "download": $paths?uri || "/tei",
-      "mediaTypes": array {$ddts:media-types},
-      "dublinCore": local:play-dublin-core($tei),
-      "extensions": local:play-extensions($tei)
-    },
-    if ($with-trees) then
-      map {"citationTrees": local:citation-trees($tei)}
-    else ()
-  ))
+  return map:merge(
+    (
+      map {
+        "@id": $uri,
+        "@type": "Resource",
+        "title": (dutil:get-titles($tei)?main, $id)[1],
+        "totalParents": 1,
+        "totalChildren": 0,
+        "collection":
+          $ddts:collection-endpoint || "?id=" || $uri || "{&amp;nav}",
+        "navigation":
+          $ddts:navigation-endpoint ||
+            "?resource=" ||
+            $uri ||
+            "{&amp;ref,down,start,end,tree,page}",
+        "document":
+          $ddts:document-endpoint ||
+            "?resource=" ||
+            $uri ||
+            "{&amp;ref,start,end,tree,mediaType}",
+        "download": $paths?uri || "/tei",
+        "mediaTypes": array { $ddts:media-types },
+        "dublinCore": local:play-dublin-core($tei),
+        "extensions": local:play-extensions($tei)
+      },
+      if ($with-trees) then
+        map {"citationTrees": local:citation-trees($tei)}
+      else (
+      )
+    )
+  )
 };
 
 (:~
  : Add the properties of a top-level response object.
  :)
 declare function local:top-level($object as map(*)) as map(*) {
-  map:merge((
-    map {"@context": $ddts:context, "dtsVersion": $ddts:spec-version},
-    $object
-  ))
+  map:merge(
+    (map {"@context": $ddts:context, "dtsVersion": $ddts:spec-version}, $object)
+  )
 };
 
 (:
@@ -604,15 +708,17 @@ declare
   %output:media-type("application/ld+json")
   %output:method("json")
 function ddts:entry-point() as map(*) {
-  local:top-level(map {
-    "@id": $ddts:base,
-    "@type": "EntryPoint",
-    "collection": $ddts:collection-endpoint || "{?id,page,nav}",
-    "navigation":
-      $ddts:navigation-endpoint || "{?resource,ref,start,end,down,tree,page}",
-    "document":
-      $ddts:document-endpoint || "{?resource,ref,start,end,tree,mediaType}"
-  })
+  local:top-level(
+    map {
+      "@id": $ddts:base,
+      "@type": "EntryPoint",
+      "collection": $ddts:collection-endpoint || "{?id,page,nav}",
+      "navigation":
+        $ddts:navigation-endpoint || "{?resource,ref,start,end,down,tree,page}",
+      "document":
+        $ddts:document-endpoint || "{?resource,ref,start,end,tree,mediaType}"
+    }
+  )
 };
 
 (:
@@ -625,7 +731,7 @@ function ddts:entry-point() as map(*) {
  : DTS collection endpoint
  :
  : @param $id Identifier of the root collection, a corpus or a play. Without
- :   it the root collection is returned.
+ : it the root collection is returned.
  : @param $page Page of the members, only page 1 exists
  : @param $nav `children` (default) or `parents`
  :)
@@ -645,52 +751,74 @@ function ddts:collection(
 ) as item()+ {
   let $id := local:param($id)
   let $nav := (local:param($nav), "children")[1]
-  let $name := if ($id) then local:resolve-id($id) else ()
+  let $name := if ($id) then
+    local:resolve-id($id)
+  else (
+  )
   let $page-error := local:check-page(local:param($page))
-  return
-    if (not($nav = ("children", "parents"))) then
-      local:error(
-        400,
-        "The value of the parameter 'nav' must be 'children' or 'parents'."
-      )
-    else if (exists($page-error)) then
-      $page-error
-    else if (empty($id) or $id = ($ddts:root-uri, $config:api-origin)) then
-      local:top-level(map:merge((
-        local:root-object(),
-        map {
-          "member": array {
-            if ($nav eq "parents") then ()
-            else local:corpus-names() ! local:corpus-object(.)
+  return if (not($nav = ("children", "parents"))) then
+    local:error(
+      400,
+      "The value of the parameter 'nav' must be 'children' or 'parents'."
+    )
+  else if (exists($page-error)) then
+    $page-error
+  else if (empty($id) or $id = ($ddts:root-uri, $config:api-origin)) then
+    local:top-level(
+      map:merge(
+        (
+          local:root-object(),
+          map {
+            "member":
+              array
+                {
+                  if ($nav eq "parents") then (
+                  ) else
+                    local:corpus-names()!local:corpus-object(.)
+                }
           }
-        }
-      )))
-    else if ($name and dutil:get-corpus($name)) then
-      local:top-level(map:merge((
-        local:corpus-object($name),
-        map {
-          "member": array {
-            if ($nav eq "parents") then
-              local:root-object()
-            else
-              local:corpus-plays($name) ! local:resource-object(., false())
-          }
-        }
-      )))
-    else if ($name and dutil:get-play-by-id($name)) then
-      let $tei := dutil:get-play-by-id($name)
-      let $corpusname := dutil:filepaths(base-uri($tei))?corpusname
-      return local:top-level(map:merge((
-        local:resource-object($tei, true()),
-        if ($nav eq "parents") then
-          map {"member": array {local:corpus-object($corpusname)}}
-        else ()
-      )))
-    else
-      local:error(
-        404,
-        "The identifier '" || $id || "' does not identify a collection or resource."
+        )
       )
+    )
+  else if ($name and dutil:get-corpus($name)) then
+    local:top-level(
+      map:merge(
+        (
+          local:corpus-object($name),
+          map {
+            "member":
+              array
+                {
+                  if ($nav eq "parents") then
+                    local:root-object()
+                  else
+                    local:corpus-plays($name)!local:resource-object(., false())
+                }
+          }
+        )
+      )
+    )
+  else if ($name and dutil:get-play-by-id($name)) then
+    let $tei := dutil:get-play-by-id($name)
+    let $corpusname := dutil:filepaths(base-uri($tei))?corpusname
+    return local:top-level(
+      map:merge(
+        (
+          local:resource-object($tei, true()),
+          if ($nav eq "parents") then
+            map {"member": array { local:corpus-object($corpusname) }}
+          else (
+          )
+        )
+      )
+    )
+  else
+    local:error(
+      404,
+      "The identifier '" ||
+        $id ||
+        "' does not identify a collection or resource."
+    )
 };
 
 (:
@@ -702,9 +830,15 @@ function ddts:collection(
 (:~
  : Return the position of a node in a sequence of nodes.
  :)
-declare function local:index-of($nodes as node()*, $node as node())
-as xs:integer? {
-  (for $n at $i in $nodes where $n is $node return $i)[1]
+declare function local:index-of(
+  $nodes as node()*,
+  $node as node()
+) as xs:integer? {
+  (
+    for $n at $i in $nodes
+    where $n is $node
+    return $i
+  )[1]
 };
 
 (:~
@@ -724,10 +858,7 @@ declare function local:range(
 ) as element()* {
   let $all := local:tree($tei, -1)
   let $first := local:index-of($all, $start)
-  let $last := local:index-of(
-    $all,
-    ($end, local:descendants($end, -1))[last()]
-  )
+  let $last := local:index-of($all, ($end, local:descendants($end, -1))[last()])
   for $unit in subsequence($all, $first, $last - $first + 1)
   where $max-level lt 0 or local:level($unit) le $max-level
   return $unit
@@ -771,96 +902,120 @@ function ddts:navigation(
   let $start := local:param($start)
   let $end := local:param($end)
   let $down-param := local:param($down)
-  let $down :=
-    if ($down-param castable as xs:integer) then xs:integer($down-param) else ()
+  let $down := if ($down-param castable as xs:integer) then
+    xs:integer($down-param)
+  else (
+  )
   let $tree := local:param($tree)
   let $page := local:param($page)
   let $page-error := local:check-page($page)
-  let $tei := if ($resource) then local:get-tei($resource) else ()
-  return
-    if (empty($resource)) then
-      local:error(400, "The parameter 'resource' is required.")
-    else if ($ref and ($start or $end)) then
-      local:error(
-        400,
-        "The parameter 'ref' cannot be combined with 'start' and 'end'."
-      )
-    else if (($start and empty($end)) or ($end and empty($start))) then
-      local:error(400, "The parameters 'start' and 'end' must be used together.")
-    else if ($down-param and (empty($down) or $down lt -1)) then
-      local:error(400, "The parameter 'down' must be an integer of -1 or more.")
-    else if (empty($down) and empty($ref) and empty($start)) then
-      local:error(
-        400,
-        "At least one of the parameters 'down', 'ref' or 'start' and 'end' is required."
-      )
-    else if ($down eq 0 and empty($ref)) then
-      local:error(400, "The parameter 'down=0' requires 'ref'.")
-    else if (exists($page-error)) then
-      $page-error
-    else if (empty($tei)) then
-      local:error(404, "Resource '" || $resource || "' not found.")
-    else if ($tree) then
-      local:error(404, "Citation tree '" || $tree || "' not found.")
+  let $tei := if ($resource) then
+    local:get-tei($resource)
+  else (
+  )
+  return if (empty($resource)) then
+    local:error(400, "The parameter 'resource' is required.")
+  else if ($ref and ($start or $end)) then
+    local:error(
+      400,
+      "The parameter 'ref' cannot be combined with 'start' and 'end'."
+    )
+  else if (($start and empty($end)) or ($end and empty($start))) then
+    local:error(400, "The parameters 'start' and 'end' must be used together.")
+  else if ($down-param and (empty($down) or $down lt -1)) then
+    local:error(400, "The parameter 'down' must be an integer of -1 or more.")
+  else if (empty($down) and empty($ref) and empty($start)) then
+    local:error(
+      400,
+      "At least one of the parameters 'down', 'ref' or 'start' and 'end' is required."
+    )
+  else if ($down eq 0 and empty($ref)) then
+    local:error(400, "The parameter 'down=0' requires 'ref'.")
+  else if (exists($page-error)) then
+    $page-error
+  else if (empty($tei)) then
+    local:error(404, "Resource '" || $resource || "' not found.")
+  else if ($tree) then
+    local:error(404, "Citation tree '" || $tree || "' not found.")
+  else
+    let $ref-unit := if ($ref) then
+      local:resolve-ref($tei, $ref)
+    else (
+    )
+    let $start-unit := if ($start) then
+      local:resolve-ref($tei, $start)
+    else (
+    )
+    let $end-unit := if ($end) then
+      local:resolve-ref($tei, $end)
+    else (
+    )
+    return if ($ref and empty($ref-unit)) then
+      local:error(404, "CitableUnit '" || $ref || "' not found.")
+    else if ($start and empty($start-unit)) then
+      local:error(404, "CitableUnit '" || $start || "' not found.")
+    else if ($end and empty($end-unit)) then
+      local:error(404, "CitableUnit '" || $end || "' not found.")
+    else if ($start-unit and $end-unit << $start-unit) then
+      local:error(400, "The range ends before it starts.")
     else
-      let $ref-unit := if ($ref) then local:resolve-ref($tei, $ref) else ()
-      let $start-unit := if ($start) then local:resolve-ref($tei, $start) else ()
-      let $end-unit := if ($end) then local:resolve-ref($tei, $end) else ()
-      return
-        if ($ref and empty($ref-unit)) then
-          local:error(404, "CitableUnit '" || $ref || "' not found.")
-        else if ($start and empty($start-unit)) then
-          local:error(404, "CitableUnit '" || $start || "' not found.")
-        else if ($end and empty($end-unit)) then
-          local:error(404, "CitableUnit '" || $end || "' not found.")
-        else if ($start-unit and $end-unit << $start-unit) then
-          local:error(400, "The range ends before it starts.")
+      let $members := if (empty($down)) then (
+      ) else if ($ref-unit and $down eq 0) then
+        if ($ref-unit/parent::tei:text) then
+          local:top-level-units($tei)
         else
-          let $members :=
-            if (empty($down)) then ()
-            else if ($ref-unit and $down eq 0) then
-              if ($ref-unit/parent::tei:text) then local:top-level-units($tei)
-              else local:citable-children($ref-unit/parent::*)
-            else if ($ref-unit) then
-              ($ref-unit, local:descendants($ref-unit, $down))
-            else if ($start-unit) then
-              local:range(
-                $tei,
-                $start-unit,
-                $end-unit,
-                if ($down lt 0) then -1
-                else max((local:level($start-unit), local:level($end-unit))) + $down
-              )
-            else local:tree($tei, $down)
-          let $id := local:url(
-            $ddts:navigation-endpoint,
-            (
-              map {"name": "resource", "value": $resource},
-              map {"name": "ref", "value": $ref},
-              map {"name": "start", "value": $start},
-              map {"name": "end", "value": $end},
-              map {"name": "down", "value": $down-param},
-              map {"name": "page", "value": $page}
-            )
-          )
-          return local:top-level(map:merge((
+          local:citable-children($ref-unit/parent::*)
+      else if ($ref-unit) then (
+        $ref-unit, local:descendants($ref-unit, $down)
+      ) else if ($start-unit) then
+        local:range(
+          $tei,
+          $start-unit,
+          $end-unit,
+          if ($down lt 0) then
+            -1
+          else
+            max((local:level($start-unit), local:level($end-unit))) + $down
+        )
+      else
+        local:tree($tei, $down)
+      let $id := local:url(
+        $ddts:navigation-endpoint,
+        (
+          map {"name": "resource", "value": $resource},
+          map {"name": "ref", "value": $ref},
+          map {"name": "start", "value": $start},
+          map {"name": "end", "value": $end},
+          map {"name": "down", "value": $down-param},
+          map {"name": "page", "value": $page}
+        )
+      )
+      return local:top-level(
+        map:merge(
+          (
             map {
               "@id": $id,
               "@type": "Navigation",
               "resource": local:resource-object($tei, true())
             },
-            if ($ref-unit) then map {"ref": local:citable-unit($ref-unit)}
-            else (),
+            if ($ref-unit) then
+              map {"ref": local:citable-unit($ref-unit)}
+            else (
+            ),
             if ($start-unit) then
               map {
                 "start": local:citable-unit($start-unit),
                 "end": local:citable-unit($end-unit)
               }
-            else (),
+            else (
+            ),
             if (exists($down)) then
-              map {"member": array {local:citable-units($members)}}
-            else ()
-          )))
+              map {"member": array { local:citable-units($members) }}
+            else (
+            )
+          )
+        )
+      )
 };
 
 (:
@@ -874,23 +1029,32 @@ function ddts:navigation(
  : from the most specific matching media range. Without Accept header any
  : media type is acceptable.
  :)
-declare function local:accept-quality($accept as xs:string?, $type as xs:string)
-as xs:double {
-  if (not(normalize-space($accept))) then 1
+declare function local:accept-quality(
+  $accept as xs:string?,
+  $type as xs:string
+) as xs:double {
+  if (not(normalize-space($accept))) then
+    1
   else
     let $qualities :=
       for $range in tokenize($accept, ",")
-      let $parts := tokenize($range, ";") ! normalize-space(.)
+      let $parts := tokenize($range, ";")!normalize-space(.)
       let $media-range := lower-case($parts[1])
       let $q := substring-after($parts[starts-with(., "q=")][1], "q=")
-      let $specificity :=
-        if ($media-range eq $type) then 3
-        else if ($media-range eq substring-before($type, "/") || "/*") then 2
-        else if ($media-range eq "*/*") then 1
-        else 0
+      let $specificity := if ($media-range eq $type) then
+        3
+      else if ($media-range eq substring-before($type, "/") || "/*") then
+        2
+      else if ($media-range eq "*/*") then
+        1
+      else
+        0
       where $specificity gt 0
       order by $specificity descending
-      return if ($q castable as xs:double) then xs:double($q) else 1
+      return if ($q castable as xs:double) then
+        xs:double($q)
+      else
+        1
     return ($qualities, 0)[1]
 };
 
@@ -912,29 +1076,37 @@ declare function local:prune(
   $end as element()
 ) as node()* {
   for $node in $nodes
-  return
-    if ($node is $end or ($node is $start and empty($end intersect $start//*)))
-    then $node
-    else if (exists($node intersect ($start/ancestor-or-self::*, $end/ancestor::*)))
-    then
-      element {node-name($node)} {
-        $node/@*,
-        local:prune($node/node(), $start, $end)
-      }
-    else if ($node >> $start and $node << $end) then $node
-    else ()
+  return if (
+    $node is $end or ($node is $start and empty($end intersect $start//*))
+  ) then
+    $node
+  else if (
+    exists($node intersect ($start/ancestor-or-self::*, $end/ancestor::*))
+  ) then
+    element {node-name($node)} {
+      $node/@*, local:prune($node/node(), $start, $end)
+    }
+  else if ($node >> $start and $node << $end) then
+    $node
+  else (
+  )
 };
 
 (:~
  : Return the content of a range of CitableUnits, from the start unit to the
  : end of the end unit, within their closest common ancestor.
  :)
-declare function local:range-content($start as element(), $end as element())
-as node()* {
-  let $common := ($start/ancestor-or-self::* intersect $end/ancestor-or-self::*)[last()]
-  return
-    if ($common is $start) then local:prune($start, $start, $end)
-    else local:prune($common/node(), $start, $end)
+declare function local:range-content(
+  $start as element(),
+  $end as element()
+) as node()* {
+  let $common := (
+    $start/ancestor-or-self::* intersect $end/ancestor-or-self::*
+  )[last()]
+  return if ($common is $start) then
+    local:prune($start, $start, $end)
+  else
+    local:prune($common/node(), $start, $end)
 };
 
 (:~
@@ -981,77 +1153,91 @@ function ddts:document(
   let $end := local:param($end)
   let $tree := local:param($tree)
   (: a "+" in an unencoded query parameter arrives as space :)
-  let $media-type :=
-    (local:param($media-type) ! replace(normalize-space(.), " ", "+"),
-     "application/tei+xml")[1]
-  let $tei := if ($resource) then local:get-tei($resource) else ()
-  return
-    if (empty($resource)) then
-      local:error(400, "The parameter 'resource' is required.")
-    else if ($ref and ($start or $end)) then
-      local:error(
-        400,
-        "The parameter 'ref' cannot be combined with 'start' and 'end'."
-      )
-    else if (($start and empty($end)) or ($end and empty($start))) then
-      local:error(400, "The parameters 'start' and 'end' must be used together.")
-    else if (empty($tei)) then
-      local:error(404, "Resource '" || $resource || "' not found.")
-    else if (not($media-type = $ddts:media-types)) then
-      local:error(404, "Media type '" || $media-type || "' is not available.")
-    else if ($tree and ($ref or $start)) then
-      local:error(404, "Citation tree '" || $tree || "' not found.")
+  let $media-type := (
+    local:param($media-type)!replace(normalize-space(.), " ", "+"),
+    "application/tei+xml"
+  )[1]
+  let $tei := if ($resource) then
+    local:get-tei($resource)
+  else (
+  )
+  return if (empty($resource)) then
+    local:error(400, "The parameter 'resource' is required.")
+  else if ($ref and ($start or $end)) then
+    local:error(
+      400,
+      "The parameter 'ref' cannot be combined with 'start' and 'end'."
+    )
+  else if (($start and empty($end)) or ($end and empty($start))) then
+    local:error(400, "The parameters 'start' and 'end' must be used together.")
+  else if (empty($tei)) then
+    local:error(404, "Resource '" || $resource || "' not found.")
+  else if (not($media-type = $ddts:media-types)) then
+    local:error(404, "Media type '" || $media-type || "' is not available.")
+  else if ($tree and ($ref or $start)) then
+    local:error(404, "Citation tree '" || $tree || "' not found.")
+  else
+    let $ref-unit := if ($ref) then
+      local:resolve-ref($tei, $ref)
+    else (
+    )
+    let $start-unit := if ($start) then
+      local:resolve-ref($tei, $start)
+    else (
+    )
+    let $end-unit := if ($end) then
+      local:resolve-ref($tei, $end)
+    else (
+    )
+    return if ($ref and empty($ref-unit)) then
+      local:error(404, "CitableUnit '" || $ref || "' not found.")
+    else if ($start and empty($start-unit)) then
+      local:error(404, "CitableUnit '" || $start || "' not found.")
+    else if ($end and empty($end-unit)) then
+      local:error(404, "CitableUnit '" || $end || "' not found.")
+    else if ($start-unit and $end-unit << $start-unit) then
+      local:error(400, "The range ends before it starts.")
     else
-      let $ref-unit := if ($ref) then local:resolve-ref($tei, $ref) else ()
-      let $start-unit := if ($start) then local:resolve-ref($tei, $start) else ()
-      let $end-unit := if ($end) then local:resolve-ref($tei, $end) else ()
-      return
-        if ($ref and empty($ref-unit)) then
-          local:error(404, "CitableUnit '" || $ref || "' not found.")
-        else if ($start and empty($start-unit)) then
-          local:error(404, "CitableUnit '" || $start || "' not found.")
-        else if ($end and empty($end-unit)) then
-          local:error(404, "CitableUnit '" || $end || "' not found.")
-        else if ($start-unit and $end-unit << $start-unit) then
-          local:error(400, "The range ends before it starts.")
+      let $wrapper := if ($ref-unit) then
+        <dts:wrapper>{ $ref-unit }</dts:wrapper>
+      else if ($start-unit) then
+        <dts:wrapper
+          end="{ local:xpath($end-unit) }"
+          start="{ local:xpath($start-unit) }"
+        >{ local:range-content($start-unit, $end-unit) }</dts:wrapper>
+      else (
+      )
+      let $content-type := if ($media-type eq "text/plain") then
+        "text/plain; charset=utf-8"
+      else if (
+        local:accept-quality(string-join($accept, ","), "application/xml") gt
+          local:accept-quality(string-join($accept, ","), "application/tei+xml")
+      ) then
+        "application/xml"
+      else
+        "application/tei+xml"
+      let $collection-link := $ddts:collection-endpoint ||
+        "?id=" ||
+        dutil:play-uri(dutil:get-dracor-id($tei))
+      return (
+        <rest:response>
+          <http:response status="200">
+            <http:header name="Content-Type" value="{ $content-type }" />
+            <http:header
+              name="Link"
+              value="&lt;{
+                $collection-link
+              }&gt;; rel=&quot;collection&quot;" />
+            <http:header name="Vary" value="Accept" />
+          </http:response>
+        </rest:response>,
+        if ($media-type eq "text/plain") then
+          dutil:extract-text(($wrapper, $tei)[1])
+        else if ($wrapper) then
+          <TEI xmlns="http://www.tei-c.org/ns/1.0">
+            { $tei/tei:teiHeader, $wrapper }
+          </TEI>
         else
-          let $wrapper :=
-            if ($ref-unit) then
-              <dts:wrapper>{$ref-unit}</dts:wrapper>
-            else if ($start-unit) then
-              <dts:wrapper
-                start="{local:xpath($start-unit)}"
-                end="{local:xpath($end-unit)}"
-              >{local:range-content($start-unit, $end-unit)}</dts:wrapper>
-            else ()
-          let $content-type :=
-            if ($media-type eq "text/plain") then "text/plain; charset=utf-8"
-            else if (
-              local:accept-quality(string-join($accept, ","), "application/xml") gt
-                local:accept-quality(string-join($accept, ","), "application/tei+xml")
-            ) then "application/xml"
-            else "application/tei+xml"
-          let $collection-link :=
-            $ddts:collection-endpoint || "?id=" ||
-            dutil:play-uri(dutil:get-dracor-id($tei))
-          return (
-            <rest:response>
-              <http:response status="200">
-                <http:header name="Content-Type" value="{$content-type}"/>
-                <http:header
-                  name="Link"
-                  value="&lt;{$collection-link}&gt;; rel=&quot;collection&quot;"
-                />
-                <http:header name="Vary" value="Accept"/>
-              </http:response>
-            </rest:response>,
-            if ($media-type eq "text/plain") then
-              dutil:extract-text(($wrapper, $tei)[1])
-            else if ($wrapper) then
-              <TEI xmlns="http://www.tei-c.org/ns/1.0">{
-                $tei/tei:teiHeader,
-                $wrapper
-              }</TEI>
-            else $tei
-          )
+          $tei
+      )
 };
