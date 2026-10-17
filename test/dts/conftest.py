@@ -70,7 +70,9 @@ class DTS:
 
     def url(self, endpoint, **params):
         """Expand the URI template of an endpoint ignoring unset params."""
-        params = {k: v for k, v in params.items() if v is not None}
+        # values are passed as strings since uritemplate expands the
+        # integer 0 to an empty value
+        params = {k: str(v) for k, v in params.items() if v is not None}
         return URITemplate(self.entry[endpoint]).expand(**params)
 
     def collection(self, **params):
