@@ -34,6 +34,15 @@ REPORT_DIR=${DTS_REPORT_DIR:-dts-reports}
 SRC_DIR=$WORK_DIR/src
 VENV_DIR=$WORK_DIR/venv
 
+if ! curl --silent --fail --output /dev/null --max-time 30 "$ENTRY_ENDPOINT"; then
+  echo "No DTS API responding at $ENTRY_ENDPOINT" >&2
+  echo "Start the test stack with" >&2
+  echo "  COMPOSE_FILE=compose.yml:compose.t.yml docker compose up --build --wait" >&2
+  echo "or pass the entry endpoint of a running API, e.g." >&2
+  echo "  $0 http://localhost:8088/api/v1/dts" >&2
+  exit 1
+fi
+
 mkdir -p "$WORK_DIR" "$REPORT_DIR"
 
 if [ ! -d "$SRC_DIR/.git" ]; then
