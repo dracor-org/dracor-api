@@ -336,6 +336,57 @@ declare function local:snippet($unit as element()) as xs:string {
  : Return the CitableUnit object for a citable element.
  :)
 declare function local:citable-unit($unit as element()) as map(*) {
+  local:citable-unit($unit, local:ref($unit), local:parent-ref($unit))
+};
+
+(:~
+ : Return the CitableUnit objects for citable elements in document order.
+ :
+ : The identifiers are built incrementally, reusing the identifier of the
+ : parent, which is much faster for large numbers of units than computing
+ : each one from scratch.
+ :)
+declare function local:citable-units($units as element()*) as map(*)* {
+  (: identifiers by node ID; the parent of the first units may be missing :)
+  let $refs := fold-left(
+    $units,
+    map {},
+    function ($refs as map(*), $unit as element()) {
+      let $parent := $unit/parent::*
+      let $parent-id := util:node-id($parent)
+      let $parent-ref :=
+        if ($parent/self::tei:text) then ()
+        (: no sequence with a fallback here, eXist would evaluate both :)
+        else if (map:contains($refs, $parent-id)) then $refs($parent-id)?ref
+        else local:ref($parent)
+      let $ref :=
+        if ($parent/self::tei:text) then local-name($unit)
+        else
+          $parent-ref || "/" || local-name($unit) || "[" ||
+          count($unit/preceding-sibling::*[node-name(.) eq node-name($unit)]) +
+            1 ||
+          "]"
+      return map:put(
+        $refs,
+        util:node-id($unit),
+        map {"ref": $ref, "parent": $parent-ref}
+      )
+    }
+  )
+  for $unit in $units
+  let $entry := $refs(util:node-id($unit))
+  return local:citable-unit($unit, $entry?ref, $entry?parent)
+};
+
+(:~
+ : Return the CitableUnit object for a citable element with a given
+ : identifier and parent identifier.
+ :)
+declare function local:citable-unit(
+  $unit as element(),
+  $ref as xs:string,
+  $parent-ref as xs:string?
+) as map(*) {
   let $lang := ($unit/ancestor-or-self::*/@xml:lang)[last()]/string()
   let $head := normalize-space($unit/tei:head[1])
   let $extensions := map:merge((
@@ -353,10 +404,10 @@ declare function local:citable-unit($unit as element()) as map(*) {
   ))
   return map:merge((
     map {
-      "identifier": local:ref($unit),
+      "identifier": $ref,
       "@type": "CitableUnit",
       "level": local:level($unit),
-      "parent": local:parent-ref($unit),
+      "parent": $parent-ref,
       "citeType": local:cite-type($unit)
     },
     if ($head) then
@@ -807,7 +858,7 @@ function ddts:navigation(
               }
             else (),
             if (exists($down)) then
-              map {"member": array {$members ! local:citable-unit(.)}}
+              map {"member": array {local:citable-units($members)}}
             else ()
           )))
 };
