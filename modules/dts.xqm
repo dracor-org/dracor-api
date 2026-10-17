@@ -870,7 +870,90 @@ function ddts:navigation(
  :)
 
 (:~
+ : Return the quality value an Accept header gives a media type, taking it
+ : from the most specific matching media range. Without Accept header any
+ : media type is acceptable.
+ :)
+declare function local:accept-quality($accept as xs:string?, $type as xs:string)
+as xs:double {
+  if (not(normalize-space($accept))) then 1
+  else
+    let $qualities :=
+      for $range in tokenize($accept, ",")
+      let $parts := tokenize($range, ";") ! normalize-space(.)
+      let $media-range := lower-case($parts[1])
+      let $q := substring-after($parts[starts-with(., "q=")][1], "q=")
+      let $specificity :=
+        if ($media-range eq $type) then 3
+        else if ($media-range eq substring-before($type, "/") || "/*") then 2
+        else if ($media-range eq "*/*") then 1
+        else 0
+      where $specificity gt 0
+      order by $specificity descending
+      return if ($q castable as xs:double) then xs:double($q) else 1
+    return ($qualities, 0)[1]
+};
+
+(:~
+ : Return the XPath of a CitableUnit for the attributes of <dts:wrapper>.
+ :)
+declare function local:xpath($unit as element()) as xs:string {
+  "/TEI/text/" || local:ref($unit)
+};
+
+(:~
+ : Return the part of a list of nodes that lies within a range: nodes
+ : completely within the range are copied, ancestors of its start or end are
+ : copied with only the part of their content that lies within the range.
+ :)
+declare function local:prune(
+  $nodes as node()*,
+  $start as element(),
+  $end as element()
+) as node()* {
+  for $node in $nodes
+  return
+    if ($node is $end or ($node is $start and empty($end intersect $start//*)))
+    then $node
+    else if (exists($node intersect ($start/ancestor-or-self::*, $end/ancestor::*)))
+    then
+      element {node-name($node)} {
+        $node/@*,
+        local:prune($node/node(), $start, $end)
+      }
+    else if ($node >> $start and $node << $end) then $node
+    else ()
+};
+
+(:~
+ : Return the content of a range of CitableUnits, from the start unit to the
+ : end of the end unit, within their closest common ancestor.
+ :)
+declare function local:range-content($start as element(), $end as element())
+as node()* {
+  let $common := ($start/ancestor-or-self::* intersect $end/ancestor-or-self::*)[last()]
+  return
+    if ($common is $start) then local:prune($start, $start, $end)
+    else local:prune($common/node(), $start, $end)
+};
+
+(:~
  : DTS document endpoint
+ :
+ : The full TEI document, or the requested CitableUnit or range embedded in
+ : <dts:wrapper> after the teiHeader of the play. With `mediaType=text/plain`
+ : the text of the play or the fragment is returned instead.
+ :
+ : TEI is sent as application/tei+xml unless the Accept header prefers
+ : application/xml, as web browsers do, so that they display the XML.
+ :
+ : @param $resource Identifier of the play
+ : @param $ref CitableUnit to return
+ : @param $start First CitableUnit of a range to return
+ : @param $end Last CitableUnit of a range to return
+ : @param $tree Identifier of a citation tree; only the default tree exists
+ : @param $media-type `application/tei+xml` (default) or `text/plain`
+ : @param $accept Accept header
  :)
 declare
   %rest:GET
@@ -882,7 +965,6 @@ declare
   %rest:query-param("tree", "{$tree}")
   %rest:query-param("mediaType", "{$media-type}")
   %rest:header-param("Accept", "{$accept}")
-  %rest:produces("application/tei+xml", "application/xml", "text/plain")
   %output:method("xml")
 function ddts:document(
   $resource as xs:string*,
@@ -893,5 +975,83 @@ function ddts:document(
   $media-type as xs:string*,
   $accept as xs:string*
 ) as item()+ {
-  local:error(501, "Not implemented yet.")
+  let $resource := local:param($resource)
+  let $ref := local:param($ref)
+  let $start := local:param($start)
+  let $end := local:param($end)
+  let $tree := local:param($tree)
+  (: a "+" in an unencoded query parameter arrives as space :)
+  let $media-type :=
+    (local:param($media-type) ! replace(normalize-space(.), " ", "+"),
+     "application/tei+xml")[1]
+  let $tei := if ($resource) then local:get-tei($resource) else ()
+  return
+    if (empty($resource)) then
+      local:error(400, "The parameter 'resource' is required.")
+    else if ($ref and ($start or $end)) then
+      local:error(
+        400,
+        "The parameter 'ref' cannot be combined with 'start' and 'end'."
+      )
+    else if (($start and empty($end)) or ($end and empty($start))) then
+      local:error(400, "The parameters 'start' and 'end' must be used together.")
+    else if (empty($tei)) then
+      local:error(404, "Resource '" || $resource || "' not found.")
+    else if (not($media-type = $ddts:media-types)) then
+      local:error(404, "Media type '" || $media-type || "' is not available.")
+    else if ($tree and ($ref or $start)) then
+      local:error(404, "Citation tree '" || $tree || "' not found.")
+    else
+      let $ref-unit := if ($ref) then local:resolve-ref($tei, $ref) else ()
+      let $start-unit := if ($start) then local:resolve-ref($tei, $start) else ()
+      let $end-unit := if ($end) then local:resolve-ref($tei, $end) else ()
+      return
+        if ($ref and empty($ref-unit)) then
+          local:error(404, "CitableUnit '" || $ref || "' not found.")
+        else if ($start and empty($start-unit)) then
+          local:error(404, "CitableUnit '" || $start || "' not found.")
+        else if ($end and empty($end-unit)) then
+          local:error(404, "CitableUnit '" || $end || "' not found.")
+        else if ($start-unit and $end-unit << $start-unit) then
+          local:error(400, "The range ends before it starts.")
+        else
+          let $wrapper :=
+            if ($ref-unit) then
+              <dts:wrapper>{$ref-unit}</dts:wrapper>
+            else if ($start-unit) then
+              <dts:wrapper
+                start="{local:xpath($start-unit)}"
+                end="{local:xpath($end-unit)}"
+              >{local:range-content($start-unit, $end-unit)}</dts:wrapper>
+            else ()
+          let $content-type :=
+            if ($media-type eq "text/plain") then "text/plain; charset=utf-8"
+            else if (
+              local:accept-quality(string-join($accept, ","), "application/xml") gt
+                local:accept-quality(string-join($accept, ","), "application/tei+xml")
+            ) then "application/xml"
+            else "application/tei+xml"
+          let $collection-link :=
+            $ddts:collection-endpoint || "?id=" ||
+            dutil:play-uri(dutil:get-dracor-id($tei))
+          return (
+            <rest:response>
+              <http:response status="200">
+                <http:header name="Content-Type" value="{$content-type}"/>
+                <http:header
+                  name="Link"
+                  value="&lt;{$collection-link}&gt;; rel=&quot;collection&quot;"
+                />
+                <http:header name="Vary" value="Accept"/>
+              </http:response>
+            </rest:response>,
+            if ($media-type eq "text/plain") then
+              dutil:extract-text(($wrapper, $tei)[1])
+            else if ($wrapper) then
+              <TEI xmlns="http://www.tei-c.org/ns/1.0">{
+                $tei/tei:teiHeader,
+                $wrapper
+              }</TEI>
+            else $tei
+          )
 };

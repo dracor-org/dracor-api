@@ -49,6 +49,30 @@ def test_full_document(dts, resource_id):
     assert_collection_link(response, resource_id)
 
 
+BROWSER_ACCEPT = (
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+)
+
+
+@pytest.mark.parametrize(
+    "accept,content_type",
+    [
+        (None, "application/tei+xml"),
+        ("*/*", "application/tei+xml"),
+        ("application/tei+xml", "application/tei+xml"),
+        (BROWSER_ACCEPT, "application/xml"),
+    ],
+)
+def test_content_negotiation(dts, first_resource, accept, content_type):
+    """TEI is sent as application/tei+xml unless the client prefers
+    application/xml, as web browsers do."""
+    headers = {"Accept": accept} if accept else {}
+    response = dts.get(dts.url("document", resource=first_resource), headers=headers)
+    assert response.status_code == 200
+    assert response.headers["Content-Type"].startswith(content_type)
+    assert "Accept" in response.headers.get("Vary", "")
+
+
 def test_ref_fragments(dts, resource_id, max_units):
     units = dts.whole_tree(resource_id)
     for unit in sample_units(units, max_units // 3):
