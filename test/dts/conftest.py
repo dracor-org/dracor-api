@@ -134,18 +134,31 @@ def first_resource(request):
     return resources[0]
 
 
+def spread(items, n):
+    """Return n items evenly spread over a list, including first and last."""
+    if len(items) <= n:
+        return items
+    if n == 1:
+        return items[:1]
+    step = (len(items) - 1) / (n - 1)
+    return [items[round(i * step)] for i in range(n)]
+
+
 def sample_units(units, max_units):
     """
-    Select the CitableUnits to check individually: all units of the two top
-    levels plus an evenly spread sample of the deeper ones.
+    Select at most about `max_units` CitableUnits to check individually, in
+    document order: all units of level 1 (front, body, back) and an evenly
+    spread sample of each deeper level, so that every level is represented
+    however the play is structured.
     """
-    top = [u for u in units if u["level"] <= 2]
-    deep = [u for u in units if u["level"] > 2]
-    budget = max(max_units - len(top), 2)
-    if len(deep) > budget:
-        step = (len(deep) - 1) / (budget - 1)
-        deep = [deep[round(i * step)] for i in range(budget)]
-    return top + deep
+    levels = sorted({u["level"] for u in units if u["level"] > 1})
+    selected = [u for u in units if u["level"] == 1]
+    if levels:
+        per_level = max((max_units - len(selected)) // len(levels), 1)
+        for level in levels:
+            selected += spread([u for u in units if u["level"] == level], per_level)
+    position = {u["identifier"]: i for i, u in enumerate(units)}
+    return sorted(selected, key=lambda u: position[u["identifier"]])
 
 
 def subtree(units, identifier, depth=None):
