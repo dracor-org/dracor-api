@@ -1280,6 +1280,22 @@ paths:
             collection is returned.
           schema:
             type: string
+            # offered as a dropdown in the Scalar API client
+            examples:
+              - https://dracor.org/id/ger
+              - https://dracor.org/id/greek
+              - https://dracor.org/id/ita
+              - https://dracor.org/id/rom
+              - https://dracor.org/id/rus
+              - https://dracor.org/id/shake
+              - https://dracor.org/id/span
+              - https://dracor.org/id/ger000088
+              - https://dracor.org/id/greek000022
+              - https://dracor.org/id/ita000080
+              - https://dracor.org/id/rom000005
+              - https://dracor.org/id/rus000054
+              - https://dracor.org/id/shake000032
+              - https://dracor.org/id/span000031
           examples:
             corpus_uri:
               value: https://dracor.org/id/ger
@@ -1390,6 +1406,8 @@ paths:
           schema:
             type: integer
             minimum: -1
+            # offered as a dropdown in the Scalar API client
+            examples: [1, 2, -1, 0]
           examples:
             top_level:
               value: 1
@@ -1857,7 +1875,39 @@ components:
       schema:
         type: string
         minLength: 1
-      example: https://dracor.org/id/ger000088
+        # offered as a dropdown in the Scalar API client
+        examples:
+          - https://dracor.org/id/ger000088
+          - https://dracor.org/id/greek000022
+          - https://dracor.org/id/ita000080
+          - https://dracor.org/id/rom000005
+          - https://dracor.org/id/rus000054
+          - https://dracor.org/id/shake000032
+          - https://dracor.org/id/span000031
+      # The keys of these examples are those of the `corpusname` and `playname`
+      # examples, as these are the same plays.
+      examples:
+        GerDraCor:
+          value: https://dracor.org/id/ger000088
+          summary: "G.E. Lessing: Emilia Galotti (GerDraCor)"
+        GreekDraCor:
+          value: https://dracor.org/id/greek000022
+          summary: "Aeschylus: Persians (GreekDraCor)"
+        ItaDraCor:
+          value: https://dracor.org/id/ita000080
+          summary: "C. Goldoni: Il servitore di due padroni (ItaDraCor)"
+        RomDraCor:
+          value: https://dracor.org/id/rom000005
+          summary: "Seneca: Medea (RomDraCor)"
+        RusDraCor:
+          value: https://dracor.org/id/rus000054
+          summary: "N. Gogol: Revizor (RusDraCor)"
+        ShakeDraCor:
+          value: https://dracor.org/id/shake000032
+          summary: "W. Shakespeare: Hamlet (ShakeDraCor)"
+        SpanDraCor:
+          value: https://dracor.org/id/span000031
+          summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
     dtsRef:
       name: ref
       in: query
@@ -1865,36 +1915,42 @@ components:
       description: >-
         Identifier of a CitableUnit, e.g. `body/div[1]/div[2]` for the second
         scene of the first act, or the `@xml:id` of the element. Cannot be
-        combined with `start` and `end`.
+        combined with `start` and `end`. The examples exist in every play;
+        the identifiers of a play are listed by the navigation endpoint.
       schema:
         type: string
+        # offered as a dropdown in the Scalar API client; only identifiers
+        # that exist in all example plays
+        examples: ["body", "body/div[1]"]
       examples:
-        first_act:
+        body:
+          value: body
+          summary: main text
+        first_division:
           value: body/div[1]
-          summary: first act
-        second_scene_third_act:
-          value: body/div[3]/div[2]
-          summary: 2nd scene of the 3rd act
+          summary: first act (or other division) of the main text
     dtsStart:
       name: start
       in: query
       required: false
       description: >-
         Identifier of the first CitableUnit of a range (inclusive). Requires
-        `end`.
+        `end`, cannot be combined with `ref`. E.g. `start=body/div[1]/div[1]`
+        and `end=body/div[1]/div[3]` for the first three scenes of Emilia
+        Galotti.
+      # no example, so that clients don't fill it in together with `ref`
       schema:
         type: string
-      example: body/div[2]/div[1]
     dtsEnd:
       name: end
       in: query
       required: false
       description: >-
         Identifier of the last CitableUnit of a range (inclusive). Requires
-        `start`.
+        `start`, cannot be combined with `ref`.
+      # no example, so that clients don't fill it in together with `ref`
       schema:
         type: string
-      example: body/div[2]/div[3]
     dtsTree:
       name: tree
       in: query
