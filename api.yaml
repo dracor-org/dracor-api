@@ -1233,240 +1233,381 @@ paths:
 
   /dts:
     get:
-      summary: Distributed Text Services API Entrypoint
+      summary: DTS entry endpoint
       description: >-
-        Entrypoint of the DraCor DTS implementation (see specification – https://distributed-text-services.github.io/specifications/versions/1-alpha/#entry-endpoint).
+        Entry endpoint of the [Distributed Text Services
+        (DTS)](https://dtsapi.org/specifications/versions/v1.0/) API, version
+        1.0. Returns the URI templates of the collection, navigation and
+        document endpoints.
       operationId: dts-entrypoint
       tags: [DTS]
       responses:
         '200':
-          description: information about the DTS implementation containing URI templates of the "collection", "navigation" and "document" endpoints.
+          description: URI templates of the DTS endpoints.
           content:
             application/ld+json:
               schema:
                 $ref: '#/components/schemas/DtsEntrypoint'
               example: |
                 {
-                  "@context" : "https://distributed-text-services.github.io/specifications/context/1-alpha1.json",
-                  "@id" : "https://dracor.org/api/v1/dts",
-                  "@type" : "EntryPoint",
-                  "dtsVersion" : "1-alpha",
-                  "collection" : "https://dracor.org/api/v1/dts/collection{?id}",
-                  "document" : "https://dracor.org/api/v1/dts/document{?resource,ref,start,end}",
-                  "navigation" : "https://dracor.org/api/v1/dts/navigation{?resource,ref}"
+                  "@context": "https://dtsapi.org/context/v1.0.json",
+                  "@id": "https://dracor.org/api/v1/dts",
+                  "@type": "EntryPoint",
+                  "dtsVersion": "1.0",
+                  "collection": "https://dracor.org/api/v1/dts/collection{?id,page,nav}",
+                  "navigation": "https://dracor.org/api/v1/dts/navigation{?resource,ref,start,end,down,tree,page}",
+                  "document": "https://dracor.org/api/v1/dts/document{?resource,ref,start,end,tree,mediaType}"
                 }
 
   /dts/collection:
     get:
-      summary: DTS Collection
+      summary: DTS collection endpoint
       description: >-
-        Collection endpoint: Lists the collections available. Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#collection-endpoint.
+        Returns the root collection, a corpus or a play (`Resource`) with its
+        members: the corpora of the root collection or the plays of a corpus.
+        With `nav=parents` the members are the parent collections instead.
+        See the [specification of the collection
+        endpoint](https://dtsapi.org/specifications/versions/v1.0/#collection-endpoint).
       operationId: get-dts-collection
       tags: [DTS]
       parameters:
         - name: id
           in: query
           required: false
-          description: Identifier for a collection. Preferably the full URI of a corpus, but shorter DraCor corpus IDs are also supported.
+          description: >-
+            Identifier of a corpus or play, preferably its URI. Bare corpus
+            names and play IDs are accepted as well. Without `id` the root
+            collection is returned.
           schema:
             type: string
+            # offered as a dropdown in the Scalar API client
+            examples:
+              - https://dracor.org/id/ger
+              - https://dracor.org/id/greek
+              - https://dracor.org/id/ita
+              - https://dracor.org/id/rom
+              - https://dracor.org/id/rus
+              - https://dracor.org/id/shake
+              - https://dracor.org/id/span
+              - https://dracor.org/id/ger000088
+              - https://dracor.org/id/greek000022
+              - https://dracor.org/id/ita000080
+              - https://dracor.org/id/rom000005
+              - https://dracor.org/id/rus000054
+              - https://dracor.org/id/shake000032
+              - https://dracor.org/id/span000031
           examples:
-              corpus_via_dts_collection_uri:
-                value: https://dracor.org/id/ger
-                summary: German Drama Corpus (URI)
-              corpus_via_dts_collection_corpusname:
-                value: rus
-                summary: Russian Drama Corpus (DraCor ID)
-              single_play_via_dts_collection_uri:
-                value: https://dracor.org/id/ger000088
-                summary: G.E. Lessing – Emilia Galotti (URI)
-              single_play_via_dts_collection_playname:
-                value: ger000088
-                summary: G.E. Lessing – Emilia Galotti (DraCor ID)
+            corpus_uri:
+              value: https://dracor.org/id/ger
+              summary: German Drama Corpus (URI)
+            corpus_name:
+              value: ger
+              summary: German Drama Corpus (name)
+            play_uri:
+              value: https://dracor.org/id/ger000088
+              summary: Lessing, Emilia Galotti (URI)
+            play_id:
+              value: ger000088
+              summary: Lessing, Emilia Galotti (DraCor ID)
         - name: nav
           in: query
           required: false
-          description: Determines whether the content of the member property represents parent or child items.
+          description: >-
+            Whether `member` lists the children (default) or the parents of the
+            collection or play.
           schema:
             type: string
-            enum:
-              - parents
+            enum: [children, parents]
+        - name: page
+          in: query
+          required: false
+          description: >-
+            Page of the members. Responses are not paginated, so only page 1
+            exists.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
-          description: Collections available.
+          description: The requested collection or play with its members.
           content:
             application/ld+json:
               schema:
-                type: object
+                $ref: '#/components/schemas/DtsCollection'
               example: |
                 {
-                  "@context" : "https://distributed-text-services.github.io/specifications/context/1-alpha1.json",
-                  "@id" : "http://localhost:8088/id/test",
-                  "@type" : "Collection",
-                  "dtsVersion" : "1-alpha",
-                  "totalItems" : 1,
-                  "totalParents" : 1,
-                  "totalChildren" : 1,
-                  "title" : "Test Drama Corpus",
-                  "description" : "This corpus is for testing purposes only. It features a handful of plays in different languages.",
-                  "members" : [
-                  {
-                    "@id" : "http://localhost:8088/id/test000001",
-                    "@type" : "Resource",
-                    "title" : "Ревизор",
-                    "totalItems" : 0,
-                    "totalParents" : 1,
-                    "totalChildren" : 0,
-                    "dublinCore" :
-                      {
-                        "language" : "rus",
-                        "creator" : "Гоголь, Николай Васильевич"
+                  "@context": "https://dtsapi.org/context/v1.0.json",
+                  "@id": "https://dracor.org/id/ger",
+                  "@type": "Collection",
+                  "dtsVersion": "1.0",
+                  "title": "German Drama Corpus",
+                  "totalParents": 1,
+                  "totalChildren": 760,
+                  "collection": "https://dracor.org/api/v1/dts/collection?id=https://dracor.org/id/ger{&page,nav}",
+                  "member": [
+                    {
+                      "@id": "https://dracor.org/id/ger000088",
+                      "@type": "Resource",
+                      "title": "Emilia Galotti",
+                      "totalParents": 1,
+                      "totalChildren": 0,
+                      "collection": "https://dracor.org/api/v1/dts/collection?id=https://dracor.org/id/ger000088{&nav}",
+                      "navigation": "https://dracor.org/api/v1/dts/navigation?resource=https://dracor.org/id/ger000088{&ref,down,start,end,tree,page}",
+                      "document": "https://dracor.org/api/v1/dts/document?resource=https://dracor.org/id/ger000088{&ref,start,end,tree,mediaType}",
+                      "download": "https://dracor.org/api/v1/corpora/ger/plays/lessing-emilia-galotti/tei",
+                      "mediaTypes": ["application/tei+xml", "text/plain"],
+                      "dublinCore": {
+                        "title": [{"lang": "de", "value": "Emilia Galotti"}],
+                        "creator": [{"lang": "de", "value": "Lessing, Gotthold Ephraim"}],
+                        "language": ["de"]
                       },
-                      "document" : "http://localhost:8088/api/v1/dts/document?resource=http://localhost:8088/id/test000001",
-                      "navigation" : "http://localhost:8088/api/v1/dts/navigation?resource=http://localhost:8088/id/test000001",
-                      "download" : "http://localhost:8088/api/v1/dts/corpora/test/plays/gogol-revizor/tei"
-                  }
+                      "extensions": {
+                        "@context": "https://raw.githubusercontent.com/dracor-org/dracor-ontology/refs/heads/main/json-ld-contexts/dts-extension-context.json",
+                        "yearNormalized": 1772,
+                        "wikidataUri": "http://www.wikidata.org/entity/Q782653",
+                        "numOfSpeakers": 13,
+                        "numOfSegments": 43,
+                        "wordCountText": 21136
+                      }
+                    }
                   ]
                 }
         '400':
-          description: Bad request. Using the parameter `page` with a document is not possible. (Paging functionality has not been implemented yet.)
+          description: Invalid value of `nav` or `page`.
         '404':
-          description: The requested resource is not available.
-        '501':
-          description: Not implemented. Using the undocumented parameter `page` will result in this status code. The paging functionality has not been implemented yet.
+          description: >-
+            There is no corpus or play with the given identifier, or the
+            requested page does not exist.
 
   /dts/navigation:
     get:
-      summary: Navigation
+      summary: DTS navigation endpoint
       description: >-
-        Navigation endpoint: Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#navigation-endpoint.
+        Returns CitableUnits of the citation tree of a play. Level 1 consists of
+        `front`, `body` and `back`, followed by nested `div`s (acts, scenes),
+        with speeches (`sp`), stage directions (`stage`), `set`, `castList`
+        and `titlePage` as leaves. See the [specification of the navigation
+        endpoint](https://dtsapi.org/specifications/versions/v1.0/#navigation-endpoint)
+        for how `ref`, `start`, `end` and `down` combine.
       operationId: get-dts-navigation
       tags: [DTS]
       parameters:
-        - name: resource
-          in: query
-          required: true
-          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
-          schema:
-            type: string
-            minLength: 1
-          example: https://dracor.org/id/ger000088
-        - name: ref
-          in: query
-          required: false
-          description: The identifier of a single node in the CitationTree for the Resource, used as the root for the sub-tree to be reconstructed.
-          examples:
-              first_act:
-                value: body/div[1]
-                summary: first act
-              second_scene_thrid_act:
-                value: body/div[3]/div[2]
-                summary: 2nd scene of the 3rd act
-          schema:
-            type: string
-        - name: start
-          in: query
-          required: false
-          description: The string identifier of a node in the CitationTree for the Resource, used as the starting point for a range that serves as the reference point for the query. This parameter is inclusive, so the starting point is considered part of the sub-tree to be returned.
-          schema:
-            type: string
-            example: body/div[2]/div[1]
-        - name: end
-          in: query
-          required: false
-          description: The string identifier of a node in the CitationTree for the Resource, used as the ending point for a range that serves as the reference point for the query. This parameter is inclusive, so the supplied ending point is considered part of the specified range.
-          schema:
-            type: string
-            example: body/div[2]/div[3]
+        - $ref: '#/components/parameters/dtsResource'
+        - $ref: '#/components/parameters/dtsRef'
+        - $ref: '#/components/parameters/dtsStart'
+        - $ref: '#/components/parameters/dtsEnd'
         - name: down
           in: query
           required: false
+          description: >-
+            Depth of the citation tree to return, relative to `ref`, to the
+            deeper of `start` and `end`, or to the root; `-1` for all levels.
+            `0` (with `ref` only) returns the siblings of `ref`.
           schema:
-            type: string
-            enum:
-            - "-1"
-            - "0"
-            - "1"
-            - "2"
-            - "3"
-            - "4"
+            type: integer
+            minimum: -1
+            # offered as a dropdown in the Scalar API client
+            examples: [1, 2, -1, 0]
+          examples:
+            top_level:
+              value: 1
+              summary: one level
+            all:
+              value: -1
+              summary: all levels
+        - $ref: '#/components/parameters/dtsTree'
+        - name: page
+          in: query
+          required: false
+          description: >-
+            Page of the members. Responses are not paginated, so only page 1
+            exists.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
-          description: Successful.
+          description: >-
+            The play with its citation tree and the requested CitableUnits.
           content:
             application/ld+json:
               schema:
-                type: object
+                $ref: '#/components/schemas/DtsNavigation'
+              example: |
+                {
+                  "@context": "https://dtsapi.org/context/v1.0.json",
+                  "@id": "https://dracor.org/api/v1/dts/navigation?resource=https%3A%2F%2Fdracor.org%2Fid%2Fger000088&ref=body%2Fdiv%5B1%5D%2Fdiv%5B1%5D&down=1",
+                  "@type": "Navigation",
+                  "dtsVersion": "1.0",
+                  "resource": {
+                    "@id": "https://dracor.org/id/ger000088",
+                    "@type": "Resource",
+                    "title": "Emilia Galotti",
+                    "totalParents": 1,
+                    "totalChildren": 0,
+                    "collection": "https://dracor.org/api/v1/dts/collection?id=https://dracor.org/id/ger000088{&nav}",
+                    "navigation": "https://dracor.org/api/v1/dts/navigation?resource=https://dracor.org/id/ger000088{&ref,down,start,end,tree,page}",
+                    "document": "https://dracor.org/api/v1/dts/document?resource=https://dracor.org/id/ger000088{&ref,start,end,tree,mediaType}",
+                    "citationTrees": [
+                      {
+                        "@type": "CitationTree",
+                        "citeStructure": [
+                          {
+                            "@type": "CiteStructure",
+                            "citeType": "front",
+                            "citeStructure": [
+                              {"@type": "CiteStructure", "citeType": "title_page"},
+                              {"@type": "CiteStructure", "citeType": "cast_list"}
+                            ]
+                          },
+                          {
+                            "@type": "CiteStructure",
+                            "citeType": "body",
+                            "citeStructure": [
+                              {
+                                "@type": "CiteStructure",
+                                "citeType": "act",
+                                "citeStructure": [
+                                  {"@type": "CiteStructure", "citeType": "stage_direction"},
+                                  {
+                                    "@type": "CiteStructure",
+                                    "citeType": "scene",
+                                    "citeStructure": [
+                                      {"@type": "CiteStructure", "citeType": "speech"},
+                                      {"@type": "CiteStructure", "citeType": "stage_direction"}
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "ref": {
+                    "identifier": "body/div[1]/div[1]",
+                    "@type": "CitableUnit",
+                    "level": 3,
+                    "parent": "body/div[1]",
+                    "citeType": "scene",
+                    "dublinCore": {
+                      "title": [{"lang": "de", "value": "Erster Auftritt"}]
+                    }
+                  },
+                  "member": [
+                    {
+                      "identifier": "body/div[1]/div[1]",
+                      "@type": "CitableUnit",
+                      "level": 3,
+                      "parent": "body/div[1]",
+                      "citeType": "scene",
+                      "dublinCore": {
+                        "title": [{"lang": "de", "value": "Erster Auftritt"}]
+                      }
+                    },
+                    {
+                      "identifier": "body/div[1]/div[1]/sp[1]",
+                      "@type": "CitableUnit",
+                      "level": 4,
+                      "parent": "body/div[1]/div[1]",
+                      "citeType": "speech",
+                      "extensions": {
+                        "@context": "https://raw.githubusercontent.com/dracor-org/dracor-ontology/refs/heads/main/json-ld-contexts/dts-extension-context.json",
+                        "speakers": ["der_prinz"],
+                        "snippet": "Klagen, nichts als Klagen! Bittschriften, [...] Vorzimmer?"
+                      }
+                    },
+                    {
+                      "identifier": "body/div[1]/div[1]/sp[2]",
+                      "@type": "CitableUnit",
+                      "level": 4,
+                      "parent": "body/div[1]/div[1]",
+                      "citeType": "speech",
+                      "extensions": {
+                        "@context": "https://raw.githubusercontent.com/dracor-org/dracor-ontology/refs/heads/main/json-ld-contexts/dts-extension-context.json",
+                        "speakers": ["der_kammerdiener"],
+                        "snippet": "Nein."
+                      }
+                    }
+                  ]
+                }
         '400':
-          description: Bad request. Check error message in the response.
+          description: >-
+            Invalid combination or value of parameters, e.g. `ref` together
+            with `start` and `end`, only one of `start` and `end`, `down=0`
+            without `ref`, or none of `down`, `ref` and `start`/`end`.
         '404':
-          description: There are no Citeable Unit(s) identified by the provided identifier(s) in `ref`, `start` or `end`.
-        '501':
-          description: Not implemented. Not all of the functionality foreseen by the specification is fully implemented, e.g. requesting sub-structures of non-body elements.
+          description: >-
+            The play, a CitableUnit given by `ref`, `start` or `end`, the
+            citation tree given by `tree` or the requested page does not exist.
 
   /dts/document:
     get:
-      summary: DTS Document endpoint
+      summary: DTS document endpoint
       description: >-
-        DTS Document endpoint: Documentation see https://distributed-text-services.github.io/specifications/versions/1-alpha/#document-endpoint.
+        Returns the TEI of a play, or a CitableUnit or range of CitableUnits
+        embedded in `<dts:wrapper>` after the `teiHeader`. With
+        `mediaType=text/plain` the plain text of the play or fragment is
+        returned instead. TEI is sent as `application/tei+xml`, or as
+        `application/xml` if the `Accept` header prefers it, as those of web
+        browsers do. See the [specification of the document
+        endpoint](https://dtsapi.org/specifications/versions/v1.0/#document-endpoint).
       operationId: get-dts-document
       tags: [DTS]
       parameters:
-        - name: resource
-          in: query
-          required: true
-          description: The unique identifier for the Resource whose tree or subtree must be returned. Should be the full URI of a play (recommended) or the DraCor ID.
-          schema:
-            type: string
-            minLength: 1
-          example: https://dracor.org/id/ger000088
-        - name: ref
+        - $ref: '#/components/parameters/dtsResource'
+        - $ref: '#/components/parameters/dtsRef'
+        - $ref: '#/components/parameters/dtsStart'
+        - $ref: '#/components/parameters/dtsEnd'
+        - $ref: '#/components/parameters/dtsTree'
+        - name: mediaType
           in: query
           required: false
-          description: The identifier of a single node in the CitationTree for the Resource, used as the root for the sub-tree to be reconstructed.
-          examples:
-              first_act:
-                value: body/div[1]
-                summary: first act
-              second_scene_thrid_act:
-                value: body/div[3]/div[2]
-                summary: 2nd scene of the 3rd act
+          description: Media type of the response.
           schema:
             type: string
-        - name: start
-          in: query
-          required: false
-          description: The string identifier of a node in the CitationTree for the Resource, used as the starting point for a range that serves as the reference point for the query. This parameter is inclusive, so the starting point is considered part of the sub-tree to be returned.
-          schema:
-            type: string
-            example: body/div[2]/div[1]
-        - name: end
-          in: query
-          required: false
-          description: The string identifier of a node in the CitationTree for the Resource, used as the ending point for a range that serves as the reference point for the query. This parameter is inclusive, so the supplied ending point is considered part of the specified range.
-          schema:
-            type: string
-            example: body/div[2]/div[3]
+            enum: [application/tei+xml, text/plain]
+            default: application/tei+xml
       responses:
         '200':
-          description: Returns either a whole TEI-XML document of a play or a fragment thereof. In case a fragment was requested it is contained in the element <dts:wrapper> inside the root <TEI> element.
+          description: >-
+            The TEI document of the play or a fragment of it, or its plain
+            text. The `Link` header links to the play at the collection
+            endpoint.
+          headers:
+            Link:
+              description: Link to the play at the collection endpoint.
+              schema:
+                type: string
           content:
             application/tei+xml:
               schema:
                 type: string
-                example: |
-                  <?xml version="1.0" encoding="UTF-8"?>
-                  <TEI xmlns="http://www.tei-c.org/ns/1.0">
-                    <dts:wrapper xmlns:dts="https://w3id.org/dts/api#">
-                      <!-- requested document fragment -->
-                    </dts:wrapper>
-                  </TEI>
+              example: |
+                <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                  <teiHeader><!-- ... --></teiHeader>
+                  <dts:wrapper xmlns:dts="https://w3id.org/api/dts#">
+                    <sp who="#der_kammerdiener">
+                      <speaker>DER KAMMERDIENER.</speaker>
+                      <p>Nein.</p>
+                    </sp>
+                  </dts:wrapper>
+                </TEI>
+            application/xml:
+              schema:
+                type: string
+            text/plain:
+              schema:
+                type: string
         '400':
-          description: Bad request – (1) The combination of the parameter 'ref' together with 'start' and 'end' is not allowed. (2) Only one parameter of the pair 'start' and 'end' is provided.
+          description: >-
+            `resource` is missing, `ref` is combined with `start` and `end`,
+            or only one of `start` and `end` is given.
         '404':
-          description: The resource requested is not found.
-        '501':
-          description: This functionality has not been implemented yet. If the parameters documented above are used correctly this status code should never be returned.
+          description: >-
+            The play, a CitableUnit given by `ref`, `start` or `end`, the
+            citation tree given by `tree` or the media type is not available.
 
   /wikidata/author/{id}:
     get:
@@ -1724,6 +1865,101 @@ components:
           value: related_with
         associated_with:
           value: associated_with
+    dtsResource:
+      name: resource
+      in: query
+      required: true
+      description: >-
+        Identifier of the play, preferably its URI. The DraCor ID is accepted as
+        well.
+      schema:
+        type: string
+        minLength: 1
+        # offered as a dropdown in the Scalar API client
+        examples:
+          - https://dracor.org/id/ger000088
+          - https://dracor.org/id/greek000022
+          - https://dracor.org/id/ita000080
+          - https://dracor.org/id/rom000005
+          - https://dracor.org/id/rus000054
+          - https://dracor.org/id/shake000032
+          - https://dracor.org/id/span000031
+      # The keys of these examples are those of the `corpusname` and `playname`
+      # examples, as these are the same plays.
+      examples:
+        GerDraCor:
+          value: https://dracor.org/id/ger000088
+          summary: "G.E. Lessing: Emilia Galotti (GerDraCor)"
+        GreekDraCor:
+          value: https://dracor.org/id/greek000022
+          summary: "Aeschylus: Persians (GreekDraCor)"
+        ItaDraCor:
+          value: https://dracor.org/id/ita000080
+          summary: "C. Goldoni: Il servitore di due padroni (ItaDraCor)"
+        RomDraCor:
+          value: https://dracor.org/id/rom000005
+          summary: "Seneca: Medea (RomDraCor)"
+        RusDraCor:
+          value: https://dracor.org/id/rus000054
+          summary: "N. Gogol: Revizor (RusDraCor)"
+        ShakeDraCor:
+          value: https://dracor.org/id/shake000032
+          summary: "W. Shakespeare: Hamlet (ShakeDraCor)"
+        SpanDraCor:
+          value: https://dracor.org/id/span000031
+          summary: "P. Muñoz Seca: El Refugio (SpanDraCor)"
+    dtsRef:
+      name: ref
+      in: query
+      required: false
+      description: >-
+        Identifier of a CitableUnit, e.g. `body/div[1]/div[2]` for the second
+        scene of the first act, or the `@xml:id` of the element. Cannot be
+        combined with `start` and `end`. The examples exist in every play;
+        the identifiers of a play are listed by the navigation endpoint.
+      schema:
+        type: string
+        # offered as a dropdown in the Scalar API client; only identifiers
+        # that exist in all example plays
+        examples: ["body", "body/div[1]"]
+      examples:
+        body:
+          value: body
+          summary: main text
+        first_division:
+          value: body/div[1]
+          summary: first act (or other division) of the main text
+    dtsStart:
+      name: start
+      in: query
+      required: false
+      description: >-
+        Identifier of the first CitableUnit of a range (inclusive). Requires
+        `end`, cannot be combined with `ref`. E.g. `start=body/div[1]/div[1]`
+        and `end=body/div[1]/div[3]` for the first three scenes of Emilia
+        Galotti.
+      # no example, so that clients don't fill it in together with `ref`
+      schema:
+        type: string
+    dtsEnd:
+      name: end
+      in: query
+      required: false
+      description: >-
+        Identifier of the last CitableUnit of a range (inclusive). Requires
+        `start`, cannot be combined with `ref`.
+      # no example, so that clients don't fill it in together with `ref`
+      schema:
+        type: string
+    dtsTree:
+      name: tree
+      in: query
+      required: false
+      description: >-
+        Identifier of a citation tree. Plays only have a default citation tree,
+        which is used when `tree` is omitted.
+      schema:
+        type: string
   schemas:
     Info:
       type: object
@@ -2670,8 +2906,10 @@ components:
           type: string
         "@type":
           type: string
+          enum: [EntryPoint]
         dtsVersion:
           type: string
+          enum: ["1.0"]
         collection:
           type: string
         document:
@@ -2686,3 +2924,122 @@ components:
         - collection
         - document
         - navigation
+    DtsCollectionMember:
+      # a Collection or Resource object, see local:corpus-object,
+      # local:resource-object
+      type: object
+      properties:
+        "@id":
+          type: string
+        "@type":
+          type: string
+          enum: [Collection, Resource]
+        title:
+          type: string
+        description:
+          type: string
+        totalParents:
+          type: integer
+        totalChildren:
+          type: integer
+        collection:
+          type: string
+        navigation:
+          type: string
+        document:
+          type: string
+        download:
+          type: string
+        mediaTypes:
+          type: array
+          items:
+            type: string
+        dublinCore:
+          type: object
+        extensions:
+          type: object
+        citationTrees:
+          type: array
+          items:
+            type: object
+      required:
+        - "@id"
+        - "@type"
+        - title
+        - totalParents
+        - collection
+    DtsCollection:
+      # see ddts:collection
+      allOf:
+        - $ref: '#/components/schemas/DtsCollectionMember'
+        - type: object
+          properties:
+            "@context":
+              type: string
+            dtsVersion:
+              type: string
+              enum: ["1.0"]
+            member:
+              type: array
+              items:
+                $ref: '#/components/schemas/DtsCollectionMember'
+          required:
+            - "@context"
+            - dtsVersion
+    DtsCitableUnit:
+      # see local:citable-unit
+      type: object
+      properties:
+        identifier:
+          type: string
+        "@type":
+          type: string
+          enum: [CitableUnit]
+        level:
+          type: integer
+          minimum: 1
+        parent:
+          type: [string, "null"]
+        citeType:
+          type: string
+        dublinCore:
+          type: object
+        extensions:
+          type: object
+      required:
+        - identifier
+        - "@type"
+        - level
+        - parent
+    DtsNavigation:
+      # see ddts:navigation
+      type: object
+      properties:
+        "@context":
+          type: string
+        "@id":
+          type: string
+        "@type":
+          type: string
+          enum: [Navigation]
+        dtsVersion:
+          type: string
+          enum: ["1.0"]
+        resource:
+          $ref: '#/components/schemas/DtsCollectionMember'
+        ref:
+          $ref: '#/components/schemas/DtsCitableUnit'
+        start:
+          $ref: '#/components/schemas/DtsCitableUnit'
+        end:
+          $ref: '#/components/schemas/DtsCitableUnit'
+        member:
+          type: array
+          items:
+            $ref: '#/components/schemas/DtsCitableUnit'
+      required:
+        - "@context"
+        - "@id"
+        - "@type"
+        - dtsVersion
+        - resource

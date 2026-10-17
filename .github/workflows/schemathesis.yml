@@ -58,8 +58,6 @@ jobs:
           python-version: '3.12'
       - name: Test DTS endpoints with the DTS validator and contract tests
         if: ${{ !cancelled() }}
-        # FIXME: make this step blocking once DTS 1.0 is implemented
-        continue-on-error: true
         run: ./test/dts-validator.sh http://localhost:8081/exist/restxq/v1/dts
       - name: Upload DTS test reports
         if: ${{ !cancelled() }}
