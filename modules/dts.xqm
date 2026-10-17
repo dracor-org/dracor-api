@@ -315,11 +315,15 @@ declare function local:citation-trees($tei as element(tei:TEI)) as array(*) {
  : Return a short snippet of the text of a speech or stage direction.
  :)
 declare function local:snippet($unit as element()) as xs:string {
+  (: excluded text: notes, and speaker labels and stage directions in speeches
+   : (written as a FLWOR expression, as eXist fails on the equivalent
+   : predicate with not()) :)
+  let $excluded :=
+    if ($unit/self::tei:sp) then ("note", "speaker", "stage") else "note"
   let $text :=
-    if ($unit/self::tei:sp) then
-      $unit//text()[not(parent::tei:speaker | parent::tei:stage | parent::tei:note)]
-    else
-      $unit//text()[not(parent::tei:note)]
+    for $node in $unit//text()
+    where not(local-name($node/parent::*) = $excluded)
+    return $node
   let $tokens := tokenize(normalize-space(string-join($text, " ")), " ")
   return
     if (count($tokens) > 5) then
@@ -645,7 +649,49 @@ function ddts:collection(
  :)
 
 (:~
+ : Return the position of a node in a sequence of nodes.
+ :)
+declare function local:index-of($nodes as node()*, $node as node())
+as xs:integer? {
+  (for $n at $i in $nodes where $n is $node return $i)[1]
+};
+
+(:~
+ : Return the CitableUnits of a range in document order: from the start unit
+ : up to the last descendant of the end unit, down to the given level.
+ :
+ : @param $tei TEI document of the play
+ : @param $start First CitableUnit of the range
+ : @param $end Last CitableUnit of the range
+ : @param $max-level Deepest level to include, -1 for all
+ :)
+declare function local:range(
+  $tei as element(tei:TEI),
+  $start as element(),
+  $end as element(),
+  $max-level as xs:integer
+) as element()* {
+  let $all := local:tree($tei, -1)
+  let $first := local:index-of($all, $start)
+  let $last := local:index-of(
+    $all,
+    ($end, local:descendants($end, -1))[last()]
+  )
+  for $unit in subsequence($all, $first, $last - $first + 1)
+  where $max-level lt 0 or local:level($unit) le $max-level
+  return $unit
+};
+
+(:~
  : DTS navigation endpoint
+ :
+ : @param $resource Identifier of the play
+ : @param $ref CitableUnit to navigate from
+ : @param $start First CitableUnit of a range
+ : @param $end Last CitableUnit of a range
+ : @param $down Depth of the citation tree to return, -1 for all levels
+ : @param $tree Identifier of a citation tree; only the default tree exists
+ : @param $page Page of the members, only page 1 exists
  :)
 declare
   %rest:GET
@@ -669,7 +715,101 @@ function ddts:navigation(
   $tree as xs:string*,
   $page as xs:string*
 ) as item()+ {
-  local:error(501, "Not implemented yet.")
+  let $resource := local:param($resource)
+  let $ref := local:param($ref)
+  let $start := local:param($start)
+  let $end := local:param($end)
+  let $down-param := local:param($down)
+  let $down :=
+    if ($down-param castable as xs:integer) then xs:integer($down-param) else ()
+  let $tree := local:param($tree)
+  let $page := local:param($page)
+  let $page-error := local:check-page($page)
+  let $tei := if ($resource) then local:get-tei($resource) else ()
+  return
+    if (empty($resource)) then
+      local:error(400, "The parameter 'resource' is required.")
+    else if ($ref and ($start or $end)) then
+      local:error(
+        400,
+        "The parameter 'ref' cannot be combined with 'start' and 'end'."
+      )
+    else if (($start and empty($end)) or ($end and empty($start))) then
+      local:error(400, "The parameters 'start' and 'end' must be used together.")
+    else if ($down-param and (empty($down) or $down lt -1)) then
+      local:error(400, "The parameter 'down' must be an integer of -1 or more.")
+    else if (empty($down) and empty($ref) and empty($start)) then
+      local:error(
+        400,
+        "At least one of the parameters 'down', 'ref' or 'start' and 'end' is required."
+      )
+    else if ($down eq 0 and empty($ref)) then
+      local:error(400, "The parameter 'down=0' requires 'ref'.")
+    else if (exists($page-error)) then
+      $page-error
+    else if (empty($tei)) then
+      local:error(404, "Resource '" || $resource || "' not found.")
+    else if ($tree) then
+      local:error(404, "Citation tree '" || $tree || "' not found.")
+    else
+      let $ref-unit := if ($ref) then local:resolve-ref($tei, $ref) else ()
+      let $start-unit := if ($start) then local:resolve-ref($tei, $start) else ()
+      let $end-unit := if ($end) then local:resolve-ref($tei, $end) else ()
+      return
+        if ($ref and empty($ref-unit)) then
+          local:error(404, "CitableUnit '" || $ref || "' not found.")
+        else if ($start and empty($start-unit)) then
+          local:error(404, "CitableUnit '" || $start || "' not found.")
+        else if ($end and empty($end-unit)) then
+          local:error(404, "CitableUnit '" || $end || "' not found.")
+        else if ($start-unit and $end-unit << $start-unit) then
+          local:error(400, "The range ends before it starts.")
+        else
+          let $members :=
+            if (empty($down)) then ()
+            else if ($ref-unit and $down eq 0) then
+              if ($ref-unit/parent::tei:text) then local:top-level-units($tei)
+              else local:citable-children($ref-unit/parent::*)
+            else if ($ref-unit) then
+              ($ref-unit, local:descendants($ref-unit, $down))
+            else if ($start-unit) then
+              local:range(
+                $tei,
+                $start-unit,
+                $end-unit,
+                if ($down lt 0) then -1
+                else max((local:level($start-unit), local:level($end-unit))) + $down
+              )
+            else local:tree($tei, $down)
+          let $id := local:url(
+            $ddts:navigation-endpoint,
+            (
+              map {"name": "resource", "value": $resource},
+              map {"name": "ref", "value": $ref},
+              map {"name": "start", "value": $start},
+              map {"name": "end", "value": $end},
+              map {"name": "down", "value": $down-param},
+              map {"name": "page", "value": $page}
+            )
+          )
+          return local:top-level(map:merge((
+            map {
+              "@id": $id,
+              "@type": "Navigation",
+              "resource": local:resource-object($tei, true())
+            },
+            if ($ref-unit) then map {"ref": local:citable-unit($ref-unit)}
+            else (),
+            if ($start-unit) then
+              map {
+                "start": local:citable-unit($start-unit),
+                "end": local:citable-unit($end-unit)
+              }
+            else (),
+            if (exists($down)) then
+              map {"member": array {$members ! local:citable-unit(.)}}
+            else ()
+          )))
 };
 
 (:
