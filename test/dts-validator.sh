@@ -9,7 +9,8 @@
 #
 # ENTRY_ENDPOINT defaults to the entry point of the test stack
 # (http://localhost:8081/exist/restxq/v1/dts). Additional arguments are passed
-# to the contract tests, e.g. `--corpus test` to restrict them to one corpus.
+# to the contract tests. These test the `test` corpus by default; use
+# `--corpus NAME` (repeatable) to test other corpora, or `--all-corpora`.
 #
 # Environment variables:
 #   DTS_VALIDATOR_DIR  where to keep the validator checkout and virtualenv

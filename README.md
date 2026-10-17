@@ -130,8 +130,9 @@ and writes HTML and JUnit reports to `dts-reports/`:
 
 ```sh
 ./test/dts-validator.sh
-# or against another DTS API, restricting the contract tests to one corpus
-./test/dts-validator.sh http://localhost:8088/api/v1/dts --corpus test
+# or against another DTS API; the contract tests check the `test` corpus
+# unless other corpora are given with --corpus (or --all-corpora)
+./test/dts-validator.sh http://localhost:8088/api/v1/dts --corpus bash
 ```
 
 A deployed API (staging by default) can be validated with the manually

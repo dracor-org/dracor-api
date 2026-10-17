@@ -4,7 +4,8 @@ Fixtures for the DraCor DTS contract tests.
 These tests complement the DTS validator. They check rules of the DTS 1.0
 specification the validator does not cover, as well as DraCor-specific
 conventions, against every resource of the selected corpora instead of a
-randomly chosen one.
+randomly chosen one. By default only the test corpus is tested; use
+--corpus NAME (repeatable) or --all-corpora to test others.
 
 Run them with test/dts-validator.sh or directly:
 
@@ -25,6 +26,9 @@ TEI_NS = "http://www.tei-c.org/ns/1.0"
 
 TIMEOUT = 60
 
+# the corpus tested unless --corpus or --all-corpora is given
+DEFAULT_CORPUS = "test"
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -37,7 +41,12 @@ def pytest_addoption(parser):
         "--corpus",
         action="append",
         default=[],
-        help="restrict tests to the given corpus name (repeatable)",
+        help=f"corpus to test (repeatable, default: {DEFAULT_CORPUS})",
+    )
+    parser.addoption(
+        "--all-corpora",
+        action="store_true",
+        help="test all corpora (can take very long on a full installation)",
     )
     parser.addoption(
         "--max-units",
@@ -86,16 +95,25 @@ def _client(entry_endpoint):
     return DTS(entry_endpoint)
 
 
+@functools.cache
 def _corpora(config):
     dts = _client(config.getoption("--entry-endpoint"))
     root = dts.collection().json()
-    selected = config.getoption("--corpus")
-    corpora = []
-    for member in root["member"]:
-        name = member["@id"].rstrip("/").split("/")[-1]
-        if not selected or name in selected:
-            corpora.append(member["@id"])
-    return corpora
+    available = {
+        member["@id"].rstrip("/").split("/")[-1]: member["@id"]
+        for member in root["member"]
+    }
+    if config.getoption("--all-corpora"):
+        return list(available.values())
+    selected = config.getoption("--corpus") or [DEFAULT_CORPUS]
+    missing = [name for name in selected if name not in available]
+    if missing:
+        raise pytest.UsageError(
+            f"corpus not found: {', '.join(missing)}. "
+            f"Available: {', '.join(sorted(available)) or 'none'}. "
+            "Use --corpus NAME or --all-corpora."
+        )
+    return [available[name] for name in selected]
 
 
 def _resources(config):
