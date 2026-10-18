@@ -327,10 +327,14 @@ declare
   %rest:consumes("application/xml", "text/xml")
   %rest:produces("application/json")
   %output:method("json")
-function api:corpora-post-tei($data as document-node(), $auth) {
+function api:corpora-post-tei($data, $auth) {
   if (not(local:is-authenticated($auth))) then (
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
+  ) else if (not($data instance of document-node())) then (
+    (: eXist-db passes a body that isn't well-formed XML as a string :)
+    <rest:response><http:response status="400" /></rest:response>,
+    map {"error": "Invalid corpus document. The request body is not XML."}
   ) else
     try {
       dutil:create-corpus-from-xml($data/*)
@@ -383,8 +387,21 @@ function api:corpora-post-json($data, $auth) {
   ) else
     try {
       let $json := parse-json(util:base64-decode($data))
-      return dutil:create-corpus($json)
-    } catch dutil:invalid-corpus-name {
+      return if ($json instance of map(*)) then
+        dutil:create-corpus($json)
+      else
+        error(xs:QName("dutil:invalid-corpus-document"), "JSON object required")
+    } catch err:FOJS0001 {
+      (
+        <rest:response><http:response status="400" /></rest:response>,
+        map {"error": "Invalid JSON. " || $err:description}
+      )
+    }catch dutil:invalid-corpus-document {
+      (
+        <rest:response><http:response status="400" /></rest:response>,
+        map {"error": $err:description}
+      )
+    }catch dutil:invalid-corpus-name {
       (
         <rest:response><http:response status="400" /></rest:response>,
         map {"error": $err:description}
