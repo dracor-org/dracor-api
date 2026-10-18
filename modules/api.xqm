@@ -550,7 +550,9 @@ function api:post-corpus($corpusname, $data, $auth) {
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
   ) else
-    let $json := parse-json(util:base64-decode($data))
+    let $json := try {
+      parse-json(util:base64-decode($data))
+    } catch err:FOJS0001 { "invalid" }
     let $corpus := dutil:get-corpus-info-by-name($corpusname)
 
     return if (not($corpus?name)) then (
@@ -559,6 +561,16 @@ function api:post-corpus($corpusname, $data, $auth) {
     ) else if (count($json) = 0) then (
       <rest:response><http:response status="400" /></rest:response>,
       map {"message": "missing payload"}
+    ) else if (
+      not(
+        if ($json instance of map(*)) then
+          $json?load instance of xs:boolean
+        else
+          false()
+      )
+    ) then (
+      <rest:response><http:response status="400" /></rest:response>,
+      map {"message": "invalid payload"}
     ) else if ($json?load) then
       let $job-name := "load-corpus-" || $corpusname
       let $params := (
@@ -894,7 +906,15 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
       <message>Unacceptable play name '{
           $playname
         }'. Use lower case ASCII characters, digits and dashes only.</message>
-    ) else if (not($data/tei:TEI)) then (
+    ) else if (
+      (: eXist-db passes a body that isn't well-formed XML as a string :)
+      not(
+        if ($data instance of document-node()) then
+          $data/tei:TEI
+        else (
+        )
+      )
+    ) then (
       <rest:response><http:response status="400" /></rest:response>,
       <message>TEI document required</message>
     ) else
