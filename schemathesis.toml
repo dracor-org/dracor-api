@@ -18,12 +18,6 @@ max-examples = 50
 unexpected-methods = []
 
 
-# Known issues found by the `negative_data_rejection` check, which is
-# therefore only part of the negative run, which doesn't fail CI yet:
-# an empty value of a query parameter with an enum (`/corpora?include=`,
-# `spoken-text?sex=`, `/dts/collection?nav=`) is treated like a missing
-# parameter instead of being rejected.
-
 # Resolves the author live at Wikidata.
 [[operations]]
 include-operation-id = "wikidata-author-info"

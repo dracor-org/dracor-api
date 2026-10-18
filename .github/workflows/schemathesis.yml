@@ -53,7 +53,7 @@ jobs:
           authorization: 'Basic YWRtaW46'
           # the action always passes this, overriding schemathesis.toml
           max-examples: 50
-          args: "--include-method GET --exclude-checks negative_data_rejection"
+          args: "--include-method GET"
 
       - name: Test admin endpoints without credentials with schemathesis
         if: ${{ !cancelled() }}
@@ -67,10 +67,8 @@ jobs:
           coverage: 'false'
           args: "--include-tag admin --phases examples,coverage,fuzzing"
 
-      # Not blocking yet, see the known issues in schemathesis.toml
       - name: Test API with invalid data with schemathesis
         if: ${{ !cancelled() }}
-        continue-on-error: true
         uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
         with:
           # keep in sync with the version used for test/schemathesis.sh

@@ -12,7 +12,6 @@ st() {
 }
 
 st --include-method GET \
-  --exclude-checks negative_data_rejection \
   --auth admin: \
   --report junit \
   --report-junit-path schemathesis-results.xml
@@ -24,12 +23,12 @@ st --include-tag admin \
   --report junit \
   --report-junit-path schemathesis-results-admin.xml || status=1
 
-# Invalid data (not failing the script yet, see schemathesis.toml)
+# Invalid data, which must be rejected
 st --include-method GET \
   --mode negative \
   --exclude-checks unsupported_method \
   --auth admin: \
   --report junit \
-  --report-junit-path schemathesis-results-negative.xml
+  --report-junit-path schemathesis-results-negative.xml || status=1
 
 exit $status
