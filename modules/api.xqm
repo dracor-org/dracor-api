@@ -388,10 +388,21 @@ function api:corpora-post-json($data, $auth) {
   ) else
     try {
       let $json := parse-json(util:base64-decode($data))
-      return if ($json instance of map(*)) then
-        dutil:create-corpus($json)[. instance of map(*)]
-      else
+      let $fields := ("name", "title", "repository", "archive", "description")
+      return if (not($json instance of map(*))) then
         error(xs:QName("dutil:invalid-corpus-document"), "JSON object required")
+      else if (
+        some
+          $field in
+          $fields satisfies
+          exists($json?($field)) and not($json?($field) instance of xs:string)
+      ) then
+        error(
+          xs:QName("dutil:invalid-corpus-document"),
+          "The values of " || string-join($fields, ", ") || " must be strings"
+        )
+      else
+        dutil:create-corpus($json)[. instance of map(*)]
     } catch err:FOJS0001 {
       (
         <rest:response><http:response status="400" /></rest:response>,

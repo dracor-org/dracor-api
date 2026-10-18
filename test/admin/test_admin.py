@@ -75,8 +75,10 @@ def test_create_existing_corpus(api, corpus):
         {"name": "Scratch1", "title": "Invalid name"},
         {"name": SCRATCH_CORPUS},
         {"title": "No name"},
+        {"name": SCRATCH_CORPUS, "title": {}},
+        ["not", "an", "object"],
     ],
-    ids=["invalid-name", "no-title", "no-name"],
+    ids=["invalid-name", "no-title", "no-name", "title-not-string", "array"],
 )
 def test_create_corpus_with_invalid_json(api, body):
     response = api.post_json("/corpora", body)
