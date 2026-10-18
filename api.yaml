@@ -2211,7 +2211,10 @@ components:
           $ref: '#/components/schemas/WordCounts'
           x-dracor-feature: contains_corpus_wordcount_data
         updated:
-          type: string
+          description: >-
+            When the metrics of the corpus were last updated, `null` for a
+            corpus without plays
+          type: [string, "null"]
           x-dracor-feature: corpus_metrics_date_updated
       required:
         - characters
