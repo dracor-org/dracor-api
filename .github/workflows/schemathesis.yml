@@ -38,6 +38,14 @@ jobs:
       - run: docker --version
       - name: Start the docker-compose stack
         run: docker compose up --detach --wait
+      # `up --wait` doesn't wait for the loadtest container to finish
+      - name: Wait for the test corpus to be loaded
+        run: |
+          status=$(docker wait "$(docker compose ps --all --quiet loadtest)")
+          if [ "$status" != 0 ]; then
+            docker compose logs loadtest api
+            exit 1
+          fi
       - name: Test if /info returns a response
         run: curl --verbose http://localhost:8081/exist/restxq/v1/info
       - name: Test if corpus returns a response
