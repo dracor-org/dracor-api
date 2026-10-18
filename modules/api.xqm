@@ -303,6 +303,18 @@ function api:corpora($include) {
 };
 
 (:~
+ : Check whether a request is made by a logged in user
+ :
+ : eXist-db runs a request as guest unless it authenticates with HTTP Basic,
+ : so an Authorization header with another scheme is not sufficient.
+ :
+ : @param $auth Authorization header value
+ :)
+declare function local:is-authenticated($auth) as xs:boolean {
+  exists($auth) and sm:id()//sm:real/sm:username ne "guest"
+};
+
+(:~
  : Add new corpus
  :
  : @param $data corpus.xml containing dracorCorpus element.
@@ -316,7 +328,7 @@ declare
   %rest:produces("application/json")
   %output:method("json")
 function api:corpora-post-tei($data as document-node(), $auth) {
-  if (not($auth)) then (
+  if (not(local:is-authenticated($auth))) then (
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
   ) else
@@ -365,7 +377,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora-post-json($data, $auth) {
-  if (not($auth)) then (
+  if (not(local:is-authenticated($auth))) then (
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
   ) else
@@ -516,7 +528,7 @@ declare
   %test:arg("data", '{"load": true}')
   %test:arg("auth", "Basic YWRtaW46")
 function api:post-corpus($corpusname, $data, $auth) {
-  if (not($auth)) then (
+  if (not(local:is-authenticated($auth))) then (
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
   ) else
@@ -587,7 +599,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:delete-corpus($corpusname, $auth) {
-  if (not($auth)) then (
+  if (not(local:is-authenticated($auth))) then (
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
   ) else
@@ -744,7 +756,7 @@ declare
   %rest:header-param("Authorization", "{$auth}")
   %output:method("json")
 function api:play-delete($corpusname, $playname, $data, $auth) {
-  if (not($auth)) then
+  if (not(local:is-authenticated($auth))) then
     <rest:response><http:response status="401" /></rest:response>
   else
     let $paths := dutil:filepaths($corpusname, $playname)
@@ -848,7 +860,7 @@ declare
   %rest:consumes("application/xml", "text/xml")
   %output:method("xml")
 function api:play-tei-put($corpusname, $playname, $data, $auth) {
-  if (not($auth)) then
+  if (not(local:is-authenticated($auth))) then
     <rest:response><http:response status="401" /></rest:response>
   else
     let $corpus := dutil:get-corpus($corpusname)
