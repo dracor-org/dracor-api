@@ -15,8 +15,16 @@ API_BASE=${2:-http://localhost:8081/exist/restxq/v1}
 AUTH="${EXIST_USER:-admin}:${EXIST_PASSWORD:-}"
 TEST_DIR=$(cd "$(dirname "$0")" && pwd)
 
+delete() {
+  # 404 if it doesn't exist
+  curl --silent --output /dev/null -u "$AUTH" -X DELETE \
+    "$API_BASE/corpora/scratch"
+}
+
 case $1 in
   create)
+    # start afresh if a previous run was interrupted before deleting it
+    delete
     curl --silent --show-error --fail --output /dev/null -u "$AUTH" \
       -X POST -H 'Content-Type: application/json' \
       -d '{"name": "scratch", "title": "Scratch Corpus"}' \
@@ -27,9 +35,7 @@ case $1 in
       "$API_BASE/corpora/scratch/plays/minimal/tei"
     ;;
   delete)
-    # 404 if it doesn't exist
-    curl --silent --output /dev/null -u "$AUTH" -X DELETE \
-      "$API_BASE/corpora/scratch"
+    delete
     ;;
   *)
     echo "Usage: $0 create|delete [API_BASE]" >&2

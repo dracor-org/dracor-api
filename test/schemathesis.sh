@@ -13,7 +13,7 @@ st() {
 
 # The admin operations only change the throwaway corpus (see
 # test/schemathesis_hooks.py), which is removed before the other runs.
-"$(dirname "$0")/scratch-corpus.sh" create
+"$(dirname "$0")/scratch-corpus.sh" create || exit 1
 SCHEMATHESIS_HOOKS="$(dirname "$0")/schemathesis_hooks.py" st \
   --exclude-tag webhook \
   --auth admin: \
