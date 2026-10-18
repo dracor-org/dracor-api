@@ -357,6 +357,10 @@ paths:
                 {
                   "message": "corpus update scheduled"
                 }
+        '400':
+          description: >-
+            The request body is missing, isn't valid JSON, or `load` isn't
+            `true`.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -598,7 +602,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: "[a-z0-9]+([-a-z0-9]?[a-z0-9])?"
+            pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
       requestBody:
         required: true
         description: TEI document
