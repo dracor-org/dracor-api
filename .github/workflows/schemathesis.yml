@@ -64,7 +64,7 @@ jobs:
           base-url: http://localhost:8081/exist/restxq/v1/
           authorization: 'Basic YWRtaW46'
           hooks: test/schemathesis_hooks.py
-          args: "--exclude-tag webhook"
+          args: "--exclude-tag Webhook"
       - name: Remove the throwaway corpus
         if: always()
         run: ./test/scratch-corpus.sh delete
