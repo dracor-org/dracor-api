@@ -11,11 +11,16 @@ st() {
     --generation-database=:memory: "$@"
 }
 
-st --include-method GET \
+# The admin operations only change the throwaway corpus (see
+# test/schemathesis_hooks.py), which is removed before the other runs.
+"$(dirname "$0")/scratch-corpus.sh" create
+SCHEMATHESIS_HOOKS="$(dirname "$0")/schemathesis_hooks.py" st \
+  --exclude-tag webhook \
   --auth admin: \
   --report junit \
   --report-junit-path schemathesis-results.xml
 status=$?
+"$(dirname "$0")/scratch-corpus.sh" delete
 
 # Invalid data, which must be rejected. The links followed by the stateful
 # phase only lead to valid requests, which the first run covers.
@@ -25,16 +30,5 @@ st --include-method GET \
   --auth admin: \
   --report junit \
   --report-junit-path schemathesis-results-negative.xml || status=1
-
-# Admin operations with credentials, on a throwaway corpus only (see
-# test/schemathesis_hooks.py). There are no links between them.
-"$(dirname "$0")/scratch-corpus.sh" create || status=1
-SCHEMATHESIS_HOOKS="$(dirname "$0")/schemathesis_hooks.py" st \
-  --include-tag admin \
-  --phases examples,coverage,fuzzing \
-  --auth admin: \
-  --report junit \
-  --report-junit-path schemathesis-results-admin.xml || status=1
-"$(dirname "$0")/scratch-corpus.sh" delete
 
 exit $status

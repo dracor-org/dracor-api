@@ -43,6 +43,10 @@ jobs:
       - name: Test if corpus returns a response
         run: curl --verbose http://localhost:8081/exist/restxq/v1/corpora/test
 
+      # The admin operations only change the throwaway corpus (see
+      # test/schemathesis_hooks.py), which is removed before the other tests.
+      - name: Create the throwaway corpus for schemathesis
+        run: ./test/scratch-corpus.sh create
       - name: Test API with schemathesis
         uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
         with:
@@ -51,7 +55,11 @@ jobs:
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
           authorization: 'Basic YWRtaW46'
-          args: "--include-method GET"
+          hooks: test/schemathesis_hooks.py
+          args: "--exclude-tag webhook"
+      - name: Remove the throwaway corpus
+        if: always()
+        run: ./test/scratch-corpus.sh delete
 
       - name: Test API with invalid data with schemathesis
         if: ${{ !cancelled() }}
@@ -88,24 +96,6 @@ jobs:
       - name: Test admin endpoints
         if: ${{ !cancelled() }}
         run: ./test/admin.sh
-      - name: Create the throwaway corpus for schemathesis
-        if: ${{ !cancelled() }}
-        run: ./test/scratch-corpus.sh create
-      - name: Test admin endpoints with schemathesis
-        if: ${{ !cancelled() }}
-        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
-        with:
-          # keep in sync with the version used for test/schemathesis.sh
-          version: 4.31.1
-          schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
-          base-url: http://localhost:8081/exist/restxq/v1/
-          authorization: 'Basic YWRtaW46'
-          hooks: test/schemathesis_hooks.py
-          coverage: 'false'
-          args: "--include-tag admin --phases examples,coverage,fuzzing"
-      - name: Remove the throwaway corpus
-        if: always()
-        run: ./test/scratch-corpus.sh delete
 
       - name: Stop the docker-compose stack
         run: docker compose down
