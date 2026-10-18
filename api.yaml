@@ -204,6 +204,8 @@ paths:
               description: | 
                 The `name` of a corpus in the response can be used to list its
                 contents.
+        '400':
+          description: Invalid value for `include` parameter
     post:
       summary: Add new corpus
       operationId: post-corpora
@@ -974,7 +976,7 @@ paths:
               schema:
                 type: string
         '400':
-          description: Invalid value for `gender` parameter
+          description: Invalid value for `sex` parameter
         '404':
           description: Unknown play (or corpus)
 
