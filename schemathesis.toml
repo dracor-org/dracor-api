@@ -21,6 +21,14 @@ enabled = false
 include-path-regex = "^/dts/(navigation|document)$"
 checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "404"]
 
+# The admin operations are only tested without credentials, so that they
+# can't change the test data, and must then be rejected. Their only
+# expected response, 401, would otherwise raise a warning.
+[[operations]]
+include-tag = "admin"
+checks.positive_data_acceptance.expected-statuses = ["401"]
+warnings = false
+
 # Test data
 #
 # The test stack (compose.t.yml) only has the `test` corpus with the plays
