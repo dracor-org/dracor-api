@@ -20,3 +20,72 @@ enabled = false
 [[operations]]
 include-path-regex = "^/dts/(navigation|document)$"
 checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "404"]
+
+# Test data
+#
+# The test stack (compose.t.yml) only has the `test` corpus with the plays
+# of https://github.com/dracor-org/testdracor. The parameter examples in
+# api.yaml refer to the production corpora, and generated values never match
+# an existing corpus or play, so without these values the corpus and play
+# operations only ever return 404. They are used most of the time; the
+# remaining generated values still test unknown corpora and plays.
+
+[dictionaries.corpora]
+values = ["test"]
+
+# Each play covers different features: gogol-revizor has the relations
+# used by the `relation*` parameter examples (spouses, parent_of,
+# associated_with), shakespeare-macbeth has verse, character groups and
+# character QIDs and no relations, strindberg-froken-julie has a single act
+# without scenes.
+[dictionaries.plays]
+values = [
+  "gogol-revizor",
+  "lessing-emilia-galotti",
+  "shakespeare-macbeth",
+  "strindberg-froken-julie",
+]
+
+[dictionaries.play-ids]
+values = ["test000001", "test000002", "test000003", "test000004"]
+
+[dictionaries.dts-resources]
+values = [
+  "https://dracor.org/id/test000001",
+  "https://dracor.org/id/test000002",
+  "https://dracor.org/id/test000003",
+  "https://dracor.org/id/test000004",
+]
+
+[dictionaries.dts-collections]
+values = [
+  "https://dracor.org/id/test",
+  "https://dracor.org/id/test000001",
+  "https://dracor.org/id/test000003",
+]
+
+[dictionaries.character-qids]
+values = ["Q2454065", "Q3429667", "Q3842048", "Q5293903"]
+
+[parameters]
+"path.corpusname" = { dictionary = "corpora", probability = 0.9 }
+"path.playname" = { dictionary = "plays", probability = 0.9 }
+"query.resource" = { dictionary = "dts-resources", probability = 0.9 }
+
+# Without this header the ID resolves to the dracor.org URL of the play,
+# which in the test stack would be a frontend that doesn't run. Schemathesis
+# follows the 303 and gets the 200 of the play metadata, which is not a
+# status code of this operation.
+[[operations]]
+include-operation-id = "resolve-id"
+headers = { Accept = "application/json" }
+checks.status_code_conformance.enabled = false
+parameters."path.id" = { dictionary = "play-ids", probability = 0.9 }
+
+[[operations]]
+include-operation-id = "plays-with-character"
+parameters."path.id" = { dictionary = "character-qids", probability = 0.9 }
+
+[[operations]]
+include-operation-id = "get-dts-collection"
+parameters."query.id" = { dictionary = "dts-collections", probability = 0.9 }
