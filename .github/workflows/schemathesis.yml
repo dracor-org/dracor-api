@@ -53,17 +53,6 @@ jobs:
           authorization: 'Basic YWRtaW46'
           args: "--include-method GET"
 
-      - name: Test admin endpoints without credentials with schemathesis
-        if: ${{ !cancelled() }}
-        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
-        with:
-          # keep in sync with the version used for test/schemathesis.sh
-          version: 4.31.1
-          schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
-          base-url: http://localhost:8081/exist/restxq/v1/
-          coverage: 'false'
-          args: "--include-tag admin --phases examples,coverage,fuzzing"
-
       - name: Test API with invalid data with schemathesis
         if: ${{ !cancelled() }}
         uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
@@ -91,6 +80,32 @@ jobs:
         with:
           name: dts-reports
           path: dts-reports/
+
+      # The admin tests create and delete corpora, so they run after all
+      # tests that rely on the test data.
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        if: ${{ !cancelled() }}
+      - name: Test admin endpoints
+        if: ${{ !cancelled() }}
+        run: ./test/admin.sh
+      - name: Create the throwaway corpus for schemathesis
+        if: ${{ !cancelled() }}
+        run: ./test/scratch-corpus.sh create
+      - name: Test admin endpoints with schemathesis
+        if: ${{ !cancelled() }}
+        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
+        with:
+          # keep in sync with the version used for test/schemathesis.sh
+          version: 4.31.1
+          schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
+          base-url: http://localhost:8081/exist/restxq/v1/
+          authorization: 'Basic YWRtaW46'
+          hooks: test/schemathesis_hooks.py
+          coverage: 'false'
+          args: "--include-tag admin --phases examples,coverage,fuzzing"
+      - name: Remove the throwaway corpus
+        if: always()
+        run: ./test/scratch-corpus.sh delete
 
       - name: Stop the docker-compose stack
         run: docker compose down

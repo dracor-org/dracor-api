@@ -41,14 +41,6 @@ enabled = false
 include-path-regex = "^/dts/(navigation|document)$"
 checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "404"]
 
-# The admin operations are only tested without credentials, so that they
-# can't change the test data, and must then be rejected. Their only
-# expected response, 401, would otherwise raise a warning.
-[[operations]]
-include-tag = "admin"
-checks.positive_data_acceptance.expected-statuses = ["401"]
-warnings = false
-
 # Test data
 #
 # The test stack (compose.t.yml) only has the `test` corpus with the plays
@@ -114,3 +106,21 @@ parameters."path.id" = { dictionary = "character-qids", probability = 0.9 }
 [[operations]]
 include-operation-id = "get-dts-collection"
 parameters."query.id" = { dictionary = "dts-collections", probability = 0.9 }
+
+# The admin operations are tested with credentials on the throwaway corpus
+# `scratch`, which test/schemathesis_hooks.py makes every request use. The
+# ignored_auth check repeats each request without credentials, which must
+# then be rejected.
+
+[dictionaries.scratch-plays]
+values = ["minimal", "other"]
+
+[[operations]]
+include-tag = "admin"
+parameters."path.playname" = { dictionary = "scratch-plays", probability = 0.9 }
+
+# The XML request bodies are strings in the schema, which Schemathesis sends
+# wrapped in a <data> element, so even schema-compliant bodies get 400.
+[[operations]]
+include-operation-id-regex = "^(post-corpora|play-tei-put)$"
+checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "401", "404", "409"]

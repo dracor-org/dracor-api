@@ -17,12 +17,6 @@ st --include-method GET \
   --report-junit-path schemathesis-results.xml
 status=$?
 
-# Admin operations without credentials, they must all be rejected
-st --include-tag admin \
-  --phases examples,coverage,fuzzing \
-  --report junit \
-  --report-junit-path schemathesis-results-admin.xml || status=1
-
 # Invalid data, which must be rejected. The links followed by the stateful
 # phase only lead to valid requests, which the first run covers.
 st --include-method GET \
@@ -31,5 +25,16 @@ st --include-method GET \
   --auth admin: \
   --report junit \
   --report-junit-path schemathesis-results-negative.xml || status=1
+
+# Admin operations with credentials, on a throwaway corpus only (see
+# test/schemathesis_hooks.py). There are no links between them.
+"$(dirname "$0")/scratch-corpus.sh" create || status=1
+SCHEMATHESIS_HOOKS="$(dirname "$0")/schemathesis_hooks.py" st \
+  --include-tag admin \
+  --phases examples,coverage,fuzzing \
+  --auth admin: \
+  --report junit \
+  --report-junit-path schemathesis-results-admin.xml || status=1
+"$(dirname "$0")/scratch-corpus.sh" delete
 
 exit $status
