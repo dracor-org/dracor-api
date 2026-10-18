@@ -1290,7 +1290,7 @@ function api:spoken-text(
   return if (not($doc)) then
     <rest:response><http:response status="404" /></rest:response>
   else if (
-    $sex and $sexes[. != "MALE" and . != "FEMALE" and . != "UNKNOWN"]
+    $sex and exists($sexes[. != "MALE" and . != "FEMALE" and . != "UNKNOWN"])
   ) then (
     <rest:response><http:response status="400" /></rest:response>,
     'sex must be "FEMALE", "MALE", or "UNKNOWN"'
