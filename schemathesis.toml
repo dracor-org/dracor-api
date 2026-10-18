@@ -11,14 +11,15 @@ max-examples = 50
 # In negative mode the coverage phase sends methods an operation doesn't
 # have and expects 405 with an `Allow` header. Requests with methods that
 # no operation of a path has are answered by eXist-db or Jetty, though:
-# 405 without `Allow`, 501 for PATCH, 403 for TRACE, 500 for QUERY.
+# 405 without `Allow`, 501 for PATCH, 403 for TRACE, 500 for QUERY. The
+# negative run therefore also excludes the `unsupported_method` check (the
+# action passes --checks=all, which overrides disabling it here).
 [phases.coverage]
 unexpected-methods = []
 
-[checks]
-unsupported_method.enabled = false
 
-# Known issues found in negative mode, which therefore doesn't fail CI yet:
+# Known issues found by the `negative_data_rejection` check, which is
+# therefore only part of the negative run, which doesn't fail CI yet:
 # an empty value of a query parameter with an enum (`/corpora?include=`,
 # `spoken-text?sex=`, `/dts/collection?nav=`) is treated like a missing
 # parameter instead of being rejected.
@@ -95,14 +96,11 @@ values = ["Q2454065", "Q3429667", "Q3842048", "Q5293903"]
 "path.playname" = { dictionary = "plays", probability = 0.9 }
 "query.resource" = { dictionary = "dts-resources", probability = 0.9 }
 
-# Without this header the ID resolves to the dracor.org URL of the play,
-# which in the test stack would be a frontend that doesn't run. Schemathesis
-# follows the 303 and gets the 200 of the play metadata, which is not a
-# status code of this operation.
+# Check the 303 itself instead of the resource it redirects to, e.g. the
+# dracor.org URL of a play, which the test stack doesn't serve.
 [[operations]]
 include-operation-id = "resolve-id"
-headers = { Accept = "application/json" }
-checks.status_code_conformance.enabled = false
+max-redirects = 0
 parameters."path.id" = { dictionary = "play-ids", probability = 0.9 }
 
 [[operations]]

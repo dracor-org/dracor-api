@@ -3,6 +3,7 @@ build/
 expath-pkg.xml
 *.xar
 schemathesis-results*
+.schemathesis/
 .hypothesis
 .claude
 test/.dts-validator/
