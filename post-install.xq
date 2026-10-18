@@ -1,56 +1,92 @@
 xquery version "3.1";
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config"
-  at "modules/config.xqm";
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "modules/config.xqm";
 
 (: The following external variables are set by the repo:deploy function :)
 (: the target collection into which the app is deployed :)
 declare variable $target external;
 
-declare function local:store ($file-path, $content) {
-  let $segments := tokenize($file-path, '/')
+declare function local:store($file-path, $content) {
+  let $segments := tokenize($file-path, "/")
   let $name := $segments[last()]
-  let $col := substring($file-path, 1, string-length($file-path) - string-length($name) - 1)
+  let $col := substring(
+    $file-path,
+    1,
+    string-length($file-path) - string-length($name) - 1
+  )
   return xmldb:store($col, $name, $content)
 };
 
-(: We create an initial config file the values of which can be passed by the
+(:
+ : Set the identifier base in an existing config file from DRACOR_ID_BASE, so
+ : that the variable takes effect on servers set up before it existed.
+ :)
+declare function local:update-id-base() as empty-sequence() {
+  let $id-base := environment-variable("DRACOR_ID_BASE")
+  let $config := doc($config:file)/config
+  return if (not($id-base)) then (
+  ) else if ($config/id-base) then (
+    util:log-system-out("Setting id-base to " || $id-base),
+    update value $config/id-base with $id-base
+  ) else (
+    util:log-system-out("Adding id-base " || $id-base),
+    update insert <id-base>{ $id-base }</id-base> into $config
+  )
+};
+
+(:
+ : We create an initial config file the values of which can be passed by the
  : following environment variables:
  :
  : - DRACOR_API_BASE: base URI the DraCor API will be available under
+ : - DRACOR_ID_BASE: base of identifier URIs (optional, defaults to
+ : https://dracor.org/id; only needed for installations publishing their
+ : own corpora)
  : - FUSEKI_SERVER: base URI of the fuseki server
  : - METRICS_SERVER: DraCor metrics service URI
+ :
+ : If the config file already exists, only the identifier base is updated
+ : from DRACOR_ID_BASE (when set).
  :)
-declare function local:create-config-file ()
-as item()? {
-  if(doc($config:file)/config) then
-    (util:log-system-out("Config file exists at " || $config:file))
-  else (
+declare function local:create-config-file() as item()? {
+  if (doc($config:file)/config) then (
+    util:log-system-out("Config file exists at " || $config:file),
+    local:update-id-base()
+  ) else (
     util:log-system-out("Creating " || $config:file),
     local:store(
       $config:file,
       <config>
         <api-base>
-        {
-          if (environment-variable("DRACOR_API_BASE")) then
-            environment-variable("DRACOR_API_BASE")
-          else "https://dracor.org/api/v1"
-        }
+          {
+            if (environment-variable("DRACOR_API_BASE")) then
+              environment-variable("DRACOR_API_BASE")
+            else
+              "https://dracor.org/api/v1"
+          }
         </api-base>
+        {
+          if (environment-variable("DRACOR_ID_BASE")) then
+            <id-base>{ environment-variable("DRACOR_ID_BASE") }</id-base>
+          else (
+          )
+        }
         <services>
           <fuseki>
-          {
-            if (environment-variable("FUSEKI_SERVER")) then
-              environment-variable("FUSEKI_SERVER")
-            else "http://localhost:3030/dracor/"
-          }
+            {
+              if (environment-variable("FUSEKI_SERVER")) then
+                environment-variable("FUSEKI_SERVER")
+              else
+                "http://localhost:3030/dracor/"
+            }
           </fuseki>
           <metrics>
-          {
-            if (environment-variable("METRICS_SERVER")) then
-              environment-variable("METRICS_SERVER")
-            else "http://localhost:8030/metrics/"
-          }
+            {
+              if (environment-variable("METRICS_SERVER")) then
+                environment-variable("METRICS_SERVER")
+              else
+                "http://localhost:8030/metrics/"
+            }
           </metrics>
         </services>
       </config>
@@ -58,45 +94,47 @@ as item()? {
   )
 };
 
-(: We create an initial config file the values of which can be passed by the
+(:
+ : We create an initial config file the values of which can be passed by the
  : following environment variables:
  :
  : - GITHUB_WEBHOOK_SECRET: secret for the GitHub webhook
  : - FUSEKI_SECRET: admin password for the fuseki server
  :)
-declare function local:create-secrets-file ()
-as item()? {
-  if(doc($config:secrets-file)/secrets) then
-    (util:log-system-out("Secrets file exists at " || $config:secrets-file))
-  else (
+declare function local:create-secrets-file() as item()? {
+  if (doc($config:secrets-file)/secrets) then (
+    util:log-system-out("Secrets file exists at " || $config:secrets-file)
+  ) else (
     util:log-system-out("Creating " || $config:secrets-file),
     local:store(
       $config:secrets-file,
       <secrets>
-        <fuseki>{environment-variable("FUSEKI_SECRET")}</fuseki>
-        <gh-webhook>{environment-variable("GITHUB_WEBHOOK_SECRET")}</gh-webhook>
+        <fuseki>{ environment-variable("FUSEKI_SECRET") }</fuseki>
+        <gh-webhook>
+          { environment-variable("GITHUB_WEBHOOK_SECRET") }
+        </gh-webhook>
       </secrets>
     ),
     (: FIXME: find a better solution to protect the webhook secret :)
-    sm:chmod(xs:anyURI($config:secrets-file), 'rw-------')
+    sm:chmod(xs:anyURI($config:secrets-file), "rw-------")
   )
 };
 
 (: elevate privileges for github webhook :)
-let $webhook := xs:anyURI($target || '/modules/webhook.xqm')
-let $sitelinks-job := xs:anyURI($target || '/jobs/sitelinks.xq')
+let $webhook := xs:anyURI($target || "/modules/webhook.xqm")
+let $sitelinks-job := xs:anyURI($target || "/jobs/sitelinks.xq")
 
 (: register the RESTXQ module :)
-let $restxq-module := xs:anyURI('modules/api.xpm')
+let $restxq-module := xs:anyURI("modules/api.xpm")
 
 return (
   local:create-config-file(),
   local:create-secrets-file(),
   sm:chown($webhook, "admin"),
   sm:chgrp($webhook, "dba"),
-  sm:chmod($webhook, 'rwsr-xr-x'),
+  sm:chmod($webhook, "rwsr-xr-x"),
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
-  sm:chmod($sitelinks-job, 'rwsr-xr-x'),
+  sm:chmod($sitelinks-job, "rwsr-xr-x"),
   exrest:register-module($restxq-module)
 )

@@ -1,0 +1,126 @@
+# Schemathesis configuration, used by test/schemathesis.sh and the
+# Schemathesis workflow. Which operations a run covers is chosen on the
+# command line; everything shared by the runs is configured here.
+
+request-timeout = 30
+
+[generation]
+mode = "positive"
+max-examples = 50
+
+# Long enough for the stateful phase to follow the links from the corpus
+# list down to the operations on a single play
+[phases.stateful]
+max-steps = 20
+
+# In negative mode the coverage phase sends methods an operation doesn't
+# have and expects 405 with an `Allow` header. Requests with methods that
+# no operation of a path has are answered by eXist-db or Jetty, though:
+# 405 without `Allow`, 501 for PATCH, 403 for TRACE, 500 for QUERY.
+[phases.coverage]
+unexpected-methods = []
+
+[checks]
+unsupported_method.enabled = false
+
+# The tests aren't meant to measure performance, and on GitHub runners
+# eXist-db can stall for more than the default 10 s after a series of large
+# responses. Report only responses that come close to the request timeout.
+max_response_time = 30
+
+# Resolves the author live at Wikidata.
+[[operations]]
+include-operation-id = "wikidata-author-info"
+enabled = false
+
+# The DTS navigation and document endpoints have parameters that exclude
+# each other (`ref` and `start`/`end`) or require each other (`start` and
+# `end`), which OpenAPI cannot express. Requests combining them correctly
+# get 400 as required by the DTS specification.
+[[operations]]
+include-path-regex = "^/dts/(navigation|document)$"
+checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "404"]
+
+# Test data
+#
+# The test stack (compose.t.yml) only has the `test` corpus with the plays
+# of https://github.com/dracor-org/testdracor. The parameter examples in
+# api.yaml refer to the production corpora, and generated values never match
+# an existing corpus or play, so without these values the corpus and play
+# operations only ever return 404. They are used most of the time; the
+# remaining generated values still test unknown corpora and plays.
+
+[dictionaries.corpora]
+values = ["test"]
+
+# Each play covers different features: gogol-revizor has the relations
+# used by the `relation*` parameter examples (spouses, parent_of,
+# associated_with), shakespeare-macbeth has verse, character groups and
+# character QIDs and no relations, strindberg-froken-julie has a single act
+# without scenes.
+[dictionaries.plays]
+values = [
+  "gogol-revizor",
+  "lessing-emilia-galotti",
+  "shakespeare-macbeth",
+  "strindberg-froken-julie",
+]
+
+[dictionaries.play-ids]
+values = ["test000001", "test000002", "test000003", "test000004"]
+
+[dictionaries.dts-resources]
+values = [
+  "https://dracor.org/id/test000001",
+  "https://dracor.org/id/test000002",
+  "https://dracor.org/id/test000003",
+  "https://dracor.org/id/test000004",
+]
+
+[dictionaries.dts-collections]
+values = [
+  "https://dracor.org/id/test",
+  "https://dracor.org/id/test000001",
+  "https://dracor.org/id/test000003",
+]
+
+[dictionaries.character-qids]
+values = ["Q2454065", "Q3429667", "Q3842048", "Q5293903"]
+
+[parameters]
+"path.corpusname" = { dictionary = "corpora", probability = 0.9 }
+"path.playname" = { dictionary = "plays", probability = 0.9 }
+"query.resource" = { dictionary = "dts-resources", probability = 0.9 }
+
+# Check the 303 itself instead of the resource it redirects to, e.g. the
+# dracor.org URL of a play, which the test stack doesn't serve.
+[[operations]]
+include-operation-id = "resolve-id"
+max-redirects = 0
+parameters."path.id" = { dictionary = "play-ids", probability = 0.9 }
+
+[[operations]]
+include-operation-id = "plays-with-character"
+parameters."path.id" = { dictionary = "character-qids", probability = 0.9 }
+
+[[operations]]
+include-operation-id = "get-dts-collection"
+parameters."query.id" = { dictionary = "dts-collections", probability = 0.9 }
+
+# The admin operations are tested with credentials on the throwaway corpus
+# `scratch`, which test/schemathesis_hooks.py makes every request use. The
+# ignored_auth check repeats each request without credentials, which must
+# then be rejected.
+
+[dictionaries.scratch-plays]
+values = ["minimal", "other"]
+
+[[operations]]
+include-tag = "admin"
+parameters."path.playname" = { dictionary = "scratch-plays", probability = 0.9 }
+
+# The XML request bodies are strings in the schema, which Schemathesis sends
+# wrapped in a <data> element, so even schema-compliant bodies get 400.
+[[operations]]
+include-operation-id-regex = "^(post-corpora|play-tei-put)$"
+checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "401", "404", "409"]

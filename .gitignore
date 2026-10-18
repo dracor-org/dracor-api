@@ -2,6 +2,11 @@ build/
 .existdb.json
 expath-pkg.xml
 *.xar
-schemathesis-results.*
+schemathesis-results*
+.schemathesis/
 .hypothesis
 .claude
+test/.dts-validator/
+dts-reports/
+__pycache__/
+node_modules/

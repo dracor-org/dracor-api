@@ -15,38 +15,50 @@ module namespace gh = "http://dracor.org/ns/exist/v1/github";
  : @param $url Repository URL
  : @return map
  :)
-declare function gh:parse-repo-url($url as xs:string) as map()? {
-  let $regex := "^https://github\.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)(?:\.git)?(?:#([-_a-zA-Z0-9]+))?$"
+declare function gh:parse-repo-url($url as xs:string) as map(*)? {
+  let $regex :=
+  "^https://github\.com/([-_a-zA-Z0-9]+)/([-_a-zA-Z0-9]+)(?:\.git)?(?:#([-_a-zA-Z0-9]+))?$"
   let $match := analyze-string($url, $regex)
-  let $account := $match//fn:group[@nr=1]/string()
-  let $repo := $match//fn:group[@nr=2]/string()
-  let $branch := $match//fn:group[@nr=3]/string()
+  let $account := $match//fn:group[@nr = 1]/string()
+  let $repo := $match//fn:group[@nr = 2]/string()
+  let $branch := $match//fn:group[@nr = 3]/string()
 
-  return if($match//fn:match) then map {
-    "host": "https://github.com",
-    "account": $account,
-    "reponame": $repo,
-    "branch": if($branch) then $branch else "main"
-  } else ()
+  return if ($match//fn:match) then
+    map {
+      "host": "https://github.com",
+      "account": $account,
+      "reponame": $repo,
+      "branch":
+        if ($branch) then
+          $branch
+        else
+          "main"
+    }
+  else (
+  )
 };
 
-
-declare function local:get-head-sha($repo as map()) as xs:string* {
-  let $ref-url := "https://api.github.com/repos/" || $repo?account || "/" ||
-    $repo?reponame || "/git/refs/heads/" || $repo?branch
+declare function local:get-head-sha($repo as map(*)) as xs:string* {
+  let $ref-url := "https://api.github.com/repos/" ||
+    $repo?account ||
+    "/" ||
+    $repo?reponame ||
+    "/git/refs/heads/" ||
+    $repo?branch
   let $response := hc:send-request(
-    <hc:request method="get" href="{$ref-url}"/>
+    <hc:request href="{ $ref-url }" method="get" />
   )
   let $status := string($response[1]/@status)
-  let $json := if($status = "200") then
+  let $json := if ($status = "200") then
     $response[2] => util:base64-decode() => parse-json()
   else (
-    util:log-system-out("Failed to fetch " || $ref-url || " Status: " || $status),
-    map{}
+    util:log-system-out(
+      "Failed to fetch " || $ref-url || " Status: " || $status
+    ),
+    map {}
   )
   return $json?object?sha
 };
-
 
 (:~
  : Get commit hash of HEAD of a repository
@@ -56,7 +68,7 @@ declare function local:get-head-sha($repo as map()) as xs:string* {
  :)
 declare function gh:get-head-sha($url as xs:string) as xs:string* {
   let $repo := gh:parse-repo-url($url)
-  return if(count($repo)) then
+  return if (count($repo)) then
     local:get-head-sha($repo)
   else (
     util:log-system-out("Not a github repo? " || $url)
@@ -69,15 +81,25 @@ declare function gh:get-head-sha($url as xs:string) as xs:string* {
  : @param $url Repository URL
  : @return Map
  :)
-declare function gh:get-archive($url as xs:string) as map()* {
+declare function gh:get-archive($url as xs:string) as map(*)* {
   let $repo := gh:parse-repo-url($url)
-  return if(count($repo)) then
+  return if (count($repo)) then
     let $sha := local:get-head-sha($repo)
-    return if ($sha) then map {
-      "sha": $sha,
-      "url": $repo?host || "/" || $repo?account || "/" || $repo?reponame ||
-        "/archive/" || $sha || ".zip"
-    } else ()
+    return if ($sha) then
+      map {
+        "sha": $sha,
+        "url":
+          $repo?host ||
+            "/" ||
+            $repo?account ||
+            "/" ||
+            $repo?reponame ||
+            "/archive/" ||
+            $sha ||
+            ".zip"
+      }
+    else (
+    )
   else (
     util:log-system-out("Not a github repo? " || $url)
   )

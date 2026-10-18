@@ -1,0 +1,45 @@
+name: Check .git-blame-ignore-revs
+
+# Commits listed in .git-blame-ignore-revs get new hashes when a branch is
+# rebased. This fails if a listed commit is not part of the branch, so that
+# the file gets updated before merging (with a merge commit, which keeps
+# the hashes).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .git-blame-ignore-revs
+      - .github/workflows/blame-ignore-revs.yml
+  pull_request:
+    paths:
+      - .git-blame-ignore-revs
+      - .github/workflows/blame-ignore-revs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Listed commits are in history
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Check commits
+        run: |
+          status=0
+          n=0
+          while IFS= read -r line; do
+            n=$((n + 1))
+            rev=${line%%#*}
+            rev=${rev//[[:space:]]/}
+            [ -z "$rev" ] && continue
+            if ! git merge-base --is-ancestor "$rev" HEAD 2>/dev/null; then
+              echo "::error file=.git-blame-ignore-revs,line=$n::$rev is not in the history of this branch (rebased?)"
+              status=1
+            fi
+          done < .git-blame-ignore-revs
+          exit $status

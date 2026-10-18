@@ -1,0 +1,14 @@
+{
+  "name": "dracor-api",
+  "private": true,
+  "description": "Development tooling for the DraCor API (formatting only, not part of the XAR)",
+  "scripts": {
+    "format": "prettier --write \"**/*.{xq,xqm,xql}\"",
+    "format:check": "prettier --check \"**/*.{xq,xqm,xql}\""
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "prettier-plugin-xquery": "1.7.0"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

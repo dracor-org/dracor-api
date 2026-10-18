@@ -44,13 +44,17 @@ services:
           -H 'Content-Type: application/json' \
           -d '{"load": true}' \
           http://api:8080/exist/restxq/v1/corpora/test
-        echo "Waiting for corpus contents to be available..."
+        # The load job records the commit of the corpus after loading all
+        # of its plays. (Every play has a commit, too, so check the corpus
+        # list, which has no plays.) Check only every 5 s for up to 5
+        # minutes, as loading keeps the database busy.
+        echo "Waiting for the corpus to be loaded..."
         for i in $$(seq 1 60); do
-          if curl -sf http://api:8080/exist/restxq/v1/corpora/test | grep -q '"plays":\[{'; then
+          if curl -sf http://api:8080/exist/restxq/v1/corpora | grep -q '"commit"'; then
             echo "Test corpus loaded."
             exit 0
           fi
-          sleep 1
+          sleep 5
         done
         echo "Timed out waiting for test corpus to load." >&2
         exit 1

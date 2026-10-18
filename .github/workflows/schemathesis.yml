@@ -32,25 +32,78 @@ env:
 jobs:
   schemathesis:
     name: Schemathesis
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: docker --version
       - name: Start the docker-compose stack
         run: docker compose up --detach --wait
+      # `up --wait` doesn't wait for the loadtest container to finish
+      - name: Wait for the test corpus to be loaded
+        run: |
+          status=$(docker wait "$(docker compose ps --all --quiet loadtest)")
+          if [ "$status" != 0 ]; then
+            docker compose logs loadtest api
+            exit 1
+          fi
       - name: Test if /info returns a response
         run: curl --verbose http://localhost:8081/exist/restxq/v1/info
       - name: Test if corpus returns a response
         run: curl --verbose http://localhost:8081/exist/restxq/v1/corpora/test
 
+      # The admin operations only change the throwaway corpus (see
+      # test/schemathesis_hooks.py), which is removed before the other tests.
+      - name: Create the throwaway corpus for schemathesis
+        run: ./test/scratch-corpus.sh create
       - name: Test API with schemathesis
-        uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
+        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
         with:
+          # keep in sync with the version used for test/schemathesis.sh
+          version: 4.31.1
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
           authorization: 'Basic YWRtaW46'
-          max-examples: 100
-          args: "--include-method GET --exclude-operation-id wikidata-author-info --mode positive --request-timeout 30"
+          hooks: test/schemathesis_hooks.py
+          args: "--exclude-tag webhook"
+      - name: Remove the throwaway corpus
+        if: always()
+        run: ./test/scratch-corpus.sh delete
+
+      - name: Test API with invalid data with schemathesis
+        if: ${{ !cancelled() }}
+        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
+        with:
+          # keep in sync with the version used for test/schemathesis.sh
+          version: 4.31.1
+          schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
+          base-url: http://localhost:8081/exist/restxq/v1/
+          authorization: 'Basic YWRtaW46'
+          coverage: 'false'
+          args: >-
+            --include-method GET --mode negative
+            --phases examples,coverage,fuzzing
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        if: ${{ !cancelled() }}
+        with:
+          python-version: '3.12'
+      - name: Test DTS endpoints with the DTS validator and contract tests
+        if: ${{ !cancelled() }}
+        run: ./test/dts-validator.sh http://localhost:8081/exist/restxq/v1/dts
+      - name: Upload DTS test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dts-reports
+          path: dts-reports/
+
+      # The admin tests create and delete corpora, so they run after all
+      # tests that rely on the test data.
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        if: ${{ !cancelled() }}
+      - name: Test admin endpoints
+        if: ${{ !cancelled() }}
+        run: ./test/admin.sh
 
       - name: Stop the docker-compose stack
         run: docker compose down

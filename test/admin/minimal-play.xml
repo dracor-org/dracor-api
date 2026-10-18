@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A minimal play for the admin tests. It has no Wikidata IDs, so storing it
+  doesn't query Wikidata for sitelinks.
+-->
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:lang="en">
+  <teiHeader>
+    <fileDesc>
+      <titleStmt>
+        <title>A Minimal Play</title>
+        <author>
+          <persName>
+            <forename>Anne</forename>
+            <surname>Nonymous</surname>
+          </persName>
+        </author>
+      </titleStmt>
+      <publicationStmt>
+        <publisher xml:id="dracor">DraCor</publisher>
+        <idno type="URL">https://dracor.org</idno>
+        <availability>
+          <licence>
+            <ab>CC0</ab>
+          </licence>
+        </availability>
+      </publicationStmt>
+      <sourceDesc>
+        <bibl type="digitalSource">
+          <name>DraCor API tests</name>
+        </bibl>
+      </sourceDesc>
+    </fileDesc>
+    <profileDesc>
+      <particDesc>
+        <listPerson>
+          <person xml:id="alice" sex="FEMALE">
+            <persName>Alice</persName>
+          </person>
+          <person xml:id="bob" sex="MALE">
+            <persName>Bob</persName>
+          </person>
+          <person xml:id="carol" sex="UNKNOWN">
+            <persName>Carol</persName>
+          </person>
+        </listPerson>
+      </particDesc>
+    </profileDesc>
+  </teiHeader>
+  <text>
+    <body>
+      <div type="act">
+        <head>Act One</head>
+        <div type="scene">
+          <head>Scene One</head>
+          <stage>Alice and Bob enter.</stage>
+          <sp who="#alice">
+            <speaker>Alice</speaker>
+            <p>Hello, Bob.</p>
+          </sp>
+          <sp who="#bob">
+            <speaker>Bob</speaker>
+            <p>Hello, Alice.</p>
+          </sp>
+        </div>
+        <div type="scene">
+          <head>Scene Two</head>
+          <stage>Carol enters.</stage>
+          <sp who="#carol">
+            <speaker>Carol</speaker>
+            <p>Hello, both of you.</p>
+          </sp>
+          <sp who="#alice">
+            <speaker>Alice</speaker>
+            <p>Hello, Carol.</p>
+          </sp>
+        </div>
+      </div>
+    </body>
+  </text>
+</TEI>

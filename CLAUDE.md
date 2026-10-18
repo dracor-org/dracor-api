@@ -40,6 +40,8 @@ curl -X POST -u admin: -H 'Content-type: application/json' -d '{"load":true}' ht
 
 ```sh
 ./test/schemathesis.sh   # OpenAPI schema-based API tests (requires running stack)
+./test/dts-validator.sh  # DTS validator + DTS 1.0 contract tests in test/dts (requires running stack)
+./test/admin.sh          # Admin endpoint tests in test/admin, create/delete throwaway corpora (requires running stack)
 ./test/webhook.sh        # Test GitHub webhook integration
 ```
 
@@ -48,7 +50,9 @@ CI runs schemathesis against a Docker Compose test stack (see [.github/workflows
 ### Formatting
 
 ```sh
-prettier --write "**/*.xq"   # Format XQuery files (requires node_modules)
+pnpm install                 # Install prettier + prettier-plugin-xquery (dev tooling only, not part of the XAR)
+pnpm format                  # Format all XQuery files (.xq, .xqm, .xql); config in .prettierrc.json
+pnpm format:check            # Check formatting without writing
 yamllint .                   # Lint YAML files
 npx @redocly/cli lint api.yaml   # Lint the OpenAPI document (config: redocly.yaml)
 ```
@@ -128,6 +132,7 @@ GitHub push → POST /webhook/github
 |----------|---------|
 | `EXIST_PASSWORD` | eXist-db admin password |
 | `DRACOR_API_BASE` | Public API base URL |
+| `DRACOR_ID_BASE` | Base of identifier URIs (optional; defaults to `https://dracor.org/id`, also on staging and dev) |
 | `FUSEKI_SERVER` | Fuseki triple store URI |
 | `FUSEKI_SECRET` | Fuseki admin password |
 | `METRICS_SERVER` | Metrics service URI |
