@@ -421,6 +421,32 @@ function api:corpora-post-json($data, $auth) {
 };
 
 (:~
+ : Reject a request to add a corpus without a JSON or XML body
+ :
+ : RESTXQ calls this function when neither of the two above consumes the
+ : request, e.g. when there is no body.
+ :
+ : @param $auth Authorization header value
+ : @result JSON object
+ :)
+declare
+  %rest:POST
+  %rest:path("/v1/corpora")
+  %rest:header-param("Authorization", "{$auth}")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:corpora-post-unsupported($auth) {
+  if (not(local:is-authenticated($auth))) then (
+    <rest:response><http:response status="401" /></rest:response>,
+    map {"message": "authorization required"}
+  ) else (
+    <rest:response><http:response status="415" /></rest:response>,
+    map {"error": "JSON or XML request body required"}
+  )
+};
+
+(:~
  : List corpus content
  :
  : Lists all plays available in the corpus including the id, title, author(s)
@@ -612,6 +638,33 @@ function api:post-corpus($corpusname, $data, $auth) {
       <rest:response><http:response status="400" /></rest:response>,
       map {"message": "invalid payload"}
     )
+};
+
+(:~
+ : Reject a request to load a corpus without a JSON body
+ :
+ : RESTXQ calls this function when the one above doesn't consume the
+ : request, e.g. when there is no body.
+ :
+ : @param $corpusname Corpus name
+ : @param $auth Authorization header value
+ : @result JSON object
+ :)
+declare
+  %rest:POST
+  %rest:path("/v1/corpora/{$corpusname}")
+  %rest:header-param("Authorization", "{$auth}")
+  %rest:produces("application/json")
+  %output:media-type("application/json")
+  %output:method("json")
+function api:post-corpus-unsupported($corpusname, $auth) {
+  if (not(local:is-authenticated($auth))) then (
+    <rest:response><http:response status="401" /></rest:response>,
+    map {"message": "authorization required"}
+  ) else (
+    <rest:response><http:response status="415" /></rest:response>,
+    map {"message": "JSON request body required"}
+  )
 };
 
 (:~
@@ -928,6 +981,30 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
         dutil:remove-sha($corpusname, $playname)
       )
       return $data
+};
+
+(:~
+ : Reject a TEI upload without an XML body
+ :
+ : RESTXQ calls this function when the one above doesn't consume the
+ : request, e.g. when there is no body.
+ :
+ : @param $corpusname Corpus name
+ : @param $playname Play name
+ : @param $auth Authorization header value
+ :)
+declare
+  %rest:PUT
+  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/tei")
+  %rest:header-param("Authorization", "{$auth}")
+  %output:method("xml")
+function api:play-tei-put-unsupported($corpusname, $playname, $auth) {
+  if (not(local:is-authenticated($auth))) then
+    <rest:response><http:response status="401" /></rest:response>
+  else (
+    <rest:response><http:response status="415" /></rest:response>,
+    <message>TEI document required</message>
+  )
 };
 
 (:~

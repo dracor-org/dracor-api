@@ -293,6 +293,8 @@ paths:
           description: Posted data lacks required properties or is malformed
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '415':
+          description: The request has no JSON or XML body.
 
   /corpora/{corpusname}:
     get:
@@ -363,6 +365,8 @@ paths:
             `true`.
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '415':
+          description: The request has no JSON body.
         '404':
           description: Unknown corpus
         '409':
@@ -623,6 +627,8 @@ paths:
             invalid.
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '415':
+          description: The request has no XML body.
         '404':
           description: >-
             There is no corpus with the given `corpusname`.

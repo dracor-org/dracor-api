@@ -199,6 +199,26 @@ def test_delete_corpus(api, corpus, play):
     assert api.delete(f"/corpora/{corpus}").status_code == 404
 
 
+# Requests without a body
+
+
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("POST", "/corpora"),
+        ("POST", f"/corpora/{SCRATCH_CORPUS}"),
+        ("PUT", f"/corpora/{SCRATCH_CORPUS}/plays/{PLAY_NAME}/tei"),
+    ],
+    ids=["create-corpus", "load-corpus", "add-play"],
+)
+@pytest.mark.parametrize("content_type", [None, "text/plain"], ids=["none", "text"])
+def test_unsupported_body(api, corpus, method, path, content_type):
+    headers = {"Content-Type": content_type} if content_type else {}
+    data = "x" if content_type else None
+    response = api.request(method, path, data=data, headers=headers)
+    assert response.status_code == 415, response.text
+
+
 # Authentication
 
 OPERATIONS = [
