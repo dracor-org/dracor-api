@@ -8,6 +8,11 @@ request-timeout = 30
 mode = "positive"
 max-examples = 50
 
+# Long enough for the stateful phase to follow the links from the corpus
+# list down to the operations on a single play
+[phases.stateful]
+max-steps = 20
+
 # In negative mode the coverage phase sends methods an operation doesn't
 # have and expects 405 with an `Allow` header. Requests with methods that
 # no operation of a path has are answered by eXist-db or Jetty, though:

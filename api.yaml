@@ -204,6 +204,14 @@ paths:
               description: | 
                 The `name` of a corpus in the response can be used to list its
                 contents.
+            CorpusMetadata:
+              operationId: corpus-metadata
+              parameters:
+                corpusname: $response.body#/0/name
+            CorpusMetadataCsv:
+              operationId: corpus-metadata-csv-endpoint
+              parameters:
+                corpusname: $response.body#/0/name
         '400':
           description: Invalid value for `include` parameter
     post:
@@ -303,6 +311,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Corpus'
+          links:
+            PlayInfo:
+              operationId: play-info
+              parameters:
+                corpusname: $request.path.corpusname
+                playname: $response.body#/plays/0/name
+              description: >-
+                The `name` of a play in the response can be used to get its
+                meta data.
         '404':
           description: Unknown corpus
     post:
@@ -423,6 +440,89 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Play'
+          links:
+            ResolveId:
+              operationId: resolve-id
+              parameters:
+                id: $response.body#/id
+              description: >-
+                The `id` of the play can be resolved to its dracor.org URL or
+                one of its representations.
+            PlayMetrics:
+              operationId: play-metrics
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            PlayTei:
+              operationId: play-tei
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            PlayTxt:
+              operationId: play-txt
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            Characters:
+              operationId: get-characters
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            CharactersCsv:
+              operationId: get-characters-csv
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            NetworkCsv:
+              operationId: network-csv
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            NetworkGexf:
+              operationId: network-gexf
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            NetworkGraphml:
+              operationId: network-graphml
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            RelationsCsv:
+              operationId: relations-csv
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            RelationsGexf:
+              operationId: relations-gexf
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            RelationsGraphml:
+              operationId: relations-graphml
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            SpokenText:
+              operationId: play-spoken-text
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            SpokenTextByCharacter:
+              operationId: play-spoken-text-by-character
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            StageDirections:
+              operationId: play-stage-directions
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
+            StageDirectionsWithSpeakers:
+              operationId: play-stage-directions-with-speakers
+              parameters:
+                corpusname: $response.body#/corpus
+                playname: $response.body#/name
         '404':
           description: Unknown play (or corpus)
     delete:
@@ -1400,6 +1500,14 @@ paths:
                     }
                   ]
                 }
+          links:
+            MemberCollection:
+              operationId: get-dts-collection
+              parameters:
+                id: $response.body#/member/0/@id
+              description: >-
+                The `@id` of a member can be used to get its collection, e.g.
+                the plays of a corpus.
         '400':
           description: Invalid value of `nav` or `page`.
         '404':
