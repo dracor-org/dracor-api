@@ -337,7 +337,8 @@ function api:corpora-post-tei($data, $auth) {
     map {"error": "Invalid corpus document. The request body is not XML."}
   ) else
     try {
-      dutil:create-corpus-from-xml($data/*)
+      (: the function also returns the path of the stored corpus.xml :)
+      dutil:create-corpus-from-xml($data/*)[. instance of map(*)]
     } catch dutil:invalid-corpus-document {
       (
         <rest:response><http:response status="400" /></rest:response>,
@@ -388,7 +389,7 @@ function api:corpora-post-json($data, $auth) {
     try {
       let $json := parse-json(util:base64-decode($data))
       return if ($json instance of map(*)) then
-        dutil:create-corpus($json)
+        dutil:create-corpus($json)[. instance of map(*)]
       else
         error(xs:QName("dutil:invalid-corpus-document"), "JSON object required")
     } catch err:FOJS0001 {
