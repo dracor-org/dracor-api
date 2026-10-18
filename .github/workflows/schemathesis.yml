@@ -63,6 +63,24 @@ jobs:
           coverage: 'false'
           args: "--include-tag admin --phases examples,coverage,fuzzing"
 
+      # Not blocking yet, see the known issues in schemathesis.toml
+      - name: Test API with invalid data with schemathesis
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
+        with:
+          schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
+          base-url: http://localhost:8081/exist/restxq/v1/
+          authorization: 'Basic YWRtaW46'
+          max-examples: 50
+          coverage: 'false'
+          args: >-
+            --include-method GET --mode negative
+            --exclude-operation-id list-corpus-content
+            --exclude-operation-id corpus-metadata
+            --exclude-operation-id corpus-metadata-csv-endpoint
+            --suppress-health-check filter_too_much
+
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         if: ${{ !cancelled() }}
         with:
