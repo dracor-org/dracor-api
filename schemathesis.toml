@@ -23,6 +23,11 @@ unexpected-methods = []
 [checks]
 unsupported_method.enabled = false
 
+# The tests aren't meant to measure performance, and on GitHub runners
+# eXist-db can stall for more than the default 10 s after a series of large
+# responses. Report only responses that come close to the request timeout.
+max_response_time = 30
+
 # Resolves the author live at Wikidata.
 [[operations]]
 include-operation-id = "wikidata-author-info"
