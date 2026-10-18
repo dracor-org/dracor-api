@@ -23,9 +23,11 @@ st --include-tag admin \
   --report junit \
   --report-junit-path schemathesis-results-admin.xml || status=1
 
-# Invalid data, which must be rejected
+# Invalid data, which must be rejected. The links followed by the stateful
+# phase only lead to valid requests, which the first run covers.
 st --include-method GET \
   --mode negative \
+  --phases examples,coverage,fuzzing \
   --auth admin: \
   --report junit \
   --report-junit-path schemathesis-results-negative.xml || status=1
