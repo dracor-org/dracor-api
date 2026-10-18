@@ -116,7 +116,7 @@ parameters."query.id" = { dictionary = "dts-collections", probability = 0.9 }
 values = ["minimal", "other"]
 
 [[operations]]
-include-tag = "admin"
+include-tag = "Admin"
 parameters."path.playname" = { dictionary = "scratch-plays", probability = 0.9 }
 
 # The XML request bodies are strings in the schema, which Schemathesis sends
