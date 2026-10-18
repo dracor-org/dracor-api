@@ -217,7 +217,7 @@ paths:
               operationId: list-corpus-content
               parameters:
                 corpusname: $response.body#/0/name
-              description: | 
+              description: |
                 The `name` of a corpus in the response can be used to list its
                 contents.
             CorpusMetadata:
@@ -2829,13 +2829,13 @@ components:
         type:
           type: string
           enum:
-          - parent_of
-          - lover_of
-          - related_with
-          - associated_with
-          - siblings
-          - spouses
-          - friends
+            - parent_of
+            - lover_of
+            - related_with
+            - associated_with
+            - siblings
+            - spouses
+            - friends
           x-dracor-feature: character_relation_type
         source:
           type: string
@@ -3082,10 +3082,10 @@ components:
         sex:
           type: [string, "null"]
           enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
-          - null
+            - MALE
+            - FEMALE
+            - UNKNOWN
+            - null
           x-dracor-feature: character_sex
         gender:
           type: string
@@ -3150,10 +3150,10 @@ components:
         sex:
           type: [string, "null"]
           enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
-          - null
+            - MALE
+            - FEMALE
+            - UNKNOWN
+            - null
           x-dracor-feature: character_sex
         gender:
           type: string
