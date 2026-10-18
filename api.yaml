@@ -213,6 +213,7 @@ paths:
       security:
         - basicAuth: []
       requestBody:
+        required: true
         description: |
           The meta data for the new corpus can be provided in either JSON or XML
           format. The JSON structure is a straightforward object providing
@@ -316,6 +317,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/corpusname"
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -498,6 +500,7 @@ paths:
             type: string
             pattern: "[a-z0-9]+([-a-z0-9]?[a-z0-9])?"
       requestBody:
+        required: true
         description: TEI document
         content:
           application/xml:
@@ -1717,6 +1720,7 @@ paths:
             type: string
           example: "sha1=6da21762fada5c1d0205c6e42xxxxxxxxxx357c0"
       requestBody:
+        required: true
         description: >-
           Webhook payload (see https://developer.github.com/webhooks/#payloads)
         content:
