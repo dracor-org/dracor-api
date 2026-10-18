@@ -240,9 +240,11 @@ paths:
               properties:
                 name:
                   type: string
-                  description: corpus name
+                  pattern: "^[a-z]+$"
+                  description: corpus name (lower case ASCII letters only)
                 title:
                   type: string
+                  minLength: 1
                   description: corpus title
                 repository:
                   type: string
@@ -346,6 +348,7 @@ paths:
               properties:
                 load:
                   type: boolean
+                  enum: [true]
             example: |
               {"load": true}
       responses:
