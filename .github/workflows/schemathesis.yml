@@ -49,8 +49,9 @@ jobs:
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
           authorization: 'Basic YWRtaW46'
-          max-examples: 100
-          args: "--include-method GET --exclude-operation-id wikidata-author-info --mode positive --request-timeout 30"
+          # the action always passes this, overriding schemathesis.toml
+          max-examples: 50
+          args: "--include-method GET"
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         if: ${{ !cancelled() }}

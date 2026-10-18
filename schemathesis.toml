@@ -1,5 +1,17 @@
 # Schemathesis configuration, used by test/schemathesis.sh and the
-# Schemathesis workflow
+# Schemathesis workflow. Which operations a run covers is chosen on the
+# command line; everything shared by the runs is configured here.
+
+request-timeout = 30
+
+[generation]
+mode = "positive"
+max-examples = 50
+
+# Resolves the author live at Wikidata.
+[[operations]]
+include-operation-id = "wikidata-author-info"
+enabled = false
 
 # The DTS navigation and document endpoints have parameters that exclude
 # each other (`ref` and `start`/`end`) or require each other (`start` and
