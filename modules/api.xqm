@@ -277,7 +277,7 @@ declare
   %output:media-type("application/json")
   %output:method("json")
 function api:corpora($include) {
-  if ($include[1] and not($include[1] = "metrics")) then (
+  if (exists($include) and not($include[1] = "metrics")) then (
     <rest:response><http:response status="400" /></rest:response>,
     map {"error": "invalid value for parameter 'include'"}
   ) else
@@ -1302,7 +1302,11 @@ function api:spoken-text(
   return if (not($doc)) then
     <rest:response><http:response status="404" /></rest:response>
   else if (
-    $sex and exists($sexes[. != "MALE" and . != "FEMALE" and . != "UNKNOWN"])
+    exists($sex) and
+      (
+        empty($sexes) or
+          exists($sexes[. != "MALE" and . != "FEMALE" and . != "UNKNOWN"])
+      )
   ) then (
     <rest:response><http:response status="400" /></rest:response>,
     'sex must be "FEMALE", "MALE", or "UNKNOWN"'

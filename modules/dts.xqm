@@ -751,12 +751,12 @@ function ddts:collection(
   $nav as xs:string*
 ) as item()+ {
   let $id := local:param($id)
-  let $nav := (local:param($nav), "children")[1]
+  let $nav := ($nav[1]!normalize-space(), "children")[1]
   let $name := if ($id) then
     local:resolve-id($id)
   else (
   )
-  let $page-error := local:check-page(local:param($page))
+  let $page-error := local:check-page($page[1]!normalize-space())
   return if (not($nav = ("children", "parents"))) then
     local:error(
       400,
@@ -908,7 +908,7 @@ function ddts:navigation(
   else (
   )
   let $tree := local:param($tree)
-  let $page := local:param($page)
+  let $page := $page[1]!normalize-space()
   let $page-error := local:check-page($page)
   let $tei := if ($resource) then
     local:get-tei($resource)
@@ -1155,8 +1155,7 @@ function ddts:document(
   let $tree := local:param($tree)
   (: a "+" in an unencoded query parameter arrives as space :)
   let $media-type := (
-    local:param($media-type)!replace(normalize-space(.), " ", "+"),
-    "application/tei+xml"
+    $media-type[1]!replace(normalize-space(.), " ", "+"), "application/tei+xml"
   )[1]
   let $tei := if ($resource) then
     local:get-tei($resource)
@@ -1171,6 +1170,8 @@ function ddts:document(
     )
   else if (($start and empty($end)) or ($end and empty($start))) then
     local:error(400, "The parameters 'start' and 'end' must be used together.")
+  else if ($media-type eq "") then
+    local:error(400, "The parameter 'mediaType' must not be empty.")
   else if (empty($tei)) then
     local:error(404, "Resource '" || $resource || "' not found.")
   else if (not($media-type = $ddts:media-types)) then

@@ -1631,7 +1631,7 @@ paths:
         '400':
           description: >-
             `resource` is missing, `ref` is combined with `start` and `end`,
-            or only one of `start` and `end` is given.
+            only one of `start` and `end` is given, or `mediaType` is empty.
         '404':
           description: >-
             The play, a CitableUnit given by `ref`, `start` or `end`, the
