@@ -11,12 +11,12 @@ max-examples = 50
 # In negative mode the coverage phase sends methods an operation doesn't
 # have and expects 405 with an `Allow` header. Requests with methods that
 # no operation of a path has are answered by eXist-db or Jetty, though:
-# 405 without `Allow`, 501 for PATCH, 403 for TRACE, 500 for QUERY. The
-# negative run therefore also excludes the `unsupported_method` check (the
-# action passes --checks=all, which overrides disabling it here).
+# 405 without `Allow`, 501 for PATCH, 403 for TRACE, 500 for QUERY.
 [phases.coverage]
 unexpected-methods = []
 
+[checks]
+unsupported_method.enabled = false
 
 # Resolves the author live at Wikidata.
 [[operations]]

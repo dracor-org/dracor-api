@@ -44,43 +44,38 @@ jobs:
         run: curl --verbose http://localhost:8081/exist/restxq/v1/corpora/test
 
       - name: Test API with schemathesis
-        uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
+        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
         with:
           # keep in sync with the version used for test/schemathesis.sh
           version: 4.31.1
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
           authorization: 'Basic YWRtaW46'
-          # the action always passes this, overriding schemathesis.toml
-          max-examples: 50
           args: "--include-method GET"
 
       - name: Test admin endpoints without credentials with schemathesis
         if: ${{ !cancelled() }}
-        uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
+        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
         with:
           # keep in sync with the version used for test/schemathesis.sh
           version: 4.31.1
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
-          max-examples: 50
           coverage: 'false'
           args: "--include-tag admin --phases examples,coverage,fuzzing"
 
       - name: Test API with invalid data with schemathesis
         if: ${{ !cancelled() }}
-        uses: schemathesis/action@806cace2053cbbac93188e1281ff7da415643160 # v3.0.0
+        uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
         with:
           # keep in sync with the version used for test/schemathesis.sh
           version: 4.31.1
           schema: http://localhost:8081/exist/restxq/v1/openapi.yaml
           base-url: http://localhost:8081/exist/restxq/v1/
           authorization: 'Basic YWRtaW46'
-          max-examples: 50
           coverage: 'false'
           args: >-
             --include-method GET --mode negative
-            --exclude-checks unsupported_method
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         if: ${{ !cancelled() }}

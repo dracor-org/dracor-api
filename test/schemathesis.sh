@@ -5,10 +5,10 @@
 version=4.31.1
 schema=http://localhost:8081/exist/restxq/v1/openapi.yaml
 
-# the options the action always passes
+# the option the action always passes
 st() {
   uvx --from "schemathesis==$version" schemathesis run $schema \
-    --generation-database=:memory: --max-examples=50 --checks=all "$@"
+    --generation-database=:memory: "$@"
 }
 
 st --include-method GET \
@@ -26,7 +26,6 @@ st --include-tag admin \
 # Invalid data, which must be rejected
 st --include-method GET \
   --mode negative \
-  --exclude-checks unsupported_method \
   --auth admin: \
   --report junit \
   --report-junit-path schemathesis-results-negative.xml || status=1
