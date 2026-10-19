@@ -235,35 +235,6 @@ function api:id-to-url($id, $accept) {
     </rest:response>
 };
 
-declare function local:get-corpus-metrics($corpus as xs:string) {
-  let $collection-uri := concat($config:corpora-root, "/", $corpus)
-  let $col := collection($collection-uri)
-  let $num-plays := count($col/tei:TEI)
-  let $list := $col//tei:particDesc/tei:listPerson
-  let $num-characters := count($list/(tei:person | tei:personGrp))
-  let $num-male := count($list/(tei:person | tei:personGrp)[@sex = "MALE"])
-  let $num-female := count($list/(tei:person | tei:personGrp)[@sex = "FEMALE"])
-  let $num-text := count($col//tei:text)
-  let $num-stage := count($col//tei:stage)
-  let $num-sp := count($col//tei:sp)
-  return map {
-    "plays": $num-plays,
-    "characters": $num-characters,
-    "male": $num-male,
-    "female": $num-female,
-    "text": $num-text,
-    "sp": $num-sp,
-    "stage": $num-stage,
-    "wordcount":
-      map {
-        "text": sum($col/metrics/text),
-        "sp": sum($col/metrics/sp),
-        "stage": sum($col/metrics/stage)
-      },
-    "updated": max($col/metrics/xs:dateTime(@updated))
-  }
-};
-
 (:~
  : List available corpora
  :
@@ -294,7 +265,7 @@ function api:corpora($include) {
             $info,
             map:entry("uri", $config:api-base || "/corpora/" || $name),
             if ($include[1] = "metrics") then (
-              map:entry("metrics", local:get-corpus-metrics($name))
+              map:entry("metrics", dutil:get-corpus-metrics($name))
             ) else (
             )
           )

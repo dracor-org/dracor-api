@@ -799,6 +799,41 @@ declare function dutil:get-corpus-info-by-name(
 };
 
 (:~
+ : Compile metrics for corpus identified by $corpusname.
+ :
+ : @param $corpusname
+ : @return map
+ :)
+declare function dutil:get-corpus-metrics($corpusname as xs:string) as map(*) {
+  let $collection-uri := concat($config:corpora-root, "/", $corpusname)
+  let $col := collection($collection-uri)
+  let $num-plays := count($col/tei:TEI)
+  let $list := $col//tei:particDesc/tei:listPerson
+  let $num-characters := count($list/(tei:person | tei:personGrp))
+  let $num-male := count($list/(tei:person | tei:personGrp)[@sex = "MALE"])
+  let $num-female := count($list/(tei:person | tei:personGrp)[@sex = "FEMALE"])
+  let $num-text := count($col//tei:text)
+  let $num-stage := count($col//tei:stage)
+  let $num-sp := count($col//tei:sp)
+  return map {
+    "plays": $num-plays,
+    "characters": $num-characters,
+    "male": $num-male,
+    "female": $num-female,
+    "text": $num-text,
+    "sp": $num-sp,
+    "stage": $num-stage,
+    "wordcount":
+      map {
+        "text": sum($col/metrics/text),
+        "sp": sum($col/metrics/sp),
+        "stage": sum($col/metrics/stage)
+      },
+    "updated": max($col/metrics/xs:dateTime(@updated))
+  }
+};
+
+(:~
  : Extract text class information from TEI document.
  :
  : See https://github.com/dracor-org/dracor-api/issues/120
