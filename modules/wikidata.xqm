@@ -86,37 +86,37 @@ WHERE {
   ) then
     let $bindings :=
     $response[2]//sparqlres:sparql/sparqlres:results/sparqlres:result/sparqlres:binding
-    let $img := $bindings[@name = "img"][1]/sparqlres:uri/text()
+    let $img := $bindings[@name = "img"][1]/sparqlres:uri/string()
 
     return map:merge(
       (
         map:entry(
           "name",
-          $bindings[@name = "authorLabel"][1]/sparqlres:literal/text()
+          $bindings[@name = "authorLabel"][1]/sparqlres:literal/string()
         ),
         map:entry(
           "genderUri",
-          $bindings[@name = "gender"][1]/sparqlres:uri/text()
+          $bindings[@name = "gender"][1]/sparqlres:uri/string()
         ),
         map:entry(
           "gender",
-          $bindings[@name = "genderLabel"][1]/sparqlres:literal/text()
+          $bindings[@name = "genderLabel"][1]/sparqlres:literal/string()
         ),
         map:entry(
           "birthPlace",
-          $bindings[@name = "birthPlaceLabel"][1]/sparqlres:literal/text()
+          $bindings[@name = "birthPlaceLabel"][1]/sparqlres:literal/string()
         ),
         map:entry(
           "deathPlace",
-          $bindings[@name = "deathPlaceLabel"][1]/sparqlres:literal/text()
+          $bindings[@name = "deathPlaceLabel"][1]/sparqlres:literal/string()
         ),
         map:entry(
           "birthDate",
-          $bindings[@name = "birthDate"][1]/sparqlres:literal/text()
+          $bindings[@name = "birthDate"][1]/sparqlres:literal/string()
         ),
         map:entry(
           "deathDate",
-          $bindings[@name = "deathDate"][1]/sparqlres:literal/text()
+          $bindings[@name = "deathDate"][1]/sparqlres:literal/string()
         ),
         if ($img) then
           map:entry("imageUrl", $img)
