@@ -1502,7 +1502,9 @@ declare function dutil:get-play-info(
                 let $node := $doc//tei:particDesc//(
                   tei:person[@xml:id = $id] | tei:personGrp[@xml:id = $id]
                 )
-                let $name := $node/(tei:persName | tei:name)[1]/text()
+                let $name := $node/(
+                  tei:persName | tei:name
+                )[1]/normalize-space()
                 let $sex := $node/@sex/string()
                 let $gender := $node/@gender/string()
                 let $role := $node/@role/string()
@@ -1726,7 +1728,7 @@ declare function dutil:characters-info(
       {
         for $id in $speakers
         let $node := $person-map($id)
-        let $name := $node/(tei:persName | tei:name)[1]/text()
+        let $name := $node/(tei:persName | tei:name)[1]/normalize-space()
         let $sex := $node/@sex/string()
         let $gender := $node/@gender/string()
         let $role := $node/@role/string()
@@ -2046,7 +2048,7 @@ declare function dutil:create-corpus-from-xml($xml as element()) {
     ) or (: DEPRECATED: drop support for <idno type="URI"> in v2 :)
       @type = "URI" and @xml:base = "https://dracor.org/"]
   )
-  let $title := $header//tei:titleStmt/tei:title[1]/text()
+  let $title := $header//tei:titleStmt/tei:title[1]/normalize-space()
 
   return if (not($header)) then
     error(
