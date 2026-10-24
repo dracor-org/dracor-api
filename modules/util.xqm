@@ -1415,8 +1415,15 @@ declare function dutil:get-play-info(
     let $titles := dutil:get-titles($tei)
     let $titlesEn := dutil:get-titles($tei, "en")
     let $source := dutil:get-source($tei)
+    (:
+     : only include the main bibliographic information of the original source,
+     : excluding details on the digital copy used and licensing
+     :)
     let $orig-source := $tei//tei:bibl[@type =
-      "originalSource"][1]/normalize-space(.)
+      "originalSource"][1]!functx:remove-elements-deep(
+      .,
+      ("*:relatedItem", "*:availability")
+    )!normalize-space(.)
     let $speakers := dutil:distinct-speakers($doc//tei:body)
     let $lastone := $speakers[last()]
 
