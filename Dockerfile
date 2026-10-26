@@ -42,7 +42,9 @@ ENV METRICS_SERVER=${METRICS_SERVER:-http://metrics:8030/metrics/}
 ENV FUSEKI_SECRET=${FUSEKI_SECRET:-""}
 ENV GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-""}
 
-RUN useradd dracor
+# dracor is in group 0 (root group), so that an arbitrary user ID in group 0,
+# as used by OpenShift/OKD, has the same rights as dracor
+RUN useradd --uid 1001 --gid 0 dracor
 
 WORKDIR ${EXIST_HOME}
 
@@ -85,13 +87,16 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     # remove portal webapp
     && rm -Rf ${EXIST_HOME}/etc/jetty/webapps/portal \
-    # set permissions for the dracor user
-    && chown -R dracor:dracor ${EXIST_HOME} \
+    # set permissions for the dracor user and group 0: everything eXist writes
+    # to (etc, data, logs, autodeploy, ...) must be writable for the group,
+    # so that the image also runs under an arbitrary user ID in group 0
+    && chown -R dracor:0 ${EXIST_HOME} \
+    && chmod -R g=u ${EXIST_HOME} \
     && chmod 755 ${EXIST_HOME}/entrypoint.sh \
     # remove JndiLookup class due to Log4Shell CVE-2021-44228 vulnerability
     && find ${EXIST_HOME} -name log4j-core-*.jar -exec zip -q -d {} org/apache/logging/log4j/core/lookup/JndiLookup.class \;
 
-USER dracor:dracor
+USER 1001:0
 
 HEALTHCHECK --interval=60s --timeout=5s \
   CMD curl -Lf http://localhost:8080${EXIST_CONTEXT_PATH} || exit 1
