@@ -111,9 +111,6 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
         (: Re-create corpus :)
         util:log-system-out("recreating " || $name),
         dutil:create-corpus($info),
-        (: clear fuseki graph :)
-        (: drdf:fuseki-clear-graph($name), :)
-
         (: load files from ZIP archive :)
         (: TODO: try/catch :)
         compression:unzip(
