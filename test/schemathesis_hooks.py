@@ -7,6 +7,10 @@ that can change data, this hook therefore points it at the throwaway corpus
 `scratch`, so that the test data the other tests rely on is never changed.
 The corpus is created before the run (see test/schemathesis.sh) and kept
 until the end: deleting a whole corpus is left to the tests in test/admin.
+
+The operations that are never tested (see schemathesis.toml and the
+`--exclude-tag webhook` option) are removed from the schema, so that the
+schema coverage report of the GitHub action doesn't list them as untested.
 """
 
 import schemathesis
@@ -14,6 +18,13 @@ import schemathesis
 SCRATCH_CORPUS = "scratch"
 # a corpus that never exists, for DELETE /corpora/{corpusname}
 MISSING_CORPUS = "nosuchcorpus"
+UNTESTED_PATHS = ["/webhook/github", "/wikidata/author/{id}"]
+
+
+@schemathesis.hook
+def before_load_schema(ctx, raw_schema):
+    for path in UNTESTED_PATHS:
+        raw_schema.get("paths", {}).pop(path, None)
 
 
 @schemathesis.hook
