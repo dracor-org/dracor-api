@@ -133,5 +133,5 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
  : Update generated files for all plays in the database
  :)
 declare function load:update() as xs:string* {
-  metrics:update(), drdf:update()
+  metrics:update(), drdf:update-plays()
 };

@@ -15,7 +15,7 @@ declare function trigger:after-create-document($url as xs:anyURI) {
     util:log-system-out("running CREATION TRIGGER for " || $url),
     metrics:update($url),
     metrics:update-sitelinks($url),
-    drdf:update($url)
+    drdf:update-play($url)
   ) else (
   )
 };
@@ -25,7 +25,7 @@ declare function trigger:after-update-document($url as xs:anyURI) {
     util:log-system-out("running UPDATE TRIGGER for " || $url),
     metrics:update($url),
     metrics:update-sitelinks($url),
-    drdf:update($url)
+    drdf:update-play($url)
   ) else (
   )
 };

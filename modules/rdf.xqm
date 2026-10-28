@@ -471,7 +471,7 @@ declare function drdf:play-to-rdf(
  :
  : @param $url URL of the TEI document
  :)
-declare function drdf:update($url as xs:string) {
+declare function drdf:update-play($url as xs:string) {
   let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
   let $paths := dutil:filepaths($url)
   return (
@@ -484,11 +484,11 @@ declare function drdf:update($url as xs:string) {
 (:~
  : Update RDF for all plays in the database
  :)
-declare function drdf:update() as item()* {
+declare function drdf:update-plays() as item()* {
   let $l := util:log-system-out("Updating RDF files")
   for $tei in collection($config:corpora-root)//tei:TEI
   let $url := $tei/base-uri()
-  return drdf:update($url)
+  return drdf:update-play($url)
 };
 
 (:~
