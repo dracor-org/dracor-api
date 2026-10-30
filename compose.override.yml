@@ -11,4 +11,4 @@ services:
       - 8030:8030
   frontend:
     ports:
-      - 8088:80
+      - 8088:8080
