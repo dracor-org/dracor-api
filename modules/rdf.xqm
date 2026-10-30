@@ -466,109 +466,166 @@ declare function drdf:play-to-rdf(
 (:~
  : Update RDF for single play
  :
+ : Stores the RDF next to the TEI document and replaces the graph of the play
+ : in Fuseki.
+ :
  : @param $url URL of the TEI document
  :)
-declare function drdf:update($url as xs:string) {
+declare function drdf:update-play($url as xs:string) {
   let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
   let $paths := dutil:filepaths($url)
-  let $collection := $paths?collections?play
   return (
     util:log-system-out("RDF update: " || $paths?files?rdf),
-    xmldb:store($collection, "rdf.xml", $rdf) => xs:anyURI() => drdf:fuseki()
+    xmldb:store($paths?collections?play, "rdf.xml", $rdf),
+    drdf:fuseki-put($paths?corpusname, $paths?playname, $rdf)
   )
 };
 
 (:~
  : Update RDF for all plays in the database
  :)
-declare function drdf:update() as xs:string* {
+declare function drdf:update-plays() as item()* {
   let $l := util:log-system-out("Updating RDF files")
   for $tei in collection($config:corpora-root)//tei:TEI
   let $url := $tei/base-uri()
-  return drdf:update($url)
+  return drdf:update-play($url)
 };
 
-declare function drdf:fuseki-clear-graph($corpusname as xs:string) {
-  let $url := $config:fuseki-server || "update"
-  let $graph := "http://dracor.org/" || $corpusname
-  let $log := util:log-system-out(
-    "Clearing fuseki graph <" || $graph || "> at " || $url
-  )
+(:~
+ : Name of the Fuseki graph holding the RDF of a play
+ :
+ : Each play has a graph of its own, so that its triples (including the blank
+ : nodes for authors) can be replaced or removed as a whole.
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function drdf:graph(
+  $corpusname as xs:string,
+  $playname as xs:string
+) as xs:string {
+  "http://dracor.org/" || $corpusname || "/" || $playname
+};
+
+(:~
+ : Replace the graph of a play in Fuseki with the given RDF
+ : https://github.com/dracor-org/dracor-api/issues/77
+ :
+ : @param $corpusname
+ : @param $playname
+ : @param $rdf RDF of the play
+ :)
+declare function drdf:fuseki-put(
+  $corpusname as xs:string,
+  $playname as xs:string,
+  $rdf as element(rdf:RDF)
+) as xs:boolean {
+  let $graph := drdf:graph($corpusname, $playname)
   let $request := <hc:request
-    auth-method="basic"
-    method="post"
-    password="{ $config:fuseki-pw }"
-    send-authorization="true"
-    username="admin"
-  >
-    <hc:body
-      media-type="application/sparql-update"
-      method="text"
-    >
-        CLEAR SILENT GRAPH &lt;{ $graph }&gt;
-      </hc:body>
-  </hc:request>
-
-  let $response := try { hc:send-request($request, $url) } catch * {
-    util:log-system-out($err:description)
-  }
-
-  return if ($response/@status = "204") then (
-    true()
-  ) else (
-    util:log-system-out(
-      "Failed to clear graph! " ||
-        (
-          if ($response/message) then
-            $response/message
-          else
-            ""
-        )
-    ),
-    false()
+    href="{ drdf:graph-store-url($graph) }"
+    method="put"
+  ><hc:body media-type="application/rdf+xml">{ $rdf }</hc:body></hc:request>
+  return (
+    util:log-system-out("Putting RDF to Fuseki graph <" || $graph || ">"),
+    drdf:fuseki-send($request, ("200", "201", "204"))
   )
 };
 
 (:~
- : Send RDF data to Fuseki
- : https://github.com/dracor-org/dracor-api/issues/77
+ : Remove the graph of a play from Fuseki
+ :
+ : @param $corpusname
+ : @param $playname
  :)
-declare function drdf:fuseki($uri as xs:anyURI) {
-  let $corpus := tokenize($uri, "/")[position() = last() - 1]
-  let $url := $config:fuseki-server ||
-    "data" ||
-    "?graph=" ||
-    encode-for-uri("http://dracor.org/" || $corpus)
-  let $rdf := doc($uri)
-
+declare function drdf:fuseki-drop-play(
+  $corpusname as xs:string,
+  $playname as xs:string
+) as xs:boolean {
+  let $graph := drdf:graph($corpusname, $playname)
+  let $request := <hc:request
+    href="{ drdf:graph-store-url($graph) }"
+    method="delete" />
   return (
-    util:log-system-out("Posting " || $uri || " to " || $url),
-    if (not($rdf)) then (
-      util:log-system-out("Cannot find " || $uri), false()
-    ) else (
-      let $request := <hc:request href="{ $url }" method="post">
-        <hc:body media-type="application/rdf+xml">{ $rdf }</hc:body>
-      </hc:request>
+    util:log-system-out("Dropping Fuseki graph <" || $graph || ">"),
+    (: 404 means there is no such graph, which is fine :)
+    drdf:fuseki-send($request, ("200", "204", "404"))
+  )
+};
 
-      let $response := try { hc:send-request($request) } catch * {
-        util:log-system-out($err:description)
-      }
+(:~
+ : Remove the graphs of all plays of a corpus from Fuseki
+ :
+ : @param $corpusname
+ :)
+declare function drdf:fuseki-drop-corpus(
+  $corpusname as xs:string
+) as xs:boolean {
+  let $prefix := drdf:graph($corpusname, "")
+  let $update := "DELETE { GRAPH ?g { ?s ?p ?o } } " ||
+    "WHERE { GRAPH ?g { ?s ?p ?o } " ||
+    "FILTER(STRSTARTS(STR(?g), '" ||
+    $prefix ||
+    "')) }"
+  let $request := <hc:request
+    href="{ $config:fuseki-server }update"
+    method="post"
+  >
+    <hc:body media-type="application/sparql-update" method="text">
+      { $update }
+    </hc:body>
+  </hc:request>
+  return (
+    util:log-system-out("Dropping Fuseki graphs <" || $prefix || "*>"),
+    drdf:fuseki-send($request, ("200", "204"))
+  )
+};
 
-      return if ($response) then
-        switch (string($response[1]/@status))
-          case "200" return
-            true()
-          case "201" return
-            true()
-          default return
-            (
-              util:log-system-out(
-                "response header from fuseki: " || $response[1]
-              ),
-              util:log-system-out("response body from fuseki: " || $response[2])
-            )
-      else
-        false()
+declare %private function drdf:graph-store-url(
+  $graph as xs:string
+) as xs:string {
+  $config:fuseki-server || "data?graph=" || encode-for-uri($graph)
+};
+
+(:~
+ : Send a request to Fuseki as admin and log the response if its status is not
+ : among the expected ones
+ :
+ : Fuseki requires the admin password for all writes, through the graph store
+ : as well as through SPARQL update.
+ :
+ : @param $request HTTP request
+ : @param $ok Expected status codes
+ :)
+declare %private function drdf:fuseki-send(
+  $request as element(),
+  $ok as xs:string+
+) as xs:boolean {
+  let $authenticated := element {node-name($request)} {
+    $request/@*,
+    attribute auth-method { "basic" },
+    attribute send-authorization { "true" },
+    attribute username { "admin" },
+    attribute password { $config:fuseki-pw },
+    $request/node()
+  }
+  let $response := try { hc:send-request($authenticated) } catch * {
+    util:log-system-out(
+      "Fuseki request " ||
+        upper-case($request/@method) ||
+        " " ||
+        $request/@href ||
+        " failed: " ||
+        $err:description
     )
+  }
+
+  return if (not($response)) then
+    false()
+  else if (string($response[1]/@status) = $ok) then
+    true()
+  else (
+    util:log-system-out("response header from fuseki: " || $response[1]),
+    util:log-system-out("response body from fuseki: " || $response[2]),
+    false()
   )
 };
