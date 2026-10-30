@@ -567,12 +567,8 @@ declare function drdf:fuseki-drop-corpus(
     $prefix ||
     "')) }"
   let $request := <hc:request
-    auth-method="basic"
     href="{ $config:fuseki-server }update"
     method="post"
-    password="{ $config:fuseki-pw }"
-    send-authorization="true"
-    username="admin"
   >
     <hc:body media-type="application/sparql-update" method="text">
       { $update }
@@ -591,8 +587,11 @@ declare %private function drdf:graph-store-url(
 };
 
 (:~
- : Send a request to Fuseki and log the response if its status is not among
- : the expected ones
+ : Send a request to Fuseki as admin and log the response if its status is not
+ : among the expected ones
+ :
+ : Fuseki requires the admin password for all writes, through the graph store
+ : as well as through SPARQL update.
  :
  : @param $request HTTP request
  : @param $ok Expected status codes
@@ -601,7 +600,15 @@ declare %private function drdf:fuseki-send(
   $request as element(),
   $ok as xs:string+
 ) as xs:boolean {
-  let $response := try { hc:send-request($request) } catch * {
+  let $authenticated := element {node-name($request)} {
+    $request/@*,
+    attribute auth-method { "basic" },
+    attribute send-authorization { "true" },
+    attribute username { "admin" },
+    attribute password { $config:fuseki-pw },
+    $request/node()
+  }
+  let $response := try { hc:send-request($authenticated) } catch * {
     util:log-system-out(
       "Fuseki request " ||
         upper-case($request/@method) ||
