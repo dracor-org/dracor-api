@@ -71,11 +71,7 @@ Then
 for the newly added corpus (in this case `test`):
 
 ```sh
-curl -X POST \
-  -u admin: \
-  -H 'Content-type: application/json' \
-  -d '{"load":true}' \
-  http://localhost:8088/api/v1/corpora/test
+curl -X POST -u admin: http://localhost:8088/api/v1/corpora/test
 ```
 
 This may take a while. Eventually the added plays can be listed with

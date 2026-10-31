@@ -329,28 +329,16 @@ paths:
     post:
       summary: Load corpus data from its repository
       description: >-
-        Posting `{"load": true}` to the corpus URI reloads the data for this
-        corpus from its repository (if defined).
+        Posting to the corpus URI reloads the data for this corpus from its
+        repository (if defined). The request needs no body. For backward
+        compatibility a body like `{"load": true}`, which earlier versions
+        required, is still accepted but ignored.
       operationId: load-corpus
       tags: [admin]
       security:
         - basicAuth: []
       parameters:
         - $ref: "#/components/parameters/corpusname"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - load
-              properties:
-                load:
-                  type: boolean
-                  enum: [true]
-            example: |
-              {"load": true}
       responses:
         '202':
           description: Corpus update has been scheduled
@@ -362,14 +350,8 @@ paths:
                 {
                   "message": "corpus update scheduled"
                 }
-        '400':
-          description: >-
-            The request body is missing, isn't valid JSON, or `load` isn't
-            `true`.
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '415':
-          description: The request has no JSON body.
         '404':
           description: Unknown corpus
         '409':

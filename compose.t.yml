@@ -41,8 +41,6 @@ services:
           http://api:8080/exist/restxq/v1/corpora
         echo "Loading TEI data for test corpus..."
         curl -sf -X POST -u admin: \
-          -H 'Content-Type: application/json' \
-          -d '{"load": true}' \
           http://api:8080/exist/restxq/v1/corpora/test
         # The load job records the commit of the corpus after loading all
         # of its plays. (Every play has a commit, too, so check the corpus
