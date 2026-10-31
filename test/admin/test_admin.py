@@ -3,6 +3,8 @@ Tests of the admin endpoints: creating, loading and deleting corpora, and
 adding, updating and deleting plays.
 """
 
+import time
+
 import pytest
 
 from conftest import MINIMAL_PLAY, PLAY_NAME, SCRATCH_CORPUS, SCRATCH_CORPUS_XML
@@ -155,25 +157,40 @@ def test_add_play_to_unknown_corpus(api):
 # Loading corpora
 
 
+def load_corpus(api, corpus, **kwargs):
+    """Post to the corpus URI, waiting while a previous load job is pending.
+
+    The job name derives from the corpus name, which is the same for every
+    throwaway corpus, so a job scheduled by an earlier test may still block a
+    new one for a moment (409).
+    """
+    for _ in range(30):
+        response = api.request("POST", f"/corpora/{corpus}", **kwargs)
+        if response.status_code != 409:
+            break
+        time.sleep(1)
+    return response
+
+
 def test_load_corpus(api, corpus):
     # The throwaway corpus has no repository, so the job finds nothing to load.
-    response = api.post_json(f"/corpora/{corpus}", {"load": True})
+    response = load_corpus(api, corpus)
     assert response.status_code == 202, response.text
 
 
 @pytest.mark.parametrize(
-    "body",
-    [b'{"load": false}', b"", b'{"load":'],
-    ids=["load-false", "empty", "malformed"],
+    "body,content_type",
+    [
+        (b'{"load": true}', "application/json"),
+        (b"x", "text/plain"),
+    ],
+    ids=["legacy-payload", "text"],
 )
-def test_load_corpus_with_invalid_body(api, corpus, body):
-    response = api.request(
-        "POST",
-        f"/corpora/{corpus}",
-        data=body,
-        headers={"Content-Type": "application/json"},
+def test_load_corpus_ignores_body(api, corpus, body, content_type):
+    response = load_corpus(
+        api, corpus, data=body, headers={"Content-Type": content_type}
     )
-    assert response.status_code == 400, response.text
+    assert response.status_code == 202, response.text
 
 
 def test_load_unknown_corpus(api):
@@ -208,10 +225,9 @@ def test_delete_corpus(api, corpus, play):
     "method,path",
     [
         ("POST", "/corpora"),
-        ("POST", f"/corpora/{SCRATCH_CORPUS}"),
         ("PUT", f"/corpora/{SCRATCH_CORPUS}/plays/{PLAY_NAME}/tei"),
     ],
-    ids=["create-corpus", "load-corpus", "add-play"],
+    ids=["create-corpus", "add-play"],
 )
 @pytest.mark.parametrize("content_type", [None, "text/plain"], ids=["none", "text"])
 def test_unsupported_body(api, corpus, method, path, content_type):
@@ -225,7 +241,7 @@ def test_unsupported_body(api, corpus, method, path, content_type):
 
 OPERATIONS = [
     ("POST", "/corpora", {"json": {"name": "other", "title": "Other"}}),
-    ("POST", f"/corpora/{SCRATCH_CORPUS}", {"json": {"load": True}}),
+    ("POST", f"/corpora/{SCRATCH_CORPUS}", {}),
     ("DELETE", f"/corpora/{SCRATCH_CORPUS}", {}),
     (
         "PUT",

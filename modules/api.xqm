@@ -534,52 +534,35 @@ function api:corpus-index($corpusname) {
 (:~
  : Load corpus data from its repository
  :
- : Posting `{"load": true}` to the corpus URI reloads the data for this corpus
- : from its repository (if defined). This endpoint requires authorization.
+ : Posting to the corpus URI reloads the data for this corpus from its
+ : repository (if defined). A request body is not required and is ignored if
+ : present (earlier versions required `{"load": true}`). This endpoint
+ : requires authorization.
  :
  : @param $corpusname Corpus name
- : @param $data JSON object
  : @param $auth Authorization header value
  : @result JSON object
  :)
 declare
-  %rest:POST("{$data}")
+  %rest:POST
   %rest:path("/v1/corpora/{$corpusname}")
   %rest:header-param("Authorization", "{$auth}")
-  %rest:consumes("application/json")
   %rest:produces("application/json")
   %output:media-type("application/json")
   %output:method("json")
   %test:arg("corpusname", "test")
-  %test:arg("data", '{"load": true}')
   %test:arg("auth", "Basic YWRtaW46")
-function api:post-corpus($corpusname, $data, $auth) {
+function api:post-corpus($corpusname, $auth) {
   if (not(local:is-authenticated($auth))) then (
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
   ) else
-    let $json := try {
-      parse-json(util:base64-decode($data))
-    } catch err:FOJS0001 { "invalid" }
     let $corpus := dutil:get-corpus-info-by-name($corpusname)
 
     return if (not($corpus?name)) then (
       <rest:response><http:response status="404" /></rest:response>,
       map {"message": "no such corpus"}
-    ) else if (count($json) = 0) then (
-      <rest:response><http:response status="400" /></rest:response>,
-      map {"message": "missing payload"}
-    ) else if (
-      not(
-        if ($json instance of map(*)) then
-          $json?load instance of xs:boolean
-        else
-          false()
-      )
-    ) then (
-      <rest:response><http:response status="400" /></rest:response>,
-      map {"message": "invalid payload"}
-    ) else if ($json?load) then
+    ) else
       let $job-name := "load-corpus-" || $corpusname
       let $params := (
         <parameters>
@@ -616,37 +599,6 @@ function api:post-corpus($corpusname, $data, $auth) {
         <rest:response><http:response status="409" /></rest:response>,
         map {"message": "cannot schedule update"}
       )
-    else (
-      <rest:response><http:response status="400" /></rest:response>,
-      map {"message": "invalid payload"}
-    )
-};
-
-(:~
- : Reject a request to load a corpus without a JSON body
- :
- : RESTXQ calls this function when the one above doesn't consume the
- : request, e.g. when there is no body.
- :
- : @param $corpusname Corpus name
- : @param $auth Authorization header value
- : @result JSON object
- :)
-declare
-  %rest:POST
-  %rest:path("/v1/corpora/{$corpusname}")
-  %rest:header-param("Authorization", "{$auth}")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
-  %output:method("json")
-function api:post-corpus-unsupported($corpusname, $auth) {
-  if (not(local:is-authenticated($auth))) then (
-    <rest:response><http:response status="401" /></rest:response>,
-    map {"message": "authorization required"}
-  ) else (
-    <rest:response><http:response status="415" /></rest:response>,
-    map {"message": "JSON request body required"}
-  )
 };
 
 (:~

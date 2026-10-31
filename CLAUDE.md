@@ -33,7 +33,7 @@ API available at `http://localhost:8088/api/v1/`. eXist-db dashboard at `http://
 curl -X POST -u admin: -d@corpus.xml -H 'Content-type: text/xml' http://localhost:8088/api/v1/corpora
 
 # Load TEI files for a corpus
-curl -X POST -u admin: -H 'Content-type: application/json' -d '{"load":true}' http://localhost:8088/api/v1/corpora/test
+curl -X POST -u admin: http://localhost:8088/api/v1/corpora/test
 ```
 
 ### Testing
