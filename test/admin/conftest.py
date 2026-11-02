@@ -58,12 +58,12 @@ class API:
     def post_json(self, path, data, **kwargs):
         return self.request("POST", path, json=data, **kwargs)
 
-    def put_tei(self, corpus, play, tei, **kwargs):
+    def put_tei(self, corpus, play, tei, headers=None, **kwargs):
         return self.request(
             "PUT",
             f"/corpora/{corpus}/plays/{play}/tei",
             data=tei,
-            headers={"Content-Type": "application/xml"},
+            headers={"Content-Type": "application/xml", **(headers or {})},
             **kwargs,
         )
 
