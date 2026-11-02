@@ -24,9 +24,13 @@ declare function trigger:after-update-document($uri as xs:anyURI) {
   queue:enqueue($uri)
 };
 
-declare function trigger:after-delete-document($uri as xs:anyURI) {
-  queue:enqueue($uri)
-};
+(:
+ : Deleting a TEI document is not handled: plays are deleted together with
+ : their collection, which is handled by after-delete-collection. Handling both
+ : would schedule every play twice, and eXist-db logs an error with a stack
+ : trace for each job it cannot schedule because of a duplicate name. A TEI
+ : document deleted on its own is picked up by the reconcile job.
+ :)
 
 declare function trigger:after-move-document(
   $new-uri as xs:anyURI,

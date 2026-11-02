@@ -61,14 +61,27 @@ declare function sync:play(
   let $paths := dutil:filepaths($corpusname, $playname)
   let $url := $paths?files?tei
   let $modified := sync:tei-modified($paths)
-  return if (empty($modified)) then (
-    util:log-system-out("Sync: " || $url || " is gone"),
-    drdf:fuseki-drop-play($corpusname, $playname)
-  ) else
+  return if (empty($modified)) then
+    let $log := util:log-system-out("Sync: " || $url || " is gone")
+    let $dropped := drdf:fuseki-drop-play($corpusname, $playname)
+    (: the collection may still exist when only the TEI has been deleted :)
+    let $removed := if ($dropped and doc-available($paths?files?sync)) then
+      xmldb:remove($paths?collections?play, "sync.xml")
+    else (
+    )
+    return $dropped
+  else
     let $log := util:log-system-out("Sync: " || $url)
     (: the RDF includes the metrics, so they need to be updated first :)
     let $metrics := metrics:update($url)
     let $sitelinks := metrics:update-sitelinks($url)
+    (: remove sitelinks of a play that has lost its Wikidata ID :)
+    let $removed := if (
+      empty($sitelinks) and doc-available($paths?files?sitelinks)
+    ) then
+      xmldb:remove($paths?collections?play, "sitelinks.xml")
+    else (
+    )
     let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
     let $stored := xmldb:store($paths?collections?play, "rdf.xml", $rdf)
     return if (drdf:fuseki-put($corpusname, $playname, $rdf)) then (
@@ -148,7 +161,9 @@ declare function sync:pending() as xs:boolean {
  :
  : This catches changes that have been missed by the trigger, e.g. because the
  : database was restarted before a scheduled job could run, or because the
- : change was made by a user that is not allowed to schedule jobs.
+ : change was made by a user that is not allowed to schedule jobs. It also
+ : catches TEI documents deleted without their play collection, which the
+ : trigger ignores.
  :
  : Plays without sync.xml whose RDF is newer than the TEI document were synced
  : before sync.xml was introduced. For these sync.xml is just recorded.
@@ -161,9 +176,11 @@ declare function sync:reconcile() as map(*) {
     for $corpusname in xmldb:get-child-collections($config:corpora-root)
     let $collection := $config:corpora-root || "/" || $corpusname
     for $playname in xmldb:get-child-collections($collection)
-    where sync:play-pending($corpusname, $playname)
     let $paths := dutil:filepaths($corpusname, $playname)
     let $modified := sync:tei-modified($paths)
+    (: a play whose TEI has been deleted without its collection has a graph :)
+    where sync:play-pending($corpusname, $playname) or
+      (empty($modified) and doc-available($paths?files?sync))
     return if (
       not(doc-available($paths?files?sync)) and
         doc-available($paths?files?metrics) and

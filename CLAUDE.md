@@ -96,7 +96,7 @@ The extension syncs the working directory to `/db/apps/dracor-v1` in a running e
 ### Background Jobs (`jobs/`)
 
 Async jobs scheduled via eXist's job scheduler:
-- `load-corpus.xq` — fetches TEI files from GitHub and loads them into the database
+- `load-corpus.xq` — fetches the corpus archive from GitHub and updates the database: only changed TEI files are stored (per-play `git.xml` records the archive file's hash and the stored `tei.xml` modification time), plays missing from the archive and any unexpected files are removed
 - `process-webhook-delivery.xq` — processes queued GitHub webhook deliveries
 - `sitelinks.xq` — syncs Wikidata sitelinks
 - `sync-play.xq` / `sync-corpus.xq` — update the derived data of a play, or drop a removed corpus from Fuseki
@@ -104,7 +104,7 @@ Async jobs scheduled via eXist's job scheduler:
 
 ### Derived Data Sync
 
-eXist-db runs triggers while holding write locks up to `/db`, blocking all other queries, and compiles the trigger module for every event. The trigger therefore does no work itself: for every change to a `tei.xml`, play or corpus collection it schedules a `sync-play-*` or `sync-corpus-*` job (30 s delay; a job of the same name that hasn't fired yet absorbs further changes). The jobs look at the current database state, so they are idempotent and order-independent. After a successful sync, `sync.xml` in the play collection records the `tei.xml` modification time; a play is pending when that doesn't match. Endpoints returning metrics, sitelinks or RDF send `X-Accel-Expires: 0` while the play (or any play of the corpus) is pending, so nginx doesn't cache them. `/info` reports the number of pending jobs as `pendingSyncs`.
+eXist-db runs triggers while holding write locks up to `/db`, blocking all other queries, and compiles the trigger module for every event. The trigger therefore does no work itself: for every stored `tei.xml` and every deleted play or corpus collection it schedules a `sync-play-*` or `sync-corpus-*` job (30 s delay; a job of the same name that hasn't fired yet absorbs further changes). The jobs look at the current database state, so they are idempotent and order-independent. After a successful sync, `sync.xml` in the play collection records the `tei.xml` modification time; a play is pending when that doesn't match. Endpoints returning metrics, sitelinks or RDF send `X-Accel-Expires: 0` while the play (or any play of the corpus) is pending, so nginx doesn't cache them. `/info` reports the number of pending jobs as `pendingSyncs`.
 
 ### Database Layout
 
