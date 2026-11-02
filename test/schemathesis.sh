@@ -15,7 +15,7 @@ st() {
 # test/schemathesis_hooks.py), which is removed before the other runs.
 "$(dirname "$0")/scratch-corpus.sh" create || exit 1
 SCHEMATHESIS_HOOKS="$(dirname "$0")/schemathesis_hooks.py" st \
-  --exclude-tag webhook \
+  --exclude-tag Webhook \
   --auth admin: \
   --report junit \
   --report-junit-path schemathesis-results.xml
