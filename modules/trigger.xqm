@@ -1,57 +1,66 @@
 xquery version "3.1";
 
+(:~
+ : Collection trigger for the corpora collection
+ :
+ : The trigger only schedules jobs that update the data derived from the TEI
+ : documents (see sync.xqm). The actual updates are not done here because
+ : eXist-db runs triggers while holding write locks on the whole collection
+ : hierarchy up to /db, which blocks all other queries. For the same reason
+ : this module must stay lightweight: eXist-db compiles it for every single
+ : trigger event.
+ :)
 module namespace dt = "http://dracor.org/ns/exist/v1/trigger";
 
 declare namespace trigger = "http://exist-db.org/xquery/trigger";
-declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
-import module namespace metrics = "http://dracor.org/ns/exist/v1/metrics" at "metrics.xqm";
-import module namespace drdf = "http://dracor.org/ns/exist/v1/rdf" at "rdf.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+import module namespace queue = "http://dracor.org/ns/exist/v1/queue" at "queue.xqm";
 
-declare function trigger:after-create-document($url as xs:anyURI) {
-  if (ends-with($url, "/tei.xml") and doc($url)/tei:TEI) then (
-    util:log-system-out("running CREATION TRIGGER for " || $url),
-    metrics:update($url),
-    metrics:update-sitelinks($url),
-    drdf:update-play($url)
-  ) else (
-  )
+declare function trigger:after-create-document($uri as xs:anyURI) {
+  queue:enqueue($uri)
 };
 
-declare function trigger:after-update-document($url as xs:anyURI) {
-  if (ends-with($url, "/tei.xml") and doc($url)/tei:TEI) then (
-    util:log-system-out("running UPDATE TRIGGER for " || $url),
-    metrics:update($url),
-    metrics:update-sitelinks($url),
-    drdf:update-play($url)
-  ) else (
-  )
+declare function trigger:after-update-document($uri as xs:anyURI) {
+  queue:enqueue($uri)
 };
 
-declare function trigger:before-delete-document($url as xs:anyURI) {
-  if (ends-with($url, "/tei.xml")) then
-    util:log-system-out("about to DELETE " || $url)
-  else (
-  )
+declare function trigger:after-delete-document($uri as xs:anyURI) {
+  queue:enqueue($uri)
+};
+
+declare function trigger:after-move-document(
+  $new-uri as xs:anyURI,
+  $uri as xs:anyURI
+) {
+  queue:enqueue($new-uri), queue:enqueue($uri)
+};
+
+declare function trigger:after-copy-document(
+  $new-uri as xs:anyURI,
+  $uri as xs:anyURI
+) {
+  queue:enqueue($new-uri), queue:enqueue($uri)
 };
 
 (:~
- : Remove the RDF of a corpus or play from Fuseki when its collection is
- : deleted (when deleting or reloading a corpus, deleting a play or removing
- : it through a webhook delivery).
+ : Schedule removal of the RDF of a corpus or play from Fuseki when its
+ : collection is deleted (when deleting or reloading a corpus, deleting a play
+ : or removing it through a webhook delivery).
  :)
-declare function trigger:before-delete-collection($uri as xs:anyURI) {
-  let $segments := tokenize(
-    substring-after($uri, $config:corpora-root || "/"),
-    "/"
-  )
-  return switch (count($segments))
-    case 1 return
-      drdf:fuseki-drop-corpus($segments[1])
-    case 2 return
-      drdf:fuseki-drop-play($segments[1], $segments[2])
-    default return
-      ()
+declare function trigger:after-delete-collection($uri as xs:anyURI) {
+  queue:enqueue($uri)
+};
+
+declare function trigger:after-move-collection(
+  $new-uri as xs:anyURI,
+  $uri as xs:anyURI
+) {
+  queue:enqueue($new-uri), queue:enqueue($uri)
+};
+
+declare function trigger:after-copy-collection(
+  $new-uri as xs:anyURI,
+  $uri as xs:anyURI
+) {
+  queue:enqueue($new-uri), queue:enqueue($uri)
 };

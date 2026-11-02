@@ -81,7 +81,8 @@ declare function dutil:filepaths(
         "metrics": $playpath || "/metrics.xml",
         "rdf": $playpath || "/rdf.xml",
         "git": $playpath || "/git.xml",
-        "sitelinks": $playpath || "/sitelinks.xml"
+        "sitelinks": $playpath || "/sitelinks.xml",
+        "sync": $playpath || "/sync.xml"
       }
   }
 };
