@@ -150,27 +150,6 @@ function api:info() {
 };
 
 (:~
- : Response headers keeping a caching proxy from storing a response
- :
- : Responses including data derived from the TEI documents (metrics, sitelinks,
- : RDF) must not be cached while that data is being updated. nginx doesn't
- : cache responses with a zero X-Accel-Expires header and doesn't pass that
- : header on to the client.
- :
- : @param $pending Whether the derived data is being updated
- :)
-declare function local:cache-control($pending as xs:boolean) as element()? {
-  if ($pending) then
-    <rest:response>
-      <http:response>
-        <http:header name="X-Accel-Expires" value="0" />
-      </http:response>
-    </rest:response>
-  else (
-  )
-};
-
-(:~
  : OpenAPI info
  :
  : @result JSON object
@@ -280,7 +259,7 @@ function api:corpora($include) {
     <rest:response><http:response status="400" /></rest:response>,
     map {"error": "invalid value for parameter 'include'"}
   ) else (
-    local:cache-control($include[1] = "metrics" and sync:pending()),
+    sync:cache-control($include[1] = "metrics" and sync:pending()),
     array
       {
         (: DEPRECATED: remove teiCorpus support in v2 :)
@@ -484,7 +463,7 @@ function api:corpus-index($corpusname) {
   ) then
     <rest:response><http:response status="404" /></rest:response>
   else (
-    local:cache-control(sync:corpus-pending($corpusname)),
+    sync:cache-control(sync:corpus-pending($corpusname)),
     map:merge(
       (
         $corpus,
@@ -686,7 +665,7 @@ function api:corpus-meta-data($corpusname) {
   ) else
     let $meta := dutil:get-corpus-meta-data($corpusname)
     return (
-      local:cache-control(sync:corpus-pending($corpusname)), array { $meta }
+      sync:cache-control(sync:corpus-pending($corpusname)), array { $meta }
     )
 };
 
@@ -714,7 +693,7 @@ declare function api:get-corpus-meta-data-csv($corpusname) {
         '"&#10;'
       )
     return (
-      local:cache-control(sync:corpus-pending($corpusname)), $header, $rows
+      sync:cache-control(sync:corpus-pending($corpusname)), $header, $rows
     )
 };
 
@@ -838,7 +817,7 @@ declare
 function api:play-metrics($corpusname, $playname) {
   let $metrics := dutil:get-play-metrics($corpusname, $playname)
   return if (count($metrics)) then (
-    local:cache-control(sync:play-pending($corpusname, $playname)), $metrics
+    sync:cache-control(sync:play-pending($corpusname, $playname)), $metrics
   ) else
     <rest:response><http:response status="404" /></rest:response>
 };
@@ -994,7 +973,7 @@ function api:play-rdf($corpusname, $playname) {
   return if (not($doc)) then
     <rest:response><http:response status="404" /></rest:response>
   else (
-    local:cache-control(sync:play-pending($corpusname, $playname)), $doc
+    sync:cache-control(sync:play-pending($corpusname, $playname)), $doc
   )
 };
 
@@ -1287,7 +1266,7 @@ declare
 function api:characters-info($corpusname, $playname) {
   let $info := dutil:characters-info($corpusname, $playname)
   return if (count($info) > 0) then (
-    local:cache-control(sync:play-pending($corpusname, $playname)), $info
+    sync:cache-control(sync:play-pending($corpusname, $playname)), $info
   ) else
     <rest:response><http:response status="404" /></rest:response>
 };
@@ -1325,7 +1304,7 @@ function api:characters-info-csv($corpusname, $playname) {
   return if (count($info) = 0) then
     <rest:response><http:response status="404" /></rest:response>
   else (
-    local:cache-control(sync:play-pending($corpusname, $playname)),
+    sync:cache-control(sync:play-pending($corpusname, $playname)),
     string-join($keys, ",") || "&#10;",
     for $c in $info?*
     let $row :=
