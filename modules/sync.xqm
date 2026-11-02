@@ -20,6 +20,8 @@ xquery version "3.1";
 module namespace sync = "http://dracor.org/ns/exist/v1/sync";
 
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
+declare namespace rest = "http://exquery.org/ns/restxq";
+declare namespace http = "http://expath.org/ns/http-client";
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
@@ -185,5 +187,26 @@ declare function sync:reconcile() as map(*) {
         $result?scheduled
     ),
     $result
+  )
+};
+
+(:~
+ : Response headers keeping a caching proxy from storing a response
+ :
+ : Responses including data derived from the TEI documents (metrics, sitelinks,
+ : RDF) must not be cached while that data is pending. nginx doesn't cache
+ : responses with a zero X-Accel-Expires header and doesn't pass that header on
+ : to the client.
+ :
+ : @param $pending Whether the derived data is pending
+ :)
+declare function sync:cache-control($pending as xs:boolean) as element()? {
+  if ($pending) then
+    <rest:response>
+      <http:response>
+        <http:header name="X-Accel-Expires" value="0" />
+      </http:response>
+    </rest:response>
+  else (
   )
 };
