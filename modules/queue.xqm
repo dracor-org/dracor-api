@@ -38,11 +38,44 @@ declare %private function queue:schedule-job(
 };
 
 (:~
+ : Schedule a job under the first of the given names that isn't taken by a
+ : job that has already fired
+ :
+ : A job that hasn't fired yet will see the change it is scheduled for, so it
+ : takes in further changes. A job that has fired may have read the data
+ : before the change, so a follow-up job is needed. The trigger of a one-shot
+ : job stays in state NORMAL while the job runs and is removed when it has
+ : completed. Whether it has fired can only be told by its next fire time,
+ : which is empty once it has fired.
+ :)
+declare %private function queue:schedule-first(
+  $names as xs:string*,
+  $script as xs:string,
+  $params as element(parameters)
+) as xs:boolean {
+  if (empty($names)) then
+    false()
+  (: scheduling fails when a job of the same name exists :)
+  else if (queue:schedule-job($names[1], $script, $params)) then
+    true()
+  else
+    let $job := scheduler:get-scheduled-jobs()//scheduler:job[@name = $names[1]]
+    return if (empty($job)) then
+      (: either it has completed in the meantime or we may not schedule :)
+      queue:schedule-job($names[1], $script, $params)
+    else if ($job/scheduler:trigger/next[normalize-space()]) then
+      true()
+    else
+      queue:schedule-first(subsequence($names, 2), $script, $params)
+};
+
+(:~
  : Schedule a job unless one with the same name is already waiting to run
  :
- : If a job of that name has already fired (it is running, or it has completed
- : but not been removed yet) the job is scheduled under a unique name instead,
- : so that changes made while a sync is running don't get lost.
+ : If the job of that name is already running, a follow-up job is scheduled
+ : under the name suffixed with ":next", so that changes made while a sync is
+ : running don't get lost. If that one is running too, a job with a unique
+ : name is scheduled.
  :
  : Scheduling requires the dba role. For other users this does nothing; the
  : reconcile job catches what has been missed.
@@ -56,17 +89,11 @@ declare function queue:schedule(
   $script as xs:string,
   $params as element(parameters)
 ) as xs:boolean {
-  (: scheduling fails when a job of the same name exists :)
-  if (queue:schedule-job($name, $script, $params)) then
-    true()
-  else
-    let $jobs := scheduler:get-scheduled-jobs()//scheduler:job[@name = $name]
-    return if (empty($jobs)) then
-      false()
-    else if ($jobs/scheduler:trigger/state = ("NORMAL", "PAUSED")) then
-      true()
-    else
-      queue:schedule-job($name || ":" || util:uuid(), $script, $params)
+  queue:schedule-first(
+    ($name, $name || ":next", $name || ":" || util:uuid()),
+    $script,
+    $params
+  )
 };
 
 (:~

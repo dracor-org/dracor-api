@@ -157,18 +157,25 @@ declare function sync:pending() as xs:boolean {
 };
 
 (:~
- : Schedule sync for all plays whose derived data is not up to date
+ : Schedule sync for all plays whose derived data is not up to date, and for
+ : all plays that still have a graph in Fuseki although they don't exist
  :
- : This catches changes that have been missed by the trigger, e.g. because the
- : database was restarted before a scheduled job could run, or because the
- : change was made by a user that is not allowed to schedule jobs. It also
- : catches TEI documents deleted without their play collection, which the
- : trigger ignores.
+ : This catches what the sync jobs have missed, e.g. because the database was
+ : restarted before a scheduled job could run, because Fuseki was not
+ : available, or because the change was made by a user that is not allowed to
+ : schedule jobs. Comparing the graphs in Fuseki with the plays in the database
+ : also catches deleted plays (including TEI documents deleted without their
+ : play collection, which the trigger ignores), since nothing is left of them
+ : in the database.
  :
  : Plays without sync.xml whose RDF is newer than the TEI document were synced
  : before sync.xml was introduced. For these sync.xml is just recorded.
  :
- : @return map with the number of recorded and scheduled plays
+ : The reconcile job runs after each deploy. It must run regularly (e.g. from
+ : the scheduler in conf.xml) to catch what was missed in between.
+ :
+ : @return map with the number of recorded plays, of scheduled plays and of
+ : scheduled plays that only have a graph left
  :)
 declare function sync:reconcile() as map(*) {
   let $log := util:log-system-out("Sync: reconciling")
@@ -178,9 +185,7 @@ declare function sync:reconcile() as map(*) {
     for $playname in xmldb:get-child-collections($collection)
     let $paths := dutil:filepaths($corpusname, $playname)
     let $modified := sync:tei-modified($paths)
-    (: a play whose TEI has been deleted without its collection has a graph :)
-    where sync:play-pending($corpusname, $playname) or
-      (empty($modified) and doc-available($paths?files?sync))
+    where sync:play-pending($corpusname, $playname)
     return if (
       not(doc-available($paths?files?sync)) and
         doc-available($paths?files?metrics) and
@@ -192,16 +197,25 @@ declare function sync:reconcile() as map(*) {
     else
       let $scheduled := queue:sync-play($corpusname, $playname)
       return "scheduled"
+  let $graphs :=
+    for $play in drdf:fuseki-plays()
+    let $paths := dutil:filepaths($play?corpusname, $play?playname)
+    where not(doc-available($paths?files?tei))
+    let $scheduled := queue:sync-play($play?corpusname, $play?playname)
+    return "graph"
   let $result := map {
     "recorded": count($results[. = "recorded"]),
-    "scheduled": count($results[. = "scheduled"])
+    "scheduled": count($results[. = "scheduled"]),
+    "graphs": count($graphs)
   }
   return (
     util:log-system-out(
       "Sync: recorded " ||
         $result?recorded ||
         ", scheduled " ||
-        $result?scheduled
+        $result?scheduled ||
+        ", scheduled for left-over graphs " ||
+        $result?graphs
     ),
     $result
   )

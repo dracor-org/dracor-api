@@ -100,7 +100,7 @@ Async jobs scheduled via eXist's job scheduler:
 - `process-webhook-delivery.xq` — processes queued GitHub webhook deliveries
 - `sitelinks.xq` — syncs Wikidata sitelinks
 - `sync-play.xq` / `sync-corpus.xq` — update the derived data of a play, or drop a removed corpus from Fuseki
-- `reconcile.xq` — schedules sync for all plays whose derived data is out of date (runs after each deploy)
+- `reconcile.xq` — schedules sync for all plays whose derived data is out of date and for left-over Fuseki graphs of plays that no longer exist (runs after each deploy; should also run regularly from `conf.xml`)
 
 ### Derived Data Sync
 
