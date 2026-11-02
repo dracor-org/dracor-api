@@ -1,0 +1,189 @@
+xquery version "3.1";
+
+(:~
+ : Module for keeping the data derived from the TEI documents in sync.
+ :
+ : For each play the metrics, the Wikidata sitelinks and the RDF are stored
+ : next to the TEI document, and the RDF is put into a graph of its own in
+ : Fuseki. Changes to the corpora collection are picked up by the collection
+ : trigger, which schedules the jobs calling the functions of this module (see
+ : queue.xqm).
+ :
+ : The sync functions look at the current state of the database rather than at
+ : the change that caused them to be scheduled. This makes them idempotent and
+ : independent of the order in which the jobs run.
+ :
+ : When a play has been synced successfully a sync.xml file recording the last
+ : modification time of the TEI document is stored next to it. A play whose
+ : sync.xml is missing or records a different time is considered pending.
+ :)
+module namespace sync = "http://dracor.org/ns/exist/v1/sync";
+
+declare namespace tei = "http://www.tei-c.org/ns/1.0";
+
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+import module namespace metrics = "http://dracor.org/ns/exist/v1/metrics" at "metrics.xqm";
+import module namespace drdf = "http://dracor.org/ns/exist/v1/rdf" at "rdf.xqm";
+import module namespace queue = "http://dracor.org/ns/exist/v1/queue" at "queue.xqm";
+
+declare %private function sync:tei-modified($paths as map(*)) as xs:dateTime? {
+  if (doc-available($paths?files?tei)) then
+    xmldb:last-modified($paths?collections?play, "tei.xml")
+  else (
+  )
+};
+
+declare %private function sync:record($paths as map(*), $modified) {
+  xmldb:store(
+    $paths?collections?play,
+    "sync.xml",
+    <sync tei-modified="{ $modified }" updated="{ current-dateTime() }" />
+  )
+};
+
+(:~
+ : Sync a play
+ :
+ : If the play exists its metrics, sitelinks and RDF are updated, otherwise its
+ : graph is removed from Fuseki.
+ :
+ : @param $corpusname
+ : @param $playname
+ : @return true() on success
+ :)
+declare function sync:play(
+  $corpusname as xs:string,
+  $playname as xs:string
+) as xs:boolean {
+  let $paths := dutil:filepaths($corpusname, $playname)
+  let $url := $paths?files?tei
+  let $modified := sync:tei-modified($paths)
+  return if (empty($modified)) then (
+    util:log-system-out("Sync: " || $url || " is gone"),
+    drdf:fuseki-drop-play($corpusname, $playname)
+  ) else
+    let $log := util:log-system-out("Sync: " || $url)
+    (: the RDF includes the metrics, so they need to be updated first :)
+    let $metrics := metrics:update($url)
+    let $sitelinks := metrics:update-sitelinks($url)
+    let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
+    let $stored := xmldb:store($paths?collections?play, "rdf.xml", $rdf)
+    return if (drdf:fuseki-put($corpusname, $playname, $rdf)) then (
+      let $recorded := sync:record($paths, $modified)
+      return true()
+    ) else (
+      (: without sync.xml the play stays pending and is retried by reconcile :)
+      util:log-system-out("Sync: Fuseki update failed for " || $url), false()
+    )
+};
+
+(:~
+ : Sync a corpus
+ :
+ : Removes the graphs of all plays of a corpus from Fuseki if the corpus
+ : doesn't exist (anymore). The plays of an existing corpus are synced
+ : individually.
+ :
+ : @param $corpusname
+ : @return true() on success
+ :)
+declare function sync:corpus($corpusname as xs:string) as xs:boolean {
+  if (
+    xmldb:collection-available($config:corpora-root || "/" || $corpusname)
+  ) then
+    true()
+  else (
+    util:log-system-out("Sync: corpus " || $corpusname || " is gone"),
+    drdf:fuseki-drop-corpus($corpusname)
+  )
+};
+
+(:~
+ : Check whether the derived data of a play is not up to date
+ :
+ : @param $corpusname
+ : @param $playname
+ :)
+declare function sync:play-pending(
+  $corpusname as xs:string,
+  $playname as xs:string
+) as xs:boolean {
+  let $paths := dutil:filepaths($corpusname, $playname)
+  let $modified := sync:tei-modified($paths)
+  return exists($modified) and
+    not(xs:dateTime(doc($paths?files?sync)/sync/@tei-modified) = $modified)
+};
+
+(:~
+ : Check whether the derived data of any play of a corpus is not up to date
+ :
+ : @param $corpusname
+ :)
+declare function sync:corpus-pending($corpusname as xs:string) as xs:boolean {
+  let $collection := $config:corpora-root || "/" || $corpusname
+  return xmldb:collection-available($collection) and
+    (
+      some
+        $playname in
+        xmldb:get-child-collections($collection) satisfies
+        sync:play-pending($corpusname, $playname)
+    )
+};
+
+(:~
+ : Check whether the derived data of any play is not up to date
+ :)
+declare function sync:pending() as xs:boolean {
+  some
+    $corpusname in
+    xmldb:get-child-collections($config:corpora-root) satisfies
+    sync:corpus-pending($corpusname)
+};
+
+(:~
+ : Schedule sync for all plays whose derived data is not up to date
+ :
+ : This catches changes that have been missed by the trigger, e.g. because the
+ : database was restarted before a scheduled job could run, or because the
+ : change was made by a user that is not allowed to schedule jobs.
+ :
+ : Plays without sync.xml whose RDF is newer than the TEI document were synced
+ : before sync.xml was introduced. For these sync.xml is just recorded.
+ :
+ : @return map with the number of recorded and scheduled plays
+ :)
+declare function sync:reconcile() as map(*) {
+  let $log := util:log-system-out("Sync: reconciling")
+  let $results :=
+    for $corpusname in xmldb:get-child-collections($config:corpora-root)
+    let $collection := $config:corpora-root || "/" || $corpusname
+    for $playname in xmldb:get-child-collections($collection)
+    where sync:play-pending($corpusname, $playname)
+    let $paths := dutil:filepaths($corpusname, $playname)
+    let $modified := sync:tei-modified($paths)
+    return if (
+      not(doc-available($paths?files?sync)) and
+        doc-available($paths?files?metrics) and
+        doc-available($paths?files?rdf) and
+        xmldb:last-modified($paths?collections?play, "rdf.xml") >= $modified
+    ) then
+      let $recorded := sync:record($paths, $modified)
+      return "recorded"
+    else
+      let $scheduled := queue:sync-play($corpusname, $playname)
+      return "scheduled"
+  let $result := map {
+    "recorded": count($results[. = "recorded"]),
+    "scheduled": count($results[. = "scheduled"])
+  }
+  return (
+    util:log-system-out(
+      "Sync: recorded " ||
+        $result?recorded ||
+        ", scheduled " ||
+        $result?scheduled
+    ),
+    $result
+  )
+};

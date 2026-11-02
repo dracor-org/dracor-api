@@ -123,6 +123,8 @@ declare function local:create-secrets-file() as item()? {
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || "/modules/webhook.xqm")
 let $sitelinks-job := xs:anyURI($target || "/jobs/sitelinks.xq")
+(: allows running the reconcile job from the scheduler in conf.xml :)
+let $reconcile-job := xs:anyURI($target || "/jobs/reconcile.xq")
 
 (: register the RESTXQ module :)
 let $restxq-module := xs:anyURI("modules/api.xpm")
@@ -136,5 +138,17 @@ return (
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
   sm:chmod($sitelinks-job, "rwsr-xr-x"),
-  exrest:register-module($restxq-module)
+  sm:chown($reconcile-job, "admin"),
+  sm:chgrp($reconcile-job, "dba"),
+  sm:chmod($reconcile-job, "rwsr-xr-x"),
+  exrest:register-module($restxq-module),
+  (: sync what may have been missed while the app was not installed :)
+  scheduler:schedule-xquery-periodic-job(
+    $reconcile-job,
+    1,
+    "sync-reconcile",
+    <parameters />,
+    60000,
+    0
+  )
 )

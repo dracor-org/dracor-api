@@ -25,7 +25,11 @@ declare variable $config:app-root := (
       substring($rawPath, 15)
   else
     $rawPath
-  return substring-before($modulePath, "/modules")
+  (: jobs are run from the jobs collection :)
+  return if (contains($modulePath, "/modules")) then
+    substring-before($modulePath, "/modules")
+  else
+    replace($modulePath, "/jobs/?$", "")
 );
 
 declare variable $config:dracor-root := "/db/dracor";
