@@ -146,7 +146,8 @@ return (
   scheduler:schedule-xquery-periodic-job(
     $reconcile-job,
     1,
-    "sync-reconcile",
+    (: not prefixed with sync-, which would count it as pending sync :)
+    "reconcile",
     <parameters />,
     60000,
     0

@@ -2092,24 +2092,6 @@ declare function dutil:create-corpus-from-xml($xml as element()) {
     )
 };
 
-(:~
- : Determine Git SHA for corpus recorded in git.xml files
- :
- : @param $name Corpus name
- : @return string* Git SHA1 hash
- :)
-declare function dutil:get-corpus-sha($name as xs:string) as xs:string* {
-  let $col := collection($config:corpora-root || "/" || $name)
-  let $num-plays := count($col/tei:TEI)
-  let $num-sha := count($col/git/sha)
-  let $shas := distinct-values($col/git/sha)
-
-  return if ($num-plays = $num-sha and count($shas) = 1) then
-    $shas[1]
-  else (
-  )
-};
-
 declare function local:record-sha(
   $collection as xs:string,
   $sha as xs:string

@@ -13,6 +13,12 @@ xquery version "3.1";
  : modification time of the stored tei.xml. If either differs, e.g. because the
  : play has been updated through a webhook or the API since, the document is
  : replaced.
+ :
+ : git.xml of a play is only written when its document is stored, so an
+ : unchanged play keeps the commit it was loaded from, which has the same
+ : document. The git.xml of the corpus records the commit of the archive once
+ : all plays have been loaded, and is only removed during the load if the
+ : commit changes.
  :)
 module namespace load = "http://dracor.org/ns/exist/v1/load";
 
@@ -66,7 +72,7 @@ declare function local:remove-others(
  : @param $collection Path of the corpus collection
  : @param $name Play name
  : @param $data TEI document
- : @param $sha Git SHA of the archive
+ : @param $sha Git SHA of the archive, recorded if the document is stored
  : @return play element with the play name and the action taken
  :)
 declare function local:update-play(
@@ -94,18 +100,21 @@ declare function local:update-play(
       let $col := xmldb:create-collection($collection, $name)
       let $stored := xmldb:store($col, "tei.xml", $data)
       return xmldb:last-modified($col, "tei.xml")
-    let $new-git := <git>
-      {
-        if ($sha) then
-          <sha>{ $sha }</sha>
-        else (
-        )
-      }
-      <source hash="{ $hash }" tei-modified="{ $modified }" />
-    </git>
-    let $recorded := if (deep-equal($git, $new-git)) then (
+    let $recorded := if ($unchanged) then (
     ) else
-      xmldb:store($play-collection, "git.xml", $new-git)
+      xmldb:store(
+        $play-collection,
+        "git.xml",
+        <git>
+          {
+            if ($sha) then
+              <sha>{ $sha }</sha>
+            else (
+            )
+          }
+          <source hash="{ $hash }" tei-modified="{ $modified }" />
+        </git>
+      )
     let $removed := local:remove-others($play-collection, $load:play-files, ())
     return <play
       action="{
@@ -176,12 +185,27 @@ declare function local:entry-filter(
     false()
 };
 
-declare function local:record-corpus-sha($name) {
-  let $sha := dutil:get-corpus-sha($name)
-  return if ($sha) then
-    dutil:record-sha($name, $sha)
-  else
+declare function local:corpus-sha($name as xs:string) as xs:string? {
+  doc($config:corpora-root || "/" || $name || "/git.xml")/git/sha/string()
+};
+
+(:~
+ : Record the commit of the archive for the corpus
+ :
+ : @param $name Corpus name
+ : @param $sha Git SHA of the archive
+ : @param $plays Results of loading the plays
+ :)
+declare function local:record-corpus-sha(
+  $name as xs:string,
+  $sha as xs:string?,
+  $plays as element(play)*
+) {
+  if (not($sha) or $plays[@action = "failed"]) then
     dutil:remove-corpus-sha($name)
+  else if (local:corpus-sha($name) = $sha) then (
+  ) else
+    dutil:record-sha($name, $sha)
 };
 
 (:~
@@ -215,8 +239,10 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
     return if ($response[1]/@status = "200") then
       let $body := $response[2]
       let $zip := xs:base64Binary($body)
-      (: the corpus SHA is only valid once all plays have been loaded :)
-      let $removed-sha := dutil:remove-corpus-sha($name)
+      (: a new corpus SHA is only valid once all plays have been loaded :)
+      let $removed-sha := if (local:corpus-sha($name) = $archive?sha) then (
+      ) else
+        dutil:remove-corpus-sha($name)
       (: load files from ZIP archive :)
       let $plays := compression:unzip(
         $zip,
@@ -232,7 +258,7 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
         $plays/@name
       )
       return (
-        local:record-corpus-sha($name),
+        local:record-corpus-sha($name, $archive?sha, $plays),
         util:log-system-out(
           $name ||
             " LOADED: " ||
