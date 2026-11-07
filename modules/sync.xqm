@@ -83,8 +83,13 @@ declare function sync:play(
     else (
     )
     let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
-    let $stored := xmldb:store($paths?collections?play, "rdf.xml", $rdf)
     return if (drdf:fuseki-put($corpusname, $playname, $rdf)) then (
+      (:
+       : rdf.xml is only stored once Fuseki has been updated, since reconcile
+       : takes a play without sync.xml whose rdf.xml is newer than tei.xml for
+       : synced
+       :)
+      let $stored := xmldb:store($paths?collections?play, "rdf.xml", $rdf)
       let $recorded := sync:record($paths, $modified)
       return true()
     ) else (
@@ -168,8 +173,10 @@ declare function sync:pending() as xs:boolean {
  : play collection, which the trigger ignores), since nothing is left of them
  : in the database.
  :
- : Plays without sync.xml whose RDF is newer than the TEI document were synced
- : before sync.xml was introduced. For these sync.xml is just recorded.
+ : Plays without sync.xml whose RDF is newer than the TEI document and that
+ : have a graph in Fuseki were synced before sync.xml was introduced. For these
+ : sync.xml is just recorded. (Before, rdf.xml was stored even when the Fuseki
+ : update failed, so a missing graph means the play wasn't synced.)
  :
  : The reconcile job runs after each deploy. It must run regularly (e.g. from
  : the scheduler in conf.xml) to catch what was missed in between.
@@ -179,6 +186,8 @@ declare function sync:pending() as xs:boolean {
  :)
 declare function sync:reconcile() as map(*) {
   let $log := util:log-system-out("Sync: reconciling")
+  let $fuseki-plays := drdf:fuseki-plays()
+  let $graphs := $fuseki-plays!(?corpusname || "/" || ?playname)
   let $results :=
     for $corpusname in xmldb:get-child-collections($config:corpora-root)
     let $collection := $config:corpora-root || "/" || $corpusname
@@ -190,7 +199,8 @@ declare function sync:reconcile() as map(*) {
       not(doc-available($paths?files?sync)) and
         doc-available($paths?files?metrics) and
         doc-available($paths?files?rdf) and
-        xmldb:last-modified($paths?collections?play, "rdf.xml") >= $modified
+        xmldb:last-modified($paths?collections?play, "rdf.xml") >= $modified and
+        ($corpusname || "/" || $playname) = $graphs
     ) then
       let $recorded := sync:record($paths, $modified)
       return "recorded"
@@ -198,7 +208,7 @@ declare function sync:reconcile() as map(*) {
       let $scheduled := queue:sync-play($corpusname, $playname)
       return "scheduled"
   let $graphs :=
-    for $play in drdf:fuseki-plays()
+    for $play in $fuseki-plays
     let $paths := dutil:filepaths($play?corpusname, $play?playname)
     where not(doc-available($paths?files?tei))
     let $scheduled := queue:sync-play($play?corpusname, $play?playname)
