@@ -237,6 +237,42 @@ def test_unsupported_body(api, corpus, method, path, content_type):
     assert response.status_code == 415, response.text
 
 
+# Requests without an Accept header (e.g. from Ansible's uri module)
+
+
+def test_create_corpus_without_accept(api):
+    try:
+        response = api.post_json(
+            "/corpora",
+            {"name": SCRATCH_CORPUS, "title": "Scratch Corpus"},
+            headers={"Accept": None},
+        )
+        assert response.status_code == 200, response.text
+        assert SCRATCH_CORPUS in corpus_names(api)
+    finally:
+        api.delete(f"/corpora/{SCRATCH_CORPUS}")
+
+
+def test_create_corpus_from_xml_without_accept(api):
+    try:
+        response = api.request(
+            "POST",
+            "/corpora",
+            data=CORPUS_XML.encode(),
+            headers={"Content-Type": "application/xml", "Accept": None},
+        )
+        assert response.status_code == 200, response.text
+        assert SCRATCH_CORPUS_XML in corpus_names(api)
+    finally:
+        api.delete(f"/corpora/{SCRATCH_CORPUS_XML}")
+
+
+def test_add_play_without_accept(api, corpus):
+    response = api.put_tei(corpus, PLAY_NAME, MINIMAL_PLAY, headers={"Accept": None})
+    assert response.status_code == 200, response.text
+    assert play_names(api, corpus) == [PLAY_NAME]
+
+
 # Authentication
 
 OPERATIONS = [

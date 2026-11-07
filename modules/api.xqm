@@ -286,23 +286,61 @@ declare function local:is-authenticated($auth) as xs:boolean {
 };
 
 (:~
+ : Return the media type of a Content-Type header value without parameters
+ :
+ : @param $content-type Content-Type header value
+ :)
+declare function local:media-type($content-type as xs:string?) as xs:string {
+  lower-case(normalize-space(substring-before($content-type || ";", ";")))
+};
+
+(:~
  : Add new corpus
  :
- : @param $data corpus.xml containing dracorCorpus element.
- : @result JSON
+ : The request body is either a corpus.xml or a JSON object, depending on the
+ : Content-Type. A single function handles both since RESTXQ in eXist-db picks
+ : the wrong one of several functions with different %rest:consumes when the
+ : request has no Accept header.
+ :
+ : @param $data Request body
+ : @param $auth Authorization header value
+ : @param $content-type Content-Type header value
+ : @result JSON object
  :)
 declare
   %rest:POST("{$data}")
   %rest:path("/v1/corpora")
   %rest:header-param("Authorization", "{$auth}")
-  %rest:consumes("application/xml", "text/xml")
+  %rest:header-param("Content-Type", "{$content-type}")
   %rest:produces("application/json")
+  %output:media-type("application/json")
   %output:method("json")
-function api:corpora-post-tei($data, $auth) {
+function api:corpora-post($data, $auth, $content-type) {
   if (not(local:is-authenticated($auth))) then (
     <rest:response><http:response status="401" /></rest:response>,
     map {"message": "authorization required"}
-  ) else if (not($data instance of document-node())) then (
+  ) else
+    switch (local:media-type($content-type))
+      case "application/xml"
+      case "text/xml" return
+        local:corpora-post-xml($data)
+      case "application/json" return
+        local:corpora-post-json($data)
+      default return
+        (
+          <rest:response><http:response status="415" /></rest:response>,
+          map {"error": "JSON or XML request body required"}
+        )
+};
+
+(:~
+ : Add new corpus from XML
+ :
+ : @param $data corpus.xml containing dracorCorpus element.
+ : @result JSON
+ :)
+declare function local:corpora-post-xml($data) {
+  if (not($data instance of document-node())) then (
     (: eXist-db passes a body that isn't well-formed XML as a string :)
     <rest:response><http:response status="400" /></rest:response>,
     map {"error": "Invalid corpus document. The request body is not XML."}
@@ -339,93 +377,55 @@ function api:corpora-post-tei($data, $auth) {
 };
 
 (:~
- : Add new corpus
+ : Add new corpus from JSON
  :
  : @param $data JSON object describing corpus meta data
  : @result JSON object
  :)
-declare
-  %rest:POST("{$data}")
-  %rest:path("/v1/corpora")
-  %rest:header-param("Authorization", "{$auth}")
-  %rest:consumes("application/json")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
-  %output:method("json")
-function api:corpora-post-json($data, $auth) {
-  if (not(local:is-authenticated($auth))) then (
-    <rest:response><http:response status="401" /></rest:response>,
-    map {"message": "authorization required"}
-  ) else
-    try {
-      let $json := parse-json(util:base64-decode($data))
-      let $fields := ("name", "title", "repository", "archive", "description")
-      return if (not($json instance of map(*))) then
-        error(xs:QName("dutil:invalid-corpus-document"), "JSON object required")
-      else if (
-        some
-          $field in
-          $fields satisfies
-          exists($json?($field)) and not($json?($field) instance of xs:string)
-      ) then
-        error(
-          xs:QName("dutil:invalid-corpus-document"),
-          "The values of " || string-join($fields, ", ") || " must be strings"
-        )
-      else
-        dutil:create-corpus($json)[. instance of map(*)]
-    } catch err:FOJS0001 {
-      (
-        <rest:response><http:response status="400" /></rest:response>,
-        map {"error": "Invalid JSON. " || $err:description}
+declare function local:corpora-post-json($data) {
+  try {
+    let $json := parse-json(util:base64-decode($data))
+    let $fields := ("name", "title", "repository", "archive", "description")
+    return if (not($json instance of map(*))) then
+      error(xs:QName("dutil:invalid-corpus-document"), "JSON object required")
+    else if (
+      some
+        $field in
+        $fields satisfies
+        exists($json?($field)) and not($json?($field) instance of xs:string)
+    ) then
+      error(
+        xs:QName("dutil:invalid-corpus-document"),
+        "The values of " || string-join($fields, ", ") || " must be strings"
       )
-    }catch dutil:invalid-corpus-document {
-      (
-        <rest:response><http:response status="400" /></rest:response>,
-        map {"error": $err:description}
-      )
-    }catch dutil:invalid-corpus-name {
-      (
-        <rest:response><http:response status="400" /></rest:response>,
-        map {"error": $err:description}
-      )
-    }catch dutil:corpus-exists {
-      (
-        <rest:response><http:response status="409" /></rest:response>,
-        map {"error": $err:description}
-      )
-    }catch * {
-      (
-        <rest:response><http:response status="500" /></rest:response>,
-        map {"error": $err:description}
-      )
-    }
-};
-
-(:~
- : Reject a request to add a corpus without a JSON or XML body
- :
- : RESTXQ calls this function when neither of the two above consumes the
- : request, e.g. when there is no body.
- :
- : @param $auth Authorization header value
- : @result JSON object
- :)
-declare
-  %rest:POST
-  %rest:path("/v1/corpora")
-  %rest:header-param("Authorization", "{$auth}")
-  %rest:produces("application/json")
-  %output:media-type("application/json")
-  %output:method("json")
-function api:corpora-post-unsupported($auth) {
-  if (not(local:is-authenticated($auth))) then (
-    <rest:response><http:response status="401" /></rest:response>,
-    map {"message": "authorization required"}
-  ) else (
-    <rest:response><http:response status="415" /></rest:response>,
-    map {"error": "JSON or XML request body required"}
-  )
+    else
+      dutil:create-corpus($json)[. instance of map(*)]
+  } catch err:FOJS0001 {
+    (
+      <rest:response><http:response status="400" /></rest:response>,
+      map {"error": "Invalid JSON. " || $err:description}
+    )
+  }catch dutil:invalid-corpus-document {
+    (
+      <rest:response><http:response status="400" /></rest:response>,
+      map {"error": $err:description}
+    )
+  }catch dutil:invalid-corpus-name {
+    (
+      <rest:response><http:response status="400" /></rest:response>,
+      map {"error": $err:description}
+    )
+  }catch dutil:corpus-exists {
+    (
+      <rest:response><http:response status="409" /></rest:response>,
+      map {"error": $err:description}
+    )
+  }catch * {
+    (
+      <rest:response><http:response status="500" /></rest:response>,
+      map {"error": $err:description}
+    )
+  }
 };
 
 (:~
@@ -864,22 +864,33 @@ function api:play-txt($corpusname, $playname) {
  : The `playname` parameter of a new URI must consist of lower case ASCII
  : characters, digits and/or dashes only.
  :
+ : The function checks the Content-Type itself instead of declaring
+ : %rest:consumes, since RESTXQ in eXist-db would otherwise answer a request
+ : without a body with 405, and a separate function for those requests would
+ : be picked for every request without an Accept header.
+ :
  : @param $corpusname Corpus name
  : @param $playname Play name
  : @param $data TEI document
  : @param $auth Authorization header value
+ : @param $content-type Content-Type header value
  : @result updated TEI document
  :)
 declare
   %rest:PUT("{$data}")
   %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/tei")
   %rest:header-param("Authorization", "{$auth}")
-  %rest:consumes("application/xml", "text/xml")
+  %rest:header-param("Content-Type", "{$content-type}")
   %output:method("xml")
-function api:play-tei-put($corpusname, $playname, $data, $auth) {
+function api:play-tei-put($corpusname, $playname, $data, $auth, $content-type) {
   if (not(local:is-authenticated($auth))) then
     <rest:response><http:response status="401" /></rest:response>
-  else
+  else if (
+    not(local:media-type($content-type) = ("application/xml", "text/xml"))
+  ) then (
+    <rest:response><http:response status="415" /></rest:response>,
+    <message>TEI document required</message>
+  ) else
     let $corpus := dutil:get-corpus($corpusname)
     let $doc := dutil:get-doc($corpusname, $playname)
 
@@ -915,30 +926,6 @@ function api:play-tei-put($corpusname, $playname, $data, $auth) {
         dutil:remove-sha($corpusname, $playname)
       )
       return $data
-};
-
-(:~
- : Reject a TEI upload without an XML body
- :
- : RESTXQ calls this function when the one above doesn't consume the
- : request, e.g. when there is no body.
- :
- : @param $corpusname Corpus name
- : @param $playname Play name
- : @param $auth Authorization header value
- :)
-declare
-  %rest:PUT
-  %rest:path("/v1/corpora/{$corpusname}/plays/{$playname}/tei")
-  %rest:header-param("Authorization", "{$auth}")
-  %output:method("xml")
-function api:play-tei-put-unsupported($corpusname, $playname, $auth) {
-  if (not(local:is-authenticated($auth))) then
-    <rest:response><http:response status="401" /></rest:response>
-  else (
-    <rest:response><http:response status="415" /></rest:response>,
-    <message>TEI document required</message>
-  )
 };
 
 (:~
