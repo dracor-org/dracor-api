@@ -16,11 +16,10 @@ import module namespace config = "http://dracor.org/ns/exist/v1/config" at "conf
 declare variable $queue:prefix := "sync-";
 
 (:
- : Delay in ms before a sync job runs. Changes arriving within this time, e.g.
- : the several documents of a play stored by a corpus load, are handled by a
- : single job.
+ : Delay in ms before a sync job runs. Further changes to a play arriving
+ : within this time, e.g. repeated saves, are handled by the same job.
  :)
-declare variable $queue:delay := 30000;
+declare variable $queue:delay := $config:sync-delay * 1000;
 
 declare %private function queue:schedule-job(
   $name as xs:string,
