@@ -18,19 +18,23 @@ declare function local:store($file-path, $content) {
 };
 
 (:
- : Set the identifier base in an existing config file from DRACOR_ID_BASE, so
+ : Set a setting in an existing config file from an environment variable, so
  : that the variable takes effect on servers set up before it existed.
  :)
-declare function local:update-id-base() as empty-sequence() {
-  let $id-base := environment-variable("DRACOR_ID_BASE")
+declare function local:update-setting(
+  $name as xs:string,
+  $variable as xs:string
+) as empty-sequence() {
+  let $value := environment-variable($variable)
   let $config := doc($config:file)/config
-  return if (not($id-base)) then (
-  ) else if ($config/id-base) then (
-    util:log-system-out("Setting id-base to " || $id-base),
-    update value $config/id-base with $id-base
+  let $setting := $config/*[local-name() = $name]
+  return if (not($value)) then (
+  ) else if ($setting) then (
+    util:log-system-out("Setting " || $name || " to " || $value),
+    update value $setting with $value
   ) else (
-    util:log-system-out("Adding id-base " || $id-base),
-    update insert <id-base>{ $id-base }</id-base> into $config
+    util:log-system-out("Adding " || $name || " " || $value),
+    update insert element {$name} { $value } into $config
   )
 };
 
@@ -44,14 +48,17 @@ declare function local:update-id-base() as empty-sequence() {
  : own corpora)
  : - FUSEKI_SERVER: base URI of the fuseki server
  : - METRICS_SERVER: DraCor metrics service URI
+ : - DRACOR_SYNC_DELAY: delay in seconds before derived data is synced after a
+ : change (optional, defaults to 30)
  :
- : If the config file already exists, only the identifier base is updated
- : from DRACOR_ID_BASE (when set).
+ : If the config file already exists, only the identifier base and the sync
+ : delay are updated from DRACOR_ID_BASE and DRACOR_SYNC_DELAY (when set).
  :)
 declare function local:create-config-file() as item()? {
   if (doc($config:file)/config) then (
     util:log-system-out("Config file exists at " || $config:file),
-    local:update-id-base()
+    local:update-setting("id-base", "DRACOR_ID_BASE"),
+    local:update-setting("sync-delay", "DRACOR_SYNC_DELAY")
   ) else (
     util:log-system-out("Creating " || $config:file),
     local:store(
@@ -68,6 +75,14 @@ declare function local:create-config-file() as item()? {
         {
           if (environment-variable("DRACOR_ID_BASE")) then
             <id-base>{ environment-variable("DRACOR_ID_BASE") }</id-base>
+          else (
+          )
+        }
+        {
+          if (environment-variable("DRACOR_SYNC_DELAY")) then
+            <sync-delay>
+              { environment-variable("DRACOR_SYNC_DELAY") }
+            </sync-delay>
           else (
           )
         }
@@ -123,6 +138,8 @@ declare function local:create-secrets-file() as item()? {
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || "/modules/webhook.xqm")
 let $sitelinks-job := xs:anyURI($target || "/jobs/sitelinks.xq")
+(: allows running the reconcile job from the scheduler in conf.xml :)
+let $reconcile-job := xs:anyURI($target || "/jobs/reconcile.xq")
 
 (: register the RESTXQ module :)
 let $restxq-module := xs:anyURI("modules/api.xpm")
@@ -136,5 +153,18 @@ return (
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
   sm:chmod($sitelinks-job, "rwsr-xr-x"),
-  exrest:register-module($restxq-module)
+  sm:chown($reconcile-job, "admin"),
+  sm:chgrp($reconcile-job, "dba"),
+  sm:chmod($reconcile-job, "rwsr-xr-x"),
+  exrest:register-module($restxq-module),
+  (: sync what may have been missed while the app was not installed :)
+  scheduler:schedule-xquery-periodic-job(
+    $reconcile-job,
+    1,
+    (: not prefixed with sync-, which would count it as pending sync :)
+    "reconcile",
+    <parameters />,
+    60000,
+    0
+  )
 )

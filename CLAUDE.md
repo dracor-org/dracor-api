@@ -89,14 +89,22 @@ The extension syncs the working directory to `/db/apps/dracor-v1` in a running e
 | `load.xqm` | Corpus loading logic |
 | `github.xqm` | GitHub API calls |
 | `wikidata.xqm` | Wikidata API integration |
-| `trigger.xqm` | Job scheduling |
+| `trigger.xqm` | Collection trigger on the corpora; only schedules sync jobs |
+| `queue.xqm` | Scheduling of sync jobs (kept lightweight, imported by the trigger) |
+| `sync.xqm` | Updates derived data of plays (metrics, sitelinks, RDF, Fuseki), pending checks |
 
 ### Background Jobs (`jobs/`)
 
 Async jobs scheduled via eXist's job scheduler:
-- `load-corpus.xq` — fetches TEI files from GitHub and loads them into the database
+- `load-corpus.xq` — fetches the corpus archive from GitHub and updates the database: only changed TEI files are stored (per-play `git.xml` records the archive file's hash and the stored `tei.xml` modification time), plays missing from the archive and any unexpected files are removed
 - `process-webhook-delivery.xq` — processes queued GitHub webhook deliveries
 - `sitelinks.xq` — syncs Wikidata sitelinks
+- `sync-play.xq` / `sync-corpus.xq` — update the derived data of a play, or drop a removed corpus from Fuseki
+- `reconcile.xq` — schedules sync for all plays whose derived data is out of date and for left-over Fuseki graphs of plays that no longer exist (runs after each deploy; should also run regularly from `conf.xml`)
+
+### Derived Data Sync
+
+eXist-db runs triggers while holding write locks up to `/db`, blocking all other queries, and compiles the trigger module for every event. The trigger therefore does no work itself: for every stored `tei.xml` and every deleted play or corpus collection it schedules a `sync-play-*` or `sync-corpus-*` job (30 s delay by default, `DRACOR_SYNC_DELAY`; a job of the same name that hasn't fired yet absorbs further changes). The jobs look at the current database state, so they are idempotent and order-independent. After a successful sync, `sync.xml` in the play collection records the `tei.xml` modification time; a play is pending when that doesn't match. Endpoints returning metrics, sitelinks or RDF send `X-Accel-Expires: 0` while the play (or any play of the corpus) is pending, so nginx doesn't cache them. `/info` reports the number of pending jobs as `pendingSyncs`.
 
 ### Database Layout
 
@@ -133,6 +141,7 @@ GitHub push → POST /webhook/github
 | `EXIST_PASSWORD` | eXist-db admin password |
 | `DRACOR_API_BASE` | Public API base URL |
 | `DRACOR_ID_BASE` | Base of identifier URIs (optional; defaults to `https://dracor.org/id`, also on staging and dev) |
+| `DRACOR_SYNC_DELAY` | Seconds before derived data is synced after a change (optional; defaults to 30, 5 in the test stack) |
 | `FUSEKI_SERVER` | Fuseki triple store URI |
 | `FUSEKI_SECRET` | Fuseki admin password |
 | `METRICS_SERVER` | Metrics service URI |

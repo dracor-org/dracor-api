@@ -55,6 +55,21 @@ jobs:
       # test/schemathesis_hooks.py), which is removed before the other tests.
       - name: Create the throwaway corpus for schemathesis
         run: ./test/scratch-corpus.sh create
+      # Metrics, sitelinks and RDF are updated by sync jobs scheduled after
+      # the plays have been stored. Until then the responses lack the metrics.
+      - name: Wait for the derived data to be synced
+        run: |
+          for i in $(seq 60); do
+            info=$(curl --silent http://localhost:8081/exist/restxq/v1/info)
+            if ! jq --exit-status 'has("pendingSyncs")' <<< "$info" > /dev/null
+            then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Syncs still pending after 5 minutes: $info"
+          docker compose logs api
+          exit 1
       - name: Test API with schemathesis
         uses: schemathesis/action@b0cacf86f25caaa79ac110cc2077afd70fdd67ff # v3.1.0
         with:

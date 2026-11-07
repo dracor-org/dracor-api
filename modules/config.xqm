@@ -25,7 +25,11 @@ declare variable $config:app-root := (
       substring($rawPath, 15)
   else
     $rawPath
-  return substring-before($modulePath, "/modules")
+  (: jobs are run from the jobs collection :)
+  return if (contains($modulePath, "/modules")) then
+    substring-before($modulePath, "/modules")
+  else
+    replace($modulePath, "/jobs/?$", "")
 );
 
 declare variable $config:dracor-root := "/db/dracor";
@@ -71,6 +75,17 @@ declare variable $config:id-base := replace(
   "/+$",
   ""
 );
+
+(:~
+ : Delay in seconds before a sync job runs after a change (default 30, set
+ : from DRACOR_SYNC_DELAY by post-install.xq)
+ :)
+declare variable $config:sync-delay as xs:integer := (
+  doc(
+    $config:file
+  )//sync-delay/normalize-space()[. castable as xs:integer]!xs:integer(.),
+  30
+)[1];
 
 declare variable $config:webhook-secret := doc(
   $config:secrets-file

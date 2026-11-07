@@ -16,6 +16,8 @@ declare namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 import module namespace load = "http://dracor.org/ns/exist/v1/load" at "load.xqm";
+import module namespace queue = "http://dracor.org/ns/exist/v1/queue" at "queue.xqm";
+import module namespace sync = "http://dracor.org/ns/exist/v1/sync" at "sync.xqm";
 import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikidata.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
@@ -113,6 +115,7 @@ function api:info() {
       ) and
         scheduler:trigger/state != "COMPLETE"]
     return substring-after($job/@name, "load-corpus-")
+  let $pending-syncs := queue:pending()
   return (
     <rest:response>
       <http:response>
@@ -135,6 +138,10 @@ function api:info() {
         ),
         if (exists($active-loads)) then
           map:entry("activeLoads", array { $active-loads })
+        else (
+        ),
+        if ($pending-syncs > 0) then
+          map:entry("pendingSyncs", $pending-syncs)
         else (
         )
       )
@@ -251,7 +258,8 @@ function api:corpora($include) {
   if (exists($include) and not($include[1] = "metrics")) then (
     <rest:response><http:response status="400" /></rest:response>,
     map {"error": "invalid value for parameter 'include'"}
-  ) else
+  ) else (
+    sync:cache-control($include[1] = "metrics" and sync:pending()),
     array
       {
         (: DEPRECATED: remove teiCorpus support in v2 :)
@@ -271,6 +279,7 @@ function api:corpora($include) {
           )
         )
       }
+  )
 };
 
 (:~
@@ -453,7 +462,8 @@ function api:corpus-index($corpusname) {
     not($corpus?name) or not(xmldb:collection-available($collection))
   ) then
     <rest:response><http:response status="404" /></rest:response>
-  else
+  else (
+    sync:cache-control(sync:corpus-pending($corpusname)),
     map:merge(
       (
         $corpus,
@@ -529,6 +539,7 @@ function api:corpus-index($corpusname) {
         )
       )
     )
+  )
 };
 
 (:~
@@ -653,7 +664,9 @@ function api:corpus-meta-data($corpusname) {
     map {"message": "no such corpus"}
   ) else
     let $meta := dutil:get-corpus-meta-data($corpusname)
-    return array { $meta }
+    return (
+      sync:cache-control(sync:corpus-pending($corpusname)), array { $meta }
+    )
 };
 
 declare function api:get-corpus-meta-data-csv($corpusname) {
@@ -679,7 +692,9 @@ declare function api:get-corpus-meta-data-csv($corpusname) {
         ),
         '"&#10;'
       )
-    return ($header, $rows)
+    return (
+      sync:cache-control(sync:corpus-pending($corpusname)), $header, $rows
+    )
 };
 
 (:~
@@ -801,9 +816,9 @@ declare
   %output:method("json")
 function api:play-metrics($corpusname, $playname) {
   let $metrics := dutil:get-play-metrics($corpusname, $playname)
-  return if (count($metrics)) then
-    $metrics
-  else
+  return if (count($metrics)) then (
+    sync:cache-control(sync:play-pending($corpusname, $playname)), $metrics
+  ) else
     <rest:response><http:response status="404" /></rest:response>
 };
 
@@ -944,8 +959,9 @@ function api:play-rdf($corpusname, $playname) {
   let $doc := doc($paths?files?rdf)
   return if (not($doc)) then
     <rest:response><http:response status="404" /></rest:response>
-  else
-    $doc
+  else (
+    sync:cache-control(sync:play-pending($corpusname, $playname)), $doc
+  )
 };
 
 (:~
@@ -1236,9 +1252,9 @@ declare
   %output:method("json")
 function api:characters-info($corpusname, $playname) {
   let $info := dutil:characters-info($corpusname, $playname)
-  return if (count($info) > 0) then
-    $info
-  else
+  return if (count($info) > 0) then (
+    sync:cache-control(sync:play-pending($corpusname, $playname)), $info
+  ) else
     <rest:response><http:response status="404" /></rest:response>
 };
 
@@ -1275,6 +1291,7 @@ function api:characters-info-csv($corpusname, $playname) {
   return if (count($info) = 0) then
     <rest:response><http:response status="404" /></rest:response>
   else (
+    sync:cache-control(sync:play-pending($corpusname, $playname)),
     string-join($keys, ",") || "&#10;",
     for $c in $info?*
     let $row :=
