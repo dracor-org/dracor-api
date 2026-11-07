@@ -14,6 +14,16 @@ st() {
 # The admin operations only change the throwaway corpus (see
 # test/schemathesis_hooks.py), which is removed before the other runs.
 "$(dirname "$0")/scratch-corpus.sh" create || exit 1
+
+# Metrics, sitelinks and RDF are updated by sync jobs scheduled after the
+# plays have been stored. Until then the responses lack the metrics.
+for i in $(seq 60); do
+  curl --silent http://localhost:8081/exist/restxq/v1/info |
+    grep --quiet '"pendingSyncs"' || break
+  [ "$i" = 60 ] && echo "Syncs still pending after 5 minutes" >&2 && exit 1
+  sleep 5
+done
+
 SCHEMATHESIS_HOOKS="$(dirname "$0")/schemathesis_hooks.py" st \
   --exclude-tag webhook \
   --auth admin: \
