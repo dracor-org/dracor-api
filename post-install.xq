@@ -55,7 +55,7 @@ declare function local:set-from-env(
  : - METRICS_SERVER: DraCor metrics service URI
  : (default: http://localhost:8030/metrics/)
  : - DRACOR_SYNC_DELAY: delay in seconds before derived data is synced after a
- : change (optional, defaults to 30)
+ : change (optional, defaults to 10)
  :
  : The API itself cannot read these variables: environment-variable() returns
  : nothing for non-DBA users.
