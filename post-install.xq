@@ -49,7 +49,7 @@ declare function local:update-setting(
  : - FUSEKI_SERVER: base URI of the fuseki server
  : - METRICS_SERVER: DraCor metrics service URI
  : - DRACOR_SYNC_DELAY: delay in seconds before derived data is synced after a
- : change (optional, defaults to 30)
+ : change (optional, defaults to 10)
  :
  : If the config file already exists, only the identifier base and the sync
  : delay are updated from DRACOR_ID_BASE and DRACOR_SYNC_DELAY (when set).
