@@ -1,7 +1,6 @@
 # Changes to main need the approval of a code owner (see the ruleset
 # "Protect main" in the repository settings); org owners can bypass it.
-# The API runs inside eXist-db on the servers, so all of it is owned by
-# the team core. The last matching line wins.
-*          @dracor-org/core
+# The last matching line wins.
+*          @cmil @ingoboerner
 # workflows and this file
 /.github/  @dracor-org/core
