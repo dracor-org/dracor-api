@@ -221,30 +221,32 @@ DraCor servers:
 | `staging`    | pushed to `main`                           |
 | `production` | a release is published (not a pre-release) |
 
-The SSH connection uses the deploy key and user shared across the dracor-org
-repositories (the organization secrets `DRACOR_ORG_DEPLOY_KEY` and
-`DRACOR_ORG_DEPLOY_USER`). Everything specific to a server is configured in a
+Everything specific to a server is configured in a
 [GitHub environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 of the same name:
 
 | Name                 | Type     | Description                                          |
 | -------------------- | -------- | ---------------------------------------------------- |
+| `DEPLOY_KEY`         | secret   | SSH key of the user `github` on the server           |
 | `EXIST_PASSWORD`     | secret   | eXist DB password                                    |
 | `EXIST_USER`         | secret   | eXist DB user (optional, default `admin`)            |
 | `DEPLOY_HOST`        | variable | server host name, e.g. `dev.dracor.org`              |
 | `DEPLOY_KNOWN_HOSTS` | variable | the server's SSH host key(s) in `known_hosts` format |
 | `EXIST_PORT`         | variable | eXist port on the server (default `8080`)            |
 
-They can be set in the repository settings under _Environments_ or with the
-GitHub CLI, e.g.:
+Each environment has its own `DEPLOY_KEY`, which the server only accepts for a
+tunnel to `localhost:8080`. It is generated with `deploy-key.sh` of
+[dracor-org-deployment](https://github.com/dracor-org/dracor-org-deployment),
+which also sets `DEPLOY_KNOWN_HOSTS`. The other values can be set in the
+repository settings under _Environments_ or with the GitHub CLI, e.g.:
 
 ```sh
-gh api -X PUT repos/dracor-org/dracor-api/environments/staging # create it
 gh secret set EXIST_PASSWORD --env staging
 gh variable set DEPLOY_HOST --env staging --body staging.dracor.org
-gh variable set DEPLOY_KNOWN_HOSTS --env staging \
-  --body "$(ssh-keygen -F staging.dracor.org | grep -v "^#")"
 ```
+
+`staging` and `production` only deploy `main` (and, for `production`,
+release tags), which only org owners can push or tag without a review.
 
 ## Webhook
 
