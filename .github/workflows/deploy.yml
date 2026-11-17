@@ -7,10 +7,10 @@ name: Deploy
 # - staging: on push to main if the package (or its build) changed
 # - production: when a release is published (not for pre-releases)
 #
-# The SSH connection uses the organization secrets DRACOR_ORG_DEPLOY_KEY and
-# DRACOR_ORG_DEPLOY_USER. Each target is a GitHub environment providing the
-# secret EXIST_PASSWORD and the variables DEPLOY_HOST and DEPLOY_KNOWN_HOSTS
-# (and optionally EXIST_PORT).
+# Each target is a GitHub environment providing the secrets DEPLOY_KEY and
+# EXIST_PASSWORD and the variables DEPLOY_HOST and DEPLOY_KNOWN_HOSTS (and
+# optionally EXIST_PORT). The server only accepts DEPLOY_KEY of the user github
+# for the tunnel to localhost:8080 (see deploy-key.sh in dracor-org-deployment).
 
 on:
   push:
@@ -122,8 +122,8 @@ jobs:
 
       - name: Open SSH tunnel to eXist-db
         env:
-          DEPLOY_KEY: ${{ secrets.DRACOR_ORG_DEPLOY_KEY }}
-          DEPLOY_USER: ${{ secrets.DRACOR_ORG_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_USER: github
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
           DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
           EXIST_PORT: ${{ vars.EXIST_PORT }}
