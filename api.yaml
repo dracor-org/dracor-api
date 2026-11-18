@@ -1789,7 +1789,7 @@ paths:
       operationId: oai-pmh-post
       tags: [OAI-PMH]
       requestBody:
-        required: true
+        required: false
         content:
           application/x-www-form-urlencoded:
             schema:
@@ -2168,17 +2168,15 @@ components:
     oaiVerb:
       name: verb
       in: query
-      required: true
-      description: OAI-PMH request type.
+      required: false
+      description: >-
+        OAI-PMH request type: `Identify`, `ListMetadataFormats`, `ListSets`,
+        `ListIdentifiers`, `ListRecords` or `GetRecord`. A missing or unknown
+        verb is reported as a `badVerb` error (with status 200, as required by
+        the protocol).
       schema:
         type: string
-        enum:
-          - Identify
-          - ListMetadataFormats
-          - ListSets
-          - ListIdentifiers
-          - ListRecords
-          - GetRecord
+        examples: [Identify]
     oaiIdentifier:
       name: identifier
       in: query
@@ -2193,10 +2191,12 @@ components:
       in: query
       required: false
       description: >-
-        Metadata format (`GetRecord`, `ListIdentifiers`, `ListRecords`).
+        Metadata format (`GetRecord`, `ListIdentifiers`, `ListRecords`):
+        `oai_dc` or `cmdi`. Other values are reported as a
+        `cannotDisseminateFormat` error.
       schema:
         type: string
-        enum: [oai_dc, cmdi]
+        examples: [oai_dc]
     oaiFrom:
       name: from
       in: query

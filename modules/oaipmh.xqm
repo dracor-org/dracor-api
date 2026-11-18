@@ -904,7 +904,6 @@ function dpmh:oai-get(
 declare
   %rest:POST
   %rest:path("/v1/oai")
-  %rest:consumes("application/x-www-form-urlencoded")
   %rest:form-param("verb", "{$verb}")
   %rest:form-param("identifier", "{$identifier}")
   %rest:form-param("metadataPrefix", "{$metadata-prefix}")

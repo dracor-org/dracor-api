@@ -124,3 +124,10 @@ parameters."path.playname" = { dictionary = "scratch-plays", probability = 0.9 }
 [[operations]]
 include-operation-id-regex = "^(post-corpora|play-tei-put)$"
 checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "401", "404", "409"]
+
+# OAI-PMH reports every error, including unknown verbs and arguments, in the
+# XML response with status 200, so all its parameters are plain optional
+# strings and the negative run cannot generate an invalid request.
+[[operations]]
+include-operation-id = "oai-pmh"
+generation.mode = "positive"
