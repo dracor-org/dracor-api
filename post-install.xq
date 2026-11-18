@@ -85,7 +85,7 @@ declare function local:create-config-file() as item()? {
               if (environment-variable("METRICS_SERVER")) then
                 environment-variable("METRICS_SERVER")
               else
-                "http://localhost:8030/metrics/"
+                "http://localhost:8030/metrics"
             }
           </metrics>
         </services>

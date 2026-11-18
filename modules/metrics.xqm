@@ -86,6 +86,36 @@ declare function metrics:collect-sitelinks() {
 };
 
 (:~
+ : Send a request to the metrics service, retrying if it fails without a
+ : response
+ :
+ : The HTTP client reuses connections. When the server has closed a connection
+ : the client has kept, the next request on it fails without a response
+ : ("failed to respond"); sending it again uses a new connection.
+ :
+ : @param $request HTTP request
+ : @param $href URL
+ : @param $payload Request body
+ : @param $attempts Number of attempts
+ :)
+declare %private function metrics:send-request(
+  $request as element(),
+  $href as xs:string,
+  $payload as item(),
+  $attempts as xs:integer
+) as item()+ {
+  try { hc:send-request($request, $href, $payload) } catch * {
+    if ($attempts > 1) then (
+      util:log-system-out(
+        "metrics service request failed, retrying: " || $err:description
+      ),
+      metrics:send-request($request, $href, $payload, $attempts - 1)
+    ) else
+      error($err:code, $err:description, $err:value)
+  }
+};
+
+(:~
  : Calculate network metrics for single play
  :
  : @param $url URL of the TEI document
@@ -130,10 +160,11 @@ declare function metrics:get-network-metrics($url as xs:string) {
     let $request := <hc:request chunked="false" method="post">
       <hc:body media-type="application/json" method="text" />
     </hc:request>
-    let $response := hc:send-request(
+    let $response := metrics:send-request(
       $request,
       ($config:metrics-server || "?" || $url),
-      $payload
+      $payload,
+      2
     )
     let $status := string($response[1]/@status)
     let $metrics := if ($status = "200") then
