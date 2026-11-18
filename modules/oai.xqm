@@ -29,7 +29,7 @@ xquery version "3.1";
  : declared parameters, and eXist provides no request object in a RESTXQ
  : context to list the others.
  :)
-module namespace dpmh = "http://dracor.org/ns/exist/v1/oai";
+module namespace dpmh = "http://dracor.org/ns/exist/v1/oai-pmh";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
