@@ -12,9 +12,17 @@ xquery version "3.1";
  : by the CLARIN Virtual Language Observatory (VLO).
  :
  : The datestamp of a record is the time the corpus was last (re)loaded, i.e.
- : the modification time of its `git.xml` (falling back to `corpus.xml`). The
- : repository supports neither sets nor deleted records, and with one record
- : per corpus no flow control (resumption tokens) is needed.
+ : the modification time of its `git.xml` (falling back to `corpus.xml`). It
+ : does not change when only the code generating the records changes, so
+ : incremental harvests (`from`) miss such changes until the corpus is loaded
+ : again; with one record per corpus a full harvest is cheap. Conversely, a
+ : fresh deployment that reloads the corpora resets all datestamps.
+ :
+ : The languages of a corpus are derived from `TEI/@xml:lang` of its plays and
+ : normalized to ISO 639-3, ordered by the number of plays.
+ :
+ : The repository supports neither sets nor deleted records, and with one
+ : record per corpus no flow control (resumption tokens) is needed.
  :
  : Known limitation: arguments not defined by OAI-PMH (e.g. `foo=bar`) are
  : ignored instead of being answered with `badArgument`. RESTXQ only passes the
@@ -36,6 +44,7 @@ declare namespace cmdp = "http://www.clarin.eu/cmd/1/profiles/clarin.eu:cr1:p_13
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+import module namespace iso639 = "http://dracor.org/ns/exist/v1/iso639" at "iso639.xqm";
 
 declare variable $doai:base-url := $config:api-base || "/oai";
 
@@ -133,11 +142,25 @@ declare function local:corpora() as map(*)* {
       (
         $info,
         map:entry("identifier", $doai:id-prefix || $info?name),
-        map:entry("datestamp", local:datestamp($corpus))
+        map:entry("datestamp", local:datestamp($corpus)),
+        map:entry("languages", local:languages($corpus))
       )
     )
   else (
   )
+};
+
+(:~
+ : ISO 639-3 codes of the languages of the plays in a corpus (from
+ : `TEI/@xml:lang`), the most frequent first. Unrecognized codes are skipped.
+ :)
+declare function local:languages($corpus as element()) as xs:string* {
+  let $codes := collection(
+    util:collection-name($corpus)
+  )/tei:TEI/@xml:lang!iso639:to-639-3(string(.))
+  for $code in distinct-values($codes)
+  order by count($codes[. eq $code]) descending, $code
+  return $code
 };
 
 (:~
@@ -264,8 +287,11 @@ declare function local:record(
  :)
 declare function local:links($corpus as map(*)) as map(*) {
   let $name := $corpus?name
-  (: strip a branch given as fragment, e.g. https://github.com/org/repo#main :)
+  (: a branch may be given as fragment, e.g. https://github.com/org/repo#main :)
   let $repo := $corpus?repository!replace(., "#.*$", "")
+  let $branch := $corpus?repository[contains(., "#")]!substring-after(., "#")
+  (: link the loaded commit, or else at least the loaded branch :)
+  let $ref := ($corpus?commit, $branch)[.][1]
   let $sha := $corpus?commit
   let $is-github := starts-with($repo, "https://github.com/")
   return map {
@@ -278,8 +304,8 @@ declare function local:links($corpus as map(*)) as map(*) {
         "/dts/collection?id=" ||
         encode-for-uri(dutil:corpus-uri($name)),
     "repository":
-      if ($repo and $sha and $is-github) then
-        $repo || "/tree/" || $sha
+      if ($repo and $ref and $is-github) then
+        $repo || "/tree/" || $ref
       else
         $repo,
     "zip":
@@ -320,6 +346,7 @@ declare function local:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
     }
     <dc:type>Collection</dc:type>
     <dc:type>Text</dc:type>
+    { $corpus?languages!<dc:language>{ . }</dc:language> }
     <dc:format>application/tei+xml</dc:format>
     <dc:identifier>{ $links?uri }</dc:identifier>
     <dc:identifier>{ $links?landing-page }</dc:identifier>
@@ -411,6 +438,12 @@ declare function local:cmdi($corpus as map(*)) as element(cmd:CMD) {
           <cmdp:Name>{ $corpus?acronym }</cmdp:Name>
           <cmdp:Title>{ $corpus?title }</cmdp:Title>
           <cmdp:Owner>DraCor</cmdp:Owner>
+          {
+            for $code in $corpus?languages
+            return <cmdp:ISO639>
+              <cmdp:iso-639-3-code>{ $code }</cmdp:iso-639-3-code>
+            </cmdp:ISO639>
+          }
           <cmdp:Modality><cmdp:Modality>Written</cmdp:Modality></cmdp:Modality>
           {
             if ($corpus?description) then

@@ -70,6 +70,12 @@ check "ListRecords oai_dc" "verb=ListRecords&metadataPrefix=oai_dc" \
   "/OAI-PMH/ListRecords/record/metadata/*[local-name()='dc']"
 check "ListRecords cmdi" "verb=ListRecords&metadataPrefix=cmdi" \
   "/OAI-PMH/ListRecords/record/metadata/*[local-name()='CMD']"
+check "oai_dc records have an ISO 639-3 language" \
+  "verb=ListRecords&metadataPrefix=oai_dc" \
+  "/OAI-PMH/ListRecords[not(record[not(.//*[local-name()='language'][string-length()=3])])]"
+check "cmdi records have an ISO 639-3 language" \
+  "verb=ListRecords&metadataPrefix=cmdi" \
+  "/OAI-PMH/ListRecords[not(record[not(.//*[local-name()='iso-639-3-code'][string-length()=3])])]"
 check "GetRecord oai_dc" \
   "verb=GetRecord&metadataPrefix=oai_dc&identifier=$identifier" \
   "/OAI-PMH/GetRecord/record[header/identifier='$identifier']"
