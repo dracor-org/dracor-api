@@ -29,7 +29,7 @@ xquery version "3.1";
  : declared parameters, and eXist provides no request object in a RESTXQ
  : context to list the others.
  :)
-module namespace doai = "http://dracor.org/ns/exist/v1/oai";
+module namespace dpmh = "http://dracor.org/ns/exist/v1/oai";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
@@ -46,27 +46,27 @@ import module namespace config = "http://dracor.org/ns/exist/v1/config" at "conf
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 import module namespace iso639 = "http://dracor.org/ns/exist/v1/iso639" at "iso639.xqm";
 
-declare variable $doai:base-url := $config:api-base || "/oai";
+declare variable $dpmh:base-url := $config:api-base || "/oai";
 
-declare variable $doai:repository-name := "DraCor – Drama Corpora Project";
+declare variable $dpmh:repository-name := "DraCor – Drama Corpora Project";
 
-declare variable $doai:admin-email := "info@dracor.org";
+declare variable $dpmh:admin-email := "info@dracor.org";
 
 (: host of the identifier base, e.g. dracor.org :)
-declare variable $doai:repository-id := replace(
+declare variable $dpmh:repository-id := replace(
   $config:id-base,
   "^https?://([^/:]+).*$",
   "$1"
 );
 
 (: prefix of OAI identifiers, e.g. oai:dracor.org: :)
-declare variable $doai:id-prefix := "oai:" || $doai:repository-id || ":";
+declare variable $dpmh:id-prefix := "oai:" || $dpmh:repository-id || ":";
 
-declare variable $doai:granularity := "YYYY-MM-DDThh:mm:ssZ";
+declare variable $dpmh:granularity := "YYYY-MM-DDThh:mm:ssZ";
 
-declare variable $doai:cmdi-profile := "clarin.eu:cr1:p_1345561703620";
+declare variable $dpmh:cmdi-profile := "clarin.eu:cr1:p_1345561703620";
 
-declare variable $doai:formats := map {
+declare variable $dpmh:formats := map {
   "oai_dc":
     map {
       "schema": "http://www.openarchives.org/OAI/2.0/oai_dc.xsd",
@@ -80,7 +80,7 @@ declare variable $doai:formats := map {
 };
 
 (: arguments allowed for each verb (besides `verb` itself) :)
-declare variable $doai:verbs := map {
+declare variable $dpmh:verbs := map {
   "Identify": (),
   "ListMetadataFormats": ("identifier"),
   "ListSets": ("resumptionToken"),
@@ -90,7 +90,7 @@ declare variable $doai:verbs := map {
   "GetRecord": ("identifier", "metadataPrefix")
 };
 
-declare variable $doai:arguments := (
+declare variable $dpmh:arguments := (
   "verb",
   "identifier",
   "metadataPrefix",
@@ -109,7 +109,7 @@ declare variable $doai:arguments := (
 (:~
  : Format a dateTime as UTC datestamp, e.g. 2026-11-06T10:15:00Z
  :)
-declare function doai:utc($dt as xs:dateTime) as xs:string {
+declare function dpmh:utc($dt as xs:dateTime) as xs:string {
   format-dateTime(
     adjust-dateTime-to-timezone($dt, xs:dayTimeDuration("PT0S")),
     "[Y0001]-[M01]-[D01]T[H01]:[m01]:[s01]Z"
@@ -120,7 +120,7 @@ declare function doai:utc($dt as xs:dateTime) as xs:string {
  : Strip the Markdown links and emphasis produced by dutil:get-corpus-info
  : from a description.
  :)
-declare function doai:plain-text($text as xs:string) as xs:string {
+declare function dpmh:plain-text($text as xs:string) as xs:string {
   $text
     => replace("\[([^\]]*)\]\(([^)]*)\)", "$1 ($2)")
     => replace("\*\*([^*]*)\*\*", "$1")
@@ -130,7 +130,7 @@ declare function doai:plain-text($text as xs:string) as xs:string {
  : All corpora as maps with the information needed for OAI records, ordered by
  : name.
  :)
-declare function doai:corpora() as map(*)* {
+declare function dpmh:corpora() as map(*)* {
   (: DEPRECATED: remove teiCorpus support in v2 :)
   for $corpus in
     collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
@@ -141,10 +141,10 @@ declare function doai:corpora() as map(*)* {
     map:merge(
       (
         $info,
-        map:entry("identifier", $doai:id-prefix || $info?name),
-        map:entry("datestamp", doai:datestamp($corpus)),
-        map:entry("languages", doai:languages($corpus)),
-        doai:doi($corpus)!map:entry("doi", .)
+        map:entry("identifier", $dpmh:id-prefix || $info?name),
+        map:entry("datestamp", dpmh:datestamp($corpus)),
+        map:entry("languages", dpmh:languages($corpus)),
+        dpmh:doi($corpus)!map:entry("doi", .)
       )
     )
   else (
@@ -157,7 +157,7 @@ declare function doai:corpora() as map(*)* {
  : or `doi:` prefix. The type is matched case-insensitively until the schema
  : decision is made.
  :)
-declare function doai:doi($corpus as element()) as xs:string? {
+declare function dpmh:doi($corpus as element()) as xs:string? {
   let $idno := $corpus/tei:teiHeader//tei:publicationStmt/tei:idno[lower-case(
     @type
   ) eq
@@ -174,7 +174,7 @@ declare function doai:doi($corpus as element()) as xs:string? {
  : ISO 639-3 codes of the languages of the plays in a corpus (from
  : `TEI/@xml:lang`), the most frequent first. Unrecognized codes are skipped.
  :)
-declare function doai:languages($corpus as element()) as xs:string* {
+declare function dpmh:languages($corpus as element()) as xs:string* {
   let $codes := collection(
     util:collection-name($corpus)
   )/tei:TEI/@xml:lang!iso639:to-639-3(string(.))
@@ -187,7 +187,7 @@ declare function doai:languages($corpus as element()) as xs:string* {
  : Datestamp of a corpus: the last modification of its git.xml (written when
  : the corpus is loaded or updated), falling back to the corpus document.
  :)
-declare function doai:datestamp($corpus as element()) as xs:string {
+declare function dpmh:datestamp($corpus as element()) as xs:string {
   let $collection := util:collection-name($corpus)
   let $dt := (
     if (doc-available($collection || "/git.xml")) then
@@ -196,7 +196,7 @@ declare function doai:datestamp($corpus as element()) as xs:string {
     ),
     xmldb:last-modified($collection, util:document-name($corpus))
   )[1]
-  return doai:utc($dt)
+  return dpmh:utc($dt)
 };
 
 (:~
@@ -205,7 +205,7 @@ declare function doai:datestamp($corpus as element()) as xs:string {
  : @return map with the dateTime ("value") and granularity ("day" or
  : "seconds"), or empty sequence if the argument is not a valid UTCdatetime
  :)
-declare function doai:parse-date(
+declare function dpmh:parse-date(
   $value as xs:string,
   $until as xs:boolean
 ) as map(*)? {
@@ -247,7 +247,7 @@ declare function doai:parse-date(
  : errors, in which case the request element must not carry attributes.
  : @param $content Verb element or error elements
  :)
-declare function doai:response(
+declare function dpmh:response(
   $args as map(*),
   $content as element()*
 ) as element(oai:OAI-PMH) {
@@ -256,20 +256,20 @@ declare function doai:response(
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd"
   >
-    <responseDate>{ doai:utc(current-dateTime()) }</responseDate>
+    <responseDate>{ dpmh:utc(current-dateTime()) }</responseDate>
     <request>
       {
         for $key in map:keys($args)
-        order by index-of($doai:arguments, $key)
+        order by index-of($dpmh:arguments, $key)
         return attribute {$key} { $args($key) }
       }
-      { $doai:base-url }
+      { $dpmh:base-url }
     </request>
     { $content }
   </OAI-PMH>
 };
 
-declare function doai:error(
+declare function dpmh:error(
   $code as xs:string,
   $message as xs:string
 ) as element(oai:error) {
@@ -278,25 +278,25 @@ declare function doai:error(
   </error>
 };
 
-declare function doai:header($corpus as map(*)) as element(oai:header) {
+declare function dpmh:header($corpus as map(*)) as element(oai:header) {
   <header xmlns="http://www.openarchives.org/OAI/2.0/">
     <identifier>{ $corpus?identifier }</identifier>
     <datestamp>{ $corpus?datestamp }</datestamp>
   </header>
 };
 
-declare function doai:record(
+declare function dpmh:record(
   $corpus as map(*),
   $prefix as xs:string
 ) as element(oai:record) {
   <record xmlns="http://www.openarchives.org/OAI/2.0/">
-    { doai:header($corpus) }
+    { dpmh:header($corpus) }
     <metadata>
       {
         if ($prefix = "cmdi") then
-          doai:cmdi($corpus)
+          dpmh:cmdi($corpus)
         else
-          doai:oai-dc($corpus)
+          dpmh:oai-dc($corpus)
       }
     </metadata>
   </record>
@@ -305,7 +305,7 @@ declare function doai:record(
 (:~
  : URLs related to a corpus
  :)
-declare function doai:links($corpus as map(*)) as map(*) {
+declare function dpmh:links($corpus as map(*)) as map(*) {
   let $name := $corpus?name
   (: a branch may be given as fragment, e.g. https://github.com/org/repo#main :)
   let $repo := $corpus?repository!replace(., "#.*$", "")
@@ -346,8 +346,8 @@ declare function doai:links($corpus as map(*)) as map(*) {
 (:~
  : Dublin Core record of a corpus
  :)
-declare function doai:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
-  let $links := doai:links($corpus)
+declare function dpmh:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
+  let $links := dpmh:links($corpus)
   return <oai_dc:dc
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
@@ -360,7 +360,7 @@ declare function doai:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
     {
       if ($corpus?description) then
         <dc:description>
-          { doai:plain-text($corpus?description) }
+          { dpmh:plain-text($corpus?description) }
         </dc:description>
       else (
       )
@@ -395,9 +395,9 @@ declare function doai:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
  : CMDI 1.2 record of a corpus using the CLARIN collection profile
  : (clarin.eu:cr1:p_1345561703620)
  :)
-declare function doai:cmdi($corpus as map(*)) as element(cmd:CMD) {
-  let $links := doai:links($corpus)
-  let $self := $doai:base-url ||
+declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
+  let $links := dpmh:links($corpus)
+  let $self := $dpmh:base-url ||
     "?verb=GetRecord&amp;metadataPrefix=cmdi&amp;identifier=" ||
     encode-for-uri($corpus?identifier)
   return <cmd:CMD
@@ -413,7 +413,7 @@ declare function doai:cmdi($corpus as map(*)) as element(cmd:CMD) {
         { substring($corpus?datestamp, 1, 10) }
       </cmd:MdCreationDate>
       <cmd:MdSelfLink>{ $self }</cmd:MdSelfLink>
-      <cmd:MdProfile>{ $doai:cmdi-profile }</cmd:MdProfile>
+      <cmd:MdProfile>{ $dpmh:cmdi-profile }</cmd:MdProfile>
       <cmd:MdCollectionDisplayName>
         { $corpus?acronym }
       </cmd:MdCollectionDisplayName>
@@ -481,7 +481,7 @@ declare function doai:cmdi($corpus as map(*)) as element(cmd:CMD) {
             if ($corpus?description) then
               <cmdp:Description>
                 <cmdp:Description>
-                  { doai:plain-text($corpus?description) }
+                  { dpmh:plain-text($corpus?description) }
                 </cmdp:Description>
               </cmdp:Description>
             else (
@@ -510,7 +510,7 @@ declare function doai:cmdi($corpus as map(*)) as element(cmd:CMD) {
           }
         </cmdp:License>
         <cmdp:Contact>
-          <cmdp:Email>{ $doai:admin-email }</cmdp:Email>
+          <cmdp:Email>{ $dpmh:admin-email }</cmdp:Email>
           <cmdp:Organisation>DraCor</cmdp:Organisation>
           <cmdp:Website>https://dracor.org</cmdp:Website>
         </cmdp:Contact>
@@ -569,26 +569,26 @@ declare function doai:cmdi($corpus as map(*)) as element(cmd:CMD) {
  : --------------------
  :)
 
-declare function doai:identify($args as map(*)) as element(oai:OAI-PMH) {
-  let $datestamps := doai:corpora()!?datestamp
+declare function dpmh:identify($args as map(*)) as element(oai:OAI-PMH) {
+  let $datestamps := dpmh:corpora()!?datestamp
   let $earliest := (
-    min($datestamps!xs:dateTime(.))!doai:utc(.), "1970-01-01T00:00:00Z"
+    min($datestamps!xs:dateTime(.))!dpmh:utc(.), "1970-01-01T00:00:00Z"
   )[1]
-  return doai:response(
+  return dpmh:response(
     $args,
     <Identify xmlns="http://www.openarchives.org/OAI/2.0/">
-      <repositoryName>{ $doai:repository-name }</repositoryName>
-      <baseURL>{ $doai:base-url }</baseURL>
+      <repositoryName>{ $dpmh:repository-name }</repositoryName>
+      <baseURL>{ $dpmh:base-url }</baseURL>
       <protocolVersion>2.0</protocolVersion>
-      <adminEmail>{ $doai:admin-email }</adminEmail>
+      <adminEmail>{ $dpmh:admin-email }</adminEmail>
       <earliestDatestamp>{ $earliest }</earliestDatestamp>
       <deletedRecord>no</deletedRecord>
-      <granularity>{ $doai:granularity }</granularity>
+      <granularity>{ $dpmh:granularity }</granularity>
       {
         (: the oai-identifier scheme requires a domain name :)
         if (
           matches(
-            $doai:repository-id,
+            $dpmh:repository-id,
             "^[a-zA-Z][a-zA-Z0-9\-]*(\.[a-zA-Z][a-zA-Z0-9\-]*)+$"
           )
         ) then
@@ -599,10 +599,10 @@ declare function doai:identify($args as map(*)) as element(oai:OAI-PMH) {
             >
               <scheme>oai</scheme>
               <repositoryIdentifier>
-                { $doai:repository-id }
+                { $dpmh:repository-id }
               </repositoryIdentifier>
               <delimiter>:</delimiter>
-              <sampleIdentifier>{ $doai:id-prefix }ger</sampleIdentifier>
+              <sampleIdentifier>{ $dpmh:id-prefix }ger</sampleIdentifier>
             </oai-identifier>
           </description>
         else (
@@ -612,25 +612,25 @@ declare function doai:identify($args as map(*)) as element(oai:OAI-PMH) {
   )
 };
 
-declare function doai:list-metadata-formats(
+declare function dpmh:list-metadata-formats(
   $args as map(*)
 ) as element(oai:OAI-PMH) {
-  if ($args?identifier and empty(doai:corpus($args?identifier))) then
-    doai:response(
+  if ($args?identifier and empty(dpmh:corpus($args?identifier))) then
+    dpmh:response(
       $args,
-      doai:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
+      dpmh:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
     )
   else
-    doai:response(
+    dpmh:response(
       $args,
       <ListMetadataFormats xmlns="http://www.openarchives.org/OAI/2.0/">
         {
           for $prefix in ("oai_dc", "cmdi")
           return <metadataFormat>
             <metadataPrefix>{ $prefix }</metadataPrefix>
-            <schema>{ $doai:formats($prefix)?schema }</schema>
+            <schema>{ $dpmh:formats($prefix)?schema }</schema>
             <metadataNamespace>
-              { $doai:formats($prefix)?namespace }
+              { $dpmh:formats($prefix)?namespace }
             </metadataNamespace>
           </metadataFormat>
         }
@@ -638,130 +638,130 @@ declare function doai:list-metadata-formats(
     )
 };
 
-declare function doai:list-sets($args as map(*)) as element(oai:OAI-PMH) {
+declare function dpmh:list-sets($args as map(*)) as element(oai:OAI-PMH) {
   if ($args?resumptionToken) then
-    doai:response(
+    dpmh:response(
       $args,
-      doai:error("badResumptionToken", "Invalid resumption token")
+      dpmh:error("badResumptionToken", "Invalid resumption token")
     )
   else
-    doai:response(
+    dpmh:response(
       $args,
-      doai:error("noSetHierarchy", "This repository does not support sets")
+      dpmh:error("noSetHierarchy", "This repository does not support sets")
     )
 };
 
 (:~
  : ListIdentifiers and ListRecords
  :)
-declare function doai:list(
+declare function dpmh:list(
   $verb as xs:string,
   $args as map(*)
 ) as element(oai:OAI-PMH) {
-  let $from := $args?from!doai:parse-date(., false())
-  let $until := $args?until!doai:parse-date(., true())
+  let $from := $args?from!dpmh:parse-date(., false())
+  let $until := $args?until!dpmh:parse-date(., true())
   return if ($args?resumptionToken) then
     if (map:size($args) gt 2) then
-      doai:response(
+      dpmh:response(
         map {},
-        doai:error("badArgument", "resumptionToken is an exclusive argument")
+        dpmh:error("badArgument", "resumptionToken is an exclusive argument")
       )
     else
-      doai:response(
+      dpmh:response(
         $args,
-        doai:error("badResumptionToken", "Invalid resumption token")
+        dpmh:error("badResumptionToken", "Invalid resumption token")
       )
   else if (empty($args?metadataPrefix)) then
-    doai:response(
+    dpmh:response(
       map {},
-      doai:error("badArgument", "Missing argument: metadataPrefix")
+      dpmh:error("badArgument", "Missing argument: metadataPrefix")
     )
   else if ($args?from and empty($from)) then
-    doai:response(map {}, doai:error("badArgument", "Invalid date: from"))
+    dpmh:response(map {}, dpmh:error("badArgument", "Invalid date: from"))
   else if ($args?until and empty($until)) then
-    doai:response(map {}, doai:error("badArgument", "Invalid date: until"))
+    dpmh:response(map {}, dpmh:error("badArgument", "Invalid date: until"))
   else if (
     exists($from) and exists($until) and $from?granularity ne $until?granularity
   ) then
-    doai:response(
+    dpmh:response(
       map {},
-      doai:error("badArgument", "from and until must have the same granularity")
+      dpmh:error("badArgument", "from and until must have the same granularity")
     )
   else if (
     exists($from) and exists($until) and $from?value gt $until?value
   ) then
-    doai:response(
+    dpmh:response(
       map {},
-      doai:error("badArgument", "from must not be later than until")
+      dpmh:error("badArgument", "from must not be later than until")
     )
-  else if (not(map:contains($doai:formats, $args?metadataPrefix))) then
-    doai:response(
+  else if (not(map:contains($dpmh:formats, $args?metadataPrefix))) then
+    dpmh:response(
       $args,
-      doai:error(
+      dpmh:error(
         "cannotDisseminateFormat",
         "Unsupported metadata format: " || $args?metadataPrefix
       )
     )
   else if ($args?set) then
-    doai:response(
+    dpmh:response(
       $args,
-      doai:error("noSetHierarchy", "This repository does not support sets")
+      dpmh:error("noSetHierarchy", "This repository does not support sets")
     )
   else
-    let $corpora := doai:corpora()[(
+    let $corpora := dpmh:corpora()[(
       empty($from) or xs:dateTime(?datestamp) ge $from?value
     ) and
       (empty($until) or xs:dateTime(?datestamp) le $until?value)]
     return if (empty($corpora)) then
-      doai:response(
+      dpmh:response(
         $args,
-        doai:error("noRecordsMatch", "No records match the request")
+        dpmh:error("noRecordsMatch", "No records match the request")
       )
     else if ($verb = "ListIdentifiers") then
-      doai:response(
+      dpmh:response(
         $args,
         <ListIdentifiers xmlns="http://www.openarchives.org/OAI/2.0/">
-          { $corpora!doai:header(.) }
+          { $corpora!dpmh:header(.) }
         </ListIdentifiers>
       )
     else
-      doai:response(
+      dpmh:response(
         $args,
         <ListRecords xmlns="http://www.openarchives.org/OAI/2.0/">
-          { $corpora!doai:record(., $args?metadataPrefix) }
+          { $corpora!dpmh:record(., $args?metadataPrefix) }
         </ListRecords>
       )
 };
 
-declare function doai:get-record($args as map(*)) as element(oai:OAI-PMH) {
+declare function dpmh:get-record($args as map(*)) as element(oai:OAI-PMH) {
   if (empty($args?identifier) or empty($args?metadataPrefix)) then
-    doai:response(
+    dpmh:response(
       map {},
-      doai:error(
+      dpmh:error(
         "badArgument",
         "GetRecord requires the arguments identifier and metadataPrefix"
       )
     )
   else
-    let $corpus := doai:corpus($args?identifier)
+    let $corpus := dpmh:corpus($args?identifier)
     return if (empty($corpus)) then
-      doai:response(
+      dpmh:response(
         $args,
-        doai:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
+        dpmh:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
       )
-    else if (not(map:contains($doai:formats, $args?metadataPrefix))) then
-      doai:response(
+    else if (not(map:contains($dpmh:formats, $args?metadataPrefix))) then
+      dpmh:response(
         $args,
-        doai:error(
+        dpmh:error(
           "cannotDisseminateFormat",
           "Unsupported metadata format: " || $args?metadataPrefix
         )
       )
     else
-      doai:response(
+      dpmh:response(
         $args,
         <GetRecord xmlns="http://www.openarchives.org/OAI/2.0/">
-          { doai:record($corpus, $args?metadataPrefix) }
+          { dpmh:record($corpus, $args?metadataPrefix) }
         </GetRecord>
       )
 };
@@ -769,9 +769,9 @@ declare function doai:get-record($args as map(*)) as element(oai:OAI-PMH) {
 (:~
  : Find a corpus by its OAI identifier
  :)
-declare function doai:corpus($identifier as xs:string) as map(*)? {
-  if (starts-with($identifier, $doai:id-prefix)) then
-    doai:corpora()[?identifier = $identifier]
+declare function dpmh:corpus($identifier as xs:string) as map(*)? {
+  if (starts-with($identifier, $dpmh:id-prefix)) then
+    dpmh:corpora()[?identifier = $identifier]
   else (
   )
 };
@@ -779,7 +779,7 @@ declare function doai:corpus($identifier as xs:string) as map(*)? {
 (:~
  : Validate the arguments and dispatch the request to the verb.
  :)
-declare function doai:handle(
+declare function dpmh:handle(
   $verb as xs:string*,
   $identifier as xs:string*,
   $metadata-prefix as xs:string*,
@@ -803,10 +803,10 @@ declare function doai:handle(
     ),
     map:keys($given)[count($given(.)) gt 1]
   )
-  return if (empty($verb) or not(map:contains($doai:verbs, $verb[1]))) then
-    doai:response(
+  return if (empty($verb) or not(map:contains($dpmh:verbs, $verb[1]))) then
+    dpmh:response(
       map {},
-      doai:error(
+      dpmh:error(
         "badVerb",
         if (empty($verb)) then
           "Missing verb argument"
@@ -815,9 +815,9 @@ declare function doai:handle(
       )
     )
   else if (exists($repeated)) then
-    doai:response(
+    dpmh:response(
       map {},
-      doai:error(
+      dpmh:error(
         "badArgument",
         "Repeated argument: " || string-join($repeated, ", ")
       )
@@ -831,11 +831,11 @@ declare function doai:handle(
         return map:entry($key, $given($key))
       )
     )
-    let $illegal := map:keys($args)[not(. = ("verb", $doai:verbs($verb)))]
+    let $illegal := map:keys($args)[not(. = ("verb", $dpmh:verbs($verb)))]
     return if (exists($illegal)) then
-      doai:response(
+      dpmh:response(
         map {},
-        doai:error(
+        dpmh:error(
           "badArgument",
           "Illegal argument for " ||
             $verb ||
@@ -846,15 +846,15 @@ declare function doai:handle(
     else
       switch ($verb)
         case "Identify" return
-          doai:identify($args)
+          dpmh:identify($args)
         case "ListMetadataFormats" return
-          doai:list-metadata-formats($args)
+          dpmh:list-metadata-formats($args)
         case "ListSets" return
-          doai:list-sets($args)
+          dpmh:list-sets($args)
         case "GetRecord" return
-          doai:get-record($args)
+          dpmh:get-record($args)
         default return
-          doai:list($verb, $args)
+          dpmh:list($verb, $args)
 };
 
 (:
@@ -878,7 +878,7 @@ declare
   %rest:query-param("resumptionToken", "{$resumption-token}")
   %output:method("xml")
   %output:media-type("text/xml")
-function doai:oai-get(
+function dpmh:oai-get(
   $verb as xs:string*,
   $identifier as xs:string*,
   $metadata-prefix as xs:string*,
@@ -887,7 +887,7 @@ function doai:oai-get(
   $set as xs:string*,
   $resumption-token as xs:string*
 ) {
-  doai:handle(
+  dpmh:handle(
     $verb,
     $identifier,
     $metadata-prefix,
@@ -914,7 +914,7 @@ declare
   %rest:form-param("resumptionToken", "{$resumption-token}")
   %output:method("xml")
   %output:media-type("text/xml")
-function doai:oai-post(
+function dpmh:oai-post(
   $verb as xs:string*,
   $identifier as xs:string*,
   $metadata-prefix as xs:string*,
@@ -923,7 +923,7 @@ function doai:oai-post(
   $set as xs:string*,
   $resumption-token as xs:string*
 ) {
-  doai:handle(
+  dpmh:handle(
     $verb,
     $identifier,
     $metadata-prefix,
