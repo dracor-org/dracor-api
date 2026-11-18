@@ -144,11 +144,24 @@ declare function dpmh:corpora() as map(*)* {
         map:entry("identifier", $dpmh:id-prefix || $info?name),
         map:entry("datestamp", dpmh:datestamp($corpus)),
         map:entry("languages", dpmh:languages($corpus)),
+        map:entry("description-lang", dpmh:description-lang($corpus)),
         dpmh:doi($corpus)!map:entry("doi", .)
       )
     )
   else (
   )
+};
+
+(:~
+ : Language of the corpus description taken from `projectDesc` in corpus.xml.
+ : All descriptions are currently English and none declares a language, so
+ : `en` is assumed unless `projectDesc` has an `xml:lang`.
+ :)
+declare function dpmh:description-lang($corpus as element()) as xs:string {
+  (
+    $corpus/tei:teiHeader/tei:encodingDesc/tei:projectDesc/@xml:lang[normalize-space()]!string(),
+    "en"
+  )[1]
 };
 
 (:~
@@ -359,7 +372,7 @@ declare function dpmh:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
     <dc:publisher>DraCor</dc:publisher>
     {
       if ($corpus?description) then
-        <dc:description>
+        <dc:description xml:lang="{ $corpus?description-lang }">
           { dpmh:plain-text($corpus?description) }
         </dc:description>
       else (
@@ -378,7 +391,7 @@ declare function dpmh:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
     }
     {
       if ($corpus?commit) then
-        <dc:description>
+        <dc:description xml:lang="en">
           { "Version: Git commit " || $corpus?commit }
         </dc:description>
       else (
@@ -480,7 +493,7 @@ declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
           {
             if ($corpus?description) then
               <cmdp:Description>
-                <cmdp:Description>
+                <cmdp:Description xml:lang="{ $corpus?description-lang }">
                   { dpmh:plain-text($corpus?description) }
                 </cmdp:Description>
               </cmdp:Description>
