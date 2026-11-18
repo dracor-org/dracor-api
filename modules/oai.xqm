@@ -109,7 +109,7 @@ declare variable $doai:arguments := (
 (:~
  : Format a dateTime as UTC datestamp, e.g. 2026-11-06T10:15:00Z
  :)
-declare function local:utc($dt as xs:dateTime) as xs:string {
+declare function doai:utc($dt as xs:dateTime) as xs:string {
   format-dateTime(
     adjust-dateTime-to-timezone($dt, xs:dayTimeDuration("PT0S")),
     "[Y0001]-[M01]-[D01]T[H01]:[m01]:[s01]Z"
@@ -120,7 +120,7 @@ declare function local:utc($dt as xs:dateTime) as xs:string {
  : Strip the Markdown links and emphasis produced by dutil:get-corpus-info
  : from a description.
  :)
-declare function local:plain-text($text as xs:string) as xs:string {
+declare function doai:plain-text($text as xs:string) as xs:string {
   $text
     => replace("\[([^\]]*)\]\(([^)]*)\)", "$1 ($2)")
     => replace("\*\*([^*]*)\*\*", "$1")
@@ -130,7 +130,7 @@ declare function local:plain-text($text as xs:string) as xs:string {
  : All corpora as maps with the information needed for OAI records, ordered by
  : name.
  :)
-declare function local:corpora() as map(*)* {
+declare function doai:corpora() as map(*)* {
   (: DEPRECATED: remove teiCorpus support in v2 :)
   for $corpus in
     collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
@@ -142,9 +142,9 @@ declare function local:corpora() as map(*)* {
       (
         $info,
         map:entry("identifier", $doai:id-prefix || $info?name),
-        map:entry("datestamp", local:datestamp($corpus)),
-        map:entry("languages", local:languages($corpus)),
-        local:doi($corpus)!map:entry("doi", .)
+        map:entry("datestamp", doai:datestamp($corpus)),
+        map:entry("languages", doai:languages($corpus)),
+        doai:doi($corpus)!map:entry("doi", .)
       )
     )
   else (
@@ -157,7 +157,7 @@ declare function local:corpora() as map(*)* {
  : or `doi:` prefix. The type is matched case-insensitively until the schema
  : decision is made.
  :)
-declare function local:doi($corpus as element()) as xs:string? {
+declare function doai:doi($corpus as element()) as xs:string? {
   let $idno := $corpus/tei:teiHeader//tei:publicationStmt/tei:idno[lower-case(
     @type
   ) eq
@@ -174,7 +174,7 @@ declare function local:doi($corpus as element()) as xs:string? {
  : ISO 639-3 codes of the languages of the plays in a corpus (from
  : `TEI/@xml:lang`), the most frequent first. Unrecognized codes are skipped.
  :)
-declare function local:languages($corpus as element()) as xs:string* {
+declare function doai:languages($corpus as element()) as xs:string* {
   let $codes := collection(
     util:collection-name($corpus)
   )/tei:TEI/@xml:lang!iso639:to-639-3(string(.))
@@ -187,7 +187,7 @@ declare function local:languages($corpus as element()) as xs:string* {
  : Datestamp of a corpus: the last modification of its git.xml (written when
  : the corpus is loaded or updated), falling back to the corpus document.
  :)
-declare function local:datestamp($corpus as element()) as xs:string {
+declare function doai:datestamp($corpus as element()) as xs:string {
   let $collection := util:collection-name($corpus)
   let $dt := (
     if (doc-available($collection || "/git.xml")) then
@@ -196,7 +196,7 @@ declare function local:datestamp($corpus as element()) as xs:string {
     ),
     xmldb:last-modified($collection, util:document-name($corpus))
   )[1]
-  return local:utc($dt)
+  return doai:utc($dt)
 };
 
 (:~
@@ -205,7 +205,7 @@ declare function local:datestamp($corpus as element()) as xs:string {
  : @return map with the dateTime ("value") and granularity ("day" or
  : "seconds"), or empty sequence if the argument is not a valid UTCdatetime
  :)
-declare function local:parse-date(
+declare function doai:parse-date(
   $value as xs:string,
   $until as xs:boolean
 ) as map(*)? {
@@ -247,7 +247,7 @@ declare function local:parse-date(
  : errors, in which case the request element must not carry attributes.
  : @param $content Verb element or error elements
  :)
-declare function local:response(
+declare function doai:response(
   $args as map(*),
   $content as element()*
 ) as element(oai:OAI-PMH) {
@@ -256,7 +256,7 @@ declare function local:response(
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd"
   >
-    <responseDate>{ local:utc(current-dateTime()) }</responseDate>
+    <responseDate>{ doai:utc(current-dateTime()) }</responseDate>
     <request>
       {
         for $key in map:keys($args)
@@ -269,7 +269,7 @@ declare function local:response(
   </OAI-PMH>
 };
 
-declare function local:error(
+declare function doai:error(
   $code as xs:string,
   $message as xs:string
 ) as element(oai:error) {
@@ -278,25 +278,25 @@ declare function local:error(
   </error>
 };
 
-declare function local:header($corpus as map(*)) as element(oai:header) {
+declare function doai:header($corpus as map(*)) as element(oai:header) {
   <header xmlns="http://www.openarchives.org/OAI/2.0/">
     <identifier>{ $corpus?identifier }</identifier>
     <datestamp>{ $corpus?datestamp }</datestamp>
   </header>
 };
 
-declare function local:record(
+declare function doai:record(
   $corpus as map(*),
   $prefix as xs:string
 ) as element(oai:record) {
   <record xmlns="http://www.openarchives.org/OAI/2.0/">
-    { local:header($corpus) }
+    { doai:header($corpus) }
     <metadata>
       {
         if ($prefix = "cmdi") then
-          local:cmdi($corpus)
+          doai:cmdi($corpus)
         else
-          local:oai-dc($corpus)
+          doai:oai-dc($corpus)
       }
     </metadata>
   </record>
@@ -305,7 +305,7 @@ declare function local:record(
 (:~
  : URLs related to a corpus
  :)
-declare function local:links($corpus as map(*)) as map(*) {
+declare function doai:links($corpus as map(*)) as map(*) {
   let $name := $corpus?name
   (: a branch may be given as fragment, e.g. https://github.com/org/repo#main :)
   let $repo := $corpus?repository!replace(., "#.*$", "")
@@ -346,8 +346,8 @@ declare function local:links($corpus as map(*)) as map(*) {
 (:~
  : Dublin Core record of a corpus
  :)
-declare function local:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
-  let $links := local:links($corpus)
+declare function doai:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
+  let $links := doai:links($corpus)
   return <oai_dc:dc
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
@@ -360,7 +360,7 @@ declare function local:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
     {
       if ($corpus?description) then
         <dc:description>
-          { local:plain-text($corpus?description) }
+          { doai:plain-text($corpus?description) }
         </dc:description>
       else (
       )
@@ -395,8 +395,8 @@ declare function local:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
  : CMDI 1.2 record of a corpus using the CLARIN collection profile
  : (clarin.eu:cr1:p_1345561703620)
  :)
-declare function local:cmdi($corpus as map(*)) as element(cmd:CMD) {
-  let $links := local:links($corpus)
+declare function doai:cmdi($corpus as map(*)) as element(cmd:CMD) {
+  let $links := doai:links($corpus)
   let $self := $doai:base-url ||
     "?verb=GetRecord&amp;metadataPrefix=cmdi&amp;identifier=" ||
     encode-for-uri($corpus?identifier)
@@ -481,7 +481,7 @@ declare function local:cmdi($corpus as map(*)) as element(cmd:CMD) {
             if ($corpus?description) then
               <cmdp:Description>
                 <cmdp:Description>
-                  { local:plain-text($corpus?description) }
+                  { doai:plain-text($corpus?description) }
                 </cmdp:Description>
               </cmdp:Description>
             else (
@@ -569,12 +569,12 @@ declare function local:cmdi($corpus as map(*)) as element(cmd:CMD) {
  : --------------------
  :)
 
-declare function local:identify($args as map(*)) as element(oai:OAI-PMH) {
-  let $datestamps := local:corpora()!?datestamp
+declare function doai:identify($args as map(*)) as element(oai:OAI-PMH) {
+  let $datestamps := doai:corpora()!?datestamp
   let $earliest := (
-    min($datestamps!xs:dateTime(.))!local:utc(.), "1970-01-01T00:00:00Z"
+    min($datestamps!xs:dateTime(.))!doai:utc(.), "1970-01-01T00:00:00Z"
   )[1]
-  return local:response(
+  return doai:response(
     $args,
     <Identify xmlns="http://www.openarchives.org/OAI/2.0/">
       <repositoryName>{ $doai:repository-name }</repositoryName>
@@ -612,16 +612,16 @@ declare function local:identify($args as map(*)) as element(oai:OAI-PMH) {
   )
 };
 
-declare function local:list-metadata-formats(
+declare function doai:list-metadata-formats(
   $args as map(*)
 ) as element(oai:OAI-PMH) {
-  if ($args?identifier and empty(local:corpus($args?identifier))) then
-    local:response(
+  if ($args?identifier and empty(doai:corpus($args?identifier))) then
+    doai:response(
       $args,
-      local:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
+      doai:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
     )
   else
-    local:response(
+    doai:response(
       $args,
       <ListMetadataFormats xmlns="http://www.openarchives.org/OAI/2.0/">
         {
@@ -638,136 +638,130 @@ declare function local:list-metadata-formats(
     )
 };
 
-declare function local:list-sets($args as map(*)) as element(oai:OAI-PMH) {
+declare function doai:list-sets($args as map(*)) as element(oai:OAI-PMH) {
   if ($args?resumptionToken) then
-    local:response(
+    doai:response(
       $args,
-      local:error("badResumptionToken", "Invalid resumption token")
+      doai:error("badResumptionToken", "Invalid resumption token")
     )
   else
-    local:response(
+    doai:response(
       $args,
-      local:error("noSetHierarchy", "This repository does not support sets")
+      doai:error("noSetHierarchy", "This repository does not support sets")
     )
 };
 
 (:~
  : ListIdentifiers and ListRecords
  :)
-declare function local:list(
+declare function doai:list(
   $verb as xs:string,
   $args as map(*)
 ) as element(oai:OAI-PMH) {
-  let $from := $args?from!local:parse-date(., false())
-  let $until := $args?until!local:parse-date(., true())
+  let $from := $args?from!doai:parse-date(., false())
+  let $until := $args?until!doai:parse-date(., true())
   return if ($args?resumptionToken) then
     if (map:size($args) gt 2) then
-      local:response(
+      doai:response(
         map {},
-        local:error("badArgument", "resumptionToken is an exclusive argument")
+        doai:error("badArgument", "resumptionToken is an exclusive argument")
       )
     else
-      local:response(
+      doai:response(
         $args,
-        local:error("badResumptionToken", "Invalid resumption token")
+        doai:error("badResumptionToken", "Invalid resumption token")
       )
   else if (empty($args?metadataPrefix)) then
-    local:response(
+    doai:response(
       map {},
-      local:error("badArgument", "Missing argument: metadataPrefix")
+      doai:error("badArgument", "Missing argument: metadataPrefix")
     )
   else if ($args?from and empty($from)) then
-    local:response(map {}, local:error("badArgument", "Invalid date: from"))
+    doai:response(map {}, doai:error("badArgument", "Invalid date: from"))
   else if ($args?until and empty($until)) then
-    local:response(map {}, local:error("badArgument", "Invalid date: until"))
+    doai:response(map {}, doai:error("badArgument", "Invalid date: until"))
   else if (
     exists($from) and exists($until) and $from?granularity ne $until?granularity
   ) then
-    local:response(
+    doai:response(
       map {},
-      local:error(
-        "badArgument",
-        "from and until must have the same granularity"
-      )
+      doai:error("badArgument", "from and until must have the same granularity")
     )
   else if (
     exists($from) and exists($until) and $from?value gt $until?value
   ) then
-    local:response(
+    doai:response(
       map {},
-      local:error("badArgument", "from must not be later than until")
+      doai:error("badArgument", "from must not be later than until")
     )
   else if (not(map:contains($doai:formats, $args?metadataPrefix))) then
-    local:response(
+    doai:response(
       $args,
-      local:error(
+      doai:error(
         "cannotDisseminateFormat",
         "Unsupported metadata format: " || $args?metadataPrefix
       )
     )
   else if ($args?set) then
-    local:response(
+    doai:response(
       $args,
-      local:error("noSetHierarchy", "This repository does not support sets")
+      doai:error("noSetHierarchy", "This repository does not support sets")
     )
   else
-    let $corpora := local:corpora()[(
+    let $corpora := doai:corpora()[(
       empty($from) or xs:dateTime(?datestamp) ge $from?value
     ) and
       (empty($until) or xs:dateTime(?datestamp) le $until?value)]
     return if (empty($corpora)) then
-      local:response(
+      doai:response(
         $args,
-        local:error("noRecordsMatch", "No records match the request")
+        doai:error("noRecordsMatch", "No records match the request")
       )
     else if ($verb = "ListIdentifiers") then
-      local:response(
+      doai:response(
         $args,
         <ListIdentifiers xmlns="http://www.openarchives.org/OAI/2.0/">
-          { $corpora!local:header(.) }
+          { $corpora!doai:header(.) }
         </ListIdentifiers>
       )
     else
-      local:response(
+      doai:response(
         $args,
         <ListRecords xmlns="http://www.openarchives.org/OAI/2.0/">
-          { $corpora!local:record(., $args?metadataPrefix) }
+          { $corpora!doai:record(., $args?metadataPrefix) }
         </ListRecords>
       )
 };
 
-declare function local:get-record($args as map(*)) as element(oai:OAI-PMH) {
+declare function doai:get-record($args as map(*)) as element(oai:OAI-PMH) {
   if (empty($args?identifier) or empty($args?metadataPrefix)) then
-    local:response(
+    doai:response(
       map {},
-      local:error(
+      doai:error(
         "badArgument",
         "GetRecord requires the arguments identifier and metadataPrefix"
       )
     )
   else
-    let $corpus := local:corpus($args?identifier)
+    let $corpus := doai:corpus($args?identifier)
     return if (empty($corpus)) then
-      local:response(
+      doai:response(
         $args,
-        local:error(
-          "idDoesNotExist",
-          "Unknown identifier: " || $args?identifier
-        )
+        doai:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
       )
     else if (not(map:contains($doai:formats, $args?metadataPrefix))) then
-      local:response(
+      doai:response(
         $args,
-        local:error(
+        doai:error(
           "cannotDisseminateFormat",
           "Unsupported metadata format: " || $args?metadataPrefix
         )
       )
     else
-      local:response(
+      doai:response(
         $args,
         <GetRecord xmlns="http://www.openarchives.org/OAI/2.0/">
-          { local:record($corpus, $args?metadataPrefix) }
+          { doai:record($corpus, $args?metadataPrefix) }
         </GetRecord>
       )
 };
@@ -775,9 +769,9 @@ declare function local:get-record($args as map(*)) as element(oai:OAI-PMH) {
 (:~
  : Find a corpus by its OAI identifier
  :)
-declare function local:corpus($identifier as xs:string) as map(*)? {
+declare function doai:corpus($identifier as xs:string) as map(*)? {
   if (starts-with($identifier, $doai:id-prefix)) then
-    local:corpora()[?identifier = $identifier]
+    doai:corpora()[?identifier = $identifier]
   else (
   )
 };
@@ -785,7 +779,7 @@ declare function local:corpus($identifier as xs:string) as map(*)? {
 (:~
  : Validate the arguments and dispatch the request to the verb.
  :)
-declare function local:handle(
+declare function doai:handle(
   $verb as xs:string*,
   $identifier as xs:string*,
   $metadata-prefix as xs:string*,
@@ -810,9 +804,9 @@ declare function local:handle(
     map:keys($given)[count($given(.)) gt 1]
   )
   return if (empty($verb) or not(map:contains($doai:verbs, $verb[1]))) then
-    local:response(
+    doai:response(
       map {},
-      local:error(
+      doai:error(
         "badVerb",
         if (empty($verb)) then
           "Missing verb argument"
@@ -821,9 +815,9 @@ declare function local:handle(
       )
     )
   else if (exists($repeated)) then
-    local:response(
+    doai:response(
       map {},
-      local:error(
+      doai:error(
         "badArgument",
         "Repeated argument: " || string-join($repeated, ", ")
       )
@@ -839,9 +833,9 @@ declare function local:handle(
     )
     let $illegal := map:keys($args)[not(. = ("verb", $doai:verbs($verb)))]
     return if (exists($illegal)) then
-      local:response(
+      doai:response(
         map {},
-        local:error(
+        doai:error(
           "badArgument",
           "Illegal argument for " ||
             $verb ||
@@ -852,15 +846,15 @@ declare function local:handle(
     else
       switch ($verb)
         case "Identify" return
-          local:identify($args)
+          doai:identify($args)
         case "ListMetadataFormats" return
-          local:list-metadata-formats($args)
+          doai:list-metadata-formats($args)
         case "ListSets" return
-          local:list-sets($args)
+          doai:list-sets($args)
         case "GetRecord" return
-          local:get-record($args)
+          doai:get-record($args)
         default return
-          local:list($verb, $args)
+          doai:list($verb, $args)
 };
 
 (:
@@ -893,7 +887,7 @@ function doai:oai-get(
   $set as xs:string*,
   $resumption-token as xs:string*
 ) {
-  local:handle(
+  doai:handle(
     $verb,
     $identifier,
     $metadata-prefix,
@@ -929,7 +923,7 @@ function doai:oai-post(
   $set as xs:string*,
   $resumption-token as xs:string*
 ) {
-  local:handle(
+  doai:handle(
     $verb,
     $identifier,
     $metadata-prefix,
