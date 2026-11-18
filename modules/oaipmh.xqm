@@ -439,7 +439,7 @@ declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
           (: the DOI identifies the corpus archived on Zenodo (all versions) :)
           if ($links?doi) then
             <cmd:ResourceProxy id="{ $corpus?name }-doi">
-              <cmd:ResourceType>Resource</cmd:ResourceType>
+              <cmd:ResourceType mimetype="text/html">Resource</cmd:ResourceType>
               <cmd:ResourceRef>{ $links?doi }</cmd:ResourceRef>
             </cmd:ResourceProxy>
           else (
@@ -516,13 +516,15 @@ declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
         </cmdp:Contact>
         <cmdp:WebReference>
           <cmdp:Website>{ $links?landing-page }</cmdp:Website>
-          <cmdp:Description>Corpus page on DraCor</cmdp:Description>
+          <cmdp:Description
+            xml:lang="en"
+          >Corpus page on DraCor</cmdp:Description>
         </cmdp:WebReference>
         {
           if ($links?doi) then
             <cmdp:WebReference>
               <cmdp:Website>{ $links?doi }</cmdp:Website>
-              <cmdp:Description>
+              <cmdp:Description xml:lang="en">
                 { "Archived versions on Zenodo (concept DOI)" }
               </cmdp:Description>
             </cmdp:WebReference>
@@ -533,7 +535,7 @@ declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
           if ($links?repository) then
             <cmdp:WebReference>
               <cmdp:Website>{ $links?repository }</cmdp:Website>
-              <cmdp:Description>
+              <cmdp:Description xml:lang="en">
                 {
                   "Source repository" ||
                     (
@@ -550,11 +552,11 @@ declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
         }
         <cmdp:WebReference>
           <cmdp:Website>{ $links?api }</cmdp:Website>
-          <cmdp:Description>DraCor API</cmdp:Description>
+          <cmdp:Description xml:lang="en">DraCor API</cmdp:Description>
         </cmdp:WebReference>
         <cmdp:WebReference>
           <cmdp:Website>{ $links?dts }</cmdp:Website>
-          <cmdp:Description>
+          <cmdp:Description xml:lang="en">
             { "Distributed Text Services (DTS) collection" }
           </cmdp:Description>
         </cmdp:WebReference>
