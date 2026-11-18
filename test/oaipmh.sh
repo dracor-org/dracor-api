@@ -5,7 +5,7 @@
 # At least one corpus must be loaded. Requires curl and xmllint.
 #
 # Usage:
-#   test/oai.sh [API_BASE]
+#   test/oaipmh.sh [API_BASE]
 #
 # API_BASE defaults to the dev stack (http://localhost:8088/api/v1).
 
