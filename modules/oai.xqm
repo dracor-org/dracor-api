@@ -143,10 +143,30 @@ declare function local:corpora() as map(*)* {
         $info,
         map:entry("identifier", $doai:id-prefix || $info?name),
         map:entry("datestamp", local:datestamp($corpus)),
-        map:entry("languages", local:languages($corpus))
+        map:entry("languages", local:languages($corpus)),
+        local:doi($corpus)!map:entry("doi", .)
       )
     )
   else (
+  )
+};
+
+(:~
+ : Concept DOI of a corpus from `publicationStmt/idno[@type="DOI"]` in
+ : corpus.xml (see dracor-org/dracor-schema#207), as bare DOI without resolver
+ : or `doi:` prefix. The type is matched case-insensitively until the schema
+ : decision is made.
+ :)
+declare function local:doi($corpus as element()) as xs:string? {
+  let $idno := $corpus/tei:teiHeader//tei:publicationStmt/tei:idno[lower-case(
+    @type
+  ) eq
+    "doi"][normalize-space()][1]
+  return $idno!replace(
+    normalize-space(.),
+    "^(https?://(dx\.)?doi\.org/|doi:)",
+    "",
+    "i"
   )
 };
 
@@ -296,6 +316,7 @@ declare function local:links($corpus as map(*)) as map(*) {
   let $is-github := starts-with($repo, "https://github.com/")
   return map {
     "uri": dutil:corpus-uri($name),
+    "doi": $corpus?doi!("https://doi.org/" || .),
     "landing-page": $config:api-origin || "/" || $name,
     "api": $config:api-base || "/corpora/" || $name,
     "api-metadata": $config:api-base || "/corpora/" || $name || "/metadata",
@@ -348,6 +369,7 @@ declare function local:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
     <dc:type>Text</dc:type>
     { $corpus?languages!<dc:language>{ . }</dc:language> }
     <dc:format>application/tei+xml</dc:format>
+    { $links?doi!<dc:identifier>{ . }</dc:identifier> }
     <dc:identifier>{ $links?uri }</dc:identifier>
     <dc:identifier>{ $links?landing-page }</dc:identifier>
     {
@@ -409,6 +431,16 @@ declare function local:cmdi($corpus as map(*)) as element(cmd:CMD) {
                 mimetype="application/zip"
               >Resource</cmd:ResourceType>
               <cmd:ResourceRef>{ $links?zip }</cmd:ResourceRef>
+            </cmd:ResourceProxy>
+          else (
+          )
+        }
+        {
+          (: the DOI identifies the corpus archived on Zenodo (all versions) :)
+          if ($links?doi) then
+            <cmd:ResourceProxy id="{ $corpus?name }-doi">
+              <cmd:ResourceType>Resource</cmd:ResourceType>
+              <cmd:ResourceRef>{ $links?doi }</cmd:ResourceRef>
             </cmd:ResourceProxy>
           else (
           )
@@ -487,6 +519,17 @@ declare function local:cmdi($corpus as map(*)) as element(cmd:CMD) {
           <cmdp:Description>Corpus page on DraCor</cmdp:Description>
         </cmdp:WebReference>
         {
+          if ($links?doi) then
+            <cmdp:WebReference>
+              <cmdp:Website>{ $links?doi }</cmdp:Website>
+              <cmdp:Description>
+                { "Archived versions on Zenodo (concept DOI)" }
+              </cmdp:Description>
+            </cmdp:WebReference>
+          else (
+          )
+        }
+        {
           if ($links?repository) then
             <cmdp:WebReference>
               <cmdp:Website>{ $links?repository }</cmdp:Website>
@@ -511,10 +554,9 @@ declare function local:cmdi($corpus as map(*)) as element(cmd:CMD) {
         </cmdp:WebReference>
         <cmdp:WebReference>
           <cmdp:Website>{ $links?dts }</cmdp:Website>
-          <cmdp:Description
-          >
-              Distributed Text Services (DTS) collection
-            </cmdp:Description>
+          <cmdp:Description>
+            { "Distributed Text Services (DTS) collection" }
+          </cmdp:Description>
         </cmdp:WebReference>
       </cmdp:collection>
     </cmd:Components>
