@@ -44,11 +44,27 @@ servers:
 # Endpoints are public unless they declare their own security requirement.
 security: []
 
+# Swagger UI lists the tags flat in this order and ignores x-tagGroups,
+# which Scalar uses to group them in its sidebar.
 tags:
-  - name: public
+  - name: General
+    description: API information and resolution of DraCor identifiers.
+  - name: Corpora
+    description: The available corpora, their plays and play metadata.
+  - name: Plays
+    description: Metadata and network metrics of a single play.
+  - name: Texts
     description: |
-      Read-only endpoints for corpora, plays, characters and their
-      metrics, texts and network data. No authentication needed.
+      The text of a play as TEI or plain text, or parts of it like the
+      spoken text or the stage directions.
+  - name: Networks
+    description: |
+      Network metrics and the character network of a play, based on
+      co-presence or on explicit relations, in several formats.
+  - name: Characters
+    description: |
+      The characters of a play and characters identified by a Wikidata ID
+      across all corpora.
   - name: DTS
     description: |
       Implementation of the
@@ -56,24 +72,32 @@ tags:
       API for addressing plays and their parts.
     externalDocs:
       url: https://distributed-text-services.github.io/specifications/
-  - name: wikidata
+  - name: Wikidata
     description: Endpoints providing data for or from Wikidata.
-  - name: admin
+  - name: Admin
     description: |
       Endpoints for managing corpora. They require HTTP Basic authentication
       with the credentials of an eXist-db user.
-  - name: webhook
+  - name: Webhook
     description: GitHub webhook that triggers corpus updates.
+
+x-tagGroups:
+  - name: Data
+    tags: [General, Corpora, Plays, Texts, Networks, Characters]
+  - name: Standards and integrations
+    tags: [DTS, Wikidata]
+  - name: Administration
+    tags: [Admin, Webhook]
 
 paths:
   /info:
     get:
-      summary: API info
+      summary: "API: Info"
       description: >-
         Shows version numbers of the dracor-api app and the underlying
         eXist-db.
       operationId: api-info
-      tags: [public]
+      tags: [General]
       responses:
         '200':
           description: Returns JSON object
@@ -94,9 +118,9 @@ paths:
 
   /corpora:
     get:
-      summary: List available corpora
+      summary: "Corpora: List"
       operationId: list-corpora
-      tags: [public]
+      tags: [Corpora]
       parameters:
         - name: include
           in: query
@@ -201,7 +225,7 @@ paths:
               operationId: list-corpus-content
               parameters:
                 corpusname: $response.body#/0/name
-              description: | 
+              description: |
                 The `name` of a corpus in the response can be used to list its
                 contents.
             CorpusMetadata:
@@ -215,9 +239,9 @@ paths:
         '400':
           description: Invalid value for `include` parameter
     post:
-      summary: Add new corpus
+      summary: "Corpora: Add corpus"
       operationId: post-corpora
-      tags: [admin]
+      tags: [Admin]
       security:
         - basicAuth: []
       requestBody:
@@ -300,12 +324,12 @@ paths:
 
   /corpora/{corpusname}:
     get:
-      summary: List corpus content
+      summary: "Corpus: List of plays"
       description: >-
         Lists all plays available in the corpus including the id, title,
         author(s) and other meta data.
       operationId: list-corpus-content
-      tags: [public]
+      tags: [Corpora]
       parameters:
         - $ref: "#/components/parameters/corpusname"
       responses:
@@ -327,14 +351,14 @@ paths:
         '404':
           description: Unknown corpus
     post:
-      summary: Load corpus data from its repository
+      summary: "Corpus: Load from repository"
       description: >-
         Posting to the corpus URI reloads the data for this corpus from its
         repository (if defined). The request needs no body. For backward
         compatibility a body like `{"load": true}`, which earlier versions
         required, is still accepted but ignored.
       operationId: load-corpus
-      tags: [admin]
+      tags: [Admin]
       security:
         - basicAuth: []
       parameters:
@@ -360,9 +384,9 @@ paths:
 
             This is the response when another update has not yet finished.
     delete:
-      summary: Remove corpus from database
+      summary: "Corpus: Remove"
       operationId: delete-corpus
-      tags: [admin]
+      tags: [Admin]
       security:
         - basicAuth: []
       parameters:
@@ -378,9 +402,9 @@ paths:
 
   /corpora/{corpusname}/metadata:
     get:
-      summary: List of metadata for all plays in a corpus
+      summary: "Corpus: Play metadata (JSON)"
       operationId: corpus-metadata
-      tags: [public]
+      tags: [Corpora]
       parameters:
         - $ref: "#/components/parameters/corpusname"
       responses:
@@ -400,9 +424,9 @@ paths:
 
   /corpora/{corpusname}/metadata/csv:
     get:
-      summary: List of metadata for all plays in a corpus
+      summary: "Corpus: Play metadata (CSV)"
       operationId: corpus-metadata-csv-endpoint
-      tags: [public]
+      tags: [Corpora]
       parameters:
         - $ref: "#/components/parameters/corpusname"
       responses:
@@ -420,9 +444,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}:
     get:
-      summary: Get metadata and network metrics for a single play
+      summary: "Play: Metadata and metrics"
       operationId: play-info
-      tags: [public]
+      tags: [Plays]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -519,9 +543,9 @@ paths:
         '404':
           description: Unknown play (or corpus)
     delete:
-      summary: Remove a single play from the corpus
+      summary: "Play: Remove"
       operationId: play-delete
-      tags: [admin]
+      tags: [Admin]
       security:
         - basicAuth: []
       parameters:
@@ -537,9 +561,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/metrics:
     get:
-      summary: Get network metrics for a single play
+      summary: "Play: Network metrics"
       operationId: play-metrics
-      tags: [public]
+      tags: [Networks]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -555,9 +579,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/tei:
     get:
-      summary: Get TEI document of a single play
+      summary: "Play: TEI document"
       operationId: play-tei
-      tags: [public]
+      tags: [Texts]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -571,7 +595,7 @@ paths:
         '404':
           description: Unknown play (or corpus)
     put:
-      summary: Add new or update existing TEI document
+      summary: "Play: Add or update TEI document"
       description: |
         When sending a PUT request to a new play URI, the request body is stored
         in the database as a new document accessible under that URI. If the URI
@@ -581,7 +605,7 @@ paths:
         The `playname` parameter of a new URI must consist of lower case ASCII
         characters, digits and/or dashes only.
       operationId: play-tei-put
-      tags: [admin]
+      tags: [Admin]
       security:
         - basicAuth: []
       parameters:
@@ -620,9 +644,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/txt:
     get:
-      summary: Get plain text of a single play
+      summary: "Play: Plain text"
       operationId: play-txt
-      tags: [public]
+      tags: [Texts]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -638,9 +662,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/characters:
     get:
-      summary: Get a list of characters of a play
+      summary: "Play: Characters (JSON)"
       operationId: get-characters
-      tags: [public]
+      tags: [Characters]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -706,9 +730,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/characters/csv:
     get:
-      summary: Get a list of characters of a play (CSV)
+      summary: "Play: Characters (CSV)"
       operationId: get-characters-csv
-      tags: [public]
+      tags: [Characters]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -730,9 +754,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/networkdata/csv:
     get:
-      summary: Get network data of a play as CSV
+      summary: "Play: Network data (CSV)"
       operationId: network-csv
-      tags: [public]
+      tags: [Networks]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -756,9 +780,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/networkdata/gexf:
     get:
-      summary: Get network data of a play as GEXF
+      summary: "Play: Network data (GEXF)"
       operationId: network-gexf
-      tags: [public]
+      tags: [Networks]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -774,9 +798,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/networkdata/graphml:
     get:
-      summary: Get network data of a play as GraphML
+      summary: "Play: Network data (GraphML)"
       operationId: network-graphml
-      tags: [public]
+      tags: [Networks]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -792,9 +816,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/relations/csv:
     get:
-      summary: Get relation data of a play as CSV
+      summary: "Play: Relations (CSV)"
       operationId: relations-csv
-      tags: [public]
+      tags: [Networks]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -822,9 +846,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/relations/gexf:
     get:
-      summary: Get relation data of a play as GEXF
+      summary: "Play: Relations (GEXF)"
       operationId: relations-gexf
-      tags: [public]
+      tags: [Networks]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -935,9 +959,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/relations/graphml:
     get:
-      summary: Get relation data of a play as GraphML
+      summary: "Play: Relations (GraphML)"
       operationId: relations-graphml
-      tags: [public]
+      tags: [Networks]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -1038,7 +1062,7 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/spoken-text:
     get:
-      summary: Get spoken text of a play (excluding stage directions)
+      summary: "Play: Spoken text"
       description: |
         The lines or paragraphs of text to include can be filtered by the
         gender, role or relation of the speakers.
@@ -1046,7 +1070,7 @@ paths:
         Note that the response may be empty when you use filter parameters and
         there is no speaker matching the filter
       operationId: play-spoken-text
-      tags: [public]
+      tags: [Texts]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -1080,9 +1104,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/spoken-text-by-character:
     get:
-      summary: Get spoken text for each character of a play
+      summary: "Play: Spoken text by character"
       operationId: play-spoken-text-by-character
-      tags: [public]
+      tags: [Texts]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -1103,9 +1127,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/stage-directions:
     get:
-      summary: Get all stage directions of a play
+      summary: "Play: Stage directions"
       operationId: play-stage-directions
-      tags: [public]
+      tags: [Texts]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -1121,9 +1145,9 @@ paths:
 
   /corpora/{corpusname}/plays/{playname}/stage-directions-with-speakers:
     get:
-      summary: Get all stage directions of a play including speakers
+      summary: "Play: Stage directions with speakers"
       operationId: play-stage-directions-with-speakers
-      tags: [public]
+      tags: [Texts]
       parameters:
         - $ref: "#/components/parameters/corpusname"
         - $ref: "#/components/parameters/playname"
@@ -1139,13 +1163,13 @@ paths:
 
   /id/{id}:
     get:
-      summary: Resolve DraCor play ID
+      summary: "Play: Resolve DraCor ID"
       description: |
         Depending on the `Accept` header this endpoint redirects to either the
         RDF representation [play-rdf], the JSON meta data [play-info] or the
         dracor.org URL of the play identified by the `id` parameter.
       operationId: resolve-id
-      tags: [public]
+      tags: [General]
       parameters:
         - name: id
           in: path
@@ -1161,7 +1185,7 @@ paths:
 
   /characters:
     get:
-      summary: "[Experimental] List all characters with a Wikidata ID across all corpora"
+      summary: "Characters: List with Wikidata IDs (experimental)"
       description: |
         **⚠ Experimental — response shape and semantics may change in future
         releases. Do not rely on this endpoint for stable integrations.**
@@ -1171,7 +1195,7 @@ paths:
         Wikidata IDs are read from `<idno type="wikidata">` on `person` and
         `personGrp` elements.
       operationId: get-all-characters-with-wikidata-id
-      tags: [public]
+      tags: [Characters]
       x-dracor-experimental: true
       responses:
         '200':
@@ -1262,9 +1286,9 @@ paths:
 
   /character/{id}:
     get:
-      summary: List plays having a character identified by Wikidata ID
+      summary: "Character: Plays featuring a character"
       operationId: plays-with-character
-      tags: [public]
+      tags: [Characters]
       parameters:
         - name: id
           in: path
@@ -1356,7 +1380,7 @@ paths:
 
   /dts:
     get:
-      summary: DTS entry endpoint
+      summary: "DTS: Entry point"
       description: >-
         Entry endpoint of the [Distributed Text Services
         (DTS)](https://dtsapi.org/specifications/versions/v1.0/) API, version
@@ -1384,7 +1408,7 @@ paths:
 
   /dts/collection:
     get:
-      summary: DTS collection endpoint
+      summary: "DTS: Collection"
       description: >-
         Returns the root collection, a corpus or a play (`Resource`) with its
         members: the corpora of the root collection or the plays of a corpus.
@@ -1512,7 +1536,7 @@ paths:
 
   /dts/navigation:
     get:
-      summary: DTS navigation endpoint
+      summary: "DTS: Navigation"
       description: >-
         Returns CitableUnits of the citation tree of a play. Level 1 consists of
         `front`, `body` and `back`, followed by nested `div`s (acts, scenes),
@@ -1675,7 +1699,7 @@ paths:
 
   /dts/document:
     get:
-      summary: DTS document endpoint
+      summary: "DTS: Document"
       description: >-
         Returns the TEI of a play, or a CitableUnit or range of CitableUnits
         embedded in `<dts:wrapper>` after the `teiHeader`. With
@@ -1742,9 +1766,9 @@ paths:
 
   /wikidata/author/{id}:
     get:
-      summary: List author information from Wikidata
+      summary: "Wikidata: Author info"
       operationId: wikidata-author-info
-      tags: [wikidata]
+      tags: [Wikidata]
       parameters:
         - name: id
           in: path
@@ -1776,10 +1800,10 @@ paths:
 
   /wikidata/mixnmatch:
     get:
-      summary: Endpoint for Wikidata Mix'n'match
+      summary: "Wikidata: Mix'n'match catalogue"
       description: See https://meta.wikimedia.org/wiki/Mix'n'match/Import.
       operationId: wikidata-mixnmatch
-      tags: [wikidata]
+      tags: [Wikidata]
       responses:
         '200':
           description: List of plays (id, name, q [wikidata ID]).
@@ -1790,13 +1814,13 @@ paths:
 
   /webhook/github:
     post:
-      summary: GitHub Webhook
+      summary: "Webhook: GitHub push"
       description: >-
         Endpoint accepting POST requests from Github (see
         https://developer.github.com/webhooks/). We currently only handle push
         events on the main branch.
       operationId: github-webhook
-      tags: [webhook]
+      tags: [Webhook]
       parameters:
         - in: header
           name: User-Agent
@@ -1854,7 +1878,7 @@ components:
       required: true
       description: >
         Short name of the corpus as provided in the `name` property of the result
-        objects from the [/corpora](#tag/public/GET/corpora) endpoint
+        objects from the [/corpora](#tag/corpora/GET/corpora) endpoint
       schema:
         type: string
         # offered as a dropdown in the Scalar API client
@@ -1890,7 +1914,7 @@ components:
       description: |
         Name parameter (or "slug") of the play as provided in the `name`
         property of the result objects of the
-        [/corpora/{corpusname}](#tag/public/GET/corpora/{corpusname}) endpoint.
+        [/corpora/{corpusname}](#tag/corpora/GET/corpora/{corpusname}) endpoint.
         A play only exists in its own corpus, see the
         [example pairs](#description/examples) in the introduction.
       schema:
@@ -2663,13 +2687,13 @@ components:
         type:
           type: string
           enum:
-          - parent_of
-          - lover_of
-          - related_with
-          - associated_with
-          - siblings
-          - spouses
-          - friends
+            - parent_of
+            - lover_of
+            - related_with
+            - associated_with
+            - siblings
+            - spouses
+            - friends
           x-dracor-feature: character_relation_type
         source:
           type: string
@@ -2904,10 +2928,10 @@ components:
         sex:
           type: [string, "null"]
           enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
-          - null
+            - MALE
+            - FEMALE
+            - UNKNOWN
+            - null
           x-dracor-feature: character_sex
         gender:
           type: string
@@ -2972,10 +2996,10 @@ components:
         sex:
           type: [string, "null"]
           enum:
-          - MALE
-          - FEMALE
-          - UNKNOWN
-          - null
+            - MALE
+            - FEMALE
+            - UNKNOWN
+            - null
           x-dracor-feature: character_sex
         gender:
           type: string
