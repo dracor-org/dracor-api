@@ -25,6 +25,7 @@ declare namespace dts = "https://w3id.org/api/dts#";
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+import module namespace sync = "http://dracor.org/ns/exist/v1/sync" at "sync.xqm";
 
 declare variable $ddts:spec-version := "1.0";
 
@@ -639,6 +640,17 @@ declare function local:play-extensions($tei as element(tei:TEI)) as map(*) {
 };
 
 (:~
+ : Keep a response including the metrics of a play from being cached while
+ : they are pending.
+ :)
+declare function local:cache-control($tei as element(tei:TEI)) as element()? {
+  let $paths := dutil:filepaths(base-uri($tei))
+  return sync:cache-control(
+    sync:play-pending($paths?corpusname, $paths?playname)
+  )
+};
+
+(:~
  : Return the Resource object for a play.
  :
  : @param $tei TEI document of the play
@@ -781,7 +793,8 @@ function ddts:collection(
         )
       )
     )
-  else if ($name and dutil:get-corpus($name)) then
+  else if ($name and dutil:get-corpus($name)) then (
+    sync:cache-control(sync:corpus-pending($name)),
     local:top-level(
       map:merge(
         (
@@ -799,16 +812,19 @@ function ddts:collection(
         )
       )
     )
-  else if ($name and dutil:get-play-by-id($name)) then
+  ) else if ($name and dutil:get-play-by-id($name)) then
     let $tei := dutil:get-play-by-id($name)
     let $corpusname := dutil:filepaths(base-uri($tei))?corpusname
-    return local:top-level(
-      map:merge(
-        (
-          local:resource-object($tei, true()),
-          if ($nav eq "parents") then
-            map {"member": array { local:corpus-object($corpusname) }}
-          else (
+    return (
+      local:cache-control($tei),
+      local:top-level(
+        map:merge(
+          (
+            local:resource-object($tei, true()),
+            if ($nav eq "parents") then
+              map {"member": array { local:corpus-object($corpusname) }}
+            else (
+            )
           )
         )
       )
@@ -991,28 +1007,31 @@ function ddts:navigation(
           map {"name": "page", "value": $page}
         )
       )
-      return local:top-level(
-        map:merge(
-          (
-            map {
-              "@id": $id,
-              "@type": "Navigation",
-              "resource": local:resource-object($tei, true())
-            },
-            if ($ref-unit) then
-              map {"ref": local:citable-unit($ref-unit)}
-            else (
-            ),
-            if ($start-unit) then
+      return (
+        local:cache-control($tei),
+        local:top-level(
+          map:merge(
+            (
               map {
-                "start": local:citable-unit($start-unit),
-                "end": local:citable-unit($end-unit)
-              }
-            else (
-            ),
-            if (exists($down)) then
-              map {"member": array { local:citable-units($members) }}
-            else (
+                "@id": $id,
+                "@type": "Navigation",
+                "resource": local:resource-object($tei, true())
+              },
+              if ($ref-unit) then
+                map {"ref": local:citable-unit($ref-unit)}
+              else (
+              ),
+              if ($start-unit) then
+                map {
+                  "start": local:citable-unit($start-unit),
+                  "end": local:citable-unit($end-unit)
+                }
+              else (
+              ),
+              if (exists($down)) then
+                map {"member": array { local:citable-units($members) }}
+              else (
+              )
             )
           )
         )

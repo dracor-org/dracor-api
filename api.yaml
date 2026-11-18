@@ -2139,6 +2139,14 @@ components:
           items:
             type: string
           x-dracor-feature: service_active_loads
+        pendingSyncs:
+          type: integer
+          description: >-
+            Number of scheduled jobs updating the data derived from the TEI
+            documents (metrics, Wikidata sitelinks, RDF). Only present when
+            at least one such job is pending; until then responses
+            including this data may not reflect the latest changes.
+          x-dracor-feature: service_pending_syncs
       required:
         - name
         - version

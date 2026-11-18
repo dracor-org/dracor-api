@@ -15,6 +15,7 @@ declare namespace dracon = "http://dracor.org/ontology#";
 declare namespace crm = "http://www.cidoc-crm.org/cidoc-crm/";
 declare namespace schema = "http://schema.org/";
 declare namespace frbroo = "http://iflastandards.info/ns/fr/frbr/frbroo/";
+declare namespace sparqlres = "http://www.w3.org/2005/sparql-results#";
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
@@ -577,6 +578,37 @@ declare function drdf:fuseki-drop-corpus(
   return (
     util:log-system-out("Dropping Fuseki graphs <" || $prefix || "*>"),
     drdf:fuseki-send($request, ("200", "204"))
+  )
+};
+
+(:~
+ : List the plays that have a graph in Fuseki
+ :
+ : @return a map with corpus name and play name for each graph; empty if
+ : Fuseki cannot be queried
+ :)
+declare function drdf:fuseki-plays() as map(*)* {
+  (: drdf:graph("", "") gives the prefix with a duplicate slash :)
+  let $prefix := replace(drdf:graph("", ""), "/$", "")
+  let $query := "SELECT DISTINCT ?g WHERE { GRAPH ?g { } }"
+  let $request := <hc:request
+    href="{
+      $config:fuseki-server || "sparql?query=" || encode-for-uri($query)
+    }"
+    method="get"
+  >
+    <hc:header name="Accept" value="application/sparql-results+xml" />
+  </hc:request>
+  let $response := try { hc:send-request($request) } catch * {
+    util:log-system-out("Fuseki query failed: " || $err:description)
+  }
+  return if (string($response[1]/@status) = "200") then
+    for $graph in $response[2]//sparqlres:binding[@name = "g"]/sparqlres:uri
+    let $segments := tokenize(substring-after($graph, $prefix), "/")
+    where starts-with($graph, $prefix) and count($segments) = 2
+    return map {"corpusname": $segments[1], "playname": $segments[2]}
+  else (
+    util:log-system-out("Fuseki query failed: " || $response[1]/@status)
   )
 };
 
