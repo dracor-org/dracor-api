@@ -145,6 +145,7 @@ declare function dpmh:corpora() as map(*)* {
         map:entry("datestamp", dpmh:datestamp($corpus)),
         map:entry("languages", dpmh:languages($corpus)),
         map:entry("description-lang", dpmh:description-lang($corpus)),
+        dpmh:temporal-coverage($corpus)!map:entry("temporal-coverage", .),
         dpmh:doi($corpus)!map:entry("doi", .)
       )
     )
@@ -181,6 +182,25 @@ declare function dpmh:doi($corpus as element()) as xs:string? {
     "",
     "i"
   )
+};
+
+(:~
+ : Temporal coverage of a corpus: the earliest and the latest normalized year
+ : (`yearNormalized`) of its plays, as `start/end` like an ISO 8601 interval,
+ : or a single year if they are the same. Years before the common era are
+ : negative as in `yearNormalized`.
+ :)
+declare function dpmh:temporal-coverage($corpus as element()) as xs:string? {
+  let $years := collection(
+    util:collection-name($corpus)
+  )/tei:TEI!dutil:get-normalized-year(.)
+  let $min := min($years)
+  let $max := max($years)
+  return if (empty($years)) then (
+  ) else if ($min eq $max) then
+    string($min)
+  else
+    $min || "/" || $max
 };
 
 (:~
@@ -381,6 +401,7 @@ declare function dpmh:oai-dc($corpus as map(*)) as element(oai_dc:dc) {
     <dc:type>Collection</dc:type>
     <dc:type>Text</dc:type>
     { $corpus?languages!<dc:language>{ . }</dc:language> }
+    { $corpus?temporal-coverage!<dc:coverage>{ . }</dc:coverage> }
     <dc:format>application/tei+xml</dc:format>
     { $links?doi!<dc:identifier>{ . }</dc:identifier> }
     <dc:identifier>{ $links?uri }</dc:identifier>
