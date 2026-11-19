@@ -56,6 +56,14 @@ tags:
       API for addressing plays and their parts.
     externalDocs:
       url: https://distributed-text-services.github.io/specifications/
+  - name: OAI-PMH
+    description: |
+      Implementation of the
+      [Open Archives Initiative Protocol for Metadata Harvesting](https://www.openarchives.org/OAI/openarchivesprotocol.html)
+      (OAI-PMH) 2.0 providing metadata records of the corpora for harvesters
+      like the CLARIN Virtual Language Observatory.
+    externalDocs:
+      url: https://www.openarchives.org/OAI/openarchivesprotocol.html
   - name: wikidata
     description: Endpoints providing data for or from Wikidata.
   - name: admin
@@ -1740,6 +1748,63 @@ paths:
             The play, a CitableUnit given by `ref`, `start` or `end`, the
             citation tree given by `tree` or the media type is not available.
 
+  /oai:
+    get:
+      summary: OAI-PMH endpoint
+      description: >-
+        [OAI-PMH 2.0](https://www.openarchives.org/OAI/openarchivesprotocol.html)
+        endpoint providing one metadata record per corpus, identified as
+        `oai:dracor.org:{corpusname}`. Records are available as Dublin Core
+        (`oai_dc`) and as CMDI 1.2 (`cmdi`) using the CLARIN collection
+        profile. The datestamp of a record is the time the corpus was last
+        loaded. Sets and deleted records are not supported. As required by
+        the protocol, errors are reported in the XML response with status
+        200.
+      operationId: oai-pmh
+      tags: [OAI-PMH]
+      parameters:
+        - $ref: '#/components/parameters/oaiVerb'
+        - $ref: '#/components/parameters/oaiIdentifier'
+        - $ref: '#/components/parameters/oaiMetadataPrefix'
+        - $ref: '#/components/parameters/oaiFrom'
+        - $ref: '#/components/parameters/oaiUntil'
+        - $ref: '#/components/parameters/oaiSet'
+        - $ref: '#/components/parameters/oaiResumptionToken'
+      responses:
+        '200':
+          $ref: '#/components/responses/OaiPmh'
+    post:
+      summary: OAI-PMH endpoint (POST)
+      description: >-
+        Same as the GET request with the arguments sent as
+        `application/x-www-form-urlencoded` body.
+      operationId: oai-pmh-post
+      tags: [OAI-PMH]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                verb:
+                  type: string
+                identifier:
+                  type: string
+                metadataPrefix:
+                  type: string
+                from:
+                  type: string
+                until:
+                  type: string
+                set:
+                  type: string
+                resumptionToken:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/OaiPmh'
+
   /wikidata/author/{id}:
     get:
       summary: List author information from Wikidata
@@ -2092,10 +2157,84 @@ components:
         which is used when `tree` is omitted.
       schema:
         type: string
+    oaiVerb:
+      name: verb
+      in: query
+      required: true
+      description: OAI-PMH request type.
+      schema:
+        type: string
+        enum:
+          - Identify
+          - ListMetadataFormats
+          - ListSets
+          - ListIdentifiers
+          - ListRecords
+          - GetRecord
+    oaiIdentifier:
+      name: identifier
+      in: query
+      required: false
+      description: >-
+        Identifier of a record (`GetRecord`, `ListMetadataFormats`).
+      schema:
+        type: string
+        examples: ['oai:dracor.org:ger']
+    oaiMetadataPrefix:
+      name: metadataPrefix
+      in: query
+      required: false
+      description: >-
+        Metadata format (`GetRecord`, `ListIdentifiers`, `ListRecords`).
+      schema:
+        type: string
+        enum: [oai_dc, cmdi]
+    oaiFrom:
+      name: from
+      in: query
+      required: false
+      description: >-
+        Lower bound of the datestamps of the returned records, as `YYYY-MM-DD`
+        or `YYYY-MM-DDThh:mm:ssZ`.
+      schema:
+        type: string
+    oaiUntil:
+      name: until
+      in: query
+      required: false
+      description: >-
+        Upper bound of the datestamps of the returned records, in the same
+        granularity as `from`.
+      schema:
+        type: string
+    oaiSet:
+      name: set
+      in: query
+      required: false
+      description: Sets are not supported, a request with `set` returns the
+        error `noSetHierarchy`.
+      schema:
+        type: string
+    oaiResumptionToken:
+      name: resumptionToken
+      in: query
+      required: false
+      description: >-
+        Lists are not paginated, so any resumption token is invalid.
+      schema:
+        type: string
   responses:
     Unauthorized:
       description: >-
         Credentials are missing or invalid.
+    OaiPmh:
+      description: >-
+        OAI-PMH response, either the result of the request or an `error`
+        element with one of the codes defined by the protocol.
+      content:
+        text/xml:
+          schema:
+            type: string
   securitySchemes:
     basicAuth:
       type: http

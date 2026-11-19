@@ -124,3 +124,10 @@ parameters."path.playname" = { dictionary = "scratch-plays", probability = 0.9 }
 [[operations]]
 include-operation-id-regex = "^(post-corpora|play-tei-put)$"
 checks.positive_data_acceptance.expected-statuses = ["2xx", "400", "401", "404", "409"]
+
+# OAI-PMH reports every error, including unknown verbs and arguments, in the
+# XML response with status 200, not with 4xx (see "Error and Exception
+# Conditions" in https://www.openarchives.org/OAI/openarchivesprotocol.html).
+[[operations]]
+include-operation-id-regex = "^oai-pmh(-post)?$"
+checks.negative_data_rejection.enabled = false
