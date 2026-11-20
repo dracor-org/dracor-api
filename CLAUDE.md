@@ -138,6 +138,8 @@ GitHub push → POST /webhook/github
 | `METRICS_SERVER` | Metrics service URI |
 | `GITHUB_WEBHOOK_SECRET` | GitHub webhook shared secret |
 
+These variables are read by `post-install.xq` (runs as admin) and written to `/db/dracor/config-v1.xml` and `/db/dracor/secrets.xml` on every package install; unset variables keep the stored value. Regular API code can't read them: `environment-variable()` returns nothing for non-DBA users. So changing a value on a server means setting it in eXist-db's environment and redeploying the package.
+
 ### Build & Deployment
 
 - `build.sh` produces a `.xar` EXPath package deployable to any eXist-db instance (requires only `git`, `sed` and `zip`; the version comes from `git describe` or the `VERSION` env var). Files to include in the package are listed explicitly in the script
@@ -148,7 +150,7 @@ GitHub push → POST /webhook/github
 - `compose.t.yml` — overlay for CI test runs
 - `compose.dev.yml` — development overlay (builds locally; uses hardcoded dev secrets `qwerty`)
 - eXist-db dependencies (`expath-crypto-module`, `openapi`, `functx`) are auto-deployed via `/opt/exist/autodeploy`
-- `post-install.xq` runs after XAR deployment: creates `/db/dracor/config-v1.xml` and `secrets.xml` from environment variables, and sets SETUID permissions on webhook and sitelinks modules
+- `post-install.xq` runs after XAR deployment: creates or updates `/db/dracor/config-v1.xml` and `secrets.xml` from environment variables (see above), and sets SETUID permissions on webhook and sitelinks modules
 
 ### XQuery Coding Patterns
 

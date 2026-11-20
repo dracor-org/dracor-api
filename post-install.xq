@@ -18,105 +18,109 @@ declare function local:store($file-path, $content) {
 };
 
 (:
- : Set the identifier base in an existing config file from DRACOR_ID_BASE, so
- : that the variable takes effect on servers set up before it existed.
+ : Set the child element $name of $parent to the value of the environment
+ : variable $var. A missing element is added. If the variable is not set (or
+ : empty) the stored value is kept. The value is not logged since it may be a
+ : secret.
  :)
-declare function local:update-id-base() as empty-sequence() {
-  let $id-base := environment-variable("DRACOR_ID_BASE")
-  let $config := doc($config:file)/config
-  return if (not($id-base)) then (
-  ) else if ($config/id-base) then (
-    util:log-system-out("Setting id-base to " || $id-base),
-    update value $config/id-base with $id-base
+declare function local:set-from-env(
+  $parent as element(),
+  $name as xs:string,
+  $var as xs:string
+) as empty-sequence() {
+  let $value := environment-variable($var)
+  let $element := $parent/*[local-name() = $name]
+  return if (not($value)) then (
+  ) else if ($element) then (
+    util:log-system-out("Setting " || $name || " from " || $var),
+    update value $element with $value
   ) else (
-    util:log-system-out("Adding id-base " || $id-base),
-    update insert <id-base>{ $id-base }</id-base> into $config
+    util:log-system-out("Adding " || $name || " from " || $var),
+    update insert element { $name } { $value } into $parent
   )
 };
 
 (:
- : We create an initial config file the values of which can be passed by the
- : following environment variables:
+ : The config file is created with default values on the first install. On
+ : every install the values are then updated from the following environment
+ : variables, as far as they are set:
  :
  : - DRACOR_API_BASE: base URI the DraCor API will be available under
+ : (default: https://dracor.org/api/v1)
  : - DRACOR_ID_BASE: base of identifier URIs (optional, defaults to
  : https://dracor.org/id; only needed for installations publishing their
  : own corpora)
  : - FUSEKI_SERVER: base URI of the fuseki server
+ : (default: http://localhost:3030/dracor/)
  : - METRICS_SERVER: DraCor metrics service URI
+ : (default: http://localhost:8030/metrics/)
  :
- : If the config file already exists, only the identifier base is updated
- : from DRACOR_ID_BASE (when set).
+ : The API itself cannot read these variables: environment-variable() returns
+ : nothing for non-DBA users.
  :)
-declare function local:create-config-file() as item()? {
+declare function local:update-config-file() as item()* {
   if (doc($config:file)/config) then (
-    util:log-system-out("Config file exists at " || $config:file),
-    local:update-id-base()
   ) else (
     util:log-system-out("Creating " || $config:file),
     local:store(
       $config:file,
       <config>
-        <api-base>
-          {
-            if (environment-variable("DRACOR_API_BASE")) then
-              environment-variable("DRACOR_API_BASE")
-            else
-              "https://dracor.org/api/v1"
-          }
-        </api-base>
-        {
-          if (environment-variable("DRACOR_ID_BASE")) then
-            <id-base>{ environment-variable("DRACOR_ID_BASE") }</id-base>
-          else (
-          )
-        }
+        <api-base>https://dracor.org/api/v1</api-base>
         <services>
-          <fuseki>
-            {
-              if (environment-variable("FUSEKI_SERVER")) then
-                environment-variable("FUSEKI_SERVER")
-              else
-                "http://localhost:3030/dracor/"
-            }
-          </fuseki>
-          <metrics>
-            {
-              if (environment-variable("METRICS_SERVER")) then
-                environment-variable("METRICS_SERVER")
-              else
-                "http://localhost:8030/metrics/"
-            }
-          </metrics>
+          <fuseki>http://localhost:3030/dracor/</fuseki>
+          <metrics>http://localhost:8030/metrics/</metrics>
         </services>
       </config>
     )
+  ),
+  if (doc($config:file)/config/services) then (
+  ) else (
+    update insert <services/> into doc($config:file)/config
+  ),
+  local:set-from-env(doc($config:file)/config, "api-base", "DRACOR_API_BASE"),
+  local:set-from-env(doc($config:file)/config, "id-base", "DRACOR_ID_BASE"),
+  local:set-from-env(
+    doc($config:file)/config/services,
+    "fuseki",
+    "FUSEKI_SERVER"
+  ),
+  local:set-from-env(
+    doc($config:file)/config/services,
+    "metrics",
+    "METRICS_SERVER"
   )
 };
 
 (:
- : We create an initial config file the values of which can be passed by the
- : following environment variables:
+ : The secrets file is created on the first install and updated on every
+ : install from the following environment variables, as far as they are set:
  :
  : - GITHUB_WEBHOOK_SECRET: secret for the GitHub webhook
  : - FUSEKI_SECRET: admin password for the fuseki server
  :)
-declare function local:create-secrets-file() as item()? {
+declare function local:update-secrets-file() as item()* {
   if (doc($config:secrets-file)/secrets) then (
-    util:log-system-out("Secrets file exists at " || $config:secrets-file)
   ) else (
     util:log-system-out("Creating " || $config:secrets-file),
     local:store(
       $config:secrets-file,
       <secrets>
-        <fuseki>{ environment-variable("FUSEKI_SECRET") }</fuseki>
-        <gh-webhook>
-          { environment-variable("GITHUB_WEBHOOK_SECRET") }
-        </gh-webhook>
+        <fuseki/>
+        <gh-webhook/>
       </secrets>
-    ),
-    (: FIXME: find a better solution to protect the webhook secret :)
-    sm:chmod(xs:anyURI($config:secrets-file), "rw-------")
+    )
+  ),
+  (: FIXME: find a better solution to protect the webhook secret :)
+  sm:chmod(xs:anyURI($config:secrets-file), "rw-------"),
+  local:set-from-env(
+    doc($config:secrets-file)/secrets,
+    "fuseki",
+    "FUSEKI_SECRET"
+  ),
+  local:set-from-env(
+    doc($config:secrets-file)/secrets,
+    "gh-webhook",
+    "GITHUB_WEBHOOK_SECRET"
   )
 };
 
@@ -128,8 +132,8 @@ let $sitelinks-job := xs:anyURI($target || "/jobs/sitelinks.xq")
 let $restxq-module := xs:anyURI("modules/api.xpm")
 
 return (
-  local:create-config-file(),
-  local:create-secrets-file(),
+  local:update-config-file(),
+  local:update-secrets-file(),
   sm:chown($webhook, "admin"),
   sm:chgrp($webhook, "dba"),
   sm:chmod($webhook, "rwsr-xr-x"),
