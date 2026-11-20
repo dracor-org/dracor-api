@@ -36,7 +36,7 @@ declare function local:set-from-env(
     update value $element with $value
   ) else (
     util:log-system-out("Adding " || $name || " from " || $var),
-    update insert element { $name } { $value } into $parent
+    update insert element {$name} { $value } into $parent
   )
 };
 
@@ -75,7 +75,7 @@ declare function local:update-config-file() as item()* {
   ),
   if (doc($config:file)/config/services) then (
   ) else (
-    update insert <services/> into doc($config:file)/config
+    update insert <services /> into doc($config:file)/config
   ),
   local:set-from-env(doc($config:file)/config, "api-base", "DRACOR_API_BASE"),
   local:set-from-env(doc($config:file)/config, "id-base", "DRACOR_ID_BASE"),
@@ -104,10 +104,7 @@ declare function local:update-secrets-file() as item()* {
     util:log-system-out("Creating " || $config:secrets-file),
     local:store(
       $config:secrets-file,
-      <secrets>
-        <fuseki/>
-        <gh-webhook/>
-      </secrets>
+      <secrets><fuseki /><gh-webhook /></secrets>
     )
   ),
   (: FIXME: find a better solution to protect the webhook secret :)
