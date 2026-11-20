@@ -21,11 +21,6 @@ ARG VERSION
 ARG MAX_MEMORY
 ARG EXIST_URL
 ARG SAXON_JAR
-ARG DRACOR_API_BASE
-ARG FUSEKI_SERVER
-ARG METRICS_SERVER
-ARG FUSEKI_SECRET
-ARG GITHUB_WEBHOOK_SECRET
 
 ENV VERSION=${VERSION:-6.4.0}
 ENV EXIST_URL=${EXIST_URL:-https://github.com/eXist-db/exist/releases/download/eXist-${VERSION}/exist-installer-${VERSION}.jar}
@@ -36,11 +31,6 @@ ENV EXIST_CONTEXT_PATH=${EXIST_CONTEXT_PATH:-/exist}
 ENV EXIST_DATA_DIR=${EXIST_DATA_DIR:-/opt/exist/data}
 ENV SAXON_JAR=${SAXON_JAR:-/opt/exist/lib/Saxon-HE-9.9.1-8.jar}
 ENV LOG4J_FORMAT_MSG_NO_LOOKUPS=true
-ENV DRACOR_API_BASE=${DRACOR_API_BASE:-http://localhost:8080/exist/restxq/v1}
-ENV FUSEKI_SERVER=${FUSEKI_SERVER:-http://fuseki:3030/dracor/}
-ENV METRICS_SERVER=${METRICS_SERVER:-http://metrics:8030/metrics/}
-ENV FUSEKI_SECRET=${FUSEKI_SECRET:-""}
-ENV GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-""}
 
 # dracor is in group 0 (root group), so that an arbitrary user ID in group 0,
 # as used by OpenShift/OKD, has the same rights as dracor

@@ -7,12 +7,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - FUSEKI_SECRET=qwerty
-        - GITHUB_WEBHOOK_SECRET=qwerty
     environment:
       # override default API base with frontend proxy
       - DRACOR_API_BASE=http://localhost:8088/api/v1
+      - FUSEKI_SERVER=http://fuseki:3030/dracor/
+      - METRICS_SERVER=http://metrics:8030/metrics/
+      - FUSEKI_SECRET=qwerty
+      - GITHUB_WEBHOOK_SECRET=qwerty
       # set an empty password
       - EXIST_PASSWORD=
     ports:
