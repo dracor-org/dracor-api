@@ -70,19 +70,11 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           INPUT: ${{ inputs.environment }}
-          REF: ${{ github.ref }}
         run: |
           case $EVENT in
             release) environment=production ;;
             push) environment=staging ;;
             *) environment=$INPUT ;;
-          esac
-          case $environment:$REF in
-            dev:* | *:refs/heads/main | *:refs/tags/*) ;;
-            *)
-              echo "::error::Only main or a tag can be deployed to $environment, not $REF"
-              exit 1
-              ;;
           esac
           echo "environment=$environment" >> "$GITHUB_OUTPUT"
 

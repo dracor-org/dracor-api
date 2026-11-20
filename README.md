@@ -221,8 +221,9 @@ DraCor servers:
 | `staging`    | pushed to `main`                           |
 | `production` | a release is published (not a pre-release) |
 
-A manual run can deploy any branch to `dev`, but only `main` or a tag to
-`staging` or `production`.
+The deployment branch rules of the environments restrict `staging` to `main`
+and `production` to `main` and tags (which only organization admins can create),
+so a manual run can deploy other branches only to `dev`.
 
 Everything specific to a server is configured in a
 [GitHub environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)

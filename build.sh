@@ -27,7 +27,7 @@ if [ -z "$VERSION" ]; then
 fi
 version=${VERSION:-unknown}
 case $version in
-  *[!A-Za-z0-9.+_-]*)
+  *[!A-Za-z0-9._-]*)
     echo "Unexpected characters in version: $version" >&2
     exit 1
     ;;
