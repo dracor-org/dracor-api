@@ -138,7 +138,7 @@ GitHub push → POST /webhook/github
 | `METRICS_SERVER` | Metrics service URI |
 | `GITHUB_WEBHOOK_SECRET` | GitHub webhook shared secret |
 
-These variables are read by `post-install.xq` (runs as admin) and written to `/db/dracor/config-v1.xml` and `/db/dracor/secrets.xml` on every package install; unset variables keep the stored value. Regular API code can't read them: `environment-variable()` returns nothing for non-DBA users. So changing a value on a server means setting it in eXist-db's environment and redeploying the package.
+These variables are read by `post-install.xq` (runs as admin) and written to `/db/dracor/config-v1.xml` and `/db/dracor/secrets.xml` on every package install; unset variables keep the stored value. Regular API code can't read them: `environment-variable()` returns nothing for non-DBA users. So a value can be changed either by setting the variable and redeploying the package, or by writing it into the documents directly. The DraCor servers do the latter: the api role of dracor-org-deployment writes `api-base`, `fuseki` and `gh-webhook` on every playbook run and sets none of these variables, so secrets don't appear in the eXist-db service environment.
 
 ### Build & Deployment
 

@@ -254,8 +254,9 @@ The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
 of the corpus data when the configured GitHub repository for the corpus changes.
 
 _Note:_ For the webhook to work, the shared secret between DraCor and GitHub
-needs to be set in the `GITHUB_WEBHOOK_SECRET` environment variable of eXist DB.
-It is stored in `/db/dracor/secrets.xml` when the package is installed.
+needs to be stored as `gh-webhook` in `/db/dracor/secrets.xml` in the database.
+When the `GITHUB_WEBHOOK_SECRET` environment variable of eXist DB is set, the
+package installation writes it there.
 
 ## How to Contribute
 
