@@ -13,7 +13,7 @@ DraCor API is an [eXist-db](http://exist-db.org/) application providing a REST A
 ```sh
 ./build.sh          # Build XAR (EXPath package) into build/ for deployment to eXist-db
 ./build.sh clean    # Clean build artifacts
-EXIST_PASSWORD= ./deploy.sh build/dracor-v1-latest.xar [http://localhost:8080/exist]   # Install XAR via eXist REST
+EXIST_PASSWORD= ./deploy.sh dracor-v1-latest.xar [http://localhost:8080/exist]   # Install XAR via eXist REST
 ```
 
 ### Development (Docker)

@@ -26,6 +26,12 @@ if [ -z "$VERSION" ]; then
   VERSION=$(git describe --tags --always --dirty 2>/dev/null | sed -e 's/^v//')
 fi
 version=${VERSION:-unknown}
+case $version in
+  *[!A-Za-z0-9.+_-]*)
+    echo "Unexpected characters in version: $version" >&2
+    exit 1
+    ;;
+esac
 xar=$build_dir/$name-$version.xar
 
 sed -e "s/@package.version@/$version/" expath-pkg.xml.tmpl > expath-pkg.xml
@@ -50,7 +56,8 @@ zip -q -r "$xar" \
   modules \
   jobs \
   README.md \
-  LICENSE
+  LICENSE \
+  -x '*/.DS_Store' '*~' '*/.#*'
 
 ln -sf "$xar" $symlink
 

@@ -11,7 +11,8 @@
 # EXIST_USER (default: admin) and EXIST_PASSWORD environment variables.
 #
 # An installed dracor-api package is removed before installing the new one, so
-# the same or an older version can be installed as well.
+# the same or an older version can be installed as well. There is no rollback:
+# if the installation fails, the API is down until a package is installed.
 
 set -e
 
@@ -41,8 +42,12 @@ if ! printf '%s\n' "$descriptor" | grep -q "name=\"$pkg\""; then
   echo "$xar is not a dracor-api package ($pkg)" >&2
   exit 1
 fi
-version=$(printf '%s\n' "$descriptor" \
-  | sed -n -e 's/^[[:space:]]*version="\([^"]*\)".*/\1/p')
+version=$(printf '%s\n' "$descriptor" | tr '\n\t' '  ' \
+  | sed -n -e 's/.*<package[^>]*[[:space:]]version="\([^"]*\)".*/\1/p')
+if [ -z "$version" ]; then
+  echo "No package version found in $xar" >&2
+  exit 1
+fi
 
 # pass the credentials in a curl config file to keep them off the command line
 curlrc=$(mktemp)
