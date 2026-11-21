@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "DraCor API"
+version: 1.1.4
+date-released: 2026-11-21
+license: MIT
+repository-code: "https://github.com/dracor-org/dracor-api"
+url: "https://dracor.org/doc/api/"
+abstract: >-
+  The DraCor API gives programmatic access to the drama corpora hosted on
+  DraCor. It lists corpora and their plays and provides, for each play, its
+  metadata, its full text as TEI or plain text, its characters and network
+  metrics, and its character network in several formats (CSV, GEXF, GraphML).
+authors:
+  - name: "DraCor"
+    website: "https://dracor.org"
