@@ -71,6 +71,13 @@ The values are stored in `/db/dracor/config-v1.xml` and `/db/dracor/secrets.xml`
 whenever the package is installed. Variables that are set replace the stored
 values; unset (or empty) variables keep them.
 
+In the Docker image the package is only installed on the first start, i.e. with
+an empty data volume. With an existing data volume eXist DB keeps the installed
+version: neither a restart nor a newer image installs the package again, so
+changed variables are not applied either. To apply them, or to upgrade the API
+in an existing database, install the package with `deploy.sh` (see
+[Deployment](#deployment)).
+
 ### Load Data
 
 To load corpus data into the database use the DraCor API calls. First [add a
