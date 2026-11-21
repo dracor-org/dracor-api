@@ -52,6 +52,32 @@ The docker-compose setup also includes a
 the local eXist instance. It can be accessed by opening http://localhost:8088/
 in a browser.
 
+### Configuration of the Docker image
+
+When running the `dracor/api` image without the compose files of this
+repository, set the following environment variables for the container. The
+image itself doesn't set any of them.
+
+| Variable                | Default if never set             |
+| ----------------------- | -------------------------------- |
+| `DRACOR_API_BASE`       | `https://dracor.org/api/v1`      |
+| `DRACOR_ID_BASE`        | `https://dracor.org/id`          |
+| `FUSEKI_SERVER`         | `http://localhost:3030/dracor/`  |
+| `METRICS_SERVER`        | `http://localhost:8030/metrics/` |
+| `FUSEKI_SECRET`         | empty                            |
+| `GITHUB_WEBHOOK_SECRET` | empty (webhook disabled)         |
+
+The values are stored in `/db/dracor/config-v1.xml` and `/db/dracor/secrets.xml`
+whenever the package is installed. Variables that are set replace the stored
+values; unset (or empty) variables keep them.
+
+In the Docker image the package is only installed on the first start, i.e. with
+an empty data volume. With an existing data volume eXist DB keeps the installed
+version: neither a restart nor a newer image installs the package again, so
+changed variables are not applied either. To apply them, or to upgrade the API
+in an existing database, install the package with `deploy.sh` (see
+[Deployment](#deployment)).
+
 ### Load Data
 
 To load corpus data into the database use the DraCor API calls. First [add a
@@ -258,7 +284,9 @@ The DraCor API provides a webhook (`/webhook/github`) that can trigger an update
 of the corpus data when the configured GitHub repository for the corpus changes.
 
 _Note:_ For the webhook to work, the shared secret between DraCor and GitHub
-needs to be configured at `/db/data/dracor/secrets.xml` in the database.
+needs to be stored as `gh-webhook` in `/db/dracor/secrets.xml` in the database.
+When the `GITHUB_WEBHOOK_SECRET` environment variable of eXist DB is set, the
+package installation writes it there.
 
 ## How to Contribute
 

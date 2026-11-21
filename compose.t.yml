@@ -9,11 +9,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - FUSEKI_SECRET=qwerty
-        - GITHUB_WEBHOOK_SECRET=qwerty
     environment:
       - DRACOR_API_BASE=http://localhost:8081/exist/restxq/v1
+      - GITHUB_WEBHOOK_SECRET=qwerty
       - EXIST_PASSWORD=
     ports:
       - 8081:8080
