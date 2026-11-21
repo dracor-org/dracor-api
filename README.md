@@ -52,6 +52,25 @@ The docker-compose setup also includes a
 the local eXist instance. It can be accessed by opening http://localhost:8088/
 in a browser.
 
+### Configuration of the Docker image
+
+When running the `dracor/api` image without the compose files of this
+repository, set the following environment variables for the container. The
+image itself doesn't set any of them.
+
+| Variable                | Default if never set             |
+| ----------------------- | -------------------------------- |
+| `DRACOR_API_BASE`       | `https://dracor.org/api/v1`      |
+| `DRACOR_ID_BASE`        | `https://dracor.org/id`          |
+| `FUSEKI_SERVER`         | `http://localhost:3030/dracor/`  |
+| `METRICS_SERVER`        | `http://localhost:8030/metrics/` |
+| `FUSEKI_SECRET`         | empty                            |
+| `GITHUB_WEBHOOK_SECRET` | empty (webhook disabled)         |
+
+The values are stored in `/db/dracor/config-v1.xml` and `/db/dracor/secrets.xml`
+whenever the package is installed. Variables that are set replace the stored
+values; unset (or empty) variables keep them.
+
 ### Load Data
 
 To load corpus data into the database use the DraCor API calls. First [add a
