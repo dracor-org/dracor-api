@@ -56,8 +56,6 @@ jobs:
   build:
     name: Build XAR
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # to attach the XAR to a release
     outputs:
       environment: ${{ steps.target.outputs.environment }}
       xar: ${{ steps.build.outputs.xar }}
@@ -94,12 +92,25 @@ jobs:
           path: build/${{ steps.build.outputs.xar }}
           if-no-files-found: error
 
-      - name: Attach XAR to release
-        if: github.event_name == 'release'
+  release:
+    name: Attach XAR to release
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: xar
+          path: build
+
+      - name: Upload XAR
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.event.release.tag_name }}
-          XAR: build/${{ steps.build.outputs.xar }}
+          XAR: build/${{ needs.build.outputs.xar }}
         run: gh release upload "$TAG" "$XAR" --clobber
 
   deploy:
@@ -137,6 +148,7 @@ jobs:
             -L "8080:localhost:${EXIST_PORT:-8080}" "$DEPLOY_USER@$DEPLOY_HOST"
 
       - name: Install XAR
+        id: install
         env:
           EXIST_USER: ${{ secrets.EXIST_USER }}
           EXIST_PASSWORD: ${{ secrets.EXIST_PASSWORD }}
@@ -151,6 +163,13 @@ jobs:
             ssh -S ~/.ssh/tunnel -O exit "$DEPLOY_HOST"
           fi
           rm -f ~/.ssh/deploy_key
+
+      - name: Report failed installation
+        if: failure() && steps.install.outcome == 'failure'
+        run: |
+          echo "::error::Installing the XAR failed. The previous version may" \
+            "already have been removed, so the API can be down until a working" \
+            "package is deployed."
 
       - name: Check deployed version
         env:

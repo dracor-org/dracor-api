@@ -201,7 +201,7 @@ REST interface, replacing any installed version of `dracor-api`. The corpus data
 remains untouched. To deploy to a local instance:
 
 ```sh
-EXIST_PASSWORD= ./deploy.sh build/dracor-v1-latest.xar
+EXIST_PASSWORD= ./deploy.sh dracor-v1-latest.xar
 ```
 
 For a remote server open an SSH tunnel to its eXist port first and pass the
@@ -209,7 +209,7 @@ tunnel URL:
 
 ```sh
 ssh -N -L 8888:localhost:8080 user@dev.dracor.org &
-EXIST_PASSWORD=secret ./deploy.sh build/dracor-v1-latest.xar http://localhost:8888/exist
+EXIST_PASSWORD=secret ./deploy.sh dracor-v1-latest.xar http://localhost:8888/exist
 ```
 
 The [Deploy](.github/workflows/deploy.yml) GitHub workflow does the same for the
@@ -220,6 +220,10 @@ DraCor servers:
 | `dev`        | run manually from the Actions tab          |
 | `staging`    | pushed to `main`                           |
 | `production` | a release is published (not a pre-release) |
+
+The deployment branch rules of the environments restrict `staging` to `main`
+and `production` to `main` and tags (which only organization admins can create),
+so a manual run can deploy other branches only to `dev`.
 
 Everything specific to a server is configured in a
 [GitHub environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)

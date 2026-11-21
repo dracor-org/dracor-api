@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=eclipse-temurin:17-jre
 
 # START STAGE 1
-FROM alpine:3 AS builder
+FROM alpine:3.24 AS builder
 
 RUN apk add --no-cache git zip curl
 
