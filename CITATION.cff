@@ -12,5 +12,43 @@ abstract: >-
   metadata, its full text as TEI or plain text, its characters and network
   metrics, and its character network in several formats (CSV, GEXF, GraphML).
 authors:
-  - name: "DraCor"
-    website: "https://dracor.org"
+  - family-names: Fischer
+    given-names: Frank
+    affiliation: "Freie Universität Berlin"
+    orcid: "https://orcid.org/0000-0001-6062-7455"
+  - family-names: "Börner"
+    given-names: Ingo
+    affiliation: "Freie Universität Berlin"
+  - family-names: Göbel
+    given-names: Mathias
+  - family-names: Hechtl
+    given-names: Angelika
+  - family-names: Kittel
+    given-names: Christopher
+  - family-names: Milling
+    given-names: Carsten
+  - family-names: Trilcke
+    given-names: Peer
+    affiliation: "Freie Universität Berlin"
+references:
+  - type: conference-paper
+    title: "Programmable Corpora: Introducing DraCor, an Infrastructure for the Research on European Drama"
+    authors:
+      - family-names: Fischer
+        given-names: Frank
+      - family-names: "Börner"
+        given-names: Ingo
+      - family-names: Göbel
+        given-names: Mathias
+      - family-names: Hechtl
+        given-names: Angelika
+      - family-names: Kittel
+        given-names: Christopher
+      - family-names: Milling
+        given-names: Carsten
+      - family-names: Trilcke
+        given-names: Peer
+    year: 2019
+    doi: "10.5281/zenodo.4284002"
+    booktitle: 'Proceedings of DH2019: "Complexities", Utrecht, July 9-12, 2019'
+    publisher: "Utrecht University"
