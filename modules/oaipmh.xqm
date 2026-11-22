@@ -11,12 +11,22 @@ xquery version "3.1";
  : using the CLARIN collection profile, so that the corpora can be harvested
  : by the CLARIN Virtual Language Observatory (VLO).
  :
- : The datestamp of a record is the time the corpus was last (re)loaded, i.e.
- : the modification time of its `git.xml` (falling back to `corpus.xml`). It
- : does not change when only the code generating the records changes, so
- : incremental harvests (`from`) miss such changes until the corpus is loaded
- : again; with one record per corpus a full harvest is cheap. Conversely, a
- : fresh deployment that reloads the corpora resets all datestamps.
+ : The datestamp of a record is the newest modification time of the documents
+ : in the corpus collection, so it changes whenever the corpus is (re)loaded
+ : or a play is added or updated through the API or a webhook. It does not
+ : change when only the code generating the records changes, or when a play is
+ : deleted and no other document is modified, so incremental harvests (`from`)
+ : miss such changes; with one record per corpus a full harvest is cheap.
+ : Conversely, a fresh deployment that reloads the corpora resets all
+ : datestamps.
+ :
+ : The repository identifier in the OAI identifiers (`oai:dracor.org:ger`) is
+ : the host of the API base URL, so that production and staging publish
+ : different identifiers.
+ :
+ : Identifiers and datestamps are determined for all corpora on each request;
+ : the remaining metadata, which requires scanning the plays, only for the
+ : records returned.
  :
  : The languages of a corpus are derived from `TEI/@xml:lang` of its plays and
  : normalized to ISO 639-3, ordered by the number of plays.
@@ -52,9 +62,9 @@ declare variable $dpmh:repository-name := "DraCor – Drama Corpora Project";
 
 declare variable $dpmh:admin-email := "info@dracor.org";
 
-(: host of the identifier base, e.g. dracor.org :)
+(: host of the API base, e.g. dracor.org or staging.dracor.org :)
 declare variable $dpmh:repository-id := replace(
-  $config:id-base,
+  $config:api-base,
   "^https?://([^/:]+).*$",
   "$1"
 );
@@ -127,29 +137,58 @@ declare function dpmh:plain-text($text as xs:string) as xs:string {
 };
 
 (:~
- : All corpora as maps with the information needed for OAI records, ordered by
- : name.
+ : Name of a corpus from its corpus.xml (as in dutil:get-corpus-info)
  :)
-declare function dpmh:corpora() as map(*)* {
-  (: DEPRECATED: remove teiCorpus support in v2 :)
-  for $corpus in
-    collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
-  let $info := dutil:get-corpus-info($corpus)
-  order by $info?name
-    (: no `where` clause referring to $info, eXist fails to evaluate it :)
-  return if ($info?name) then
-    map:merge(
-      (
-        $info,
-        map:entry("identifier", $dpmh:id-prefix || $info?name),
-        map:entry("datestamp", dpmh:datestamp($corpus)),
-        map:entry("languages", dpmh:languages($corpus)),
-        map:entry("description-lang", dpmh:description-lang($corpus)),
-        dpmh:temporal-coverage($corpus)!map:entry("temporal-coverage", .),
-        dpmh:doi($corpus)!map:entry("doi", .)
-      )
-    )
+declare function dpmh:corpus-name($corpus as element()) as xs:string? {
+  $corpus/tei:teiHeader//tei:publicationStmt/tei:idno[not(@type) or
+    (@type = "URI" and @xml:base = "https://dracor.org/")][1]/string()
+};
+
+(:~
+ : Header information of a corpus: name, OAI identifier, datestamp and the
+ : corpus element. Cheap to compute, unlike dpmh:record-info().
+ :)
+declare function dpmh:header-info($corpus as element()) as map(*)? {
+  let $name := dpmh:corpus-name($corpus)
+  return if ($name) then
+    map {
+      "name": $name,
+      "identifier": $dpmh:id-prefix || $name,
+      "datestamp": dpmh:datestamp($corpus),
+      "corpus": $corpus
+    }
   else (
+  )
+};
+
+(:~
+ : Header information of all corpora, ordered by name.
+ :)
+declare function dpmh:headers() as map(*)* {
+  (: DEPRECATED: remove teiCorpus support in v2 :)
+  for $info in
+    collection($config:corpora-root)/(
+      tei:dracorCorpus | tei:teiCorpus
+    )!dpmh:header-info(.)
+  order by $info?name
+  return $info
+};
+
+(:~
+ : Add the information needed for the metadata of a record to the header
+ : information of a corpus.
+ :)
+declare function dpmh:record-info($header as map(*)) as map(*) {
+  let $corpus := $header?corpus
+  return map:merge(
+    (
+      dutil:get-corpus-info($corpus),
+      $header,
+      map:entry("languages", dpmh:languages($corpus)),
+      map:entry("description-lang", dpmh:description-lang($corpus)),
+      dpmh:temporal-coverage($corpus)!map:entry("temporal-coverage", .),
+      dpmh:doi($corpus)!map:entry("doi", .)
+    )
   )
 };
 
@@ -217,18 +256,20 @@ declare function dpmh:languages($corpus as element()) as xs:string* {
 };
 
 (:~
- : Datestamp of a corpus: the last modification of its git.xml (written when
- : the corpus is loaded or updated), falling back to the corpus document.
+ : Datestamp of a corpus: the newest modification time of the documents in its
+ : collection (as in api:info). Unlike git.xml, which is deleted when a play
+ : is changed through the API or a webhook delivery fails, this cannot go
+ : backwards when the corpus changes.
  :)
 declare function dpmh:datestamp($corpus as element()) as xs:string {
-  let $collection := util:collection-name($corpus)
-  let $dt := (
-    if (doc-available($collection || "/git.xml")) then
-      xmldb:last-modified($collection, "git.xml")
-    else (
-    ),
-    xmldb:last-modified($collection, util:document-name($corpus))
-  )[1]
+  let $dt := max(
+    for $doc in collection(util:collection-name($corpus))
+    let $uri := document-uri($doc)
+    return xmldb:last-modified(
+      replace($uri, "/[^/]+$", ""),
+      tokenize($uri, "/")[last()]
+    )
+  )
   return dpmh:utc($dt)
 };
 
@@ -340,8 +381,13 @@ declare function dpmh:record(
  :)
 declare function dpmh:links($corpus as map(*)) as map(*) {
   let $name := $corpus?name
-  (: a branch may be given as fragment, e.g. https://github.com/org/repo#main :)
-  let $repo := $corpus?repository!replace(., "#.*$", "")
+  (:
+    A branch may be given as fragment, e.g. https://github.com/org/repo#main.
+    A trailing slash or .git would break the /tree and /archive links.
+  :)
+  let $repo := $corpus?repository!(
+    replace(., "#.*$", "") => replace("/+$", "") => replace("\.git$", "")
+  )
   let $branch := $corpus?repository[contains(., "#")]!substring-after(., "#")
   (: link the loaded commit, or else at least the loaded branch :)
   let $ref := ($corpus?commit, $branch)[.][1]
@@ -524,21 +570,24 @@ declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
         </cmdp:CollectionInfo>
         <cmdp:License>
           {
-            if ($corpus?licence and $corpus?licenceUrl) then (
+            (: a licence without URL is linked to the repository instead :)
+            if ($corpus?licence) then (
               <cmdp:DistributionType>public</cmdp:DistributionType>,
               <cmdp:LicenseName>{ $corpus?licence }</cmdp:LicenseName>,
-              <cmdp:LicenseURL>{ $corpus?licenceUrl }</cmdp:LicenseURL>
-            ) else (
-              <cmdp:DistributionType>unspecified</cmdp:DistributionType>,
-              <cmdp:LicenseName>
-                { ($corpus?licence, "unspecified, see repository")[1] }
-              </cmdp:LicenseName>,
               <cmdp:LicenseURL>
                 {
                   (
                     $corpus?licenceUrl, $links?repository, $links?landing-page
                   )[1]
                 }
+              </cmdp:LicenseURL>
+            ) else (
+              <cmdp:DistributionType>unspecified</cmdp:DistributionType>,
+              <cmdp:LicenseName>
+                { "unspecified, see repository" }
+              </cmdp:LicenseName>,
+              <cmdp:LicenseURL>
+                { ($links?repository, $links?landing-page)[1] }
               </cmdp:LicenseURL>
             )
           }
@@ -606,7 +655,7 @@ declare function dpmh:cmdi($corpus as map(*)) as element(cmd:CMD) {
  :)
 
 declare function dpmh:identify($args as map(*)) as element(oai:OAI-PMH) {
-  let $datestamps := dpmh:corpora()!?datestamp
+  let $datestamps := dpmh:headers()!?datestamp
   let $earliest := (
     min($datestamps!xs:dateTime(.))!dpmh:utc(.), "1970-01-01T00:00:00Z"
   )[1]
@@ -651,7 +700,9 @@ declare function dpmh:identify($args as map(*)) as element(oai:OAI-PMH) {
 declare function dpmh:list-metadata-formats(
   $args as map(*)
 ) as element(oai:OAI-PMH) {
-  if ($args?identifier and empty(dpmh:corpus($args?identifier))) then
+  if (
+    map:contains($args, "identifier") and empty(dpmh:corpus($args?identifier))
+  ) then
     dpmh:response(
       $args,
       dpmh:error("idDoesNotExist", "Unknown identifier: " || $args?identifier)
@@ -675,7 +726,7 @@ declare function dpmh:list-metadata-formats(
 };
 
 declare function dpmh:list-sets($args as map(*)) as element(oai:OAI-PMH) {
-  if ($args?resumptionToken) then
+  if (map:contains($args, "resumptionToken")) then
     dpmh:response(
       $args,
       dpmh:error("badResumptionToken", "Invalid resumption token")
@@ -696,7 +747,7 @@ declare function dpmh:list(
 ) as element(oai:OAI-PMH) {
   let $from := $args?from!dpmh:parse-date(., false())
   let $until := $args?until!dpmh:parse-date(., true())
-  return if ($args?resumptionToken) then
+  return if (map:contains($args, "resumptionToken")) then
     if (map:size($args) gt 2) then
       dpmh:response(
         map {},
@@ -712,9 +763,9 @@ declare function dpmh:list(
       map {},
       dpmh:error("badArgument", "Missing argument: metadataPrefix")
     )
-  else if ($args?from and empty($from)) then
+  else if (map:contains($args, "from") and empty($from)) then
     dpmh:response(map {}, dpmh:error("badArgument", "Invalid date: from"))
-  else if ($args?until and empty($until)) then
+  else if (map:contains($args, "until") and empty($until)) then
     dpmh:response(map {}, dpmh:error("badArgument", "Invalid date: until"))
   else if (
     exists($from) and exists($until) and $from?granularity ne $until?granularity
@@ -738,17 +789,17 @@ declare function dpmh:list(
         "Unsupported metadata format: " || $args?metadataPrefix
       )
     )
-  else if ($args?set) then
+  else if (map:contains($args, "set")) then
     dpmh:response(
       $args,
       dpmh:error("noSetHierarchy", "This repository does not support sets")
     )
   else
-    let $corpora := dpmh:corpora()[(
+    let $headers := dpmh:headers()[(
       empty($from) or xs:dateTime(?datestamp) ge $from?value
     ) and
       (empty($until) or xs:dateTime(?datestamp) le $until?value)]
-    return if (empty($corpora)) then
+    return if (empty($headers)) then
       dpmh:response(
         $args,
         dpmh:error("noRecordsMatch", "No records match the request")
@@ -757,14 +808,14 @@ declare function dpmh:list(
       dpmh:response(
         $args,
         <ListIdentifiers xmlns="http://www.openarchives.org/OAI/2.0/">
-          { $corpora!dpmh:header(.) }
+          { $headers!dpmh:header(.) }
         </ListIdentifiers>
       )
     else
       dpmh:response(
         $args,
         <ListRecords xmlns="http://www.openarchives.org/OAI/2.0/">
-          { $corpora!dpmh:record(., $args?metadataPrefix) }
+          { $headers!dpmh:record-info(.)!dpmh:record(., $args?metadataPrefix) }
         </ListRecords>
       )
 };
@@ -797,17 +848,19 @@ declare function dpmh:get-record($args as map(*)) as element(oai:OAI-PMH) {
       dpmh:response(
         $args,
         <GetRecord xmlns="http://www.openarchives.org/OAI/2.0/">
-          { dpmh:record($corpus, $args?metadataPrefix) }
+          { dpmh:record(dpmh:record-info($corpus), $args?metadataPrefix) }
         </GetRecord>
       )
 };
 
 (:~
- : Find a corpus by its OAI identifier
+ : Header information of the corpus with the given OAI identifier
  :)
 declare function dpmh:corpus($identifier as xs:string) as map(*)? {
   if (starts-with($identifier, $dpmh:id-prefix)) then
-    dpmh:corpora()[?identifier = $identifier]
+    dutil:get-corpus(
+      substring-after($identifier, $dpmh:id-prefix)
+    )[1]!dpmh:header-info(.)
   else (
   )
 };
@@ -832,14 +885,10 @@ declare function dpmh:handle(
     "set": $set,
     "resumptionToken": $resumption-token
   }
-  let $repeated := (
-    if (count($verb) gt 1) then
-      "verb"
-    else (
-    ),
-    map:keys($given)[count($given(.)) gt 1]
-  )
-  return if (empty($verb) or not(map:contains($dpmh:verbs, $verb[1]))) then
+  let $repeated := map:keys($given)[count($given(.)) gt 1]
+  return if (count($verb) gt 1) then
+    dpmh:response(map {}, dpmh:error("badVerb", "Repeated verb argument"))
+  else if (empty($verb) or not(map:contains($dpmh:verbs, $verb))) then
     dpmh:response(
       map {},
       dpmh:error(
@@ -847,7 +896,7 @@ declare function dpmh:handle(
         if (empty($verb)) then
           "Missing verb argument"
         else
-          "Illegal verb: " || $verb[1]
+          "Illegal verb: " || $verb
       )
     )
   else if (exists($repeated)) then

@@ -96,7 +96,18 @@ check "from in the future" \
 check "missing verb" "" "/OAI-PMH/error[@code='badVerb']"
 check "illegal verb" "verb=Foo" "/OAI-PMH/error[@code='badVerb']"
 check "repeated verb" "verb=Identify&verb=Identify" \
+  "/OAI-PMH/error[@code='badVerb']"
+check "repeated argument" \
+  "verb=ListRecords&metadataPrefix=oai_dc&metadataPrefix=cmdi" \
   "/OAI-PMH/error[@code='badArgument']"
+check "empty from" "verb=ListRecords&metadataPrefix=oai_dc&from=" \
+  "/OAI-PMH/error[@code='badArgument']"
+check "empty set" "verb=ListRecords&metadataPrefix=oai_dc&set=" \
+  "/OAI-PMH/error[@code='noSetHierarchy']"
+check "empty resumptionToken" "verb=ListRecords&resumptionToken=" \
+  "/OAI-PMH/error[@code='badResumptionToken']"
+check "empty identifier" "verb=ListMetadataFormats&identifier=" \
+  "/OAI-PMH/error[@code='idDoesNotExist']"
 check "illegal argument" "verb=Identify&identifier=x" \
   "/OAI-PMH/error[@code='badArgument']"
 check "missing metadataPrefix" "verb=ListRecords" \
