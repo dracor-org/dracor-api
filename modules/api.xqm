@@ -16,6 +16,7 @@ declare namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 import module namespace load = "http://dracor.org/ns/exist/v1/load" at "load.xqm";
+import module namespace metrics = "http://dracor.org/ns/exist/v1/metrics" at "metrics.xqm";
 import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikidata.xqm";
 import module namespace openapi = "https://lab.sub.uni-goettingen.de/restxqopenapi";
 
@@ -84,7 +85,8 @@ function api:base() {
 (:~
  : API info
  :
- : Shows version numbers of the dracor-api app and the underlying eXist-db.
+ : Shows version numbers of the dracor-api app, the underlying eXist-db and the
+ : configured metrics service.
  :
  : @result JSON object
  :)
@@ -113,6 +115,7 @@ function api:info() {
       ) and
         scheduler:trigger/state != "COMPLETE"]
     return substring-after($job/@name, "load-corpus-")
+  let $metrics-service := metrics:service-info()
   return (
     <rest:response>
       <http:response>
@@ -135,6 +138,10 @@ function api:info() {
         ),
         if (exists($active-loads)) then
           map:entry("activeLoads", array { $active-loads })
+        else (
+        ),
+        if (exists($metrics-service)) then
+          map:entry("metricsService", $metrics-service)
         else (
         )
       )

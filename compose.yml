@@ -16,7 +16,7 @@ services:
     environment:
       - ADMIN_PASSWORD=qwerty
   metrics:
-    image: dracor/metrics:1.6.0
+    image: dracor/metrics:1.7.0
   frontend:
     image: dracor/frontend:3.0.0-rc.1
     environment:
