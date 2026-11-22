@@ -1633,13 +1633,35 @@ declare function dutil:get-play-metrics(
         )
       }
 
-    let $meta := map {
-      "id": $id,
-      "name": $playname,
-      "corpus": $corpusname,
-      "wikipediaLinkCount": $sitelink-count,
-      "nodes": $nodes
-    }
+    let $network := $metrics/network
+    let $service := if ($network/@service) then
+      map:entry(
+        "metricsService",
+        map {
+          "name": $network/@service/string(),
+          "version": $network/@version/string(),
+          "networkx": $network/@networkx/string()
+        }
+      )
+    else (
+    )
+
+    let $meta := map:merge(
+      (
+        map {
+          "id": $id,
+          "name": $playname,
+          "corpus": $corpusname,
+          "wikipediaLinkCount": $sitelink-count,
+          "nodes": $nodes
+        },
+        if ($metrics/@updated) then
+          map:entry("updated", $metrics/@updated/string())
+        else (
+        ),
+        $service
+      )
+    )
 
     let $networkmetrics := map:merge(
       for $e in $metrics/network/*[not(name() = "nodes")]

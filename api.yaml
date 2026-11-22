@@ -70,8 +70,11 @@ paths:
     get:
       summary: API info
       description: >-
-        Shows version numbers of the dracor-api app and the underlying
-        eXist-db.
+        Shows version numbers of the dracor-api app, the underlying eXist-db
+        and the configured metrics service. The metrics service is what new
+        calculations of network metrics will use; the version that calculated
+        the metrics of a play is part of
+        `/corpora/{corpusname}/plays/{playname}/metrics`.
       operationId: api-info
       tags: [public]
       responses:
@@ -79,7 +82,7 @@ paths:
           description: Returns JSON object
           content:
             application/json:
-              example:
+              example: |
                 {
                   "name": "DraCor",
                   "version": "1.0.0",
@@ -87,7 +90,12 @@ paths:
                   "existdb": "6.4.0",
                   "base": "https://dracor.org/api/v1",
                   "openapi": "https://dracor.org/api/v1/openapi.yaml",
-                  "lastModified": "2026-06-07T14:23:11.456Z"
+                  "lastModified": "2026-06-07T14:23:11.456Z",
+                  "metricsService": {
+                    "name": "dracor-metrics",
+                    "version": "1.7.0",
+                    "networkx": "3.7"
+                  }
                 }
               schema:
                 $ref: '#/components/schemas/Info'
@@ -2139,6 +2147,11 @@ components:
           items:
             type: string
           x-dracor-feature: service_active_loads
+        metricsService:
+          $ref: '#/components/schemas/MetricsService'
+          description: >-
+            The metrics service configured for new calculations. Missing if
+            the service can't be reached.
       required:
         - name
         - version
@@ -2146,6 +2159,23 @@ components:
         - existdb
         - base
         - openapi
+    MetricsService:
+      type: object
+      description: Name and versions of a DraCor metrics service
+      properties:
+        name:
+          type: string
+          x-dracor-feature: metrics_service_name
+        version:
+          type: string
+          x-dracor-feature: metrics_service_version
+        networkx:
+          type: string
+          description: Version of NetworkX used by the service
+          x-dracor-feature: metrics_service_networkx_version
+      required:
+        - name
+        - version
     WordCounts:
       type: object
       properties:
@@ -2873,6 +2903,16 @@ components:
         wikipediaLinkCount:
           type: [integer, "null"]
           x-dracor-feature: play_num_of_wikipedia_links
+        updated:
+          type: string
+          format: date-time
+          description: When the metrics of the play were last calculated
+          x-dracor-feature: play_metrics_date_updated
+        metricsService:
+          $ref: '#/components/schemas/MetricsService'
+          description: >-
+            The metrics service that calculated the network metrics. Missing
+            if they were calculated before the service reported its version.
       required:
         - id
         - name

@@ -9,11 +9,91 @@ declare namespace trigger = "http://exist-db.org/xquery/trigger";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
+import module namespace cache = "http://exist-db.org/xquery/cache";
 import module namespace xdb = "http://exist-db.org/xquery/xmldb";
 import module namespace util = "http://exist-db.org/xquery/util";
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikidata.xqm";
+
+(:~
+ : How long the service metadata stays in the cache
+ :)
+declare variable $metrics:service-info-ttl := xs:dayTimeDuration("PT10M");
+
+(:~
+ : Turn the service metadata the metrics service sends into the map the API
+ : returns, leaving out what an older service doesn't send.
+ :
+ : @param $service Map with keys service, version and networkx
+ :)
+declare function metrics:service-map($service as map(*)) as map(*) {
+  map:merge(
+    (
+      map:entry("name", $service?service),
+      map:entry("version", $service?version),
+      if (exists($service?networkx)) then
+        map:entry("networkx", $service?networkx)
+      else (
+      )
+    )
+  )
+};
+
+(:~
+ : Store the service metadata in the cache.
+ :
+ : @param $json Service metadata as JSON, empty string if unavailable
+ :)
+declare function metrics:cache-service-info($json as xs:string) {
+  cache:put("dracor-metrics", "service", (current-dateTime(), $json))
+};
+
+(:~
+ : Fetch the service metadata from the root of the metrics service.
+ :
+ : @return Service metadata as JSON, empty string if unavailable
+ :)
+declare function metrics:fetch-service-info() as xs:string {
+  let $url := replace($config:metrics-server, "metrics/?$", "")
+  let $response := try {
+    hc:send-request(<hc:request href="{ $url }" method="get" timeout="2" />)
+  } catch * {
+    util:log-system-out(
+      "metrics service info request failed: " || $err:description
+    )
+  }
+  return if (string($response[1]/@status) = "200") then
+    util:base64-decode($response[2])
+  else
+    ""
+};
+
+(:~
+ : Get name and versions of the currently configured metrics service.
+ :
+ : The metadata is cached for $metrics:service-info-ttl, including a failed
+ : request, so that the API info endpoint doesn't wait for the metrics service
+ : each time.
+ :
+ : @return Map with name, version and networkx, empty if unavailable
+ :)
+declare function metrics:service-info() as map(*)? {
+  let $cached := cache:get("dracor-metrics", "service")
+  let $json := if (
+    exists($cached) and
+      current-dateTime() - $cached[1] lt $metrics:service-info-ttl
+  ) then
+    $cached[2]
+  else
+    let $json := metrics:fetch-service-info()
+    let $cache := metrics:cache-service-info($json)
+    return $json
+  return if ($json ne "") then
+    metrics:service-map(parse-json($json))
+  else (
+  )
+};
 
 (:~
  : Query sitelinks for given Wikidata ID and store them to the play
@@ -145,9 +225,21 @@ declare function metrics:get-network-metrics($url as xs:string) {
       map {}
     )
 
+    let $service := $metrics?service
+    let $cache := if (exists($service)) then
+      metrics:cache-service-info(serialize($service, map {"method": "json"}))
+    else (
+    )
+
     return <network>
       {
-        for $k in map:keys($metrics)
+        if (exists($service)) then (
+          attribute service { $service?service },
+          attribute version { $service?version },
+          attribute networkx { $service?networkx }
+        ) else (
+        ),
+        for $k in map:keys($metrics)[. ne "service"]
         return element {$k} {
           if ($k eq "nodes") then
             for $id in map:keys($metrics?nodes)
