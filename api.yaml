@@ -2912,7 +2912,9 @@ components:
           $ref: '#/components/schemas/MetricsService'
           description: >-
             The metrics service that calculated the network metrics. Missing
-            if they were calculated before the service reported its version.
+            if they were calculated before the service reported its version
+            (dracor-metrics 1.7.0), if the calculation failed, or if the
+            service didn't send its name and version.
       required:
         - id
         - name

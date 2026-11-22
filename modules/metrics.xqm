@@ -22,6 +22,12 @@ import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikida
 declare variable $metrics:service-info-ttl := xs:dayTimeDuration("PT10M");
 
 (:~
+ : How long a failed request for the service metadata stays in the cache, so
+ : that a service that wasn't ready yet shows up soon
+ :)
+declare variable $metrics:service-info-failed-ttl := xs:dayTimeDuration("PT1M");
+
+(:~
  : Store the service metadata in the cache, keyed by the configured service.
  :
  : @param $service Map as returned by dutil:metrics-service, empty if
@@ -52,12 +58,18 @@ declare function metrics:fetch-service-info() as map(*)? {
     let $response := hc:send-request(
       <hc:request href="{ $url }" method="get" timeout="2" />
     )
-    return if (string($response[1]/@status) = "200") then
+    let $status := string($response[1]/@status)
+    return if ($status = "200") then
       dutil:metrics-service(
         $response[2] => util:base64-decode() => parse-json()
       )
-    else (
-    )
+    else
+      util:log-system-out(
+        "metrics service info request FAILED with status '" ||
+          $status ||
+          "' for " ||
+          $url
+      )
   } catch * {
     util:log-system-out(
       "metrics service info request failed: " || $err:description
@@ -68,18 +80,19 @@ declare function metrics:fetch-service-info() as map(*)? {
 (:~
  : Get name and versions of the currently configured metrics service.
  :
- : The metadata is cached for $metrics:service-info-ttl, including a failed
- : request, so that the API info endpoint doesn't wait for the metrics service
- : each time.
+ : The metadata is cached for $metrics:service-info-ttl, a failed request for
+ : $metrics:service-info-failed-ttl, so that the API info endpoint doesn't wait
+ : for the metrics service each time.
  :
  : @return Map with name, version and networkx, empty if unavailable
  :)
 declare function metrics:service-info() as map(*)? {
   let $cached := cache:get("dracor-metrics", string($config:metrics-server))
-  return if (
-    exists($cached) and
-      current-dateTime() - $cached[1] lt $metrics:service-info-ttl
-  ) then
+  let $ttl := if ($cached[2] eq "") then
+    $metrics:service-info-failed-ttl
+  else
+    $metrics:service-info-ttl
+  return if (exists($cached) and current-dateTime() - $cached[1] lt $ttl) then
     if ($cached[2] ne "") then
       parse-json($cached[2])
     else (
