@@ -39,6 +39,17 @@ See https://dracor.org/doc/get-in-touch for ways to get in touch with the team.
 - Include tests or documentation updates when relevant.
 - Be prepared to revise your contribution based on feedback.
 
+## Automated Contributions
+
+We do not accept issues, pull requests, or comments from autonomous AI agents or
+bots acting without a human in the loop, for example agents that pick up open
+issues on their own initiative or to collect bounties. Such contributions will
+be closed without review.
+
+Using AI tools to help you write a contribution is fine. But a person must
+submit it under their own account, understand the changes, and respond to
+review feedback themselves.
+
 ## Code of Conduct
 
 All contributors are expected to interact respectfully and constructively. By
