@@ -22,51 +22,47 @@ import module namespace wd = "http://dracor.org/ns/exist/v1/wikidata" at "wikida
 declare variable $metrics:service-info-ttl := xs:dayTimeDuration("PT10M");
 
 (:~
- : Turn the service metadata the metrics service sends into the map the API
- : returns, leaving out what an older service doesn't send.
+ : Store the service metadata in the cache, keyed by the configured service.
  :
- : @param $service Map with keys service, version and networkx
+ : @param $service Map as returned by dutil:metrics-service, empty if
+ : unavailable
  :)
-declare function metrics:service-map($service as map(*)) as map(*) {
-  map:merge(
+declare function metrics:cache-service-info($service as map(*)?) {
+  cache:put(
+    "dracor-metrics",
+    string($config:metrics-server),
     (
-      map:entry("name", $service?service),
-      map:entry("version", $service?version),
-      if (exists($service?networkx)) then
-        map:entry("networkx", $service?networkx)
-      else (
-      )
+      current-dateTime(),
+      if (exists($service)) then
+        serialize($service, map {"method": "json"})
+      else
+        ""
     )
   )
 };
 
 (:~
- : Store the service metadata in the cache.
- :
- : @param $json Service metadata as JSON, empty string if unavailable
- :)
-declare function metrics:cache-service-info($json as xs:string) {
-  cache:put("dracor-metrics", "service", (current-dateTime(), $json))
-};
-
-(:~
  : Fetch the service metadata from the root of the metrics service.
  :
- : @return Service metadata as JSON, empty string if unavailable
+ : @return Map as returned by dutil:metrics-service, empty if unavailable
  :)
-declare function metrics:fetch-service-info() as xs:string {
+declare function metrics:fetch-service-info() as map(*)? {
   let $url := replace($config:metrics-server, "metrics/?$", "")
-  let $response := try {
-    hc:send-request(<hc:request href="{ $url }" method="get" timeout="2" />)
+  return try {
+    let $response := hc:send-request(
+      <hc:request href="{ $url }" method="get" timeout="2" />
+    )
+    return if (string($response[1]/@status) = "200") then
+      dutil:metrics-service(
+        $response[2] => util:base64-decode() => parse-json()
+      )
+    else (
+    )
   } catch * {
     util:log-system-out(
       "metrics service info request failed: " || $err:description
     )
   }
-  return if (string($response[1]/@status) = "200") then
-    util:base64-decode($response[2])
-  else
-    ""
 };
 
 (:~
@@ -79,20 +75,19 @@ declare function metrics:fetch-service-info() as xs:string {
  : @return Map with name, version and networkx, empty if unavailable
  :)
 declare function metrics:service-info() as map(*)? {
-  let $cached := cache:get("dracor-metrics", "service")
-  let $json := if (
+  let $cached := cache:get("dracor-metrics", string($config:metrics-server))
+  return if (
     exists($cached) and
       current-dateTime() - $cached[1] lt $metrics:service-info-ttl
   ) then
-    $cached[2]
+    if ($cached[2] ne "") then
+      parse-json($cached[2])
+    else (
+    )
   else
-    let $json := metrics:fetch-service-info()
-    let $cache := metrics:cache-service-info($json)
-    return $json
-  return if ($json ne "") then
-    metrics:service-map(parse-json($json))
-  else (
-  )
+    let $service := metrics:fetch-service-info()
+    let $cache := metrics:cache-service-info($service)
+    return $service
 };
 
 (:~
@@ -225,18 +220,21 @@ declare function metrics:get-network-metrics($url as xs:string) {
       map {}
     )
 
-    let $service := $metrics?service
+    let $service := dutil:metrics-service($metrics?service)
     let $cache := if (exists($service)) then
-      metrics:cache-service-info(serialize($service, map {"method": "json"}))
+      metrics:cache-service-info($service)
     else (
     )
 
     return <network>
       {
         if (exists($service)) then (
-          attribute service { $service?service },
+          attribute service { $service?name },
           attribute version { $service?version },
-          attribute networkx { $service?networkx }
+          if (exists($service?networkx)) then
+            attribute networkx { $service?networkx }
+          else (
+          )
         ) else (
         ),
         for $k in map:keys($metrics)[. ne "service"]

@@ -1594,6 +1594,44 @@ declare function dutil:get-play-info(
 };
 
 (:~
+ : Turn the metadata a metrics service sends about itself into the object the
+ : API returns. Values that are missing or empty are left out.
+ :
+ : @param $service Map with the keys service, version and networkx
+ : @return Map with name, version and networkx, empty if name or version is
+ : missing
+ :)
+declare function dutil:metrics-service($service as item()*) as map(*)? {
+  if (count($service) eq 1 and $service instance of map(*)) then
+    let $values := map:merge(
+      for $key in ("service", "version", "networkx")
+      let $value := $service($key)
+      (: nested, as `and` doesn't guarantee its evaluation order :)
+      return if (count($value) eq 1 and $value instance of xs:string) then
+        if ($value ne "") then
+          map:entry($key, $value)
+        else (
+        )
+      else (
+      )
+    )
+    return if (exists($values?service) and exists($values?version)) then
+      map:merge(
+        (
+          map {"name": $values?service, "version": $values?version},
+          if (exists($values?networkx)) then
+            map:entry("networkx", $values?networkx)
+          else (
+          )
+        )
+      )
+    else (
+    )
+  else (
+  )
+};
+
+(:~
  : Retrieve metrics data for a play.
  :
  : @param $corpusname
@@ -1634,16 +1672,12 @@ declare function dutil:get-play-metrics(
       }
 
     let $network := $metrics/network
-    let $service := if ($network/@service) then
-      map:entry(
-        "metricsService",
-        map {
-          "name": $network/@service/string(),
-          "version": $network/@version/string(),
-          "networkx": $network/@networkx/string()
-        }
-      )
-    else (
+    let $service := dutil:metrics-service(
+      map {
+        "service": $network/@service/string(),
+        "version": $network/@version/string(),
+        "networkx": $network/@networkx/string()
+      }
     )
 
     let $meta := map:merge(
@@ -1659,7 +1693,10 @@ declare function dutil:get-play-metrics(
           map:entry("updated", $metrics/@updated/string())
         else (
         ),
-        $service
+        if (exists($service)) then
+          map:entry("metricsService", $service)
+        else (
+        )
       )
     )
 
