@@ -225,9 +225,11 @@ declare function dpmh:doi($corpus as element()) as xs:string? {
 
 (:~
  : Temporal coverage of a corpus: the earliest and the latest normalized year
- : (`yearNormalized`) of its plays, as `start/end` like an ISO 8601 interval,
- : or a single year if they are the same. Years before the common era are
- : negative as in `yearNormalized`.
+ : (`yearNormalized`) of its plays, as `start/end` (e.g. `1797/1890`), or a
+ : single year if they are the same. The values are the plain `yearNormalized`
+ : values as the API returns them elsewhere, not ISO 8601 years: they are not
+ : zero-padded, and years before the common era are negative without a year 0
+ : (e.g. `-472/-316`). `dc:coverage` takes free text.
  :)
 declare function dpmh:temporal-coverage($corpus as element()) as xs:string? {
   let $years := collection(
