@@ -1,0 +1,37 @@
+name: Check citation metadata
+
+# CITATION.cff is read by GitHub ("Cite this repository"), .zenodo.json by
+# Zenodo when a release is archived. This validates CITATION.cff and checks
+# that both files agree on title, license, keywords and authors.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - CITATION.cff
+      - .zenodo.json
+      - test/citation.py
+      - .github/workflows/citation.yml
+  pull_request:
+    paths:
+      - CITATION.cff
+      - .zenodo.json
+      - test/citation.py
+      - .github/workflows/citation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: CITATION.cff and .zenodo.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Validate CITATION.cff
+        run: uvx cffconvert@2.0.0 --validate
+      - name: Compare CITATION.cff and .zenodo.json
+        if: ${{ !cancelled() }}
+        run: uv run test/citation.py
