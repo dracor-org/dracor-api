@@ -1,0 +1,62 @@
+{
+  "title": "DraCor API",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Milling, Carsten",
+      "affiliation": "University of Potsdam",
+      "orcid": "0000-0003-0553-7512"
+    },
+    {
+      "name": "Börner, Ingo",
+      "affiliation": "University of Potsdam",
+      "orcid": "0000-0001-8294-2541"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Göbel, Mathias",
+      "affiliation": "Göttingen State and University Library",
+      "orcid": "0000-0002-1102-5284",
+      "type": "ProjectMember"
+    },
+    {
+      "name": "Sluyter-Gäthje, Henny",
+      "affiliation": "University of Potsdam",
+      "orcid": "0000-0003-2969-3237",
+      "type": "ProjectMember"
+    },
+    {
+      "name": "Fuetterer, Heinz-Alexander",
+      "type": "Other"
+    }
+  ],
+  "access_right": "open",
+  "license": "MIT",
+  "keywords": [
+    "DraCor",
+    "programmable corpora",
+    "drama",
+    "computational literary studies",
+    "network analysis",
+    "TEI",
+    "REST API",
+    "DTS",
+    "eXist-db",
+    "XQuery"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://dracor.org/doc/api",
+      "relation": "isDocumentedBy",
+      "resource_type": "publication-softwaredocumentation",
+      "scheme": "url"
+    }
+  ],
+  "language": "eng",
+  "communities": [
+    {
+      "identifier": "dracor"
+    }
+  ]
+}

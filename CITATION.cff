@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: DraCor API
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Carsten
+    family-names: Milling
+    email: milling@uni-potsdam.de
+    affiliation: University of Potsdam
+    orcid: 'https://orcid.org/0000-0003-0553-7512'
+  - given-names: Ingo
+    family-names: Börner
+    email: boerner@uni-potsdam.de
+    affiliation: University of Potsdam
+    orcid: 'https://orcid.org/0000-0001-8294-2541'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.19655865
+    description: Concept DOI for all versions, archived on Zenodo
+repository-code: 'https://github.com/dracor-org/dracor-api'
+url: 'https://dracor.org/doc/api'
+abstract: >-
+  The DraCor API is the backend of the Drama Corpora Project
+  (DraCor), an infrastructure for "Programmable Corpora". It
+  is an eXist-db application that serves TEI-encoded drama
+  corpora, their metadata, extracted texts and character
+  network metrics through a REST API, and also provides a
+  Distributed Text Services (DTS) endpoint and RDF linked
+  data.
+keywords:
+  - DraCor
+  - programmable corpora
+  - drama
+  - computational literary studies
+  - network analysis
+  - TEI
+  - REST API
+  - DTS
+  - eXist-db
+  - XQuery
+license: MIT
