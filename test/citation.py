@@ -1,12 +1,12 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyyaml==6.0.2"]
+# dependencies = ["pyyaml==6.0.3"]
 # ///
 """
 Check that CITATION.cff and .zenodo.json agree on the metadata they share:
-title, license, keywords and the authors (Zenodo creators) with their ORCIDs
-and affiliations. Fields that only exist in one of them (e.g. Zenodo
-contributors and communities) are not compared.
+title, license, keywords (in any order) and the authors (Zenodo creators, in
+order) with their ORCIDs and affiliations. Fields that only exist in one of
+them (e.g. Zenodo contributors and communities) are not compared.
 
 Usage:
   uv run test/citation.py
@@ -21,13 +21,24 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def orcid(value):
+    return (value or "").removeprefix("https://orcid.org/") or None
+
+
+def licenses(value):
+    """CFF allows one SPDX ID or a list of them."""
+    if isinstance(value, str):
+        value = [value]
+    return sorted(v.lower() for v in value or [])
+
+
 def cff_person(author):
     name = ", ".join(
         part for part in (author.get("family-names"), author.get("given-names")) if part
     )
     return {
         "name": name or author.get("name"),
-        "orcid": (author.get("orcid") or "").removeprefix("https://orcid.org/") or None,
+        "orcid": orcid(author.get("orcid")),
         "affiliation": author.get("affiliation"),
     }
 
@@ -35,7 +46,7 @@ def cff_person(author):
 def zenodo_person(creator):
     return {
         "name": creator.get("name"),
-        "orcid": creator.get("orcid"),
+        "orcid": orcid(creator.get("orcid")),
         "affiliation": creator.get("affiliation"),
     }
 
@@ -46,11 +57,11 @@ def main():
 
     pairs = {
         "title": (cff.get("title"), zenodo.get("title")),
-        "license": (
-            (cff.get("license") or "").lower(),
-            (zenodo.get("license") or "").lower(),
+        "license": (licenses(cff.get("license")), licenses(zenodo.get("license"))),
+        "keywords": (
+            sorted(cff.get("keywords", [])),
+            sorted(zenodo.get("keywords", [])),
         ),
-        "keywords": (cff.get("keywords", []), zenodo.get("keywords", [])),
         "authors/creators": (
             [cff_person(a) for a in cff.get("authors", [])],
             [zenodo_person(c) for c in zenodo.get("creators", [])],
