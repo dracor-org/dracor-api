@@ -12,7 +12,7 @@ xquery version "3.1";
  : - corpus versions, `/id/{corpusname}@{commit}`, e.g. `/id/ger@15a6661`.
  :
  : Versions are looked up in the DraCor version index
- : (https://github.com/dracor-org/version-index), which records for every
+ : (https://github.com/dracor-org/dracor-version-index), which records for every
  : commit of a corpus repository which file holds which play. The index is
  : converted to XML and stored in $resolver:versions-root by
  : resolver:load-versions (POST /v1/id-index).
@@ -66,7 +66,7 @@ declare variable $resolver:versions-root := $config:dracor-root || "/versions";
 
 (: Default location of the version index (one folder per corpus) :)
 declare variable $resolver:default-index-source :=
-  "https://raw.githubusercontent.com/dracor-org/version-index/main/index";
+  "https://raw.githubusercontent.com/dracor-org/dracor-version-index/main/index";
 
 (:~
  : Earlier ID prefixes, not derivable from the index files (the index keys
