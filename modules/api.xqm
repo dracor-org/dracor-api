@@ -217,6 +217,10 @@ declare function local:get-index-keys(
   </terms>
 };
 
+(: Moved to modules/resolver.xqm (resolver:resolve). Kept here commented out
+ : while the resolver is tested against main: two modules must not both
+ : declare the same RESTXQ path.
+
 (:~
  : Resolve DraCor ID of a play
  :
@@ -241,6 +245,7 @@ function api:id-to-url($id, $accept) {
       </http:response>
     </rest:response>
 };
+ :)
 
 (:~
  : List available corpora
