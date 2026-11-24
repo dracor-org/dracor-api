@@ -118,6 +118,27 @@ function resolver:resolve($id, $accept, $profile) {
 };
 
 (:~
+ : Resolve the bare resolver base `/id/`
+ :
+ : Redirects to the DraCor front page, or with `Accept: application/json` to
+ : the API info. A PID registered for the resolver base (e.g. a handle
+ : pointing to https://dracor.org/id/) then still lands somewhere useful when
+ : it is resolved without a suffix.
+ :
+ : @param $accept Accept header value
+ : @result redirect
+ :)
+declare
+  %rest:GET
+  %rest:path("/v1/id")
+  %rest:header-param("Accept", "{$accept}")
+function resolver:resolve-base($accept) {
+  resolver:redirect(
+    if ($accept = "application/json") then $config:api-base || "/info"
+    else $config:api-origin || "/"
+  )
+};
+(:~
  : Resolve a play ID or corpus name without a version
  :)
 declare function resolver:resolve-current(
