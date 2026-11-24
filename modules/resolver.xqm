@@ -92,10 +92,14 @@ declare variable $resolver:former-prefixes := map {"eng": ("ep")};
  : `application/xml` return the corpus.xml stored in the database (200). With
  : the repository profile, the page view goes to the corpus repository.
  :
- : Versions (`…@{commit}`): see resolver:resolve-play-version and
- : resolver:resolve-corpus-version.
+ : Versions (`…@{commit}`, or `…:{commit}`): see
+ : resolver:resolve-play-version and resolver:resolve-corpus-version. `:` is
+ : accepted as an alternative separator so that a handle extension
+ : (`PREFIX/SUFFIX@als000001:bc1e1e8`) needs only one `@`. `@` is the
+ : canonical form under `/id/`.
  :
  : @param $id DraCor ID or corpus name, optionally followed by `@{commit}`
+ : or `:{commit}`
  : @param $accept Accept header value
  : @param $profile Accept-Profile header value
  : @result redirect, XML, JSON or error
@@ -106,15 +110,17 @@ declare
   %rest:header-param("Accept", "{$accept}")
   %rest:header-param("Accept-Profile", "{$profile}")
 function resolver:resolve($id, $accept, $profile) {
-  if (contains($id, "@")) then
-    resolver:resolve-version(
-      substring-before($id, "@"),
-      substring-after($id, "@"),
-      $accept,
-      $profile
-    )
-  else
-    resolver:resolve-current($id, $accept, $profile)
+  let $sep := (("@", ":")[contains($id, .)])[1]
+  return
+    if ($sep) then
+      resolver:resolve-version(
+        substring-before($id, $sep),
+        substring-after($id, $sep),
+        $accept,
+        $profile
+      )
+    else
+      resolver:resolve-current($id, $accept, $profile)
 };
 
 (:~
