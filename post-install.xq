@@ -124,6 +124,9 @@ declare function local:update-secrets-file() as item()* {
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || "/modules/webhook.xqm")
 let $sitelinks-job := xs:anyURI($target || "/jobs/sitelinks.xq")
+(: TEMPORARY: unauthenticated version index refresh, see
+   modules/id-index-refresh.xqm; remove before merging dracor-api#435 :)
+let $id-index-refresh := xs:anyURI($target || "/modules/id-index-refresh.xqm")
 
 (: register the RESTXQ module :)
 let $restxq-module := xs:anyURI("modules/api.xpm")
@@ -137,5 +140,8 @@ return (
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
   sm:chmod($sitelinks-job, "rwsr-xr-x"),
+  sm:chown($id-index-refresh, "admin"),
+  sm:chgrp($id-index-refresh, "dba"),
+  sm:chmod($id-index-refresh, "rwsr-xr-x"),
   exrest:register-module($restxq-module)
 )

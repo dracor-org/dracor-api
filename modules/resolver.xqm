@@ -232,8 +232,21 @@ declare function resolver:resolve-version(
       resolver:versions-by-prefix(replace($id, "[0-9]+$", ""))
     else
       resolver:versions-by-corpus($id)
+    (:
+     : The commit DraCor has loaded may be newer than the index (the index is
+     : updated nightly, a corpus is loaded on push). It resolves like
+     : `/id/{id}` even if the index does not know it yet; the DOG profile
+     : still needs the index for its record.
+     :)
+    let $loaded-sha := resolver:loaded-commit($id, $is-play)
+    let $is-loaded := not($dog) and
+      string-length($commit) >= 7 and
+      starts-with($loaded-sha, lower-case($commit))
+    let $in-index := exists($versions ! resolver:find-commit(., $commit))
 
-    return if (not($versions)) then
+    return if ($is-loaded and not($in-index)) then
+      resolver:resolve-current($id, $accept, $profile)
+    else if (not($versions)) then
       resolver:error(
         404,
         "unknown-corpus",
@@ -286,6 +299,26 @@ declare function resolver:resolve-version(
         )
       else
         resolver:resolve-corpus-version($versions, $commits, $accept, $profile)
+};
+
+(:~
+ : The commit DraCor has loaded for a play or corpus (empty if not loaded)
+ :
+ : @param $id DraCor ID or corpus name
+ : @param $is-play true for a play ID
+ :)
+declare function resolver:loaded-commit(
+  $id as xs:string,
+  $is-play as xs:boolean
+) as xs:string? {
+  if ($is-play) then
+    let $tei := dutil:get-play-by-id($id)
+    return if ($tei) then
+      doc(dutil:filepaths(base-uri($tei))?files?git)/git/sha/string()
+    else (
+    )
+  else
+    dutil:get-corpus-info-by-name($id)?commit
 };
 
 (:~
@@ -789,6 +822,43 @@ function resolver:post-index($corpora, $source, $auth) {
           map {"corpus": $name, "error": $err:description}
         }
       }
+};
+
+(:~
+ : Load the version index of one corpus from the default source
+ :
+ : Called by the corpus load jobs (jobs/load-corpus.xq,
+ : jobs/process-webhook-delivery.xq), so the index is refreshed whenever a
+ : corpus is loaded or updated, without an endpoint of its own. The source
+ : is fixed ($resolver:default-index-source). Never raises an error: a
+ : failure is logged and returned, so it cannot break the corpus load.
+ :
+ : @param $name Corpus name
+ : @return summary map, or a map with `error`
+ :)
+declare function resolver:refresh-corpus($name as xs:string?) as map(*) {
+  if (not($name)) then
+    map {"error": "no corpus name"}
+  else
+    try {
+      let $registry := try {
+        resolver:fetch-json($resolver:default-index-source || "/registry.json")
+      } catch * { () }
+      let $result := resolver:load-versions(
+        $name,
+        $resolver:default-index-source,
+        $registry
+      )
+      return (
+        util:log-system-out("version index loaded: " || $name),
+        $result
+      )
+    } catch * {
+      util:log-system-out(
+        "version index not loaded for " || $name || ": " || $err:description
+      ),
+      map {"corpus": $name, "error": $err:description}
+    }
 };
 
 declare function resolver:load-versions(

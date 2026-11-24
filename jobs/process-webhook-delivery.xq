@@ -4,6 +4,7 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "../modules/config.xqm";
 import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "../modules/util.xqm";
+import module namespace resolver = "http://dracor.org/ns/exist/v1/resolver" at "../modules/resolver.xqm";
 
 declare variable $local:delivery external;
 
@@ -212,6 +213,10 @@ declare function local:process-delivery() {
     return (
       update insert attribute processed { current-dateTime() } into $delivery,
       local:update-sha($info, $delivery),
+      (: refresh the version index of this corpus (versioned /id/ resolver) :)
+      util:log-system-out(
+        serialize(resolver:refresh-corpus($corpusname), map {"method": "json"})
+      ),
       $delivery
     )
   else if ($delivery) then
