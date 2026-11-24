@@ -118,26 +118,49 @@ function resolver:resolve($id, $accept, $profile) {
 };
 
 (:~
- : Resolve the bare resolver base `/id/`
+ : Resolve the resolver base `/id`, with or without the `id` parameter
  :
- : Redirects to the DraCor front page, or with `Accept: application/json` to
- : the API info. A PID registered for the resolver base (e.g. a handle
- : pointing to https://dracor.org/id/) then still lands somewhere useful when
- : it is resolved without a suffix.
+ : `/id?id={id}` and `/id?id={id}@{commit}` resolve exactly like `/id/{id}`
+ : and `/id/{id}@{commit}`.
  :
+ : This is meant for a single handle for all of DraCor. GWDG's handle
+ : template (delimiter `@`, target `${data}?${extension}`) turns
+ : `PREFIX/SUFFIX@ger000088@15a6661` into `{target}?ger000088@15a6661`.
+ : RESTXQ only passes query parameters by name and has no access to the raw
+ : query string, so the handle points to `https://dracor.org/id?id=`; the
+ : template then yields `https://dracor.org/id?id=?ger000088@15a6661`, and
+ : the leading `?` of the value is dropped here.
+ :
+ : Without a value, it redirects to the DraCor front page, or with
+ : `Accept: application/json` to the API info, so the bare handle still lands
+ : somewhere useful.
+ :
+ : RESTXQ cannot register `/v1/id/` (trailing slash); that has to be handled
+ : by the proxy.
+ :
+ : @param $id-param DraCor ID or corpus name, optionally with `@{commit}`
  : @param $accept Accept header value
- : @result redirect
+ : @param $profile Accept-Profile header value
+ : @result redirect, XML, JSON or error
  :)
 declare
   %rest:GET
   %rest:path("/v1/id")
+  %rest:query-param("id", "{$id-param}")
   %rest:header-param("Accept", "{$accept}")
-function resolver:resolve-base($accept) {
-  resolver:redirect(
-    if ($accept = "application/json") then $config:api-base || "/info"
-    else $config:api-origin || "/"
-  )
+  %rest:header-param("Accept-Profile", "{$profile}")
+function resolver:resolve-base($id-param, $accept, $profile) {
+  let $id := replace(string($id-param[1]), "^\?", "") => normalize-space()
+  return
+    if ($id) then
+      resolver:resolve($id, $accept, $profile)
+    else
+      resolver:redirect(
+        if ($accept = "application/json") then $config:api-base || "/info"
+        else $config:api-origin || "/"
+      )
 };
+
 (:~
  : Resolve a play ID or corpus name without a version
  :)
