@@ -13,28 +13,29 @@ xquery version "3.1";
  :
  : - It reads nothing from the request: no parameters, no headers, no body.
  : - The source is fixed: $resolver:default-index-source (the public
- :   dracor-version-index repository on GitHub). No URL can be passed in.
+ : dracor-version-index repository on GitHub). No URL can be passed in.
  : - It only loads the index of corpora that are already in the database,
- :   and writes only to $resolver:versions-root.
+ : and writes only to $resolver:versions-root.
  : - It runs at most once every $refresh:min-interval; otherwise 503 with
- :   Retry-After (eXist does not accept 429 in rest:response).
+ : Retry-After (eXist does not accept 429 in rest:response).
  :
  : The worst a caller can do is reload the same public data every few
  : minutes.
  :)
 module namespace refresh = "http://dracor.org/ns/exist/v1/id-index-refresh";
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
-import module namespace resolver = "http://dracor.org/ns/exist/v1/resolver" at "resolver.xqm";
-
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
+import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
+import module namespace resolver = "http://dracor.org/ns/exist/v1/resolver" at "resolver.xqm";
+
 (: minimum interval between two refreshes, in seconds :)
 declare variable $refresh:min-interval := 600;
+
 declare variable $refresh:state-name := "refresh-state.xml";
 
 (:~
@@ -61,8 +62,7 @@ declare
   %output:method("json")
 function refresh:refresh() {
   let $state := doc($resolver:versions-root || "/" || $refresh:state-name)
-  let $last := $state/refresh/@last[. castable as xs:dateTime]
-    ! xs:dateTime(.)
+  let $last := $state/refresh/@last[. castable as xs:dateTime]!xs:dateTime(.)
   let $now := current-dateTime()
   let $elapsed := if (exists($last)) then
     refresh:seconds($now - $last)
@@ -73,14 +73,11 @@ function refresh:refresh() {
       <http:response status="503">
         <http:header
           name="Retry-After"
-          value="{ xs:integer(ceiling($refresh:min-interval - $elapsed)) }"
-        />
+          value="{ xs:integer(ceiling($refresh:min-interval - $elapsed)) }" />
       </http:response>
     </rest:response>,
     map {
-      "message": "The index was refreshed at " ||
-        $last ||
-        "; try again later."
+      "message": "The index was refreshed at " || $last || "; try again later."
     }
   ) else
     let $col := resolver:ensure-collection()
@@ -96,9 +93,11 @@ function refresh:refresh() {
     return map {
       "temporary": true(),
       "source": $resolver:default-index-source,
-      "corpora": array {
-        for $name in $names
-        return resolver:refresh-corpus($name)
-      }
+      "corpora":
+        array
+          {
+            for $name in $names
+            return resolver:refresh-corpus($name)
+          }
     }
 };

@@ -111,16 +111,15 @@ declare
   %rest:header-param("Accept-Profile", "{$profile}")
 function resolver:resolve($id, $accept, $profile) {
   let $sep := (("@", ":")[contains($id, .)])[1]
-  return
-    if ($sep) then
-      resolver:resolve-version(
-        substring-before($id, $sep),
-        substring-after($id, $sep),
-        $accept,
-        $profile
-      )
-    else
-      resolver:resolve-current($id, $accept, $profile)
+  return if ($sep) then
+    resolver:resolve-version(
+      substring-before($id, $sep),
+      substring-after($id, $sep),
+      $accept,
+      $profile
+    )
+  else
+    resolver:resolve-current($id, $accept, $profile)
 };
 
 (:~
@@ -157,14 +156,15 @@ declare
   %rest:header-param("Accept-Profile", "{$profile}")
 function resolver:resolve-base($id-param, $accept, $profile) {
   let $id := replace(string($id-param[1]), "^\?", "") => normalize-space()
-  return
-    if ($id) then
-      resolver:resolve($id, $accept, $profile)
-    else
-      resolver:redirect(
-        if ($accept = "application/json") then $config:api-base || "/info"
-        else $config:api-origin || "/"
-      )
+  return if ($id) then
+    resolver:resolve($id, $accept, $profile)
+  else
+    resolver:redirect(
+      if ($accept = "application/json") then
+        $config:api-base || "/info"
+      else
+        $config:api-origin || "/"
+    )
 };
 
 (:~
@@ -242,7 +242,7 @@ declare function resolver:resolve-version(
     let $is-loaded := not($dog) and
       string-length($commit) >= 7 and
       starts-with($loaded-sha, lower-case($commit))
-    let $in-index := exists($versions ! resolver:find-commit(., $commit))
+    let $in-index := exists($versions!resolver:find-commit(., $commit))
 
     return if ($is-loaded and not($in-index)) then
       resolver:resolve-current($id, $accept, $profile)
@@ -849,10 +849,7 @@ declare function resolver:refresh-corpus($name as xs:string?) as map(*) {
         $resolver:default-index-source,
         $registry
       )
-      return (
-        util:log-system-out("version index loaded: " || $name),
-        $result
-      )
+      return (util:log-system-out("version index loaded: " || $name), $result)
     } catch * {
       util:log-system-out(
         "version index not loaded for " || $name || ": " || $err:description
