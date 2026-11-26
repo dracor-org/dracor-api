@@ -824,6 +824,61 @@ declare function dutil:get-corpus-info-by-name(
 };
 
 (:~
+ : Check if $data can replace the corpus.xml of corpus $corpusname.
+ :
+ : The new document must have a corpus root element and keep the corpus name,
+ : which also is the name of the corpus collection. If the corpus has a
+ : repository, the document must keep it, too, since webhooks find the corpus
+ : by its repository.
+ :
+ : @param $data corpus.xml as document node or string
+ : @param $corpusname Name of the corpus to be updated
+ : @return Error message, empty sequence if $data is a valid replacement
+ :)
+declare function dutil:check-corpus-update(
+  $data as item(),
+  $corpusname as xs:string
+) as xs:string? {
+  let $doc := if ($data instance of node()) then
+    $data
+  else
+    try {
+      parse-xml(
+        if ($data instance of xs:base64Binary) then
+          util:binary-to-string($data)
+        else
+          string($data)
+      )
+    } catch * { () }
+  (: DEPRECATED: remove dracorCorpus and teiCorpus support in v2 :)
+  let $root := $doc/(tei:teiHeader | tei:dracorCorpus | tei:teiCorpus)
+  let $info := dutil:get-corpus-info($root)
+  let $repo := dutil:get-corpus-info-by-name($corpusname)?repository
+
+  return if (not($doc/*)) then
+    "corpus.xml is not well-formed XML"
+  else if (not($root)) then
+    "corpus.xml has unexpected root element Q{" ||
+      namespace-uri($doc/*) ||
+      "}" ||
+      local-name($doc/*)
+  else if (not($info?name = $corpusname)) then
+    "corpus.xml has name '" ||
+      $info?name ||
+      "' instead of '" ||
+      $corpusname ||
+      "'"
+  else if ($repo and not($info?repository = $repo)) then
+    "corpus.xml has repository '" ||
+      string-join($info?repository, "', '") ||
+      "' instead of '" ||
+      $repo ||
+      "'"
+  else (
+  )
+};
+
+(:~
  : Compile metrics for corpus identified by $corpusname.
  :
  : @param $corpusname

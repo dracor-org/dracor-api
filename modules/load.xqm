@@ -27,12 +27,19 @@ declare function local:entry-data(
     let $filename := tokenize($path, "/")[last()]
     let $name := replace($filename, "\.xml$", "")
     let $log := util:log-system-out("LOADING " || $path)
-    (: DEPRECATED: remove dracorCorpus and teiCorpus support in v2 :)
     let $res := if (
-      $name = "corpus" and
-        $data/(tei:teiHeader | tei:dracorCorpus | tei:teiCorpus)
+      $filename = "corpus.xml" and not(contains($path, "/tei/"))
     ) then
-      xmldb:store($collection, "corpus.xml", $data)
+      (: keep the corpus.xml created from the corpus info if the one from the
+        archive would break the corpus :)
+      let $error := dutil:check-corpus-update(
+        $data,
+        tokenize($collection, "/")[last()]
+      )
+      return if ($error) then
+        util:log-system-out("Skipping " || $path || ": " || $error)
+      else
+        xmldb:store($collection, "corpus.xml", $data)
     else if (not($data/tei:TEI)) then
       util:log-system-out("Skipping non-TEI document: " || $path)
     else

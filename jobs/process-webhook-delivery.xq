@@ -57,7 +57,14 @@ declare function local:update(
       $response[2]
 
     (: FIXME: make sure $data is valid TEI :)
-    return if ($data) then
+    let $error := if ($data and $filename = "corpus.xml") then
+      dutil:check-corpus-update($data, tokenize($collection, "/")[last()])
+    else (
+    )
+
+    return if ($error) then (
+      util:log-system-out("Rejecting " || $target || ": " || $error), false()
+    ) else if ($data) then
       try {
         util:log-system-out("webhook update: " || $target),
         xmldb:create-collection("/", $collection) and
