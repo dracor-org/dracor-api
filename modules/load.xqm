@@ -24,6 +24,7 @@ declare function local:entry-data(
   if ($data) then
     let $collection := $param[1]
     let $sha := $param[2]
+    let $corpusname := $param[3]
     let $filename := tokenize($path, "/")[last()]
     let $name := replace($filename, "\.xml$", "")
     let $log := util:log-system-out("LOADING " || $path)
@@ -32,10 +33,7 @@ declare function local:entry-data(
     ) then
       (: keep the corpus.xml created from the corpus info if the one from the
         archive would break the corpus :)
-      let $error := dutil:check-corpus-update(
-        $data,
-        tokenize($collection, "/")[last()]
-      )
+      let $error := dutil:check-corpus-update($data, $corpusname)
       return if ($error) then
         util:log-system-out("Skipping " || $path || ": " || $error)
       else
@@ -128,7 +126,7 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
           util:function(xs:QName("local:entry-filter"), 3),
           (),
           util:function(xs:QName("local:entry-data"), 4),
-          ($corpus-collection, $archive?sha)
+          ($corpus-collection, $archive?sha, $name)
         ),
         local:record-corpus-sha($name),
         util:log-system-out($name || " LOADED")

@@ -48,13 +48,20 @@ declare function local:update(
   let $status := string($response[1]/@status)
 
   return if ($status = "200") then
-    let $data := if (
+    let $content := if (
       starts-with($response[1]/hc:body/@media-type, "application/json")
     ) then
       let $json := parse-json(util:base64-decode($response[2]))
       return util:base64-decode($json?content)
     else
       $response[2]
+    (: parse corpus.xml only once to store the document that was checked :)
+    let $data := if (
+      $filename = "corpus.xml" and $content instance of xs:string
+    ) then
+      try { parse-xml($content) } catch * { $content }
+    else
+      $content
 
     (: FIXME: make sure $data is valid TEI :)
     let $error := if ($data and $filename = "corpus.xml") then
@@ -165,10 +172,7 @@ declare function local:process-delivery() {
     not(@processed)]
   let $repo := $delivery/@repo/string()
   let $after := $delivery/@after/string()
-  let $corpus := dutil:corpora()[dutil:corpus-header(.)//tei:publicationStmt/(
-    tei:ref[@type = "repo" and @target = $repo] |
-      tei:idno[@type = "repo" and . = $repo]
-  )]
+  let $corpus := dutil:get-corpus-by-repo($repo)
 
   let $info := dutil:get-corpus-info($corpus)
   let $corpusname := $info?name

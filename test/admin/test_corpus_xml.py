@@ -6,6 +6,8 @@ The root element is `teiHeader`. The deprecated `dracorCorpus` and `teiCorpus`
 roots are still supported.
 """
 
+from urllib.parse import urlparse
+
 import pytest
 
 from conftest import SCRATCH_CORPUS, SCRATCH_CORPUS_XML
@@ -99,7 +101,16 @@ def test_corpus_root(api, rest, play, root):
     assert metadata.status_code == 200, metadata.text
     assert len(metadata.json()) == 1
 
-    oai = api.get("/oai", params={"verb": "ListRecords", "metadataPrefix": "oai_dc"})
+    # OAI identifiers use the host name of the API base
+    identifier = f"oai:{urlparse(api.base).hostname}:{SCRATCH_CORPUS}"
+    oai = api.get(
+        "/oai",
+        params={
+            "verb": "GetRecord",
+            "identifier": identifier,
+            "metadataPrefix": "oai_dc",
+        },
+    )
     assert oai.status_code == 200, oai.text
     assert title in oai.text
 
@@ -128,6 +139,25 @@ def test_create_corpus_from_xml_root(api, rest, root):
         stored = rest.get(f"{CORPORA_ROOT}/{SCRATCH_CORPUS_XML}/corpus.xml")
         assert stored.status_code == 200, stored.text
         assert stored.text.lstrip().startswith("<teiHeader")
+    finally:
+        api.delete(f"/corpora/{SCRATCH_CORPUS_XML}")
+
+
+def test_create_corpus_from_play(api):
+    play = corpus_xml("teiHeader", name=SCRATCH_CORPUS_XML).replace(
+        "<teiHeader xmlns", "<TEI xmlns", 1
+    )
+    play = play.replace("<fileDesc>", "<teiHeader><fileDesc>", 1)
+    play = play.replace("</teiHeader>", "</teiHeader><text/></TEI>")
+    try:
+        response = api.request(
+            "POST",
+            "/corpora",
+            data=play.encode(),
+            headers={"Content-Type": "application/xml"},
+        )
+        assert response.status_code == 400, response.text
+        assert "Unexpected root element" in response.json()["error"]
     finally:
         api.delete(f"/corpora/{SCRATCH_CORPUS_XML}")
 
@@ -197,3 +227,22 @@ def test_check_corpus_update_rejects(rest, repo_corpus, xml, message):
 def test_check_corpus_update_without_repo(rest, corpus):
     # a corpus without repository may get one
     assert check_update(rest, corpus_xml("teiHeader")) == ""
+
+
+def test_check_corpus_update_element(rest, repo_corpus):
+    # an element is checked itself, not its children
+    literal = corpus_xml("teiHeader").replace('"', '""')
+    query = f'dutil:check-corpus-update(parse-xml("{literal}")/*, "{repo_corpus}")'
+    assert xquery(rest, query) == ""
+
+
+def test_check_corpus_update_several_repos(api, rest, corpus):
+    # a stored corpus.xml with both an idno and a ref of type repo
+    xml = corpus_xml("teiHeader").replace(
+        "<ref ", f'<idno type="repo">{REPO}</idno><ref ', 1
+    )
+    store(rest, corpus, xml)
+    assert api.get(f"/corpora/{corpus}").json()["repository"] == REPO
+    assert check_update(rest, corpus_xml("teiHeader")) == ""
+    message = check_update(rest, corpus_xml("teiHeader", repo="https://github.com/x/y"))
+    assert message.endswith(f"instead of '{REPO}'")
