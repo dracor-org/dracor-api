@@ -158,12 +158,10 @@ declare function local:process-delivery() {
     not(@processed)]
   let $repo := $delivery/@repo/string()
   let $after := $delivery/@after/string()
-  (: DEPRECATED: remove teiCorpus support in v2 :)
-  let $corpus := collection($config:corpora-root)/(
-    tei:dracorCorpus | tei:teiCorpus
-  )[tei:teiHeader//tei:publicationStmt/tei:ref[@type = "repo" and
-    @target = $repo] or
-    tei:teiHeader//tei:publicationStmt/tei:idno[@type = "repo" and . = $repo]]
+  let $corpus := dutil:corpora()[dutil:corpus-header(.)//tei:publicationStmt/(
+    tei:ref[@type = "repo" and @target = $repo] |
+      tei:idno[@type = "repo" and . = $repo]
+  )]
 
   let $info := dutil:get-corpus-info($corpus)
   let $corpusname := $info?name

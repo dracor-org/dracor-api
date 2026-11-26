@@ -33,9 +33,10 @@ declare function local:check-signature(
 };
 
 declare function local:get-corpus($repo-url as xs:string) as element()? {
+  (: DEPRECATED: remove dracorCorpus and teiCorpus support in v2 :)
   collection($config:corpora-root)/(
-    tei:dracorCorpus | tei:teiCorpus
-  )[tei:teiHeader//tei:publicationStmt/(
+    tei:teiHeader | tei:dracorCorpus | tei:teiCorpus
+  )[(self::tei:teiHeader | tei:teiHeader)//tei:publicationStmt/(
     tei:ref[@type = "repo" and @target = $repo-url] |
       tei:idno[@type = "repo" and . = $repo-url]
   )]

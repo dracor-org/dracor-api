@@ -27,8 +27,10 @@ declare function local:entry-data(
     let $filename := tokenize($path, "/")[last()]
     let $name := replace($filename, "\.xml$", "")
     let $log := util:log-system-out("LOADING " || $path)
+    (: DEPRECATED: remove dracorCorpus and teiCorpus support in v2 :)
     let $res := if (
-      $name = "corpus" and $data/(tei:teiCorpus | tei:dracorCorpus)
+      $name = "corpus" and
+        $data/(tei:teiHeader | tei:dracorCorpus | tei:teiCorpus)
     ) then
       xmldb:store($collection, "corpus.xml", $data)
     else if (not($data/tei:TEI)) then
@@ -77,11 +79,12 @@ declare function local:record-corpus-sha($name) {
 (:~
  : Load corpus from ZIP archive
  :
- : @param $corpus The <dracorCorpus> element providing corpus name and archive URL
+ : @param $corpus The <teiHeader> root element of the corpus.xml providing
+ : corpus name and archive URL
  : @return List of created collections and files
  :
- : NB: until we remove support for it in v2 $corpus can also be a <teiCorpus>
- : element
+ : NB: until we remove support for them in v2 $corpus can also be a
+ : <dracorCorpus> or <teiCorpus> element
  :)
 declare function load:load-corpus($corpus as element()) as xs:string* {
   let $info := dutil:get-corpus-info($corpus)
