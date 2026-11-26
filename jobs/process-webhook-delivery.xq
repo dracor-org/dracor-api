@@ -121,7 +121,7 @@ declare function local:get-repo-contents($url-template, $sha) {
 declare function local:update-sha($corpusinfo, $delivery) {
   let $before := $delivery/@before/string()
   let $after := $delivery/@after/string()
-  let $failures := count($delivery//file[@failure])
+  let $failures := count($delivery//file[@failed])
   return (
     util:log-system-out(
       "corpus: " ||
