@@ -14,8 +14,8 @@ xquery version "3.1";
  : - It reads nothing from the request: no parameters, no headers, no body.
  : - The source is fixed: $resolver:default-index-source (the public
  : dracor-version-index repository on GitHub). No URL can be passed in.
- : - It only loads the index of corpora that are already in the database,
- : and writes only to $resolver:versions-root.
+ : - It loads the index of the corpora in the index's registry.json (also
+ : corpora in development) and writes only to $resolver:versions-root.
  : - It runs at most once every $refresh:min-interval; otherwise 503 with
  : Retry-After (eXist does not accept 429 in rest:response).
  :
@@ -27,10 +27,7 @@ module namespace refresh = "http://dracor.org/ns/exist/v1/id-index-refresh";
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace http = "http://expath.org/ns/http-client";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
-declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
-import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
-import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 import module namespace resolver = "http://dracor.org/ns/exist/v1/resolver" at "resolver.xqm";
 
 (: minimum interval between two refreshes, in seconds :)
@@ -86,18 +83,9 @@ function refresh:refresh() {
       $refresh:state-name,
       <refresh last="{ $now }" />
     )
-    let $names :=
-      for $c in
-        collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
-      return dutil:get-corpus-info($c)?name
     return map {
       "temporary": true(),
       "source": $resolver:default-index-source,
-      "corpora":
-        array
-          {
-            for $name in $names
-            return resolver:refresh-corpus($name)
-          }
+      "corpora": resolver:refresh-all()
     }
 };

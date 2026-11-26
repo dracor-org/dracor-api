@@ -783,7 +783,8 @@ declare function resolver:corpus-to-url(
  : Requires authorization.
  :
  : @param $corpora Corpus names, comma separated (default: all corpora in the
- : database)
+ : index's registry.json, including corpora in development that are not
+ : loaded into this database)
  : @param $source Base URL of the index (default: $resolver:default-index-source)
  : @param $auth Authorization header value
  :)
@@ -806,19 +807,63 @@ function resolver:post-index($corpora, $source, $auth) {
       "/+$",
       ""
     )
-    let $names := if ($corpora[normalize-space()]) then
-      tokenize(string-join($corpora, ","), "\s*,\s*")[.]
-    else
-      for $c in
-        collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
-      return dutil:get-corpus-info($c)?name
     let $registry := try {
       resolver:fetch-json($base || "/registry.json")
     } catch * { () }
+    let $names := if ($corpora[normalize-space()]) then
+      tokenize(string-join($corpora, ","), "\s*,\s*")[.]
+    else
+      resolver:registry-corpora($registry)
     return array
       {
         for $name in $names
         return try { resolver:load-versions($name, $base, $registry) } catch * {
+          map {"corpus": $name, "error": $err:description}
+        }
+      }
+};
+
+(:~
+ : Names of the corpora listed in the index's copy of the DraCor registry
+ :
+ : The registry lists every corpus, also those in development (draft,
+ : proposed) that dracor.org does not load yet, so that their versions can be
+ : resolved too. It does not depend on which corpora are in this database.
+ :
+ : @param $registry registry.json of the index, parsed
+ :)
+declare function resolver:registry-corpora($registry as map(*)?) as xs:string* {
+  array:flatten($registry?corpora)?name!string()
+};
+
+(:~
+ : Load the version index of all corpora of the registry from the default
+ : source
+ :
+ : Never raises an error: failures are logged and returned per corpus.
+ :
+ : @return array of summary maps (or maps with `error`)
+ :)
+declare function resolver:refresh-all() as array(*) {
+  let $registry := try {
+    resolver:fetch-json($resolver:default-index-source || "/registry.json")
+  } catch * { () }
+  return if (empty($registry)) then
+    [map {"error": "registry.json of the version index not available"}]
+  else
+    array
+      {
+        for $name in resolver:registry-corpora($registry)
+        return try {
+          resolver:load-versions(
+            $name,
+            $resolver:default-index-source,
+            $registry
+          )
+        } catch * {
+          util:log-system-out(
+            "version index not loaded for " || $name || ": " || $err:description
+          ),
           map {"corpus": $name, "error": $err:description}
         }
       }
