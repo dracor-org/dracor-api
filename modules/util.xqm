@@ -756,9 +756,12 @@ declare function dutil:get-corpus-info($corpus as element()*) as map(*)* {
   let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/string()
   let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type =
     "acronym"][1]/string()
-  let $repo := $header//tei:publicationStmt/(
-    tei:idno[@type = "repo"][1] | tei:ref[@type = "repo"]/@target
-  )/string()
+  (: a corpus.xml might have both an idno and a ref of type repo :)
+  let $repo := (
+    $header//tei:publicationStmt/(
+      tei:idno[@type = "repo"] | tei:ref[@type = "repo"]/@target
+    )
+  )[1]/string()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:publicationStmt/tei:availability/tei:licence
   let $description := if ($projectDesc) then (
