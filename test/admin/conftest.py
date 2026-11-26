@@ -89,6 +89,18 @@ def api(request):
     remove_scratch_corpora()
 
 
+@pytest.fixture(scope="session")
+def rest(api):
+    """eXist-db's REST interface, derived from the RESTXQ base of the API.
+
+    The tests use it to store documents in the database directly, as webhooks
+    and loading archives do, and to call XQuery functions.
+    """
+    if "/restxq/" not in api.base:
+        pytest.skip("eXist-db REST interface unknown for this API base")
+    return API(api.base.split("/restxq/")[0] + "/rest", api.auth)
+
+
 @pytest.fixture
 def corpus(api):
     """An empty throwaway corpus, deleted after the test."""
