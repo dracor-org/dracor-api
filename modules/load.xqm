@@ -190,25 +190,23 @@ declare function local:entry-filter(
     false()
 };
 
-declare function local:corpus-sha($name as xs:string) as xs:string? {
-  doc($config:corpora-root || "/" || $name || "/git.xml")/git/sha/string()
-};
-
 (:~
  : Record the commit of the archive for the corpus
  :
  : @param $name Corpus name
  : @param $sha Git SHA of the archive
+ : @param $recorded Git SHA recorded for the corpus before loading
  : @param $plays Results of loading the plays
  :)
 declare function local:record-corpus-sha(
   $name as xs:string,
   $sha as xs:string?,
+  $recorded as xs:string?,
   $plays as element(play)*
 ) {
   if (not($sha) or $plays[@action = "failed"]) then
     dutil:remove-corpus-sha($name)
-  else if (local:corpus-sha($name) = $sha) then (
+  else if ($recorded = $sha) then (
   ) else
     dutil:record-sha($name, $sha)
 };
@@ -246,7 +244,7 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
       let $body := $response[2]
       let $zip := xs:base64Binary($body)
       (: a new corpus SHA is only valid once all plays have been loaded :)
-      let $removed-sha := if (local:corpus-sha($name) = $archive?sha) then (
+      let $removed-sha := if ($info?commit = $archive?sha) then (
       ) else
         dutil:remove-corpus-sha($name)
       (: load files from ZIP archive :)
@@ -264,7 +262,7 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
         $plays/@name
       )
       return (
-        local:record-corpus-sha($name, $archive?sha, $plays),
+        local:record-corpus-sha($name, $archive?sha, $info?commit, $plays),
         util:log-system-out(
           $name ||
             " LOADED: " ||
