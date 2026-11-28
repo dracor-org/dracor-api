@@ -69,12 +69,13 @@ declare %private function queue:schedule-first(
 };
 
 (:~
- : Schedule a job unless one with the same name is already waiting to run
+ : Schedule a job unless one for the same name is already waiting to run
  :
  : If the job of that name is already running, a follow-up job is scheduled
  : under the name suffixed with ":next", so that changes made while a sync is
  : running don't get lost. If that one is running too, a job with a unique
- : name is scheduled.
+ : name is scheduled. A waiting job under any of these names takes in the
+ : change, so that a play never has more than one waiting job.
  :
  : Scheduling requires the dba role. For other users this does nothing; the
  : reconcile job catches what has been missed.
@@ -88,11 +89,18 @@ declare function queue:schedule(
   $script as xs:string,
   $params as element(parameters)
 ) as xs:boolean {
-  queue:schedule-first(
-    ($name, $name || ":next", $name || ":" || util:uuid()),
-    $script,
-    $params
-  )
+  let $jobs := scheduler:get-scheduled-jobs()//scheduler:job[@name = $name or
+    starts-with(@name, $name || ":")]
+  return if ($jobs/scheduler:trigger/next[normalize-space()]) then
+    true()
+  else
+    queue:schedule-first(
+      ($name, $name || ":next", $name || ":" || util:uuid())[not(
+        . = $jobs/@name
+      )],
+      $script,
+      $params
+    )
 };
 
 (:~
