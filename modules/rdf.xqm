@@ -590,7 +590,12 @@ declare function drdf:fuseki-drop-corpus(
 declare function drdf:fuseki-plays() as map(*)* {
   (: drdf:graph("", "") gives the prefix with a duplicate slash :)
   let $prefix := replace(drdf:graph("", ""), "/$", "")
-  let $query := "SELECT DISTINCT ?g WHERE { GRAPH ?g { } }"
+  (:
+   : only graphs holding a play, so that other graphs whose name happens to
+   : match the pattern (e.g. an ontology) are never taken for left-overs
+   :)
+  let $query :=
+  "SELECT DISTINCT ?g WHERE { GRAPH ?g { ?play a <http://dracor.org/ontology#play> } }"
   let $request := <hc:request
     href="{
       $config:fuseki-server || "sparql?query=" || encode-for-uri($query)
