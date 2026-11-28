@@ -133,6 +133,8 @@ let $webhook := xs:anyURI($target || "/modules/webhook.xqm")
 let $sitelinks-job := xs:anyURI($target || "/jobs/sitelinks.xq")
 (: allows running the reconcile job from the scheduler in conf.xml :)
 let $reconcile-job := xs:anyURI($target || "/jobs/reconcile.xq")
+(: not prefixed with sync-, which would count it as pending sync :)
+let $reconcile-name := "reconcile"
 
 (: register the RESTXQ module :)
 let $restxq-module := xs:anyURI("modules/api.xpm")
@@ -150,14 +152,24 @@ return (
   sm:chgrp($reconcile-job, "dba"),
   sm:chmod($reconcile-job, "rwsr-xr-x"),
   exrest:register-module($restxq-module),
-  (: sync what may have been missed while the app was not installed :)
+  (:
+   : Sync what may have been missed while the app was not installed, and
+   : then every hour what sync jobs have missed, e.g. changes by users that
+   : can't schedule jobs or syncs that failed. The job of a previous install
+   : is replaced.
+   :)
+  if (
+    scheduler:get-scheduled-jobs()//scheduler:job[@name = $reconcile-name]
+  ) then
+    scheduler:delete-scheduled-job($reconcile-name)
+  else (
+  ),
   scheduler:schedule-xquery-periodic-job(
     $reconcile-job,
-    1,
-    (: not prefixed with sync-, which would count it as pending sync :)
-    "reconcile",
+    3600000,
+    $reconcile-name,
     <parameters />,
     60000,
-    0
+    -1
   )
 )
