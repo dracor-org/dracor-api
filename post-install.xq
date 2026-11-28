@@ -54,6 +54,8 @@ declare function local:set-from-env(
  : (default: http://localhost:3030/dracor/)
  : - METRICS_SERVER: DraCor metrics service URI
  : (default: http://localhost:8030/metrics/)
+ : - DRACOR_SYNC_DELAY: delay in seconds before derived data is synced after a
+ : change (optional, defaults to 10)
  :
  : The API itself cannot read these variables: environment-variable() returns
  : nothing for non-DBA users.
@@ -79,6 +81,11 @@ declare function local:update-config-file() as item()* {
   ),
   local:set-from-env(doc($config:file)/config, "api-base", "DRACOR_API_BASE"),
   local:set-from-env(doc($config:file)/config, "id-base", "DRACOR_ID_BASE"),
+  local:set-from-env(
+    doc($config:file)/config,
+    "sync-delay",
+    "DRACOR_SYNC_DELAY"
+  ),
   local:set-from-env(
     doc($config:file)/config/services,
     "fuseki",
@@ -124,6 +131,10 @@ declare function local:update-secrets-file() as item()* {
 (: elevate privileges for github webhook :)
 let $webhook := xs:anyURI($target || "/modules/webhook.xqm")
 let $sitelinks-job := xs:anyURI($target || "/jobs/sitelinks.xq")
+(: allows running the reconcile job from the scheduler in conf.xml :)
+let $reconcile-job := xs:anyURI($target || "/jobs/reconcile.xq")
+(: not prefixed with sync-, which would count it as pending sync :)
+let $reconcile-name := "reconcile"
 
 (: register the RESTXQ module :)
 let $restxq-module := xs:anyURI("modules/api.xpm")
@@ -137,5 +148,28 @@ return (
   sm:chown($sitelinks-job, "admin"),
   sm:chgrp($sitelinks-job, "dba"),
   sm:chmod($sitelinks-job, "rwsr-xr-x"),
-  exrest:register-module($restxq-module)
+  sm:chown($reconcile-job, "admin"),
+  sm:chgrp($reconcile-job, "dba"),
+  sm:chmod($reconcile-job, "rwsr-xr-x"),
+  exrest:register-module($restxq-module),
+  (:
+   : Sync what may have been missed while the app was not installed, and
+   : then every hour what sync jobs have missed, e.g. changes by users that
+   : can't schedule jobs or syncs that failed. The job of a previous install
+   : is replaced.
+   :)
+  if (
+    scheduler:get-scheduled-jobs()//scheduler:job[@name = $reconcile-name]
+  ) then
+    scheduler:delete-scheduled-job($reconcile-name)
+  else (
+  ),
+  scheduler:schedule-xquery-periodic-job(
+    $reconcile-job,
+    3600000,
+    $reconcile-name,
+    <parameters />,
+    60000,
+    -1
+  )
 )

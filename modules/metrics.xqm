@@ -116,15 +116,24 @@ declare function metrics:update-sitelinks(
 ) {
   if ($id ne "") then
     let $log := util:log-system-out("querying sitelinks for " || $collection)
-    let $sitelinks := <sitelinks id="{ $id }" updated="{ current-dateTime() }">
-      {
-        for $uri in wd:get-sitelinks($id)
-        return <uri>{ $uri }</uri>
-      }
-    </sitelinks>
+    let $sitelinks := metrics:get-sitelinks($id)
     return ($sitelinks, xmldb:store($collection, "sitelinks.xml", $sitelinks))
   else (
   )
+};
+
+(:~
+ : Get sitelinks for Wikidata ID
+ :
+ : @param $id Wikidata ID
+ :)
+declare function metrics:get-sitelinks($id as xs:string) as element(sitelinks) {
+  <sitelinks id="{ $id }" updated="{ current-dateTime() }">
+    {
+      for $uri in wd:get-sitelinks($id)
+      return <uri>{ $uri }</uri>
+    }
+  </sitelinks>
 };
 
 (:~

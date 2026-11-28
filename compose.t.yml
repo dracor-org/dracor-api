@@ -12,6 +12,8 @@ services:
     environment:
       - DRACOR_API_BASE=http://localhost:8081/exist/restxq/v1
       - GITHUB_WEBHOOK_SECRET=qwerty
+      # sync derived data soon after loading, so the tests needn't wait long
+      - DRACOR_SYNC_DELAY=5
       - EXIST_PASSWORD=
     ports:
       - 8081:8080
