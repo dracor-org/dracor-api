@@ -29,11 +29,47 @@ import module namespace metrics = "http://dracor.org/ns/exist/v1/metrics" at "me
 import module namespace drdf = "http://dracor.org/ns/exist/v1/rdf" at "rdf.xqm";
 import module namespace queue = "http://dracor.org/ns/exist/v1/queue" at "queue.xqm";
 
+(:
+ : Modification time of the TEI document of a play, empty if there is none
+ :
+ : A tei.xml without a TEI root (like the old trigger, which ignored such
+ : documents) is not considered a play, so that it doesn't stay pending.
+ :)
 declare %private function sync:tei-modified($paths as map(*)) as xs:dateTime? {
-  if (doc-available($paths?files?tei)) then
+  if (doc-available($paths?files?tei) and doc($paths?files?tei)/tei:TEI) then
     xmldb:last-modified($paths?collections?play, "tei.xml")
   else (
   )
+};
+
+declare %private function sync:is-pending(
+  $paths as map(*),
+  $modified as xs:dateTime?
+) as xs:boolean {
+  exists($modified) and
+    not(xs:dateTime(doc($paths?files?sync)/sync/@tei-modified) = $modified)
+};
+
+(:
+ : Check whether the TEI document has changed since the sync read it, and if so
+ : schedule another sync
+ :
+ : The change has scheduled a sync itself, but that may already be running
+ : alongside this one, or the change may have been made by a user who can't
+ : schedule jobs.
+ :)
+declare %private function sync:changed(
+  $paths as map(*),
+  $modified as xs:dateTime
+) as xs:boolean {
+  if (sync:tei-modified($paths) = $modified) then
+    false()
+  else
+    let $log := util:log-system-out(
+      "Sync: " || $paths?files?tei || " changed during sync, rescheduling"
+    )
+    let $scheduled := queue:sync-play($paths?corpusname, $paths?playname)
+    return true()
 };
 
 declare %private function sync:record($paths as map(*), $modified) {
@@ -50,6 +86,15 @@ declare %private function sync:record($paths as map(*), $modified) {
  : If the play exists its metrics, sitelinks and RDF are updated, otherwise its
  : graph is removed from Fuseki.
  :
+ : Metrics and sitelinks are fetched before anything is stored. If the network
+ : metrics can't be calculated (e.g. the metrics service fails), the previous
+ : metrics are kept and the play stays pending, to be retried by reconcile.
+ :
+ : Two syncs of a play can run at the same time when the play changes while it
+ : is being synced. A sync that finds the TEI document changed before it writes
+ : anything, or after it has updated Fuseki, stops and schedules another one,
+ : so that it doesn't overwrite newer data with older.
+ :
  : @param $corpusname
  : @param $playname
  : @return true() on success
@@ -59,6 +104,7 @@ declare function sync:play(
   $playname as xs:string
 ) as xs:boolean {
   let $paths := dutil:filepaths($corpusname, $playname)
+  let $collection := $paths?collections?play
   let $url := $paths?files?tei
   let $modified := sync:tei-modified($paths)
   return if (empty($modified)) then
@@ -66,36 +112,50 @@ declare function sync:play(
     let $dropped := drdf:fuseki-drop-play($corpusname, $playname)
     (: the collection may still exist when only the TEI has been deleted :)
     let $removed := if ($dropped and doc-available($paths?files?sync)) then
-      xmldb:remove($paths?collections?play, "sync.xml")
+      xmldb:remove($collection, "sync.xml")
     else (
     )
     return $dropped
   else
     let $log := util:log-system-out("Sync: " || $url)
-    (: the RDF includes the metrics, so they need to be updated first :)
-    let $metrics := metrics:update($url)
-    let $sitelinks := metrics:update-sitelinks($url)
-    (: remove sitelinks of a play that has lost its Wikidata ID :)
-    let $removed := if (
-      empty($sitelinks) and doc-available($paths?files?sitelinks)
-    ) then
-      xmldb:remove($paths?collections?play, "sitelinks.xml")
-    else (
-    )
-    let $rdf := drdf:play-to-rdf(doc($url)/tei:TEI)
-    return if (drdf:fuseki-put($corpusname, $playname, $rdf)) then (
-      (:
-       : rdf.xml is only stored once Fuseki has been updated, since reconcile
-       : takes a play without sync.xml whose rdf.xml is newer than tei.xml for
-       : synced
-       :)
-      let $stored := xmldb:store($paths?collections?play, "rdf.xml", $rdf)
-      let $recorded := sync:record($paths, $modified)
-      return true()
-    ) else (
-      (: without sync.xml the play stays pending and is retried by reconcile :)
-      util:log-system-out("Sync: Fuseki update failed for " || $url), false()
-    )
+    let $tei := doc($url)/tei:TEI
+    let $metrics := metrics:calculate($url)
+    return if (empty($metrics/network/size)) then (
+      util:log-system-out("Sync: network metrics failed for " || $url), false()
+    ) else
+      let $wikidata-id := dutil:get-play-wikidata-id($tei)
+      let $sitelinks := if ($wikidata-id) then
+        metrics:get-sitelinks($wikidata-id)
+      else (
+      )
+      return if (sync:changed($paths, $modified)) then
+        false()
+      else
+        (: the RDF includes the metrics, so they need to be stored first :)
+        let $stored-metrics := xmldb:store($collection, "metrics.xml", $metrics)
+        let $stored-sitelinks := if (exists($sitelinks)) then
+          xmldb:store($collection, "sitelinks.xml", $sitelinks)
+        (: remove sitelinks of a play that has lost its Wikidata ID :)
+        else if (doc-available($paths?files?sitelinks)) then
+          xmldb:remove($collection, "sitelinks.xml")
+        else (
+        )
+        let $rdf := drdf:play-to-rdf($tei)
+        return if (not(drdf:fuseki-put($corpusname, $playname, $rdf))) then (
+          (: without sync.xml the play stays pending, reconcile retries it :)
+          util:log-system-out("Sync: Fuseki update failed for " || $url),
+          false()
+        ) else if (sync:changed($paths, $modified)) then
+          false()
+        else
+          (:
+           : rdf.xml is only stored once Fuseki has been updated, since
+           : reconcile takes a play without sync.xml whose rdf.xml is newer
+           : than tei.xml for synced
+           :)
+          let $stored-rdf := xmldb:store($collection, "rdf.xml", $rdf)
+          let $recorded := sync:record($paths, $modified)
+          return true()
 };
 
 (:~
@@ -103,7 +163,8 @@ declare function sync:play(
  :
  : Removes the graphs of all plays of a corpus from Fuseki if the corpus
  : doesn't exist (anymore). The plays of an existing corpus are synced
- : individually.
+ : individually, but graphs of its plays that don't exist are removed, e.g.
+ : when the corpus has been deleted and created again before this sync ran.
  :
  : @param $corpusname
  : @return true() on success
@@ -112,7 +173,13 @@ declare function sync:corpus($corpusname as xs:string) as xs:boolean {
   if (
     xmldb:collection-available($config:corpora-root || "/" || $corpusname)
   ) then
-    true()
+    let $dropped :=
+      for $play in drdf:fuseki-plays()[?corpusname = $corpusname]
+      where empty(
+        sync:tei-modified(dutil:filepaths($corpusname, $play?playname))
+      )
+      return drdf:fuseki-drop-play($corpusname, $play?playname)
+    return every $d in $dropped satisfies $d
   else (
     util:log-system-out("Sync: corpus " || $corpusname || " is gone"),
     drdf:fuseki-drop-corpus($corpusname)
@@ -130,9 +197,7 @@ declare function sync:play-pending(
   $playname as xs:string
 ) as xs:boolean {
   let $paths := dutil:filepaths($corpusname, $playname)
-  let $modified := sync:tei-modified($paths)
-  return exists($modified) and
-    not(xs:dateTime(doc($paths?files?sync)/sync/@tei-modified) = $modified)
+  return sync:is-pending($paths, sync:tei-modified($paths))
 };
 
 (:~
@@ -178,8 +243,9 @@ declare function sync:pending() as xs:boolean {
  : sync.xml is just recorded. (Before, rdf.xml was stored even when the Fuseki
  : update failed, so a missing graph means the play wasn't synced.)
  :
- : The reconcile job runs after each deploy. It must run regularly (e.g. from
- : the scheduler in conf.xml) to catch what was missed in between.
+ : The reconcile job is scheduled by post-install.xq to run shortly after each
+ : deploy and then every hour. Since scheduled jobs are lost when eXist-db is
+ : restarted, it should also be run from the scheduler in conf.xml.
  :
  : @return map with the number of recorded plays, of scheduled plays and of
  : scheduled plays that only have a graph left
@@ -194,7 +260,7 @@ declare function sync:reconcile() as map(*) {
     for $playname in xmldb:get-child-collections($collection)
     let $paths := dutil:filepaths($corpusname, $playname)
     let $modified := sync:tei-modified($paths)
-    where sync:play-pending($corpusname, $playname)
+    where sync:is-pending($paths, $modified)
     return if (
       not(doc-available($paths?files?sync)) and
         doc-available($paths?files?metrics) and
@@ -207,16 +273,16 @@ declare function sync:reconcile() as map(*) {
     else
       let $scheduled := queue:sync-play($corpusname, $playname)
       return "scheduled"
-  let $graphs :=
+  let $orphans :=
     for $play in $fuseki-plays
     let $paths := dutil:filepaths($play?corpusname, $play?playname)
-    where not(doc-available($paths?files?tei))
+    where empty(sync:tei-modified($paths))
     let $scheduled := queue:sync-play($play?corpusname, $play?playname)
     return "graph"
   let $result := map {
     "recorded": count($results[. = "recorded"]),
     "scheduled": count($results[. = "scheduled"]),
-    "graphs": count($graphs)
+    "graphs": count($orphans)
   }
   return (
     util:log-system-out(
