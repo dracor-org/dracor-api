@@ -24,13 +24,20 @@ declare function local:entry-data(
   if ($data) then
     let $collection := $param[1]
     let $sha := $param[2]
+    let $corpusname := $param[3]
     let $filename := tokenize($path, "/")[last()]
     let $name := replace($filename, "\.xml$", "")
     let $log := util:log-system-out("LOADING " || $path)
     let $res := if (
-      $name = "corpus" and $data/(tei:teiCorpus | tei:dracorCorpus)
+      $filename = "corpus.xml" and not(contains($path, "/tei/"))
     ) then
-      xmldb:store($collection, "corpus.xml", $data)
+      (: keep the corpus.xml created from the corpus info if the one from the
+        archive would break the corpus :)
+      let $error := dutil:check-corpus-update($data, $corpusname)
+      return if ($error) then
+        util:log-system-out("Skipping " || $path || ": " || $error)
+      else
+        xmldb:store($collection, "corpus.xml", $data)
     else if (not($data/tei:TEI)) then
       util:log-system-out("Skipping non-TEI document: " || $path)
     else
@@ -77,11 +84,12 @@ declare function local:record-corpus-sha($name) {
 (:~
  : Load corpus from ZIP archive
  :
- : @param $corpus The <dracorCorpus> element providing corpus name and archive URL
+ : @param $corpus The <teiHeader> root element of the corpus.xml providing
+ : corpus name and archive URL
  : @return List of created collections and files
  :
- : NB: until we remove support for it in v2 $corpus can also be a <teiCorpus>
- : element
+ : NB: until we remove support for them in v2 $corpus can also be a
+ : <dracorCorpus> or <teiCorpus> element
  :)
 declare function load:load-corpus($corpus as element()) as xs:string* {
   let $info := dutil:get-corpus-info($corpus)
@@ -118,7 +126,7 @@ declare function load:load-corpus($corpus as element()) as xs:string* {
           util:function(xs:QName("local:entry-filter"), 3),
           (),
           util:function(xs:QName("local:entry-data"), 4),
-          ($corpus-collection, $archive?sha)
+          ($corpus-collection, $archive?sha, $name)
         ),
         local:record-corpus-sha($name),
         util:log-system-out($name || " LOADED")

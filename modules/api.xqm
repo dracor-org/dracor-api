@@ -261,9 +261,7 @@ function api:corpora($include) {
   ) else
     array
       {
-        (: DEPRECATED: remove teiCorpus support in v2 :)
-        for $corpus in
-          collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
+        for $corpus in dutil:corpora()
         let $info := dutil:get-corpus-info($corpus)
         let $name := $info?name
         order by $name
@@ -343,7 +341,7 @@ function api:corpora-post($data, $auth, $content-type) {
 (:~
  : Add new corpus from XML
  :
- : @param $data corpus.xml containing dracorCorpus element.
+ : @param $data corpus.xml with teiHeader root element.
  : @result JSON
  :)
 declare function local:corpora-post-xml($data) {

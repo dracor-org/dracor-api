@@ -140,7 +140,7 @@ declare function dpmh:plain-text($text as xs:string) as xs:string {
  : Name of a corpus from its corpus.xml (as in dutil:get-corpus-info)
  :)
 declare function dpmh:corpus-name($corpus as element()) as xs:string? {
-  $corpus/tei:teiHeader//tei:publicationStmt/tei:idno[not(@type) or
+  dutil:corpus-header($corpus)//tei:publicationStmt/tei:idno[not(@type) or
     (@type = "URI" and @xml:base = "https://dracor.org/")][1]/string()
 };
 
@@ -165,11 +165,7 @@ declare function dpmh:header-info($corpus as element()) as map(*)? {
  : Header information of all corpora, ordered by name.
  :)
 declare function dpmh:headers() as map(*)* {
-  (: DEPRECATED: remove teiCorpus support in v2 :)
-  for $info in
-    collection($config:corpora-root)/(
-      tei:dracorCorpus | tei:teiCorpus
-    )!dpmh:header-info(.)
+  for $info in dutil:corpora()!dpmh:header-info(.)
   order by $info?name
   return $info
 };
@@ -199,7 +195,9 @@ declare function dpmh:record-info($header as map(*)) as map(*) {
  :)
 declare function dpmh:description-lang($corpus as element()) as xs:string {
   (
-    $corpus/tei:teiHeader/tei:encodingDesc/tei:projectDesc/@xml:lang[normalize-space()]!string(),
+    dutil:corpus-header(
+      $corpus
+    )/tei:encodingDesc/tei:projectDesc/@xml:lang[normalize-space()]!string(),
     "en"
   )[1]
 };
@@ -211,9 +209,9 @@ declare function dpmh:description-lang($corpus as element()) as xs:string {
  : decision is made.
  :)
 declare function dpmh:doi($corpus as element()) as xs:string? {
-  let $idno := $corpus/tei:teiHeader//tei:publicationStmt/tei:idno[lower-case(
-    @type
-  ) eq
+  let $idno := dutil:corpus-header(
+    $corpus
+  )//tei:publicationStmt/tei:idno[lower-case(@type) eq
     "doi"][normalize-space()][1]
   return $idno!replace(
     normalize-space(.),

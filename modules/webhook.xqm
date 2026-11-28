@@ -9,6 +9,7 @@ declare namespace tei = "http://www.tei-c.org/ns/1.0";
 
 import module namespace crypto = "http://expath.org/ns/crypto";
 import module namespace config = "http://dracor.org/ns/exist/v1/config" at "config.xqm";
+import module namespace dutil = "http://dracor.org/ns/exist/v1/util" at "util.xqm";
 
 declare variable $webhook:secret := environment-variable(
   "GITHUB_WEBHOOK_SECRET"
@@ -32,17 +33,8 @@ declare function local:check-signature(
       false()
 };
 
-declare function local:get-corpus($repo-url as xs:string) as element()? {
-  collection($config:corpora-root)/(
-    tei:dracorCorpus | tei:teiCorpus
-  )[tei:teiHeader//tei:publicationStmt/(
-    tei:ref[@type = "repo" and @target = $repo-url] |
-      tei:idno[@type = "repo" and . = $repo-url]
-  )]
-};
-
 declare function local:check-repo($url as xs:string) as xs:boolean {
-  if (local:get-corpus($url)) then
+  if (dutil:get-corpus-by-repo($url)) then
     true()
   else
     false()

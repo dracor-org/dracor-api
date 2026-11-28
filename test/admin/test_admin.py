@@ -10,19 +10,17 @@ import pytest
 from conftest import MINIMAL_PLAY, PLAY_NAME, SCRATCH_CORPUS, SCRATCH_CORPUS_XML
 
 CORPUS_XML = f"""<?xml version="1.0" encoding="UTF-8"?>
-<dracorCorpus xmlns="http://www.tei-c.org/ns/1.0">
-  <teiHeader>
-    <fileDesc>
-      <titleStmt>
-        <title>Scratch Corpus from XML</title>
-      </titleStmt>
-      <publicationStmt>
-        <publisher>DraCor</publisher>
-        <idno>{SCRATCH_CORPUS_XML}</idno>
-      </publicationStmt>
-    </fileDesc>
-  </teiHeader>
-</dracorCorpus>
+<teiHeader xmlns="http://www.tei-c.org/ns/1.0">
+  <fileDesc>
+    <titleStmt>
+      <title>Scratch Corpus from XML</title>
+    </titleStmt>
+    <publicationStmt>
+      <publisher>DraCor</publisher>
+      <idno>{SCRATCH_CORPUS_XML}</idno>
+    </publicationStmt>
+  </fileDesc>
+</teiHeader>
 """
 
 
@@ -92,7 +90,7 @@ def test_create_corpus_with_invalid_json(api, body):
     "content_type,body",
     [
         ("application/json", '{"name":'),
-        ("application/xml", "<dracorCorpus"),
+        ("application/xml", "<teiHeader"),
         ("application/xml", "<notACorpus/>"),
     ],
     ids=["malformed-json", "malformed-xml", "not-a-corpus"],

@@ -682,16 +682,63 @@ declare function dutil:count-sitelinks(
 };
 
 (:~
- : Get dracorCorpus element for corpus identified by $corpusname.
+ : Get the root elements of all corpus.xml documents.
+ :
+ : The root element of a corpus.xml is a teiHeader. Since plays have a TEI root
+ : element, a teiHeader root unambiguously identifies a corpus document.
+ :
+ : The corpus.xml documents are looked up by path, which is much faster than
+ : a step on the whole corpora collection.
+ :
+ : @return teiHeader elements (or deprecated dracorCorpus or teiCorpus
+ : elements wrapping the teiHeader)
+ :)
+declare function dutil:corpora() as element()* {
+  if (xmldb:collection-available($config:corpora-root)) then
+    for $collection in xmldb:get-child-collections($config:corpora-root)
+    let $url := $config:corpora-root || "/" || $collection || "/corpus.xml"
+    return if (doc-available($url)) then
+      dutil:corpus-root(doc($url)/*)
+    else (
+    )
+  else (
+  )
+};
+
+(:~
+ : Filter elements that can be the root element of a corpus.xml.
+ :
+ : @param $elements Elements to filter
+ : @return teiHeader elements (or deprecated dracorCorpus or teiCorpus
+ : elements)
+ :)
+declare function dutil:corpus-root($elements as element()*) as element()* {
+  (: DEPRECATED: remove dracorCorpus and teiCorpus support in v2 :)
+  $elements[self::tei:teiHeader or
+    self::tei:dracorCorpus or
+    self::tei:teiCorpus]
+};
+
+(:~
+ : Get the teiHeader of corpus documents.
+ :
+ : @param $corpus Root elements of corpus.xml documents
+ : @return teiHeader elements
+ :)
+declare function dutil:corpus-header(
+  $corpus as element()*
+) as element(tei:teiHeader)* {
+  $corpus/(self::tei:teiHeader | tei:teiHeader)
+};
+
+(:~
+ : Get root element of the corpus.xml for corpus identified by $corpusname.
  :
  : @param $corpusname
- : @return dracorCorpus element
+ : @return teiHeader element (or deprecated dracorCorpus or teiCorpus element)
  :)
 declare function dutil:get-corpus($corpusname as xs:string) as element()* {
-  (: DEPRECATED: remove teiCorpus support in v2 :)
-  collection($config:corpora-root)/(
-    tei:dracorCorpus | tei:teiCorpus
-  )[tei:teiHeader//tei:publicationStmt/tei:idno[(
+  dutil:corpora()[dutil:corpus-header(.)//tei:publicationStmt/tei:idno[(
     not(@type) or (@type = "URI" and @xml:base = "https://dracor.org/")
   ) and
     . = $corpusname]]
@@ -725,15 +772,18 @@ declare function dutil:get-corpus-info($corpus as element()*) as map(*)* {
     returned map. These will vanish when the corpus.xml is deleted and thus
     break load:load-corpus(). (the "recreating null" problem)
   :)
-  let $header := $corpus[1]/tei:teiHeader
+  let $header := dutil:corpus-header($corpus[1])
   let $name := $header//tei:publicationStmt/tei:idno[not(@type) or
     (@type = "URI" and @xml:base = "https://dracor.org/")][1]/string()
   let $title := $header/tei:fileDesc/tei:titleStmt/tei:title[1]/string()
   let $acronym := $header/tei:fileDesc/tei:titleStmt/tei:title[@type =
     "acronym"][1]/string()
-  let $repo := $header//tei:publicationStmt/(
-    tei:idno[@type = "repo"][1] | tei:ref[@type = "repo"]/@target
-  )/string()
+  (: a corpus.xml might have both an idno and a ref of type repo :)
+  let $repo := (
+    $header//tei:publicationStmt/(
+      tei:idno[@type = "repo"] | tei:ref[@type = "repo"]/@target
+    )
+  )[1]/string()
   let $projectDesc := $header/tei:encodingDesc/tei:projectDesc
   let $licence := $header//tei:publicationStmt/tei:availability/tei:licence
   let $description := if ($projectDesc) then (
@@ -796,6 +846,79 @@ declare function dutil:get-corpus-info-by-name(
 ) as map(*)* {
   let $corpus := dutil:get-corpus($corpusname)
   return dutil:get-corpus-info($corpus)
+};
+
+(:~
+ : Get root element of the corpus.xml for the corpus in repository $repo.
+ :
+ : @param $repo Repository URL
+ : @return teiHeader element (or deprecated dracorCorpus or teiCorpus element)
+ :)
+declare function dutil:get-corpus-by-repo($repo as xs:string) as element()* {
+  dutil:corpora()[dutil:corpus-header(.)//tei:publicationStmt/(
+    tei:ref[@type = "repo" and @target = $repo] |
+      tei:idno[@type = "repo" and . = $repo]
+  )]
+};
+
+(:~
+ : Expanded QName of an element in the form Q{namespace}local-name.
+ :)
+declare function dutil:qname-string($element as element()) as xs:string {
+  "Q{" || namespace-uri($element) || "}" || local-name($element)
+};
+
+(:~
+ : Check if $data can replace the corpus.xml of corpus $corpusname.
+ :
+ : The new document must have a corpus root element and keep the corpus name,
+ : which also is the name of the corpus collection. If the corpus has a
+ : repository, the document must keep it, too, since webhooks find the corpus
+ : by its repository.
+ :
+ : @param $data corpus.xml as document node or string
+ : @param $corpusname Name of the corpus to be updated
+ : @return Error message, empty sequence if $data is a valid replacement
+ :)
+declare function dutil:check-corpus-update(
+  $data as item(),
+  $corpusname as xs:string
+) as xs:string? {
+  let $element := if ($data instance of document-node()) then
+    $data/*
+  else if ($data instance of element()) then
+    $data
+  else
+    try {
+      parse-xml(
+        if ($data instance of xs:base64Binary) then
+          util:binary-to-string($data)
+        else
+          string($data)
+      )/*
+    } catch * { () }
+  let $root := dutil:corpus-root($element)
+  let $info := dutil:get-corpus-info($root)
+  let $repo := dutil:get-corpus-info-by-name($corpusname)?repository
+
+  return if (not($element)) then
+    "corpus.xml is not well-formed XML"
+  else if (not($root)) then
+    "corpus.xml has unexpected root element " || dutil:qname-string($element)
+  else if (not($info?name = $corpusname)) then
+    "corpus.xml has name '" ||
+      $info?name ||
+      "' instead of '" ||
+      $corpusname ||
+      "'"
+  else if (exists($repo) and not($info?repository = $repo)) then
+    "corpus.xml has repository '" ||
+      string-join($info?repository, "', '") ||
+      "' instead of '" ||
+      string-join($repo, "', '") ||
+      "'"
+  else (
+  )
 };
 
 (:~
@@ -2016,10 +2139,7 @@ declare function dutil:id-to-url($id as xs:string, $accept as xs:string*) {
   )
 };
 
-declare function local:create-corpus(
-  $name as xs:string,
-  $xml as element(tei:dracorCorpus)
-) {
+declare function local:create-corpus($name as xs:string, $xml as element()) {
   util:log-system-out("creating corpus"),
   util:log-system-out($xml),
   xmldb:store(
@@ -2057,54 +2177,49 @@ declare function dutil:create-corpus($corpus as map(*)) {
         "Corpus with name '" || $name || "' already exists"
       )
     else
-      let $xml := <dracorCorpus xmlns="http://www.tei-c.org/ns/1.0">
-        <teiHeader>
-          <fileDesc>
-            <titleStmt><title>{ $corpus?title }</title></titleStmt>
-            <publicationStmt>
-              <idno>{ $corpus?name }</idno>
-              {
-                if ($corpus?repository) then
-                  <ref target="{ $corpus?repository }" type="repo" />
-                else (
-                )
-              }
-            </publicationStmt>
-          </fileDesc>
-          {
-            if ($corpus?description) then (
-              <encodingDesc>
-                <projectDesc>
-                  {
-                    for $p in tokenize($corpus?description, "&#10;&#10;")
-                    return <p>{ $p }</p>
-                  }
-                </projectDesc>
-              </encodingDesc>
-            ) else (
-            )
-          }
-        </teiHeader>
-      </dracorCorpus>
+      let $xml := <teiHeader xmlns="http://www.tei-c.org/ns/1.0">
+        <fileDesc>
+          <titleStmt><title>{ $corpus?title }</title></titleStmt>
+          <publicationStmt>
+            <idno>{ $corpus?name }</idno>
+            {
+              if ($corpus?repository) then
+                <ref target="{ $corpus?repository }" type="repo" />
+              else (
+              )
+            }
+          </publicationStmt>
+        </fileDesc>
+        {
+          if ($corpus?description) then (
+            <encodingDesc>
+              <projectDesc>
+                {
+                  for $p in tokenize($corpus?description, "&#10;&#10;")
+                  return <p>{ $p }</p>
+                }
+              </projectDesc>
+            </encodingDesc>
+          ) else (
+          )
+        }
+      </teiHeader>
       return (local:create-corpus($name, $xml), $corpus)
   )
 };
 
 (:~
- : Create new corpus collection from dracorCorpus document
+ : Create new corpus collection from corpus.xml document
  :
  : This function does not rely on the corpus document to be valid against the
- : DraCor schema. In fact, it works with legacy teiCorpus documents from which
- : it only extracts the teiHeader element and wraps it into dracorCorpus.
+ : DraCor schema. It stores the teiHeader root element of the document. From
+ : deprecated dracorCorpus and teiCorpus documents it extracts the teiHeader
+ : element and stores it as root element.
  :
- : @param $xml dracorCorpus document
+ : @param $xml teiHeader element
  :)
 declare function dutil:create-corpus-from-xml($xml as element()) {
-  let $corpus := element {
-    QName("http://www.tei-c.org/ns/1.0", "dracorCorpus")
-    } { $xml/tei:teiHeader }
-
-  let $header := $corpus/tei:teiHeader[1]
+  let $header := dutil:corpus-header(dutil:corpus-root($xml))[1]
   (: A document might (erroneously) have multiple idnos from which we extract
     the distinct values. Below we will throw an error if there is more than
     one unique name. :)
@@ -2116,7 +2231,12 @@ declare function dutil:create-corpus-from-xml($xml as element()) {
   )
   let $title := $header//tei:titleStmt/tei:title[1]/normalize-space()
 
-  return if (not($header)) then
+  return if (not(dutil:corpus-root($xml))) then
+    error(
+      xs:QName("dutil:invalid-corpus-document"),
+      "Unexpected root element " || dutil:qname-string($xml)
+    )
+  else if (not($header)) then
     error(
       xs:QName("dutil:invalid-corpus-document"),
       "Missing teiHeader element"
@@ -2146,7 +2266,7 @@ declare function dutil:create-corpus-from-xml($xml as element()) {
         "Corpus with name '" || $name || "' already exists"
       )
     ) else (
-      local:create-corpus($name, $corpus), map {"name": $name, "title": $title}
+      local:create-corpus($name, $header), map {"name": $name, "title": $title}
     )
 };
 

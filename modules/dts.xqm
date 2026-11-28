@@ -515,8 +515,7 @@ declare function local:citable-unit(
  : Return the names of all corpora, sorted.
  :)
 declare function local:corpus-names() as xs:string* {
-  for $corpus in
-    collection($config:corpora-root)/(tei:dracorCorpus | tei:teiCorpus)
+  for $corpus in dutil:corpora()
   let $name := dutil:get-corpus-info($corpus)?name
   order by $name
   return $name

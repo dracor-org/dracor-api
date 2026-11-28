@@ -48,16 +48,30 @@ declare function local:update(
   let $status := string($response[1]/@status)
 
   return if ($status = "200") then
-    let $data := if (
+    let $content := if (
       starts-with($response[1]/hc:body/@media-type, "application/json")
     ) then
       let $json := parse-json(util:base64-decode($response[2]))
       return util:base64-decode($json?content)
     else
       $response[2]
+    (: parse corpus.xml only once to store the document that was checked :)
+    let $data := if (
+      $filename = "corpus.xml" and $content instance of xs:string
+    ) then
+      try { parse-xml($content) } catch * { $content }
+    else
+      $content
 
     (: FIXME: make sure $data is valid TEI :)
-    return if ($data) then
+    let $error := if ($data and $filename = "corpus.xml") then
+      dutil:check-corpus-update($data, tokenize($collection, "/")[last()])
+    else (
+    )
+
+    return if ($error) then (
+      util:log-system-out("Rejecting " || $target || ": " || $error), false()
+    ) else if ($data) then
       try {
         util:log-system-out("webhook update: " || $target),
         xmldb:create-collection("/", $collection) and
@@ -121,7 +135,7 @@ declare function local:get-repo-contents($url-template, $sha) {
 declare function local:update-sha($corpusinfo, $delivery) {
   let $before := $delivery/@before/string()
   let $after := $delivery/@after/string()
-  let $failures := count($delivery//file[@failure])
+  let $failures := count($delivery//file[@failed])
   return (
     util:log-system-out(
       "corpus: " ||
@@ -158,12 +172,7 @@ declare function local:process-delivery() {
     not(@processed)]
   let $repo := $delivery/@repo/string()
   let $after := $delivery/@after/string()
-  (: DEPRECATED: remove teiCorpus support in v2 :)
-  let $corpus := collection($config:corpora-root)/(
-    tei:dracorCorpus | tei:teiCorpus
-  )[tei:teiHeader//tei:publicationStmt/tei:ref[@type = "repo" and
-    @target = $repo] or
-    tei:teiHeader//tei:publicationStmt/tei:idno[@type = "repo" and . = $repo]]
+  let $corpus := dutil:get-corpus-by-repo($repo)
 
   let $info := dutil:get-corpus-info($corpus)
   let $corpusname := $info?name
