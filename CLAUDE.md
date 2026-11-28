@@ -43,6 +43,7 @@ curl -X POST -u admin: http://localhost:8088/api/v1/corpora/test
 ./test/dts-validator.sh  # DTS validator + DTS 1.0 contract tests in test/dts (requires running stack)
 ./test/admin.sh          # Admin endpoint tests in test/admin, create/delete throwaway corpora (requires running stack)
 ./test/webhook.sh        # Test GitHub webhook integration
+uv run test/citation.py  # Check that CITATION.cff and .zenodo.json agree (title, license, keywords, authors)
 ```
 
 CI runs schemathesis against a Docker Compose test stack (see [.github/workflows/test_api.yml](.github/workflows/test_api.yml)).
